@@ -2,6 +2,7 @@ package uno.lux.sample.ui.profile
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,39 +13,49 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -122,58 +134,91 @@ internal fun ProfileScreen(
             .background(MaterialTheme.colorScheme.surface),
     ) {
         when (uiState) {
-            ProfileUiState.Loading -> CenteredProgress()
-            ProfileUiState.NotFound -> CenteredMessage(stringResource(R.string.profile_not_found))
+            ProfileUiState.Loading -> {
+                CenteredProgress()
+                if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
+            }
+
+            ProfileUiState.NotFound -> {
+                CenteredMessage(stringResource(R.string.profile_not_found))
+                if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
+            }
+
+            // The loaded state owns its own scroll-reactive TopAppBar over the cover.
             is ProfileUiState.Loaded -> ProfileContent(
                 profile = uiState.profile,
                 onOpenSettings = onOpenSettings,
                 onToggleLike = onToggleLike,
                 onToggleBookmark = onToggleBookmark,
-            )
-        }
-        if (onBack != null) {
-            FloatingBackButton(
                 onBack = onBack,
-                modifier = Modifier.align(Alignment.TopStart),
             )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileContent(
     profile: Profile,
     onOpenSettings: () -> Unit,
     onToggleLike: (postId: String) -> Unit,
     onToggleBookmark: (postId: String) -> Unit,
+    onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
+    val listState = rememberLazyListState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item(key = "header") {
-            ProfileHeader(user = profile.user, onOpenSettings = onOpenSettings)
+    // The cover bleeds to the very top, so we can't reserve the bar's height with content
+    // padding. Instead the sticky tab header grows a top inset as it nears the bar, derived
+    // from the header item's own geometry — independent of the inset, so it can't oscillate.
+    val density = LocalDensity.current
+    val barBottomPx = WindowInsets.statusBars.getTop(density) +
+        with(density) { ProfileBarHeight.toPx() }
+    val tabInset by remember(barBottomPx) {
+        derivedStateOf {
+            val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "header" }
+            val tabsTop = if (header != null) (header.offset + header.size).toFloat() else 0f
+            with(density) { (barBottomPx - tabsTop).coerceIn(0f, barBottomPx).toDp() }
         }
-        stickyHeader(key = "tabs") {
-            ProfileTabs(
-                selected = selectedTab,
-                profile = profile,
-                onSelect = { selectedTab = it },
-            )
-        }
-        when (selectedTab) {
-            ProfileTab.POSTS -> postsTab(
-                profile = profile,
-                onToggleLike = onToggleLike,
-                onToggleBookmark = onToggleBookmark,
-            )
+    }
 
-            ProfileTab.ALBUMS -> albumsTab(profile.albums)
-            ProfileTab.VIDEOS -> videosTab(profile.videos)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+    ) {
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+            item(key = "header") {
+                ProfileHeader(user = profile.user)
+            }
+            stickyHeader(key = "tabs") {
+                ProfileTabs(
+                    selected = selectedTab,
+                    profile = profile,
+                    onSelect = { selectedTab = it },
+                    topInset = tabInset,
+                )
+            }
+            when (selectedTab) {
+                ProfileTab.POSTS -> postsTab(
+                    profile = profile,
+                    onToggleLike = onToggleLike,
+                    onToggleBookmark = onToggleBookmark,
+                )
+
+                ProfileTab.ALBUMS -> albumsTab(profile.albums)
+                ProfileTab.VIDEOS -> videosTab(profile.videos)
+            }
+            item(key = "bottom-inset") {
+                Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+            }
         }
-        item(key = "bottom-inset") {
-            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
-        }
+        ProfileTopBar(
+            scrollBehavior = scrollBehavior,
+            onBack = onBack,
+            onOpenSettings = onOpenSettings,
+        )
     }
 }
 
@@ -183,11 +228,11 @@ private val CoverHeight = 150.dp
 private val AvatarRingSize = 96.dp
 private val AvatarSize = 88.dp
 private val AvatarOverlap = 44.dp // how far the avatar hangs below the cover
+private val ProfileBarHeight = 64.dp // Material small TopAppBar content height (excl. status bar)
 
 @Composable
 private fun ProfileHeader(
     user: User,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -205,30 +250,20 @@ private fun ProfileHeader(
                     .height(CoverHeight)
                     .background(MosaicGradients.mediaBrush(user.id)),
             )
-            // Edit profile + settings, bottom-right across from the avatar.
-            Row(
+            // Edit profile, bottom-right across from the avatar (settings live in the app bar).
+            FilledTonalButton(
+                onClick = { /* Edit is a later iteration. */ },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
-                FilledTonalButton(onClick = { /* Edit is a later iteration. */ }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_edit),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.profile_edit))
-                }
-                FilledTonalIconButton(onClick = onOpenSettings) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings),
-                        contentDescription = stringResource(R.string.nav_settings),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                Icon(
+                    painter = painterResource(R.drawable.ic_edit),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.profile_edit))
             }
             AvatarRing(
                 name = user.nickname,
@@ -371,33 +406,36 @@ private fun ProfileTabs(
     selected: ProfileTab,
     profile: Profile,
     onSelect: (ProfileTab) -> Unit,
+    topInset: Dp,
 ) {
-    // Surface fills behind the status-bar inset so, once pinned to the top, the bar icons keep
-    // a solid backdrop. The inset reads as plain spacing while the tabs sit mid-screen.
-    PrimaryTabRow(
-        selectedTabIndex = selected.ordinal,
-        containerColor = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.statusBarsPadding(),
-    ) {
-        ProfileTab.entries.forEach { tab ->
-            Tab(
-                selected = tab == selected,
-                onClick = { onSelect(tab) },
-                selectedContentColor = MaterialTheme.colorScheme.primary,
-                unselectedContentColor = LocalMosaicColors.current.textTertiary,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(vertical = 10.dp),
+    // The surface-colored reserved strip grows as the tabs reach the app bar, so they pin just
+    // below it and sit seamlessly under the then-filled bar (see tabInset in ProfileContent).
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+        Spacer(Modifier.height(topInset))
+        PrimaryTabRow(
+            selectedTabIndex = selected.ordinal,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            ProfileTab.entries.forEach { tab ->
+                Tab(
+                    selected = tab == selected,
+                    onClick = { onSelect(tab) },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = LocalMosaicColors.current.textTertiary,
                 ) {
-                    Text(
-                        text = stringResource(tab.labelRes),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    Text(
-                        text = compactCount(tab.count(profile)).asText(),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(vertical = 10.dp),
+                    ) {
+                        Text(
+                            text = stringResource(tab.labelRes),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Text(
+                            text = compactCount(tab.count(profile)).asText(),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
         }
@@ -602,24 +640,93 @@ private fun EmptyTab(message: String) {
 
 // region Shared
 
+/** A plain back button for the loading / not-found states, which have no cover to scrim over. */
 @Composable
-private fun FloatingBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
+private fun PlainBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(
+        onClick = onBack,
         modifier = modifier
             .statusBarsPadding()
-            .padding(start = 8.dp, top = 8.dp),
+            .padding(start = 4.dp, top = 4.dp),
     ) {
-        IconButton(
-            onClick = onBack,
+        Icon(
+            painter = painterResource(R.drawable.ic_arrow_back),
+            contentDescription = stringResource(R.string.navigate_back),
+            tint = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+/**
+ * A transparent app bar over the cover that fills to the surface color on scroll (via the
+ * Material container/scrolledContainer colors). Its buttons carry a gray circular scrim with a
+ * white icon over the cover, and fade that to a bare on-surface icon once the bar fills — both
+ * driven by the same scroll [progress], so bar and buttons move in lockstep.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfileTopBar(
+    scrollBehavior: TopAppBarScrollBehavior,
+    onBack: (() -> Unit)?,
+    onOpenSettings: () -> Unit,
+) {
+    val scrolled by remember {
+        derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f }
+    }
+    val progress by animateFloatAsState(if (scrolled) 1f else 0f, label = "appBarProgress")
+
+    TopAppBar(
+        title = {},
+        navigationIcon = {
+            if (onBack != null) {
+                ScrimIconButton(
+                    iconRes = R.drawable.ic_arrow_back,
+                    contentDescription = stringResource(R.string.navigate_back),
+                    progress = progress,
+                    onClick = onBack,
+                )
+            }
+        },
+        actions = {
+            ScrimIconButton(
+                iconRes = R.drawable.ic_settings,
+                contentDescription = stringResource(R.string.nav_settings),
+                progress = progress,
+                onClick = onOpenSettings,
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+        ),
+        scrollBehavior = scrollBehavior,
+    )
+}
+
+/**
+ * An app-bar icon button whose gray circular scrim (and white tint) fade to a bare on-surface
+ * icon as [progress] goes 0 → 1 — i.e. as the bar fills on scroll.
+ */
+@Composable
+private fun ScrimIconButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    progress: Float,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(36.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.32f)),
+                .background(Color.Black.copy(alpha = 0.32f * (1f - progress))),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_arrow_back),
-                contentDescription = stringResource(R.string.navigate_back),
-                tint = Color.White,
+                painter = painterResource(iconRes),
+                contentDescription = contentDescription,
+                tint = lerp(Color.White, MaterialTheme.colorScheme.onSurface, progress),
+                modifier = Modifier.size(22.dp),
             )
         }
     }
