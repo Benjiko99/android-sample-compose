@@ -1,6 +1,7 @@
 package uno.lux.sample.ui.home
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,9 +47,9 @@ import uno.lux.sample.util.relativeTime
 import java.time.Instant
 
 /**
- * A single feed post (Mosaic design): a 20dp surface card with a soft shadow — author header
- * with overflow menu, the title (Bricolage) and body (Manrope), and the like / comment /
- * bookmark actions. Stateless; every interaction is hoisted to the caller.
+ * A single feed post (Mosaic design): an edge-to-edge surface item separated by a bottom
+ * divider — author header with overflow menu, the title (Bricolage) and body (Manrope), and
+ * the like / comment / bookmark actions. Stateless; every interaction is hoisted to the caller.
  */
 @Composable
 internal fun PostCard(
@@ -58,21 +58,20 @@ internal fun PostCard(
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.padding(bottom = 4.dp)) {
-            PostHeader(author = post.author, createdAt = post.createdAt)
-            PostBody(title = post.title, body = post.body)
-            PostActions(
-                post = post,
-                onToggleLike = onToggleLike,
-                onToggleBookmark = onToggleBookmark,
-            )
-        }
+        PostHeader(author = post.author, createdAt = post.createdAt)
+        PostBody(title = post.title, body = post.body)
+        PostActions(
+            post = post,
+            onToggleLike = onToggleLike,
+            onToggleBookmark = onToggleBookmark,
+        )
+        Spacer(Modifier.height(4.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -251,7 +250,6 @@ private fun PostCardPreview() {
             post = SamplePosts.first(),
             onToggleLike = {},
             onToggleBookmark = {},
-            modifier = Modifier.padding(16.dp),
         )
     }
 }
