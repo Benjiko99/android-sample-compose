@@ -1,5 +1,6 @@
 package uno.lux.sample.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import uno.lux.sample.R
 
 /**
  * Temporary stand-in for destinations that aren't built yet, so the navigation shell stays
@@ -19,12 +22,12 @@ import androidx.compose.ui.Modifier
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceholderScreen(
-    title: String,
+    @StringRes titleRes: Int,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text(title) }) },
+        topBar = { TopAppBar(title = { Text(stringResource(titleRes)) }) },
     ) { contentPadding ->
         Box(
             modifier = Modifier
@@ -33,7 +36,7 @@ fun PlaceholderScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "Coming soon",
+                text = stringResource(R.string.placeholder_body),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

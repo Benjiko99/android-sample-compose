@@ -56,3 +56,9 @@ Single-activity, 100% Jetpack Compose app — there are no Fragments and no XML 
 - **No DI framework yet.** `HomeViewModel` takes its repository as a constructor parameter (testable seam) and production wiring is supplied by `HomeViewModel.Factory` (a `viewModelFactory { initializer { … } }`). Hilt is the intended next step; when added, it replaces the factory and provides a singleton-scoped repository.
 
 - **Theming** lives in `app/src/main/java/uno/lux/sample/ui/theme/`. `SampleTheme` wraps `MaterialTheme` and prefers **dynamic color** (Material You) on Android 12+, falling back to the hand-defined light/dark schemes built from the palette in `Color.kt`; typography is in `Type.kt`. Wrap any new top-level Compose content (and `@Preview`s) in `SampleTheme` so dynamic color and dark mode work.
+
+## Localization
+
+All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum; `PlaceholderScreen` takes a `@StringRes` title.
+
+Computed text (relative time, compact counts) keeps its *logic* pure and testable in `util`: `relativeTime()` and `compactCount()` return structured buckets (`RelativeTime`, `CompactCount`) with no display strings, and the `ui/format` layer's `asText()` resolves a bucket to a localized resource. That's how format tokens like "5m" or "1.2K" stay localizable without making the formatters depend on Android. Post *content* in `SampleData` is stand-in data, not UI chrome, so it remains literal.

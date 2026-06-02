@@ -1,3 +1,38 @@
 <resources>
     <string name="app_name">Sample</string>
+
+    <!-- Navigation destinations -->
+    <string name="nav_home">Home</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Feed -->
+    <string name="feed_empty">No posts yet. Check back soon.</string>
+
+    <!-- Placeholder destinations -->
+    <string name="placeholder_body">Coming soon</string>
+
+    <!-- Post -->
+    <!-- Byline: author handle, then relative time. e.g. "@ada · 5m" -->
+    <string name="post_byline">%1$s · %2$s</string>
+    <string name="post_more_options">More options</string>
+    <string name="post_menu_share">Share</string>
+    <string name="post_menu_mute">Mute author</string>
+    <string name="post_menu_report">Report</string>
+    <string name="post_action_like">Like</string>
+    <string name="post_action_unlike">Unlike</string>
+    <string name="post_action_comment">Comment</string>
+    <string name="post_action_bookmark">Bookmark</string>
+    <string name="post_action_unbookmark">Remove bookmark</string>
+
+    <!-- Compact relative time -->
+    <string name="time_now">now</string>
+    <string name="time_minutes">%1$dm</string>
+    <string name="time_hours">%1$dh</string>
+    <string name="time_days">%1$dd</string>
+    <string name="time_weeks">%1$dw</string>
+
+    <!-- Compact engagement counts -->
+    <string name="count_thousands">%1$sK</string>
+    <string name="count_millions">%1$sM</string>
 </resources>

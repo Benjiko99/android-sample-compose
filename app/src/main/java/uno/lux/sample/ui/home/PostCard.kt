@@ -30,17 +30,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.User
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.SampleTheme
-import uno.lux.sample.util.formatCount
-import uno.lux.sample.util.formatRelativeTime
+import uno.lux.sample.util.compactCount
+import uno.lux.sample.util.relativeTime
 import java.time.Instant
 
 /**
@@ -99,7 +102,11 @@ private fun PostHeader(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${author.handle} · ${formatRelativeTime(createdAt)}",
+                text = stringResource(
+                    R.string.post_byline,
+                    author.handle,
+                    relativeTime(createdAt).asText(),
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -117,13 +124,22 @@ private fun OverflowMenu(modifier: Modifier = Modifier) {
         IconButton(onClick = { expanded = true }) {
             Icon(
                 painter = painterResource(R.drawable.ic_more_vert),
-                contentDescription = "More options",
+                contentDescription = stringResource(R.string.post_more_options),
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(text = { Text("Share") }, onClick = { expanded = false })
-            DropdownMenuItem(text = { Text("Mute author") }, onClick = { expanded = false })
-            DropdownMenuItem(text = { Text("Report") }, onClick = { expanded = false })
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.post_menu_share)) },
+                onClick = { expanded = false },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.post_menu_mute)) },
+                onClick = { expanded = false },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.post_menu_report)) },
+                onClick = { expanded = false },
+            )
         }
     }
 }
@@ -141,16 +157,16 @@ private fun PostActions(
     ) {
         ActionButton(
             iconRes = if (post.isLiked) R.drawable.ic_favorite else R.drawable.ic_favorite_border,
-            contentDescription = if (post.isLiked) "Unlike" else "Like",
-            label = formatCount(post.likeCount),
+            contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
+            label = compactCount(post.likeCount).asText(),
             tint = if (post.isLiked) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             onClick = onToggleLike,
         )
         Spacer(Modifier.width(4.dp))
         ActionButton(
             iconRes = R.drawable.ic_comment,
-            contentDescription = "Comment",
-            label = formatCount(post.commentCount),
+            contentDescriptionRes = R.string.post_action_comment,
+            label = compactCount(post.commentCount).asText(),
             onClick = { /* Opens the comment thread in a later iteration. */ },
         )
         Spacer(Modifier.weight(1f))
@@ -159,7 +175,9 @@ private fun PostActions(
                 painter = painterResource(
                     if (post.isBookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
                 ),
-                contentDescription = if (post.isBookmarked) "Remove bookmark" else "Bookmark",
+                contentDescription = stringResource(
+                    if (post.isBookmarked) R.string.post_action_unbookmark else R.string.post_action_bookmark,
+                ),
                 tint = if (post.isBookmarked) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -174,7 +192,7 @@ private fun PostActions(
 @Composable
 private fun ActionButton(
     iconRes: Int,
-    contentDescription: String,
+    @StringRes contentDescriptionRes: Int,
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -189,7 +207,7 @@ private fun ActionButton(
     ) {
         Icon(
             painter = painterResource(iconRes),
-            contentDescription = contentDescription,
+            contentDescription = stringResource(contentDescriptionRes),
             tint = tint,
             modifier = Modifier.size(20.dp),
         )

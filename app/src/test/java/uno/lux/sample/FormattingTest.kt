@@ -2,9 +2,11 @@ package uno.lux.sample
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import uno.lux.sample.util.formatCount
-import uno.lux.sample.util.formatRelativeTime
+import uno.lux.sample.util.CompactCount
+import uno.lux.sample.util.RelativeTime
+import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.initials
+import uno.lux.sample.util.relativeTime
 import java.time.Duration
 import java.time.Instant
 
@@ -13,53 +15,56 @@ class FormattingTest {
     private val now: Instant = Instant.parse("2026-06-02T12:00:00Z")
 
     @Test
-    fun `relative time under a minute reads as now`() {
-        assertEquals("now", formatRelativeTime(now.minus(Duration.ofSeconds(30)), now))
+    fun `relative time under a minute is Now`() {
+        assertEquals(RelativeTime.Now, relativeTime(now.minus(Duration.ofSeconds(30)), now))
     }
 
     @Test
     fun `relative time rounds down to whole minutes`() {
-        assertEquals("5m", formatRelativeTime(now.minus(Duration.ofSeconds(5 * 60 + 59)), now))
+        assertEquals(
+            RelativeTime.Minutes(5),
+            relativeTime(now.minus(Duration.ofSeconds(5 * 60 + 59)), now),
+        )
     }
 
     @Test
     fun `relative time in hours`() {
-        assertEquals("3h", formatRelativeTime(now.minus(Duration.ofHours(3)), now))
+        assertEquals(RelativeTime.Hours(3), relativeTime(now.minus(Duration.ofHours(3)), now))
     }
 
     @Test
     fun `relative time in days`() {
-        assertEquals("2d", formatRelativeTime(now.minus(Duration.ofDays(2)), now))
+        assertEquals(RelativeTime.Days(2), relativeTime(now.minus(Duration.ofDays(2)), now))
     }
 
     @Test
     fun `relative time switches to weeks at seven days`() {
-        assertEquals("2w", formatRelativeTime(now.minus(Duration.ofDays(14)), now))
+        assertEquals(RelativeTime.Weeks(2), relativeTime(now.minus(Duration.ofDays(14)), now))
     }
 
     @Test
-    fun `counts below a thousand are left as-is`() {
-        assertEquals("999", formatCount(999))
+    fun `counts below a thousand are exact`() {
+        assertEquals(CompactCount.Ones("999"), compactCount(999))
     }
 
     @Test
     fun `thousands keep one decimal place`() {
-        assertEquals("1.2K", formatCount(1_200))
+        assertEquals(CompactCount.Thousands("1.2"), compactCount(1_200))
     }
 
     @Test
     fun `whole thousands drop the decimal`() {
-        assertEquals("12K", formatCount(12_000))
+        assertEquals(CompactCount.Thousands("12"), compactCount(12_000))
     }
 
     @Test
-    fun `millions are abbreviated`() {
-        assertEquals("1M", formatCount(1_000_000))
+    fun `millions are scaled`() {
+        assertEquals(CompactCount.Millions("1"), compactCount(1_000_000))
     }
 
     @Test
     fun `negative counts are coerced to zero`() {
-        assertEquals("0", formatCount(-5))
+        assertEquals(CompactCount.Ones("0"), compactCount(-5))
     }
 
     @Test

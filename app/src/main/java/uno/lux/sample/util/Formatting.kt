@@ -4,35 +4,53 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * Compact, social-style relative timestamp: "now", "5m", "3h", "2d", "4w".
- *
- * [now] is injectable so the result is deterministic in tests and previews.
+ * A relative timestamp bucketed for compact, social-style display. The bucketing is pure
+ * and unit-tested here; turning a bucket into localized text ("now", "5m", …) happens in
+ * the UI layer against string resources.
  */
-fun formatRelativeTime(createdAt: Instant, now: Instant = Instant.now()): String {
+sealed interface RelativeTime {
+    data object Now : RelativeTime
+    data class Minutes(val value: Long) : RelativeTime
+    data class Hours(val value: Long) : RelativeTime
+    data class Days(val value: Long) : RelativeTime
+    data class Weeks(val value: Long) : RelativeTime
+}
+
+/** Buckets the gap between [createdAt] and [now]; [now] is injectable for deterministic tests. */
+fun relativeTime(createdAt: Instant, now: Instant = Instant.now()): RelativeTime {
     val elapsed = Duration.between(createdAt, now)
     return when {
-        elapsed < Duration.ofMinutes(1) -> "now"
-        elapsed < Duration.ofHours(1) -> "${elapsed.toMinutes()}m"
-        elapsed < Duration.ofDays(1) -> "${elapsed.toHours()}h"
-        elapsed < Duration.ofDays(7) -> "${elapsed.toDays()}d"
-        else -> "${elapsed.toDays() / 7}w"
+        elapsed < Duration.ofMinutes(1) -> RelativeTime.Now
+        elapsed < Duration.ofHours(1) -> RelativeTime.Minutes(elapsed.toMinutes())
+        elapsed < Duration.ofDays(1) -> RelativeTime.Hours(elapsed.toHours())
+        elapsed < Duration.ofDays(7) -> RelativeTime.Days(elapsed.toDays())
+        else -> RelativeTime.Weeks(elapsed.toDays() / 7)
     }
 }
 
 /**
- * Abbreviates engagement counts the way feeds do: 999 -> "999", 1_200 -> "1.2K",
- * 12_000 -> "12K", 1_000_000 -> "1M". Negative inputs are coerced to zero.
+ * An engagement count split into its numeric [text] and scale, so the unit suffix (K/M)
+ * comes from localized resources instead of being baked into code. Negative inputs are
+ * coerced to zero.
  */
-fun formatCount(count: Int): String = when {
-    count < 1_000 -> count.coerceAtLeast(0).toString()
-    count < 1_000_000 -> abbreviate(count, unit = 1_000, suffix = "K")
-    else -> abbreviate(count, unit = 1_000_000, suffix = "M")
+sealed interface CompactCount {
+    val text: String
+    data class Ones(override val text: String) : CompactCount
+    data class Thousands(override val text: String) : CompactCount
+    data class Millions(override val text: String) : CompactCount
 }
 
-private fun abbreviate(count: Int, unit: Int, suffix: String): String {
+fun compactCount(count: Int): CompactCount = when {
+    count < 1_000 -> CompactCount.Ones(count.coerceAtLeast(0).toString())
+    count < 1_000_000 -> CompactCount.Thousands(scaled(count, unit = 1_000))
+    else -> CompactCount.Millions(scaled(count, unit = 1_000_000))
+}
+
+/** The count scaled to [unit] with at most one decimal place: 1_234 / 1_000 -> "1.2". */
+private fun scaled(count: Int, unit: Int): String {
     val whole = count / unit
     val tenths = count % unit / (unit / 10)
-    return if (tenths == 0) "$whole$suffix" else "$whole.$tenths$suffix"
+    return if (tenths == 0) "$whole" else "$whole.$tenths"
 }
 
 /**
