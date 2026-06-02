@@ -26,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.data.ThemeMode
-import uno.lux.sample.data.User
 import uno.lux.sample.ui.PlaceholderScreen
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.profile.ProfileScreen
@@ -82,7 +81,7 @@ fun SampleApp() {
     var profileUserId by rememberSaveable { mutableStateOf<String?>(null) }
     val openSettings = { showSettings = true }
     val closeSettings = { showSettings = false }
-    val openProfile = { user: User -> profileUserId = user.id }
+    val openProfile = { userId: String -> profileUserId = userId }
     val closeProfile = { profileUserId = null }
     val activeProfileId = profileUserId
 

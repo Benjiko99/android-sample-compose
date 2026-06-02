@@ -44,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -66,6 +65,7 @@ import uno.lux.sample.data.SampleVideos
 import uno.lux.sample.data.User
 import uno.lux.sample.data.Video
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.home.PostCard
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -151,7 +151,7 @@ private fun ProfileContent(
         stickyHeader(key = "tabs") {
             ProfileTabs(
                 selected = selectedTab,
-                counts = ProfileTab.counts(profile),
+                profile = profile,
                 onSelect = { selectedTab = it },
             )
         }
@@ -197,7 +197,7 @@ private fun ProfileHeader(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(CoverHeight)
-                    .background(gradientFor(user.id)),
+                    .background(MosaicGradients.mediaBrush(user.id)),
             )
             // Edit profile + settings, bottom-right across from the avatar.
             Row(
@@ -351,24 +351,19 @@ private fun Stat(value: Int, label: String) {
 
 // region Tabs
 
-private enum class ProfileTab(@get:StringRes val labelRes: Int) {
-    POSTS(R.string.profile_tab_posts),
-    ALBUMS(R.string.profile_tab_albums),
-    VIDEOS(R.string.profile_tab_videos);
-
-    companion object {
-        fun counts(profile: Profile): Map<ProfileTab, Int> = mapOf(
-            POSTS to profile.postCount,
-            ALBUMS to profile.albumCount,
-            VIDEOS to profile.videoCount,
-        )
-    }
+private enum class ProfileTab(
+    @get:StringRes val labelRes: Int,
+    val count: (Profile) -> Int,
+) {
+    POSTS(R.string.profile_tab_posts, Profile::postCount),
+    ALBUMS(R.string.profile_tab_albums, Profile::albumCount),
+    VIDEOS(R.string.profile_tab_videos, Profile::videoCount),
 }
 
 @Composable
 private fun ProfileTabs(
     selected: ProfileTab,
-    counts: Map<ProfileTab, Int>,
+    profile: Profile,
     onSelect: (ProfileTab) -> Unit,
 ) {
     // Surface fills behind the status-bar inset so, once pinned to the top, the bar icons keep
@@ -394,7 +389,7 @@ private fun ProfileTabs(
                         style = MaterialTheme.typography.labelLarge,
                     )
                     Text(
-                        text = compactCount(counts[tab] ?: 0).asText(),
+                        text = compactCount(tab.count(profile)).asText(),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -443,7 +438,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(videos: Lis
     gridRows(videos, key = { it.id }) { video -> VideoCell(video, Modifier.weight(1f)) }
 }
 
-/** Lays a list into a 2-column grid by emitting one LazyColumn item per row of two. */
+/**
+ * Lays a list into a 2-column grid by emitting one LazyColumn item per row of two. We grid
+ * inside the LazyColumn rather than swapping in a LazyVerticalGrid so the cover, identity and
+ * the **sticky** tab header share one scroll container with the grid — `LazyVerticalGrid` has
+ * no sticky-header support.
+ */
 private fun <T> androidx.compose.foundation.lazy.LazyListScope.gridRows(
     items: List<T>,
     key: (T) -> Any,
@@ -471,11 +471,11 @@ private fun AlbumCell(album: Album, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(14.dp))
-                .background(gradientFor(album.id)),
+                .background(MosaicGradients.mediaBrush(album.id)),
         ) {
-            ThumbnailBadge(
-                iconRes = R.drawable.ic_layers,
+            MediaBadge(
                 text = album.itemCount.toString(),
+                iconRes = R.drawable.ic_layers,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp),
@@ -505,7 +505,7 @@ private fun VideoCell(video: Video, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(14.dp))
-                .background(gradientFor(video.id)),
+                .background(MosaicGradients.mediaBrush(video.id)),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -522,7 +522,7 @@ private fun VideoCell(video: Video, modifier: Modifier = Modifier) {
                     modifier = Modifier.size(26.dp),
                 )
             }
-            DurationBadge(
+            MediaBadge(
                 text = formatVideoDuration(video.durationSeconds),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -545,46 +545,35 @@ private fun VideoCell(video: Video, modifier: Modifier = Modifier) {
     }
 }
 
-/** A small dark scrim pill (icon + text) overlaid on a thumbnail corner. */
+/** A small dark-scrim pill (white text, optional leading icon) overlaid on a thumbnail corner. */
 @Composable
-private fun ThumbnailBadge(
-    iconRes: Int,
+private fun MediaBadge(
     text: String,
     modifier: Modifier = Modifier,
+    @DrawableRes iconRes: Int? = null,
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black.copy(alpha = 0.34f))
+            .clip(RoundedCornerShape(7.dp))
+            .background(Color.Black.copy(alpha = 0.42f))
             .padding(horizontal = 7.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(13.dp),
-        )
-        Spacer(Modifier.width(4.dp))
+        if (iconRes != null) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(13.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+        }
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
         )
     }
-}
-
-@Composable
-private fun DurationBadge(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = Color.White,
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color.Black.copy(alpha = 0.45f))
-            .padding(horizontal = 6.dp, vertical = 3.dp),
-    )
 }
 
 @Composable
@@ -652,24 +641,6 @@ private fun CenteredMessage(message: String) {
             textAlign = TextAlign.Center,
         )
     }
-}
-
-// Richer duotone gradients for cover photos and media thumbnails — keyed by id so a given
-// album/video/cover always renders the same stand-in.
-private val MediaGradients = listOf(
-    Color(0xFF5B6CFF) to Color(0xFF9B4DFF),
-    Color(0xFFFF7A59) to Color(0xFFFF4D8D),
-    Color(0xFF1FB6A6) to Color(0xFF0E8F9C),
-    Color(0xFFFFB547) to Color(0xFFFF7A59),
-    Color(0xFF7C5CFF) to Color(0xFF4D8DFF),
-    Color(0xFFE0407A) to Color(0xFFA83B8F),
-    Color(0xFF2DD4BF) to Color(0xFF3B82F6),
-    Color(0xFFF59E0B) to Color(0xFFEF4444),
-)
-
-private fun gradientFor(key: String): Brush {
-    val (start, end) = MediaGradients[key.hashCode().mod(MediaGradients.size)]
-    return Brush.linearGradient(listOf(start, end))
 }
 
 // endregion
