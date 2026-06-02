@@ -1,16 +1,21 @@
 package uno.lux.sample.ui.home
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
 import uno.lux.sample.data.InMemoryPostRepository
 import uno.lux.sample.data.Post
+import uno.lux.sample.data.PostRepository
 import uno.lux.sample.data.User
 import java.time.Instant
 
@@ -44,9 +49,9 @@ class HomeViewModelTest {
             viewModel.uiState.collect {}
         }
 
-        val state = viewModel.uiState.value
-        assertTrue(state is HomeUiState.Feed)
-        assertEquals(listOf(post), (state as HomeUiState.Feed).posts)
+        val feed = viewModel.uiState.value as HomeUiState.Feed
+        assertEquals(listOf(post), feed.posts)
+        assertTrue(feed.endReached)
     }
 
     @Test
@@ -75,4 +80,31 @@ class HomeViewModelTest {
         val feed = viewModel.uiState.value as HomeUiState.Feed
         assertTrue(feed.posts.single().isBookmarked)
     }
+
+    @Test
+    fun `refresh raises isRefreshing until the repository finishes`() = runTest {
+        val repository = FakePostRepository()
+        val viewModel = HomeViewModel(repository)
+
+        assertFalse(viewModel.isRefreshing.value)
+        viewModel.refresh()
+        assertTrue(viewModel.isRefreshing.value)
+        repository.completeRefresh()
+        assertFalse(viewModel.isRefreshing.value)
+    }
+}
+
+/** A [PostRepository] whose refresh suspends until [completeRefresh], to observe refresh state. */
+private class FakePostRepository : PostRepository {
+    override val posts: Flow<List<Post>> = MutableStateFlow<List<Post>>(emptyList())
+    private val refreshGate = CompletableDeferred<Unit>()
+
+    override suspend fun refresh() = refreshGate.await()
+
+    fun completeRefresh() {
+        refreshGate.complete(Unit)
+    }
+
+    override suspend fun toggleLike(postId: String) = Unit
+    override suspend fun toggleBookmark(postId: String) = Unit
 }

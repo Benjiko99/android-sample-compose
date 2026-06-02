@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,12 +15,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.SampleTheme
 
 /**
@@ -35,14 +39,19 @@ import uno.lux.sample.ui.theme.SampleTheme
  */
 @Composable
 fun HomeScreen(
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     HomeScreen(
         uiState = uiState,
+        isRefreshing = isRefreshing,
+        onRefresh = viewModel::refresh,
         onToggleLike = viewModel::onToggleLike,
         onToggleBookmark = viewModel::onToggleBookmark,
+        onOpenSettings = onOpenSettings,
         modifier = modifier,
     )
 }
@@ -55,8 +64,11 @@ fun HomeScreen(
 @Composable
 internal fun HomeScreen(
     uiState: HomeUiState,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onToggleLike: (postId: String) -> Unit,
     onToggleBookmark: (postId: String) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -65,23 +77,32 @@ internal fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_home)) },
+                actions = { SettingsAction(onOpenSettings) },
                 scrollBehavior = scrollBehavior,
             )
         },
     ) { contentPadding ->
-        when (uiState) {
-            HomeUiState.Loading -> LoadingState(Modifier.padding(contentPadding))
-            is HomeUiState.Feed ->
-                if (uiState.posts.isEmpty()) {
-                    EmptyState(Modifier.padding(contentPadding))
-                } else {
-                    FeedList(
-                        posts = uiState.posts,
-                        onToggleLike = onToggleLike,
-                        onToggleBookmark = onToggleBookmark,
-                        contentPadding = contentPadding,
-                    )
-                }
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding),
+        ) {
+            when (uiState) {
+                HomeUiState.Loading -> LoadingState()
+                is HomeUiState.Feed ->
+                    if (uiState.posts.isEmpty()) {
+                        EmptyState()
+                    } else {
+                        FeedList(
+                            posts = uiState.posts,
+                            endReached = uiState.endReached,
+                            onToggleLike = onToggleLike,
+                            onToggleBookmark = onToggleBookmark,
+                        )
+                    }
+            }
         }
     }
 }
@@ -89,19 +110,14 @@ internal fun HomeScreen(
 @Composable
 private fun FeedList(
     posts: List<Post>,
+    endReached: Boolean,
     onToggleLike: (postId: String) -> Unit,
     onToggleBookmark: (postId: String) -> Unit,
-    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(
-            top = contentPadding.calculateTopPadding() + 8.dp,
-            bottom = contentPadding.calculateBottomPadding() + 16.dp,
-        ),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(posts, key = { it.id }) { post ->
@@ -110,6 +126,11 @@ private fun FeedList(
                 onToggleLike = { onToggleLike(post.id) },
                 onToggleBookmark = { onToggleBookmark(post.id) },
             )
+        }
+        if (endReached) {
+            item(key = "caught_up") {
+                CaughtUpFooter()
+            }
         }
     }
 }
@@ -137,14 +158,31 @@ private fun EmptyState(modifier: Modifier = Modifier) {
     }
 }
 
+/** End-of-feed marker shown as the last list item once there are no more posts to load. */
+@Composable
+private fun CaughtUpFooter(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.feed_caught_up),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+    )
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun HomeFeedPreview() {
     SampleTheme {
         HomeScreen(
-            uiState = HomeUiState.Feed(SamplePosts),
+            uiState = HomeUiState.Feed(SamplePosts, endReached = true),
+            isRefreshing = false,
+            onRefresh = {},
             onToggleLike = {},
             onToggleBookmark = {},
+            onOpenSettings = {},
         )
     }
 }
@@ -155,8 +193,11 @@ private fun HomeLoadingPreview() {
     SampleTheme {
         HomeScreen(
             uiState = HomeUiState.Loading,
+            isRefreshing = false,
+            onRefresh = {},
             onToggleLike = {},
             onToggleBookmark = {},
+            onOpenSettings = {},
         )
     }
 }

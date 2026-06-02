@@ -156,10 +156,10 @@ private fun PostActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ActionButton(
-            iconRes = if (post.isLiked) R.drawable.ic_favorite else R.drawable.ic_favorite_border,
+            iconRes = if (post.isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border,
             contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
             label = compactCount(post.likeCount).asText(),
-            tint = if (post.isLiked) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+            tint = toggleTint(post.isLiked),
             onClick = onToggleLike,
         )
         Spacer(Modifier.width(4.dp))
@@ -178,11 +178,7 @@ private fun PostActions(
                 contentDescription = stringResource(
                     if (post.isBookmarked) R.string.post_action_unbookmark else R.string.post_action_bookmark,
                 ),
-                tint = if (post.isBookmarked) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    LocalContentColor.current
-                },
+                tint = toggleTint(post.isBookmarked),
             )
         }
     }
@@ -219,6 +215,11 @@ private fun ActionButton(
         )
     }
 }
+
+/** Tint for an action's icon and label: accented when [active], default content colour otherwise. */
+@Composable
+private fun toggleTint(active: Boolean): Color =
+    if (active) MaterialTheme.colorScheme.primary else LocalContentColor.current
 
 @Preview(showBackground = true)
 @Composable

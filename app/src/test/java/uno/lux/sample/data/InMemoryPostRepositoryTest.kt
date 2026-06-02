@@ -63,6 +63,15 @@ class InMemoryPostRepositoryTest {
 
         assertEquals(listOf(unliked), repository.posts.first())
     }
+
+    @Test
+    fun `refresh leaves the existing feed in place`() = runTest {
+        val repository = InMemoryPostRepository(listOf(unliked, liked))
+
+        repository.refresh()
+
+        assertEquals(listOf(unliked, liked), repository.posts.first())
+    }
 }
 
 private fun post(

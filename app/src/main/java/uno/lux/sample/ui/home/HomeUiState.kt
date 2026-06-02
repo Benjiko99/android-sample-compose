@@ -8,5 +8,10 @@ import uno.lux.sample.data.Post
  */
 sealed interface HomeUiState {
     data object Loading : HomeUiState
-    data class Feed(val posts: List<Post>) : HomeUiState
+
+    /** [endReached] is true when the backend has no more posts beyond [posts]. */
+    data class Feed(
+        val posts: List<Post>,
+        val endReached: Boolean,
+    ) : HomeUiState
 }

@@ -14,20 +14,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import uno.lux.sample.R
+import uno.lux.sample.ui.components.SettingsAction
 
 /**
  * Temporary stand-in for destinations that aren't built yet, so the navigation shell stays
- * fully functional. Mirrors the real screens' chrome (a top app bar) for visual continuity.
+ * fully functional. Mirrors the real screens' chrome — a top app bar with a settings action.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceholderScreen(
     @StringRes titleRes: Int,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text(stringResource(titleRes)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(titleRes)) },
+                actions = { SettingsAction(onOpenSettings) },
+            )
+        },
     ) { contentPadding ->
         Box(
             modifier = Modifier

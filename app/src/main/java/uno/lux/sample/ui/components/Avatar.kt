@@ -26,12 +26,12 @@ fun Avatar(
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
 ) {
-    val palette = listOf(
-        MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer,
-        MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer,
-        MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer,
-    )
-    val (background: Color, foreground: Color) = palette[id.hashCode().mod(palette.size)]
+    val colorScheme = MaterialTheme.colorScheme
+    val (background: Color, foreground: Color) = when (id.hashCode().mod(3)) {
+        0 -> colorScheme.primaryContainer to colorScheme.onPrimaryContainer
+        1 -> colorScheme.secondaryContainer to colorScheme.onSecondaryContainer
+        else -> colorScheme.tertiaryContainer to colorScheme.onTertiaryContainer
+    }
 
     Box(
         modifier = modifier
