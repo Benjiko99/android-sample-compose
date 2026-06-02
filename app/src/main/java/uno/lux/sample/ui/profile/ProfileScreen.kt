@@ -33,8 +33,8 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -374,7 +374,7 @@ private fun ProfileTabs(
 ) {
     // Surface fills behind the status-bar inset so, once pinned to the top, the bar icons keep
     // a solid backdrop. The inset reads as plain spacing while the tabs sit mid-screen.
-    TabRow(
+    PrimaryTabRow(
         selectedTabIndex = selected.ordinal,
         containerColor = MaterialTheme.colorScheme.surface,
         modifier = Modifier.statusBarsPadding(),
