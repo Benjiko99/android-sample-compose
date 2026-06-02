@@ -1,9 +1,11 @@
 package uno.lux.sample.ui.home
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -13,12 +15,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlin.math.roundToInt
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
@@ -79,14 +87,9 @@ internal fun HomeScreen(
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { MosaicWordmark() },
-                actions = { SettingsAction(onOpenSettings) },
+            CollapsingTopBar(
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                ),
+                onOpenSettings = onOpenSettings,
             )
         },
     ) { contentPadding ->
@@ -115,6 +118,63 @@ internal fun HomeScreen(
         }
     }
 }
+
+/**
+ * The feed's top bar. When the feed is scrolled up the bar slides off the top edge as a rigid
+ * unit — and slides back in when the user scrolls down — instead of the Material default of
+ * collapsing its height and squashing its content. It reuses [enterAlwaysScrollBehavior]'s
+ * `heightOffset` (so the scroll / fling / re-enter logic is unchanged), but lays the [TopAppBar]
+ * out at full height and reports only the still-visible slice to the [Scaffold]: the bar is placed
+ * flush to the bottom of that shrinking slot, so its top rides up past the clipped edge while the
+ * feed rises to fill the freed space. Reading `heightOffset` in the layout phase keeps the bar's
+ * content from recomposing on every scroll frame.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CollapsingTopBar(
+    scrollBehavior: TopAppBarScrollBehavior,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    val barHeightPx = WindowInsets.statusBars.getTop(density) +
+        with(density) { TopBarContentHeight.roundToPx() }
+
+    // This bar is the sole consumer of the scroll state, so it owns the collapse limit.
+    SideEffect {
+        val limit = -barHeightPx.toFloat()
+        if (scrollBehavior.state.heightOffsetLimit != limit) {
+            scrollBehavior.state.heightOffsetLimit = limit
+        }
+    }
+
+    TopAppBar(
+        title = { MosaicWordmark() },
+        actions = { SettingsAction(onOpenSettings) },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        modifier = modifier
+            .clipToBounds()
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(
+                    constraints.copy(minHeight = barHeightPx, maxHeight = barHeightPx),
+                )
+                val visibleHeight = (barHeightPx + scrollBehavior.state.heightOffset)
+                    .roundToInt()
+                    .coerceIn(0, barHeightPx)
+                layout(placeable.width, visibleHeight) {
+                    placeable.place(0, visibleHeight - barHeightPx)
+                }
+            },
+    )
+}
+
+/**
+ * Material 3's small top-app-bar content height (the `TopAppBarSmallTokens.ContainerHeight` token);
+ * the bar's full height is this plus the status-bar inset.
+ */
+private val TopBarContentHeight = 64.dp
 
 @Composable
 private fun FeedList(
