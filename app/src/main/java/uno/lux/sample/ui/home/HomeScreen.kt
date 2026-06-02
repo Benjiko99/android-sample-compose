@@ -18,9 +18,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -81,9 +79,10 @@ internal fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    // The bar is pinned; its shadow fades in whenever the list content is scrolled and clears
-    // when the list is resting at the very top.
-    val elevated by remember { derivedStateOf { listState.canScrollBackward } }
+    // The bar is pinned; its shadow fades in whenever the list content is scrolled and clears at
+    // the very top. canScrollBackward is already a coalesced boolean snapshot — it only changes
+    // when crossing the top — so reading it directly needs no derivedStateOf wrapper.
+    val elevated = listState.canScrollBackward
     Scaffold(
         modifier = modifier,
         topBar = {
