@@ -1,6 +1,7 @@
 package uno.lux.sample.ui.home
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -289,6 +290,12 @@ private fun PostActions(
     modifier: Modifier = Modifier,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    // Crossfade the heart between muted and coral so the colour change tracks the like pop
+    // (and fades back the same way on unlike) rather than snapping.
+    val likeTint by animateColorAsState(
+        targetValue = if (post.isLiked) LocalMosaicColors.current.like else muted,
+        label = "likeTint",
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -299,7 +306,7 @@ private fun PostActions(
             iconRes = if (post.isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border,
             contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
             label = compactCount(post.likeCount).asText(),
-            tint = if (post.isLiked) LocalMosaicColors.current.like else muted,
+            tint = likeTint,
             onClick = onToggleLike,
             iconModifier = Modifier.likePop(post.isLiked),
         )
