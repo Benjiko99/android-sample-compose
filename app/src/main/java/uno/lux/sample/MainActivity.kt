@@ -8,7 +8,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -21,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
@@ -67,11 +78,12 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * App shell. [NavigationSuiteScaffold] adapts the navigation affordance to the window size
- * — bottom bar on phones, navigation rail or drawer on larger or unfolded screens — while
- * the selected [AppDestinations] entry chooses which screen fills the content area. Settings
- * isn't a tab: each screen opens it from a top-bar action as a full-screen page, with system
- * back returning to the shell.
+ * App shell. The bottom-nav [HomeNavShell], the [SettingsScreen] and a user's [ProfileScreen]
+ * are the three full-screen views; Settings and Profile aren't tabs but open as pages over the
+ * shell (system back returns). [AnimatedContent] animates every switch — a directional push /
+ * pop slide for the deeper pages (see [pushPopTransition]), a fade-through for the peer tabs
+ * inside the shell. Back handling is hoisted here, reflecting the top view independent of the
+ * in-flight animation.
  */
 @PreviewScreenSizes
 @Composable
@@ -85,53 +97,102 @@ fun SampleApp() {
     val closeProfile = { profileUserId = null }
     val activeProfileId = profileUserId
 
-    if (showSettings) {
-        BackHandler(onBack = closeSettings)
-        SettingsScreen(onBack = closeSettings)
-    } else if (activeProfileId != null) {
-        BackHandler(onBack = closeProfile)
-        ProfileScreen(
-            userId = activeProfileId,
-            onOpenSettings = openSettings,
-            onBack = closeProfile,
-        )
-    } else {
-        val navItemColors = NavigationSuiteDefaults.itemColors(
-            navigationBarItemColors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.primary,
-                selectedTextColor = MaterialTheme.colorScheme.primary,
-                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                unselectedTextColor = LocalMosaicColors.current.textTertiary,
-            ),
-        )
-        NavigationSuiteScaffold(
-            navigationSuiteItems = {
-                AppDestinations.entries.forEach { destination ->
-                    item(
-                        icon = {
-                            Icon(
-                                painterResource(destination.icon),
-                                contentDescription = stringResource(destination.labelRes),
-                            )
-                        },
-                        label = { Text(stringResource(destination.labelRes)) },
-                        selected = destination == currentDestination,
-                        onClick = { currentDestination = destination },
-                        colors = navItemColors,
-                    )
-                }
-            },
-        ) {
-            when (currentDestination) {
-                AppDestinations.HOME -> HomeScreen(
-                    onOpenSettings = openSettings,
-                    onOpenProfile = openProfile,
+    when {
+        showSettings -> BackHandler(onBack = closeSettings)
+        activeProfileId != null -> BackHandler(onBack = closeProfile)
+    }
+
+    val screen: Screen = when {
+        showSettings -> Screen.Settings
+        activeProfileId != null -> Screen.Profile(activeProfileId)
+        else -> Screen.Shell
+    }
+
+    AnimatedContent(
+        targetState = screen,
+        transitionSpec = { pushPopTransition(initialState, targetState) },
+        modifier = Modifier.fillMaxSize(),
+        label = "screen",
+    ) { target ->
+        when (target) {
+            Screen.Shell -> HomeNavShell(
+                currentDestination = currentDestination,
+                onSelectDestination = { currentDestination = it },
+                onOpenSettings = openSettings,
+                onOpenProfile = openProfile,
+            )
+
+            Screen.Settings -> SettingsScreen(onBack = closeSettings)
+
+            is Screen.Profile -> ProfileScreen(
+                userId = target.userId,
+                onOpenSettings = openSettings,
+                onBack = closeProfile,
+            )
+        }
+    }
+}
+
+/**
+ * The bottom-nav shell: [NavigationSuiteScaffold] adapts the navigation affordance to the
+ * window size — bottom bar on phones, navigation rail or drawer on larger or unfolded screens
+ * — and the selected [AppDestinations] entry chooses which screen fills the content area.
+ * Tabs are peer destinations, so the content cross-fades (fade-through) rather than sliding.
+ */
+@Composable
+private fun HomeNavShell(
+    currentDestination: AppDestinations,
+    onSelectDestination: (AppDestinations) -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenProfile: (userId: String) -> Unit,
+) {
+    val navItemColors = NavigationSuiteDefaults.itemColors(
+        navigationBarItemColors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            selectedTextColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = LocalMosaicColors.current.textTertiary,
+        ),
+    )
+    NavigationSuiteScaffold(
+        navigationSuiteItems = {
+            AppDestinations.entries.forEach { destination ->
+                item(
+                    icon = {
+                        Icon(
+                            painterResource(destination.icon),
+                            contentDescription = stringResource(destination.labelRes),
+                        )
+                    },
+                    label = { Text(stringResource(destination.labelRes)) },
+                    selected = destination == currentDestination,
+                    onClick = { onSelectDestination(destination) },
+                    colors = navItemColors,
                 )
+            }
+        },
+    ) {
+        AnimatedContent(
+            targetState = currentDestination,
+            transitionSpec = {
+                (fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
+                    scaleIn(tween(durationMillis = 210, delayMillis = 90), initialScale = 0.94f)) togetherWith
+                    fadeOut(tween(durationMillis = 90))
+            },
+            modifier = Modifier.fillMaxSize(),
+            label = "tab",
+        ) { destination ->
+            when (destination) {
+                AppDestinations.HOME -> HomeScreen(
+                    onOpenSettings = onOpenSettings,
+                    onOpenProfile = onOpenProfile,
+                )
+
                 AppDestinations.FAVORITES, AppDestinations.PROFILE ->
                     PlaceholderScreen(
-                        titleRes = currentDestination.labelRes,
-                        onOpenSettings = openSettings,
+                        titleRes = destination.labelRes,
+                        onOpenSettings = onOpenSettings,
                     )
             }
         }
@@ -145,4 +206,44 @@ enum class AppDestinations(
     HOME(R.string.nav_home, R.drawable.ic_home),
     FAVORITES(R.string.nav_favorites, R.drawable.ic_favorite),
     PROFILE(R.string.nav_profile, R.drawable.ic_account_box),
+}
+
+/**
+ * The three full-screen views, ordered by [depth] so a transition between any two knows its
+ * direction: opening a deeper view pushes it in from the right, going back pops it off to the
+ * right, and the higher-depth view always draws on top.
+ */
+private sealed interface Screen {
+    val depth: Int
+
+    data object Shell : Screen {
+        override val depth = 0
+    }
+
+    data class Profile(val userId: String) : Screen {
+        override val depth = 1
+    }
+
+    data object Settings : Screen {
+        override val depth = 2
+    }
+}
+
+/** A horizontal shared-axis push (deeper) / pop (back) between two [Screen]s. */
+private fun pushPopTransition(from: Screen, to: Screen): ContentTransform {
+    val duration = 320
+    val forward = to.depth > from.depth
+    val enter = if (forward) {
+        slideInHorizontally(tween(duration)) { width -> width } + fadeIn(tween(duration))
+    } else {
+        slideInHorizontally(tween(duration)) { width -> -width / 4 } + fadeIn(tween(duration))
+    }
+    val exit = if (forward) {
+        slideOutHorizontally(tween(duration)) { width -> -width / 4 } + fadeOut(tween(duration))
+    } else {
+        slideOutHorizontally(tween(duration)) { width -> width } + fadeOut(tween(duration))
+    }
+    // The view being entered sits at its own depth; the higher-depth view stays on top, so a
+    // pop slides the leaving page off to reveal the one beneath.
+    return (enter togetherWith exit).apply { targetContentZIndex = to.depth.toFloat() }
 }
