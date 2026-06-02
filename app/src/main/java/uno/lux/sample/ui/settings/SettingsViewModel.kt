@@ -6,13 +6,12 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import uno.lux.sample.SampleApplication
 import uno.lux.sample.data.SettingsRepository
 import uno.lux.sample.data.ThemeMode
+import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Exposes the current [themeMode] and applies the user's selection through the
@@ -24,19 +23,13 @@ class SettingsViewModel(
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-            initialValue = ThemeMode.SYSTEM,
-        )
+        .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     }
 
     companion object {
-        private const val STOP_TIMEOUT_MILLIS = 5_000L
-
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as SampleApplication

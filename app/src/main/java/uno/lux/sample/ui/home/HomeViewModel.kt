@@ -6,14 +6,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.InMemoryPostRepository
 import uno.lux.sample.data.PostRepository
+import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Holds feed state and translates user intent (likes, bookmarks) into repository
@@ -31,11 +30,7 @@ class HomeViewModel(
             // reached. A paginated source would drive this flag (and expose a loadMore()).
             HomeUiState.Feed(posts = posts, endReached = true)
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-            initialValue = HomeUiState.Loading,
-        )
+        .stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -61,9 +56,6 @@ class HomeViewModel(
     }
 
     companion object {
-        /** Keeps the feed flow warm briefly across config changes and tab switches. */
-        private const val STOP_TIMEOUT_MILLIS = 5_000L
-
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer { HomeViewModel(InMemoryPostRepository()) }
         }

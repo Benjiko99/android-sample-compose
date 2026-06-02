@@ -73,10 +73,12 @@ class MainActivity : ComponentActivity() {
 fun SampleApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    val openSettings = { showSettings = true }
+    val closeSettings = { showSettings = false }
 
     if (showSettings) {
-        BackHandler { showSettings = false }
-        SettingsScreen(onBack = { showSettings = false })
+        BackHandler(onBack = closeSettings)
+        SettingsScreen(onBack = closeSettings)
     } else {
         NavigationSuiteScaffold(
             navigationSuiteItems = {
@@ -96,11 +98,11 @@ fun SampleApp() {
             },
         ) {
             when (currentDestination) {
-                AppDestinations.HOME -> HomeScreen(onOpenSettings = { showSettings = true })
+                AppDestinations.HOME -> HomeScreen(onOpenSettings = openSettings)
                 AppDestinations.FAVORITES, AppDestinations.PROFILE ->
                     PlaceholderScreen(
                         titleRes = currentDestination.labelRes,
-                        onOpenSettings = { showSettings = true },
+                        onOpenSettings = openSettings,
                     )
             }
         }
