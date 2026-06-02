@@ -84,7 +84,13 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
-    viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.provideFactory(userId)),
+    // Key the ViewModel by userId. Without a key, `viewModel()` caches one instance per class
+    // in the (Activity-scoped) store and reuses it for every profile — so the factory's userId
+    // would only ever take effect for the first user opened. The key gives each user their own.
+    viewModel: ProfileViewModel = viewModel(
+        key = "profile:$userId",
+        factory = ProfileViewModel.provideFactory(userId),
+    ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ProfileScreen(
