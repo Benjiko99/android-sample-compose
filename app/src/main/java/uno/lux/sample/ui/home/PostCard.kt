@@ -1,6 +1,9 @@
 package uno.lux.sample.ui.home
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +25,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -296,6 +301,7 @@ private fun PostActions(
             label = compactCount(post.likeCount).asText(),
             tint = if (post.isLiked) LocalMosaicColors.current.like else muted,
             onClick = onToggleLike,
+            iconModifier = Modifier.likePop(post.isLiked),
         )
         Spacer(Modifier.width(2.dp))
         ActionButton(
@@ -325,6 +331,7 @@ private fun ActionButton(
     tint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
@@ -337,7 +344,9 @@ private fun ActionButton(
             painter = painterResource(iconRes),
             contentDescription = stringResource(contentDescriptionRes),
             tint = tint,
-            modifier = Modifier.size(23.dp),
+            modifier = Modifier
+                .size(23.dp)
+                .then(iconModifier),
         )
         if (label != null) {
             Spacer(Modifier.width(7.dp))
@@ -347,6 +356,35 @@ private fun ActionButton(
                 color = tint,
             )
         }
+    }
+}
+
+/**
+ * Scales the icon up and lets it spring back to rest whenever [active] turns true — the "pop"
+ * when a post is liked. The current value is captured up front so an already-liked post
+ * scrolling back into view doesn't replay it; only a fresh like (false → true) animates.
+ * Scaling happens in a [graphicsLayer], so the pop draws over the row without reflowing it.
+ */
+@Composable
+private fun Modifier.likePop(active: Boolean): Modifier {
+    val scale = remember { Animatable(1f) }
+    var wasActive by remember { mutableStateOf(active) }
+    LaunchedEffect(active) {
+        if (active && !wasActive) {
+            scale.animateTo(1.3f, spring(stiffness = Spring.StiffnessHigh))
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium,
+                ),
+            )
+        }
+        wasActive = active
+    }
+    return graphicsLayer {
+        scaleX = scale.value
+        scaleY = scale.value
     }
 }
 
