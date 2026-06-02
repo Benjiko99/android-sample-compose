@@ -90,15 +90,10 @@ internal fun HomeScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val listState = rememberLazyListState()
-    // The bar follows the finger via [scrollBehavior]; its shadow is keyed to scroll *position*
-    // instead, so it stays lifted while scrolled rather than fading out the moment the gesture
-    // stops. The screen counts as scrolled when the feed has moved (canScrollBackward) or, right
-    // at the top, when the bar is still mid-collapse (heightOffset < 0) — enter-always spends the
-    // first scroll collapsing the bar before the list moves. So the shadow falls flat only at the
-    // exact resting position, and is present for any scroll past it.
-    val elevated by remember {
-        derivedStateOf { scrollBehavior.state.heightOffset < 0f || listState.canScrollBackward }
-    }
+    // The bar follows the finger via [scrollBehavior]; its shadow is keyed to the feed's scroll
+    // position instead — present whenever the list content is scrolled at all, and hidden only
+    // when the list is resting at the very top.
+    val elevated by remember { derivedStateOf { listState.canScrollBackward } }
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
