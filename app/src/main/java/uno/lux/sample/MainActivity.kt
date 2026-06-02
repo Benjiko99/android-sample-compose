@@ -10,7 +10,10 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -26,6 +29,7 @@ import uno.lux.sample.data.ThemeMode
 import uno.lux.sample.ui.PlaceholderScreen
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.settings.SettingsScreen
+import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.SampleTheme
 
 // Scrims drawn behind the gesture navigation bar, per the AndroidX edge-to-edge guidance.
@@ -80,6 +84,15 @@ fun SampleApp() {
         BackHandler(onBack = closeSettings)
         SettingsScreen(onBack = closeSettings)
     } else {
+        val navItemColors = NavigationSuiteDefaults.itemColors(
+            navigationBarItemColors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
+                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                unselectedTextColor = LocalMosaicColors.current.textTertiary,
+            ),
+        )
         NavigationSuiteScaffold(
             navigationSuiteItems = {
                 AppDestinations.entries.forEach { destination ->
@@ -93,6 +106,7 @@ fun SampleApp() {
                         label = { Text(stringResource(destination.labelRes)) },
                         selected = destination == currentDestination,
                         onClick = { currentDestination = destination },
+                        colors = navItemColors,
                     )
                 }
             },

@@ -25,12 +25,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
+import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.SampleTheme
 
 /**
@@ -76,9 +79,13 @@ internal fun HomeScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.nav_home)) },
+                title = { MosaicWordmark() },
                 actions = { SettingsAction(onOpenSettings) },
                 scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
     ) { contentPadding ->
@@ -117,7 +124,7 @@ private fun FeedList(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(posts, key = { it.id }) { post ->
@@ -163,12 +170,12 @@ private fun EmptyState(modifier: Modifier = Modifier) {
 private fun CaughtUpFooter(modifier: Modifier = Modifier) {
     Text(
         text = stringResource(R.string.feed_caught_up),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.02.em),
+        color = LocalMosaicColors.current.textTertiary,
         textAlign = TextAlign.Center,
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .padding(top = 14.dp, bottom = 8.dp),
     )
 }
 

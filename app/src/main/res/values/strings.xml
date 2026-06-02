@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Sample</string>
+    <string name="brand_name">Mosaic</string>
 
     <!-- Navigation destinations -->
     <string name="nav_home">Home</string>
@@ -35,9 +36,9 @@
     <string name="time_days">%1$dd</string>
     <string name="time_weeks">%1$dw</string>
 
-    <!-- Compact engagement counts -->
-    <string name="count_thousands">%1$sK</string>
-    <string name="count_millions">%1$sM</string>
+    <!-- Compact engagement counts (Mosaic uses lowercase) -->
+    <string name="count_thousands">%1$sk</string>
+    <string name="count_millions">%1$sm</string>
 
     <!-- Settings -->
     <string name="settings_appearance">Appearance</string>

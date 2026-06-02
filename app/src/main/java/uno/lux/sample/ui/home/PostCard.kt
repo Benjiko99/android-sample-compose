@@ -1,7 +1,7 @@
 package uno.lux.sample.ui.home
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,22 +34,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.annotation.StringRes
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.User
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
+import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.SampleTheme
 import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.relativeTime
 import java.time.Instant
 
 /**
- * A single feed post: author header with an overflow menu, the title and body, and the
- * like / comment / bookmark actions. Stateless — every interaction is hoisted to the
- * caller, which keeps the card trivially previewable.
+ * A single feed post (Mosaic design): a 20dp surface card with a soft shadow — author header
+ * with overflow menu, the title (Bricolage) and body (Manrope), and the like / comment /
+ * bookmark actions. Stateless; every interaction is hoisted to the caller.
  */
 @Composable
 internal fun PostCard(
@@ -58,21 +58,15 @@ internal fun PostCard(
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(Modifier.padding(bottom = 4.dp)) {
             PostHeader(author = post.author, createdAt = post.createdAt)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = post.title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = post.body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
+            PostBody(title = post.title, body = post.body)
             PostActions(
                 post = post,
                 onToggleLike = onToggleLike,
@@ -89,18 +83,22 @@ private fun PostHeader(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 14.dp, top = 14.dp, end = 6.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Avatar(name = author.nickname, id = author.id)
-        Spacer(Modifier.width(12.dp))
+        Avatar(name = author.nickname, size = 42.dp)
+        Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = author.nickname,
                 style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = stringResource(
                     R.string.post_byline,
@@ -108,7 +106,7 @@ private fun PostHeader(
                     relativeTime(createdAt).asText(),
                 ),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = LocalMosaicColors.current.textTertiary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -125,6 +123,8 @@ private fun OverflowMenu(modifier: Modifier = Modifier) {
             Icon(
                 painter = painterResource(R.drawable.ic_more_vert),
                 contentDescription = stringResource(R.string.post_more_options),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -145,81 +145,103 @@ private fun OverflowMenu(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun PostBody(
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun PostActions(
     post: Post,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ActionButton(
             iconRes = if (post.isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border,
             contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
             label = compactCount(post.likeCount).asText(),
-            tint = toggleTint(post.isLiked),
+            tint = if (post.isLiked) LocalMosaicColors.current.like else muted,
             onClick = onToggleLike,
         )
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(2.dp))
         ActionButton(
             iconRes = R.drawable.ic_comment,
             contentDescriptionRes = R.string.post_action_comment,
             label = compactCount(post.commentCount).asText(),
+            tint = muted,
             onClick = { /* Opens the comment thread in a later iteration. */ },
         )
         Spacer(Modifier.weight(1f))
-        IconButton(onClick = onToggleBookmark) {
-            Icon(
-                painter = painterResource(
-                    if (post.isBookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
-                ),
-                contentDescription = stringResource(
-                    if (post.isBookmarked) R.string.post_action_unbookmark else R.string.post_action_bookmark,
-                ),
-                tint = toggleTint(post.isBookmarked),
-            )
-        }
+        ActionButton(
+            iconRes = if (post.isBookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
+            contentDescriptionRes = if (post.isBookmarked) R.string.post_action_unbookmark else R.string.post_action_bookmark,
+            label = null,
+            tint = if (post.isBookmarked) MaterialTheme.colorScheme.primary else muted,
+            onClick = onToggleBookmark,
+        )
     }
 }
 
-/** Icon + count, styled as a tappable pill. Used for like and comment. */
+/** Pill-shaped action: icon + optional count, both tinted by [tint] (accented when active). */
 @Composable
 private fun ActionButton(
     iconRes: Int,
     @StringRes contentDescriptionRes: Int,
-    label: String,
+    label: String?,
+    tint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current,
 ) {
     Row(
         modifier = modifier
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(100.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = stringResource(contentDescriptionRes),
             tint = tint,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(23.dp),
         )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = tint,
-        )
+        if (label != null) {
+            Spacer(Modifier.width(7.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = tint,
+            )
+        }
     }
 }
-
-/** Tint for an action's icon and label: accented when [active], default content colour otherwise. */
-@Composable
-private fun toggleTint(active: Boolean): Color =
-    if (active) MaterialTheme.colorScheme.primary else LocalContentColor.current
 
 @Preview(showBackground = true)
 @Composable

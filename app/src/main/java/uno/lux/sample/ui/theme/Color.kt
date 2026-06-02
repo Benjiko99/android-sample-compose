@@ -2,10 +2,32 @@ package uno.lux.sample.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Mosaic design tokens (claude.ai/design handoff). Warm-neutral surfaces, indigo accent,
+// coral like-state, with full light/dark sets.
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Brand — shared across themes
+val MosaicAccent = Color(0xFF3F5BD8) // indigo
+val MosaicLike = Color(0xFFEF4D6B) // coral like-state
+val MosaicOnAccent = Color(0xFFFFFFFF)
+
+// Light
+val MosaicLightBg = Color(0xFFEEF0F4)
+val MosaicLightSurface = Color(0xFFFFFFFF)
+val MosaicLightBorder = Color(0xFFECEDF1)
+val MosaicLightBorderStrong = Color(0xFFD2D5DD)
+val MosaicLightText = Color(0xFF161820)
+val MosaicLightText2 = Color(0xFF565B66)
+val MosaicLightText3 = Color(0xFF8B909C)
+val MosaicLightDanger = Color(0xFFE23B4E)
+val MosaicLightAccentSoft = Color(0xFFE2E6F9) // accent @ ~15% over surface
+
+// Dark
+val MosaicDarkBg = Color(0xFF0C0E12)
+val MosaicDarkSurface = Color(0xFF16191F)
+val MosaicDarkBorder = Color(0xFF242830)
+val MosaicDarkBorderStrong = Color(0xFF353B45)
+val MosaicDarkText = Color(0xFFE9EBEF)
+val MosaicDarkText2 = Color(0xFFA4AAB5)
+val MosaicDarkText3 = Color(0xFF6E7682)
+val MosaicDarkDanger = Color(0xFFFF5D6C)
+val MosaicDarkAccentSoft = Color(0xFF20294B) // accent @ ~24% over surface
