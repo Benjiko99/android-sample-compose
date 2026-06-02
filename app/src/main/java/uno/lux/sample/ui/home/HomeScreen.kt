@@ -2,11 +2,9 @@ package uno.lux.sample.ui.home
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -18,19 +16,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlin.math.roundToInt
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
@@ -88,17 +80,14 @@ internal fun HomeScreen(
     onOpenProfile: (userId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val listState = rememberLazyListState()
-    // The bar follows the finger via [scrollBehavior]; its shadow is keyed to the feed's scroll
-    // position instead — present whenever the list content is scrolled at all, and hidden only
+    // The bar is pinned; its shadow fades in whenever the list content is scrolled and clears
     // when the list is resting at the very top.
     val elevated by remember { derivedStateOf { listState.canScrollBackward } }
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier,
         topBar = {
-            CollapsingTopBar(
-                scrollBehavior = scrollBehavior,
+            FeedTopBar(
                 elevated = elevated,
                 onOpenSettings = onOpenSettings,
             )
@@ -132,37 +121,17 @@ internal fun HomeScreen(
 }
 
 /**
- * The feed's top bar. It follows the finger as the feed scrolls — sliding off the top edge as a
- * rigid unit via [scrollBehavior]'s `heightOffset` (Material's enter-always behaviour) — and casts
- * a shadow whenever the feed is scrolled away from the top. The shadow is keyed to scroll
- * *position* ([elevated]), not the live gesture, so it stays raised while scrolled instead of
- * dropping back the moment the finger stops.
- *
- * The bar is laid out at full height and reports only the still-visible slice to the [Scaffold]:
- * it sits flush to the bottom of that shrinking slot, so its top rides up past the clipped edge
- * (the shadow's own clip) while the feed rises to fill the freed space. `heightOffset` is read in
- * the layout phase, so sliding the bar relayouts it without recomposing its content.
+ * The feed's pinned top bar — it stays in place while the feed scrolls and fades in a drop shadow
+ * whenever the list content is scrolled away from the top ([elevated]), so the shadow is a stable
+ * indicator of scroll position rather than something that rides the bar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CollapsingTopBar(
-    scrollBehavior: TopAppBarScrollBehavior,
+private fun FeedTopBar(
     elevated: Boolean,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-    val barHeightPx = WindowInsets.statusBars.getTop(density) +
-        with(density) { TopBarContentHeight.roundToPx() }
-
-    // This bar is the sole consumer of the scroll state, so it owns the collapse limit.
-    SideEffect {
-        val limit = -barHeightPx.toFloat()
-        if (scrollBehavior.state.heightOffsetLimit != limit) {
-            scrollBehavior.state.heightOffsetLimit = limit
-        }
-    }
-
     val shadowElevation by animateDpAsState(
         targetValue = if (elevated) TopBarElevation else 0.dp,
         label = "topBarElevation",
@@ -174,29 +143,11 @@ private fun CollapsingTopBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        modifier = modifier
-            .shadow(shadowElevation, clip = true)
-            .layout { measurable, constraints ->
-                val placeable = measurable.measure(
-                    constraints.copy(minHeight = barHeightPx, maxHeight = barHeightPx),
-                )
-                val visibleHeight = (barHeightPx + scrollBehavior.state.heightOffset)
-                    .roundToInt()
-                    .coerceIn(0, barHeightPx)
-                layout(placeable.width, visibleHeight) {
-                    placeable.place(0, visibleHeight - barHeightPx)
-                }
-            },
+        modifier = modifier.shadow(shadowElevation),
     )
 }
 
-/**
- * Material 3's small top-app-bar content height (the `TopAppBarSmallTokens.ContainerHeight` token);
- * the bar's full height is this plus the status-bar inset.
- */
-private val TopBarContentHeight = 64.dp
-
-/** Resting shadow depth of the feed bar once the feed is scrolled off the top. */
+/** Resting shadow depth of the pinned feed bar once the list is scrolled. */
 private val TopBarElevation = 4.dp
 
 @Composable
