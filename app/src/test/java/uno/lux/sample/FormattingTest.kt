@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.util.formatCount
 import uno.lux.sample.util.formatRelativeTime
+import uno.lux.sample.util.initials
 import java.time.Duration
 import java.time.Instant
 
@@ -59,5 +60,25 @@ class FormattingTest {
     @Test
     fun `negative counts are coerced to zero`() {
         assertEquals("0", formatCount(-5))
+    }
+
+    @Test
+    fun `initials take the first letter of the first two words`() {
+        assertEquals("AL", initials("Ada Lovelace"))
+    }
+
+    @Test
+    fun `initials of a single word is one letter`() {
+        assertEquals("L", initials("Linus"))
+    }
+
+    @Test
+    fun `initials uppercase and ignore surrounding and repeated whitespace`() {
+        assertEquals("GH", initials("  grace   hopper "))
+    }
+
+    @Test
+    fun `initials of a blank name is empty`() {
+        assertEquals("", initials("   "))
     }
 }

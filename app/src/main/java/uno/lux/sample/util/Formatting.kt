@@ -34,3 +34,14 @@ private fun abbreviate(count: Int, unit: Int, suffix: String): String {
     val tenths = count % unit / (unit / 10)
     return if (tenths == 0) "$whole$suffix" else "$whole.$tenths$suffix"
 }
+
+/**
+ * Up to two uppercase initials drawn from the first words of a display name:
+ * "Ada Lovelace" -> "AL", "Linus" -> "L", "  grace  hopper " -> "GH". Blank input -> "".
+ */
+fun initials(name: String): String =
+    name.trim().split(' ')
+        .filter { it.isNotEmpty() }
+        .take(2)
+        .map { it.first().uppercaseChar() }
+        .joinToString(separator = "")

@@ -6,6 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A sample Android app (`uno.lux.sample`, displayed as "Sample") built as a resume/portfolio piece to demonstrate modern Android architecture. Code quality, idiomatic Compose, and architectural clarity are the point of the project, not just working features — prefer the current, recommended Android way of doing things over expedient shortcuts.
 
+## Testing philosophy — tests first
+
+Tests are the **primary consumer** of this codebase; real users come second. Production code exists first to satisfy a test — we write the code that makes tests pass, and only then does it also happen to serve users. In practice:
+
+- **Write the test first.** Express the desired behaviour as a failing test, then write the code that makes it pass. A change isn't done until tests cover it and they're green; new logic lands with its test in the same change.
+- **Design for the test.** Keep logic in plain-JVM, dependency-injected units so a test can drive it directly. The `data` layer and ViewModels take their collaborators as constructor parameters and avoid Android dependencies; pure functions take their inputs (e.g. `now`) as parameters instead of reading ambient state. This is *why* the architecture is shaped the way it is — testability drives the design, not the other way round.
+- **Same rule for UI.** Stateless composables take data + callbacks so they can be exercised in isolation; ViewModels expose state as a `StateFlow` a test asserts against.
+
+Run the unit suite with `.\gradlew.bat testDebugUnitTest` (single class: `--tests "uno.lux.sample.FormattingTest"`).
+
 ## Commands
 
 The shell is Windows PowerShell; invoke the wrapper as `.\gradlew.bat`.

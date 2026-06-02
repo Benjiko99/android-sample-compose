@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import uno.lux.sample.util.initials
 
 /**
  * A circular monogram avatar. Colour is derived deterministically from [id] so a given
@@ -30,7 +31,7 @@ fun Avatar(
         MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer,
         MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer,
     )
-    val (background: Color, foreground: Color) = palette[id.hashCode().floorMod(palette.size)]
+    val (background: Color, foreground: Color) = palette[id.hashCode().mod(palette.size)]
 
     Box(
         modifier = modifier
@@ -40,20 +41,9 @@ fun Avatar(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = name.initials(),
+            text = initials(name),
             color = foreground,
             style = MaterialTheme.typography.titleSmall,
         )
     }
 }
-
-/** Non-negative modulo, so a negative [hashCode] still maps onto the palette. */
-private fun Int.floorMod(divisor: Int): Int = ((this % divisor) + divisor) % divisor
-
-/** Up to two uppercase initials drawn from the first words of a display name. */
-private fun String.initials(): String =
-    trim().split(' ')
-        .filter { it.isNotEmpty() }
-        .take(2)
-        .map { it.first().uppercaseChar() }
-        .joinToString(separator = "")
