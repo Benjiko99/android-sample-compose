@@ -1,6 +1,6 @@
 package uno.lux.sample.ui.home
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,14 +18,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -85,16 +88,18 @@ internal fun HomeScreen(
     onOpenProfile: (userId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val listState = rememberLazyListState()
-    // Collapse the bar (slide it off the top) whenever the feed isn't resting at the very top.
-    // Keyed to scroll *position*, not the live gesture, so the bar never tracks the finger or
-    // snaps back when the scroll settles.
-    val barCollapsed by remember { derivedStateOf { listState.canScrollBackward } }
+    // The bar follows the finger via [scrollBehavior]; its shadow is keyed to scroll *position*
+    // instead — raised whenever the feed isn't resting at the very top, so it stays lifted while
+    // scrolled rather than fading out the moment the gesture stops.
+    val elevated by remember { derivedStateOf { listState.canScrollBackward } }
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CollapsingTopBar(
-                collapsed = barCollapsed,
+                scrollBehavior = scrollBehavior,
+                elevated = elevated,
                 onOpenSettings = onOpenSettings,
             )
         },
@@ -127,27 +132,40 @@ internal fun HomeScreen(
 }
 
 /**
- * The feed's top bar. It slides off the top edge as a rigid unit while the feed is scrolled away
- * from the top, and slides back in once the feed returns to the very top — driven by scroll
- * *position* ([collapsed]), not the live drag, so it neither tracks the finger nor snaps back when
- * the gesture ends. The bar is laid out at full height and reports only the still-visible slice to
- * the [Scaffold]: it sits flush to the bottom of that shrinking slot, so its top rides up past the
- * clipped edge while the feed rises to fill the freed space. The collapse fraction is read in the
- * layout phase, so animating it relayouts the bar without recomposing its content.
+ * The feed's top bar. It follows the finger as the feed scrolls — sliding off the top edge as a
+ * rigid unit via [scrollBehavior]'s `heightOffset` (Material's enter-always behaviour) — and casts
+ * a shadow whenever the feed is scrolled away from the top. The shadow is keyed to scroll
+ * *position* ([elevated]), not the live gesture, so it stays raised while scrolled instead of
+ * dropping back the moment the finger stops.
+ *
+ * The bar is laid out at full height and reports only the still-visible slice to the [Scaffold]:
+ * it sits flush to the bottom of that shrinking slot, so its top rides up past the clipped edge
+ * (the shadow's own clip) while the feed rises to fill the freed space. `heightOffset` is read in
+ * the layout phase, so sliding the bar relayouts it without recomposing its content.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CollapsingTopBar(
-    collapsed: Boolean,
+    scrollBehavior: TopAppBarScrollBehavior,
+    elevated: Boolean,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val barHeightPx = WindowInsets.statusBars.getTop(density) +
         with(density) { TopBarContentHeight.roundToPx() }
-    val collapseFraction = animateFloatAsState(
-        targetValue = if (collapsed) 1f else 0f,
-        label = "topBarCollapse",
+
+    // This bar is the sole consumer of the scroll state, so it owns the collapse limit.
+    SideEffect {
+        val limit = -barHeightPx.toFloat()
+        if (scrollBehavior.state.heightOffsetLimit != limit) {
+            scrollBehavior.state.heightOffsetLimit = limit
+        }
+    }
+
+    val shadowElevation by animateDpAsState(
+        targetValue = if (elevated) TopBarElevation else 0.dp,
+        label = "topBarElevation",
     )
 
     TopAppBar(
@@ -157,12 +175,12 @@ private fun CollapsingTopBar(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         modifier = modifier
-            .clipToBounds()
+            .shadow(shadowElevation, clip = true)
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(
                     constraints.copy(minHeight = barHeightPx, maxHeight = barHeightPx),
                 )
-                val visibleHeight = (barHeightPx * (1f - collapseFraction.value))
+                val visibleHeight = (barHeightPx + scrollBehavior.state.heightOffset)
                     .roundToInt()
                     .coerceIn(0, barHeightPx)
                 layout(placeable.width, visibleHeight) {
@@ -177,6 +195,9 @@ private fun CollapsingTopBar(
  * the bar's full height is this plus the status-bar inset.
  */
 private val TopBarContentHeight = 64.dp
+
+/** Resting shadow depth of the feed bar once the feed is scrolled off the top. */
+private val TopBarElevation = 4.dp
 
 @Composable
 private fun FeedList(
