@@ -20,8 +20,12 @@
     <!-- Byline: author handle, then relative time. e.g. "@ada · 5m" -->
     <string name="post_byline">%1$s · %2$s</string>
     <string name="post_more_options">More options</string>
+    <string name="post_menu_save">Save post</string>
+    <string name="post_menu_unsave">Remove from saved</string>
     <string name="post_menu_share">Share</string>
-    <string name="post_menu_mute">Mute author</string>
+    <string name="post_menu_copy_link">Copy link</string>
+    <string name="post_menu_hide">Hide this post</string>
+    <string name="post_menu_mute">Mute %1$s</string>
     <string name="post_menu_report">Report</string>
     <string name="post_action_like">Like</string>
     <string name="post_action_unlike">Unlike</string>
