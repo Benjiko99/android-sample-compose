@@ -36,6 +36,13 @@ Single-activity, 100% Jetpack Compose app — there are no Fragments and no XML 
 
 - **Navigation state** is held in `SampleApp()` as `rememberSaveable { mutableStateOf(AppDestinations.HOME) }` (survives configuration changes). There is no Navigation-Compose graph; switching tabs only updates this state.
 
-- **Current state / where to extend:** this is a scaffold. All three destinations currently render the same `Greeting` placeholder inside the inner `Scaffold`. The natural next step is to switch on `currentDestination` inside the content slot to render a distinct screen per destination — that branch point does not exist yet.
+- **`SampleApp` routes by destination.** The `NavigationSuiteScaffold` content is a `when (currentDestination)` that renders a screen per tab. HOME → `HomeScreen` (the feed); FAVORITES and PROFILE → a shared `PlaceholderScreen` until they're built. Each screen owns its own `Scaffold`/`TopAppBar` rather than sharing one, so screens control their own chrome.
+
+- **Feature architecture — the HOME feed sets the pattern to follow.** Code is layered by responsibility:
+  - `data/` — domain models (`Post`, `User`) and `PostRepository`, a reactive single source of truth (`StateFlow<List<Post>>`) with an in-memory implementation seeded from `SampleData`. The interface is the seam a real network/database layer slots into. The data layer has no Android dependencies, so it's plain-JVM testable.
+  - `ui/home/` — MVVM with unidirectional data flow. `HomeViewModel` exposes `StateFlow<HomeUiState>` (a sealed interface: `Loading` / `Feed`) and converts intent (`onToggleLike`, `onToggleBookmark`) into repository mutations via `viewModelScope`. `HomeScreen` is split into a **stateful** binder (collects state, injects the ViewModel) and an **internal stateless** composable (pure inputs + callbacks) so it previews and tests without a ViewModel. `PostCard` and its sub-composables are likewise stateless with hoisted callbacks.
+  - `util/` — pure, unit-tested formatters (`formatRelativeTime`, `formatCount`); reusable UI like `Avatar` lives in `ui/components/`.
+
+- **No DI framework yet.** `HomeViewModel` takes its repository as a constructor parameter (testable seam) and production wiring is supplied by `HomeViewModel.Factory` (a `viewModelFactory { initializer { … } }`). Hilt is the intended next step; when added, it replaces the factory and provides a singleton-scoped repository.
 
 - **Theming** lives in `app/src/main/java/uno/lux/sample/ui/theme/`. `SampleTheme` wraps `MaterialTheme` and prefers **dynamic color** (Material You) on Android 12+, falling back to the hand-defined light/dark schemes built from the palette in `Color.kt`; typography is in `Type.kt`. Wrap any new top-level Compose content (and `@Preview`s) in `SampleTheme` so dynamic color and dark mode work.

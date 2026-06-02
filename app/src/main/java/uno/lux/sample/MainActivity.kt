@@ -4,10 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
@@ -15,11 +12,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import uno.lux.sample.ui.PlaceholderScreen
+import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.theme.SampleTheme
 
 class MainActivity : ComponentActivity() {
@@ -34,6 +30,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * App shell. [NavigationSuiteScaffold] adapts the navigation affordance to the window size
+ * — bottom bar on phones, navigation rail or drawer on larger or unfolded screens — while
+ * the selected [AppDestinations] entry chooses which screen fills the content area.
+ */
 @PreviewScreenSizes
 @Composable
 fun SampleApp() {
@@ -41,26 +42,25 @@ fun SampleApp() {
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            AppDestinations.entries.forEach {
+            AppDestinations.entries.forEach { destination ->
                 item(
                     icon = {
                         Icon(
-                            painterResource(it.icon),
-                            contentDescription = it.label
+                            painterResource(destination.icon),
+                            contentDescription = destination.label,
                         )
                     },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    label = { Text(destination.label) },
+                    selected = destination == currentDestination,
+                    onClick = { currentDestination = destination },
                 )
             }
-        }
+        },
     ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+        when (currentDestination) {
+            AppDestinations.HOME -> HomeScreen()
+            AppDestinations.FAVORITES -> PlaceholderScreen(title = currentDestination.label)
+            AppDestinations.PROFILE -> PlaceholderScreen(title = currentDestination.label)
         }
     }
 }
@@ -72,20 +72,4 @@ enum class AppDestinations(
     HOME("Home", R.drawable.ic_home),
     FAVORITES("Favorites", R.drawable.ic_favorite),
     PROFILE("Profile", R.drawable.ic_account_box),
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SampleTheme {
-        Greeting("Android")
-    }
 }
