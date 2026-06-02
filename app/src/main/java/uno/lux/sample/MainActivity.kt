@@ -26,8 +26,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.data.ThemeMode
+import uno.lux.sample.data.User
 import uno.lux.sample.ui.PlaceholderScreen
 import uno.lux.sample.ui.home.HomeScreen
+import uno.lux.sample.ui.profile.ProfileScreen
 import uno.lux.sample.ui.settings.SettingsScreen
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.SampleTheme
@@ -77,12 +79,23 @@ class MainActivity : ComponentActivity() {
 fun SampleApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var profileUserId by rememberSaveable { mutableStateOf<String?>(null) }
     val openSettings = { showSettings = true }
     val closeSettings = { showSettings = false }
+    val openProfile = { user: User -> profileUserId = user.id }
+    val closeProfile = { profileUserId = null }
+    val activeProfileId = profileUserId
 
     if (showSettings) {
         BackHandler(onBack = closeSettings)
         SettingsScreen(onBack = closeSettings)
+    } else if (activeProfileId != null) {
+        BackHandler(onBack = closeProfile)
+        ProfileScreen(
+            userId = activeProfileId,
+            onOpenSettings = openSettings,
+            onBack = closeProfile,
+        )
     } else {
         val navItemColors = NavigationSuiteDefaults.itemColors(
             navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -112,7 +125,10 @@ fun SampleApp() {
             },
         ) {
             when (currentDestination) {
-                AppDestinations.HOME -> HomeScreen(onOpenSettings = openSettings)
+                AppDestinations.HOME -> HomeScreen(
+                    onOpenSettings = openSettings,
+                    onOpenProfile = openProfile,
+                )
                 AppDestinations.FAVORITES, AppDestinations.PROFILE ->
                     PlaceholderScreen(
                         titleRes = currentDestination.labelRes,

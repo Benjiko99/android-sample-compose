@@ -44,6 +44,25 @@
     <string name="count_thousands">%1$sk</string>
     <string name="count_millions">%1$sm</string>
 
+    <!-- Profile -->
+    <string name="profile_edit">Edit profile</string>
+    <string name="profile_stat_followers">Followers</string>
+    <string name="profile_stat_following">Following</string>
+    <string name="profile_tab_posts">Posts</string>
+    <string name="profile_tab_albums">Albums</string>
+    <string name="profile_tab_videos">Videos</string>
+    <string name="profile_play">Play</string>
+    <!-- Compact view count, e.g. "1.2M views" -->
+    <string name="profile_video_views">%1$s views</string>
+    <string name="profile_empty_posts">No posts yet</string>
+    <string name="profile_empty_albums">No albums yet</string>
+    <string name="profile_empty_videos">No videos yet</string>
+    <string name="profile_not_found">We couldn’t find that profile.</string>
+    <plurals name="profile_album_photos">
+        <item quantity="one">%d photo</item>
+        <item quantity="other">%d photos</item>
+    </plurals>
+
     <!-- Settings -->
     <string name="settings_appearance">Appearance</string>
     <string name="theme_light">Light</string>

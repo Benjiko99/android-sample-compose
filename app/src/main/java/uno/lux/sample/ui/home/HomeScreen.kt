@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.data.User
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -41,6 +42,7 @@ import uno.lux.sample.ui.theme.SampleTheme
 @Composable
 fun HomeScreen(
     onOpenSettings: () -> Unit,
+    onOpenProfile: (User) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
@@ -53,6 +55,7 @@ fun HomeScreen(
         onToggleLike = viewModel::onToggleLike,
         onToggleBookmark = viewModel::onToggleBookmark,
         onOpenSettings = onOpenSettings,
+        onOpenProfile = onOpenProfile,
         modifier = modifier,
     )
 }
@@ -70,6 +73,7 @@ internal fun HomeScreen(
     onToggleLike: (postId: String) -> Unit,
     onToggleBookmark: (postId: String) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenProfile: (User) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -105,6 +109,7 @@ internal fun HomeScreen(
                             endReached = uiState.endReached,
                             onToggleLike = onToggleLike,
                             onToggleBookmark = onToggleBookmark,
+                            onOpenProfile = onOpenProfile,
                         )
                     }
             }
@@ -118,6 +123,7 @@ private fun FeedList(
     endReached: Boolean,
     onToggleLike: (postId: String) -> Unit,
     onToggleBookmark: (postId: String) -> Unit,
+    onOpenProfile: (User) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -126,6 +132,7 @@ private fun FeedList(
                 post = post,
                 onToggleLike = { onToggleLike(post.id) },
                 onToggleBookmark = { onToggleBookmark(post.id) },
+                onOpenProfile = { onOpenProfile(post.author) },
             )
         }
         if (endReached) {
@@ -184,6 +191,7 @@ private fun HomeFeedPreview() {
             onToggleLike = {},
             onToggleBookmark = {},
             onOpenSettings = {},
+            onOpenProfile = {},
         )
     }
 }
@@ -199,6 +207,7 @@ private fun HomeLoadingPreview() {
             onToggleLike = {},
             onToggleBookmark = {},
             onOpenSettings = {},
+            onOpenProfile = {},
         )
     }
 }

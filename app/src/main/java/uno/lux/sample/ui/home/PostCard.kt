@@ -57,6 +57,7 @@ internal fun PostCard(
     post: Post,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
+    onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -64,7 +65,11 @@ internal fun PostCard(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        PostHeader(post = post, onToggleBookmark = onToggleBookmark)
+        PostHeader(
+            post = post,
+            onToggleBookmark = onToggleBookmark,
+            onOpenProfile = onOpenProfile,
+        )
         PostBody(title = post.title, body = post.body)
         PostActions(
             post = post,
@@ -80,6 +85,7 @@ internal fun PostCard(
 private fun PostHeader(
     post: Post,
     onToggleBookmark: () -> Unit,
+    onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -88,28 +94,38 @@ private fun PostHeader(
             .padding(start = 14.dp, top = 14.dp, end = 6.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Avatar(name = post.author.nickname, size = 42.dp)
-        Spacer(Modifier.width(11.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = post.author.nickname,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = stringResource(
-                    R.string.post_byline,
-                    post.author.handle,
-                    relativeTime(post.createdAt).asText(),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = LocalMosaicColors.current.textTertiary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        // Avatar + identity open the author's profile; the overflow stays its own target.
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onOpenProfile)
+                .padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Avatar(name = post.author.nickname, size = 42.dp)
+            Spacer(Modifier.width(11.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = post.author.nickname,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(
+                        R.string.post_byline,
+                        post.author.handle,
+                        relativeTime(post.createdAt).asText(),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalMosaicColors.current.textTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         OverflowMenu(post = post, onToggleBookmark = onToggleBookmark)
     }
@@ -342,6 +358,7 @@ private fun PostCardPreview() {
             post = SamplePosts.first(),
             onToggleLike = {},
             onToggleBookmark = {},
+            onOpenProfile = {},
         )
     }
 }
