@@ -9,11 +9,63 @@ import java.time.Instant
  * believable whenever the app is launched.
  */
 internal val SampleUsers = listOf(
-    User(id = "u1", nickname = "Ada Lovelace", handle = "@countess"),
-    User(id = "u2", nickname = "Grace Hopper", handle = "@amazinggrace"),
-    User(id = "u3", nickname = "Alan Turing", handle = "@enigma"),
-    User(id = "u4", nickname = "Margaret Hamilton", handle = "@mhamilton"),
-    User(id = "u5", nickname = "Linus", handle = "@torvalds"),
+    User(
+        id = "u1",
+        nickname = "Ada Lovelace",
+        handle = "@countess",
+        age = 36,
+        gender = "Woman",
+        location = "London, England",
+        bio = "Mathematician & writer. The Analytical Engine weaves algebra the way the loom " +
+            "weaves flowers. Poetical science, mostly.",
+        followerCount = 128_400,
+        followingCount = 212,
+    ),
+    User(
+        id = "u2",
+        nickname = "Grace Hopper",
+        handle = "@amazinggrace",
+        age = 85,
+        gender = "Woman",
+        location = "Arlington, Virginia",
+        bio = "Rear Admiral. Compiler pioneer. It's easier to ask forgiveness than permission.",
+        followerCount = 342_000,
+        followingCount = 180,
+    ),
+    User(
+        id = "u3",
+        nickname = "Alan Turing",
+        handle = "@enigma",
+        age = 41,
+        gender = "Man",
+        location = "Manchester, England",
+        bio = "Asking the only question that matters: can a machine play the imitation game?",
+        followerCount = 891_000,
+        followingCount = 73,
+    ),
+    User(
+        id = "u4",
+        nickname = "Margaret Hamilton",
+        handle = "@mhamilton",
+        age = 88,
+        gender = "Woman",
+        location = "Cambridge, Massachusetts",
+        bio = "I coined \"software engineering\" so they'd take the code as seriously as the " +
+            "hardware. Apollo guidance, priority scheduling.",
+        followerCount = 154_300,
+        followingCount = 96,
+    ),
+    User(
+        id = "u5",
+        nickname = "Linus",
+        handle = "@torvalds",
+        age = 54,
+        gender = "Man",
+        location = "Portland, Oregon",
+        bio = "Just a hobby, won't be big. Talk is cheap — show me the code.",
+        followerCount = 5_200_000,
+        followingCount = 12,
+    ),
 )
 
 internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
@@ -84,5 +136,60 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         createdAt = now.minus(Duration.ofDays(3)),
         likeCount = 64,
         commentCount = 5,
+    ),
+)
+
+/** Album stand-ins per user id, surfaced on the profile's Albums tab. */
+internal val SampleAlbums: Map<String, List<Album>> = mapOf(
+    "u1" to listOf(
+        Album(id = "a1", title = "Engine Sketches", itemCount = 24),
+        Album(id = "a2", title = "Notation Studies", itemCount = 12),
+        Album(id = "a3", title = "Loom Patterns", itemCount = 18),
+        Album(id = "a4", title = "Letters & Margins", itemCount = 7),
+    ),
+    "u2" to listOf(
+        Album(id = "a5", title = "Mark I Logbook", itemCount = 31),
+        Album(id = "a6", title = "The First Bug", itemCount = 4),
+        Album(id = "a7", title = "Nanoseconds", itemCount = 9),
+    ),
+    "u3" to listOf(
+        Album(id = "a8", title = "Bombe Rotors", itemCount = 16),
+        Album(id = "a9", title = "Morphogenesis", itemCount = 22),
+    ),
+    "u4" to listOf(
+        Album(id = "a10", title = "Rope Memory", itemCount = 14),
+        Album(id = "a11", title = "Launch Room", itemCount = 28),
+        Album(id = "a12", title = "The Listing", itemCount = 6),
+    ),
+    "u5" to listOf(
+        Album(id = "a13", title = "Build Logs", itemCount = 42),
+        Album(id = "a14", title = "Diving Trips", itemCount = 11),
+    ),
+)
+
+/** Video stand-ins per user id, surfaced on the profile's Videos tab. */
+internal val SampleVideos: Map<String, List<Video>> = mapOf(
+    "u1" to listOf(
+        Video(id = "v1", title = "Weaving algebra on the Analytical Engine", durationSeconds = 222, viewCount = 41_200),
+        Video(id = "v2", title = "Note G, explained", durationSeconds = 615, viewCount = 12_800),
+        Video(id = "v3", title = "Poetical science", durationSeconds = 95, viewCount = 8_400),
+    ),
+    "u2" to listOf(
+        Video(id = "v4", title = "How a compiler thinks", durationSeconds = 1325, viewCount = 220_000),
+        Video(id = "v5", title = "A nanosecond in your hand", durationSeconds = 184, viewCount = 1_200_000),
+    ),
+    "u3" to listOf(
+        Video(id = "v6", title = "The imitation game", durationSeconds = 742, viewCount = 980_000),
+        Video(id = "v7", title = "On computable numbers", durationSeconds = 2010, viewCount = 154_000),
+        Video(id = "v8", title = "Breaking Enigma", durationSeconds = 366, viewCount = 512_300),
+    ),
+    "u4" to listOf(
+        Video(id = "v9", title = "The 1202 alarm", durationSeconds = 488, viewCount = 1_540_000),
+        Video(id = "v10", title = "Software, taken seriously", durationSeconds = 277, viewCount = 96_500),
+    ),
+    "u5" to listOf(
+        Video(id = "v11", title = "Talk is cheap", durationSeconds = 132, viewCount = 3_100_000),
+        Video(id = "v12", title = "Git in ten minutes", durationSeconds = 631, viewCount = 2_050_000),
+        Video(id = "v13", title = "Why monolithic", durationSeconds = 1442, viewCount = 740_000),
     ),
 )

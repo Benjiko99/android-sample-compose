@@ -5,6 +5,7 @@ import org.junit.Test
 import uno.lux.sample.util.CompactCount
 import uno.lux.sample.util.RelativeTime
 import uno.lux.sample.util.compactCount
+import uno.lux.sample.util.formatVideoDuration
 import uno.lux.sample.util.initials
 import uno.lux.sample.util.relativeTime
 import java.time.Duration
@@ -85,5 +86,30 @@ class FormattingTest {
     @Test
     fun `initials of a blank name is empty`() {
         assertEquals("", initials("   "))
+    }
+
+    @Test
+    fun `duration under a minute zero-pads the seconds`() {
+        assertEquals("0:05", formatVideoDuration(5))
+    }
+
+    @Test
+    fun `duration shows minutes and zero-padded seconds`() {
+        assertEquals("1:35", formatVideoDuration(95))
+    }
+
+    @Test
+    fun `duration keeps minutes un-padded below the hour`() {
+        assertEquals("10:15", formatVideoDuration(615))
+    }
+
+    @Test
+    fun `duration past an hour pads minutes and seconds`() {
+        assertEquals("1:02:03", formatVideoDuration(3_723))
+    }
+
+    @Test
+    fun `negative duration is coerced to zero`() {
+        assertEquals("0:00", formatVideoDuration(-5))
     }
 }

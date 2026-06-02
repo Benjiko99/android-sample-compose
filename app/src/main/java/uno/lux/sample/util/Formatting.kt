@@ -54,6 +54,24 @@ private fun scaled(count: Int, unit: Int): String {
 }
 
 /**
+ * A media duration as colon-separated digits: 95 -> "1:35", 615 -> "10:15", 3723 -> "1:02:03".
+ * Minutes are zero-padded only past the hour mark; seconds always are. The colon form is
+ * locale-neutral, so unlike the bucketed formatters above this returns display text directly.
+ * Negative inputs are coerced to zero.
+ */
+fun formatVideoDuration(totalSeconds: Int): String {
+    val safe = totalSeconds.coerceAtLeast(0)
+    val hours = safe / 3_600
+    val minutes = safe % 3_600 / 60
+    val seconds = safe % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%d:%02d".format(minutes, seconds)
+    }
+}
+
+/**
  * Up to two uppercase initials drawn from the first words of a display name:
  * "Ada Lovelace" -> "AL", "Linus" -> "L", "  grace  hopper " -> "GH". Blank input -> "".
  */
