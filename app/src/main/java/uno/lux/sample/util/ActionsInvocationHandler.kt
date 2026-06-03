@@ -18,17 +18,14 @@ import java.lang.reflect.Proxy
  *
  * [T] must be an interface, since a [Proxy] can only stand in for interfaces.
  */
-inline fun <reified T> createActionsProxy(): T {
-    return Proxy.newProxyInstance(
+inline fun <reified T> createActionsProxy(): T =
+    Proxy.newProxyInstance(
         T::class.java.classLoader,
         arrayOf<Class<*>>(T::class.java),
         ActionsInvocationHandler(),
     ) as T
-}
 
 /** The [InvocationHandler] behind [createActionsProxy]: every proxied call does nothing. */
 class ActionsInvocationHandler : InvocationHandler {
-    override operator fun invoke(proxy: Any?, method: Method, args: Array<Any?>?): Any {
-        return Unit
-    }
+    override fun invoke(proxy: Any?, method: Method, args: Array<Any?>?): Any = Unit
 }
