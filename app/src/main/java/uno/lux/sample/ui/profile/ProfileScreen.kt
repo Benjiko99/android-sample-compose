@@ -43,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,10 +80,25 @@ import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.home.PostCard
+import uno.lux.sample.ui.home.PostCardActions
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
+import uno.lux.sample.util.ActionsInvocationHandler
 import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.formatVideoDuration
+
+/**
+ * The actions a profile screen can raise — open settings, like / bookmark a post by id. Bundled
+ * into one [Stable] interface so the screen takes a single parameter and a preview can supply a
+ * no-op proxy via [ActionsInvocationHandler.createActionsProxy]. Back navigation stays a separate
+ * parameter, since its nullability also decides whether an up-affordance is shown (see below).
+ */
+@Stable
+interface ProfileActions {
+    fun openSettings()
+    fun toggleLike(postId: String)
+    fun toggleBookmark(postId: String)
+}
 
 /**
  * Stateful entry point: binds a [ProfileViewModel] for [userId] and forwards state and intent
@@ -104,26 +120,29 @@ fun ProfileScreen(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val actions = remember(viewModel, onOpenSettings) {
+        object : ProfileActions {
+            override fun openSettings() = onOpenSettings()
+            override fun toggleLike(postId: String) = viewModel.onToggleLike(postId)
+            override fun toggleBookmark(postId: String) = viewModel.onToggleBookmark(postId)
+        }
+    }
     ProfileScreen(
         uiState = uiState,
+        actions = actions,
         onBack = onBack,
-        onOpenSettings = onOpenSettings,
-        onToggleLike = viewModel::onToggleLike,
-        onToggleBookmark = viewModel::onToggleBookmark,
         modifier = modifier,
     )
 }
 
 /**
- * Stateless profile screen — renders [uiState] and reports interactions through the callbacks.
+ * Stateless profile screen — renders [uiState] and reports interactions through [actions].
  * Holding no ViewModel makes it directly previewable and testable.
  */
 @Composable
 internal fun ProfileScreen(
     uiState: ProfileUiState,
-    onOpenSettings: () -> Unit,
-    onToggleLike: (postId: String) -> Unit,
-    onToggleBookmark: (postId: String) -> Unit,
+    actions: ProfileActions,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
@@ -146,9 +165,7 @@ internal fun ProfileScreen(
             // The loaded state owns its own scroll-reactive TopAppBar over the cover.
             is ProfileUiState.Loaded -> ProfileContent(
                 profile = uiState.profile,
-                onOpenSettings = onOpenSettings,
-                onToggleLike = onToggleLike,
-                onToggleBookmark = onToggleBookmark,
+                actions = actions,
                 onBack = onBack,
             )
         }
@@ -159,9 +176,7 @@ internal fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     profile: Profile,
-    onOpenSettings: () -> Unit,
-    onToggleLike: (postId: String) -> Unit,
-    onToggleBookmark: (postId: String) -> Unit,
+    actions: ProfileActions,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -202,8 +217,7 @@ private fun ProfileContent(
             when (selectedTab) {
                 ProfileTab.POSTS -> postsTab(
                     profile = profile,
-                    onToggleLike = onToggleLike,
-                    onToggleBookmark = onToggleBookmark,
+                    actions = actions,
                 )
 
                 ProfileTab.ALBUMS -> albumsTab(profile.albums)
@@ -216,7 +230,7 @@ private fun ProfileContent(
         ProfileTopBar(
             scrollBehavior = scrollBehavior,
             onBack = onBack,
-            onOpenSettings = onOpenSettings,
+            onOpenSettings = actions::openSettings,
         )
     }
 }
@@ -447,21 +461,22 @@ private fun ProfileTabs(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.postsTab(
     profile: Profile,
-    onToggleLike: (postId: String) -> Unit,
-    onToggleBookmark: (postId: String) -> Unit,
+    actions: ProfileActions,
 ) {
     if (profile.posts.isEmpty()) {
         item(key = "posts-empty") { EmptyTab(stringResource(R.string.profile_empty_posts)) }
         return
     }
     items(profile.posts, key = { it.id }) { post ->
-        PostCard(
-            post = post,
-            onToggleLike = { onToggleLike(post.id) },
-            onToggleBookmark = { onToggleBookmark(post.id) },
-            // Already on this author's profile — tapping the header again is a no-op.
-            onOpenProfile = {},
-        )
+        val cardActions = remember(post, actions) {
+            object : PostCardActions {
+                override fun toggleLike() = actions.toggleLike(post.id)
+                override fun toggleBookmark() = actions.toggleBookmark(post.id)
+                // Already on this author's profile — tapping the header again is a no-op.
+                override fun openProfile() {}
+            }
+        }
+        PostCard(post = post, actions = cardActions)
     }
 }
 
@@ -775,9 +790,7 @@ private fun ProfileScreenPreview() {
     MosaicTheme {
         ProfileScreen(
             uiState = ProfileUiState.Loaded(sampleProfile()),
-            onOpenSettings = {},
-            onToggleLike = {},
-            onToggleBookmark = {},
+            actions = ActionsInvocationHandler.createActionsProxy(),
             onBack = {},
         )
     }

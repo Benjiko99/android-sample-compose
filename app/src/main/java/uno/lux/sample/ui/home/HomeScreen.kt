@@ -18,7 +18,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -36,6 +38,23 @@ import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
+import uno.lux.sample.util.ActionsInvocationHandler
+
+/**
+ * Everything the feed can ask its host to do — refresh, like / bookmark a post by id, open
+ * settings, or open an author's profile. Bundled into one [Stable] interface so the screen takes
+ * a single parameter rather than a callback each, keeps skipping recomposition when only its
+ * data changes, and lets a preview supply a no-op proxy via
+ * [ActionsInvocationHandler.createActionsProxy].
+ */
+@Stable
+interface HomeActions {
+    fun refresh()
+    fun toggleLike(postId: String)
+    fun toggleBookmark(postId: String)
+    fun openSettings()
+    fun openProfile(userId: String)
+}
 
 /**
  * Stateful entry point: binds the [HomeViewModel] and forwards state and intent to the
@@ -50,14 +69,19 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val actions = remember(viewModel, onOpenSettings, onOpenProfile) {
+        object : HomeActions {
+            override fun refresh() = viewModel.refresh()
+            override fun toggleLike(postId: String) = viewModel.onToggleLike(postId)
+            override fun toggleBookmark(postId: String) = viewModel.onToggleBookmark(postId)
+            override fun openSettings() = onOpenSettings()
+            override fun openProfile(userId: String) = onOpenProfile(userId)
+        }
+    }
     HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
-        onRefresh = viewModel::refresh,
-        onToggleLike = viewModel::onToggleLike,
-        onToggleBookmark = viewModel::onToggleBookmark,
-        onOpenSettings = onOpenSettings,
-        onOpenProfile = onOpenProfile,
+        actions = actions,
         modifier = modifier,
     )
 }
@@ -71,11 +95,7 @@ fun HomeScreen(
 internal fun HomeScreen(
     uiState: HomeUiState,
     isRefreshing: Boolean,
-    onRefresh: () -> Unit,
-    onToggleLike: (postId: String) -> Unit,
-    onToggleBookmark: (postId: String) -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
+    actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -88,13 +108,13 @@ internal fun HomeScreen(
         topBar = {
             FeedTopBar(
                 elevated = elevated,
-                onOpenSettings = onOpenSettings,
+                onOpenSettings = actions::openSettings,
             )
         },
     ) { contentPadding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = onRefresh,
+            onRefresh = actions::refresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding),
@@ -109,9 +129,7 @@ internal fun HomeScreen(
                             posts = uiState.posts,
                             endReached = uiState.endReached,
                             listState = listState,
-                            onToggleLike = onToggleLike,
-                            onToggleBookmark = onToggleBookmark,
-                            onOpenProfile = onOpenProfile,
+                            actions = actions,
                         )
                     }
             }
@@ -154,19 +172,21 @@ private fun FeedList(
     posts: List<Post>,
     endReached: Boolean,
     listState: LazyListState,
-    onToggleLike: (postId: String) -> Unit,
-    onToggleBookmark: (postId: String) -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
+    actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         items(posts, key = { it.id }) { post ->
-            PostCard(
-                post = post,
-                onToggleLike = { onToggleLike(post.id) },
-                onToggleBookmark = { onToggleBookmark(post.id) },
-                onOpenProfile = { onOpenProfile(post.author.id) },
-            )
+            // Adapt the feed-level actions to this post: the card's argument-free callbacks map
+            // onto HomeActions with the post's ids. Remembered per post so the card stays skippable.
+            val cardActions = remember(post, actions) {
+                object : PostCardActions {
+                    override fun toggleLike() = actions.toggleLike(post.id)
+                    override fun toggleBookmark() = actions.toggleBookmark(post.id)
+                    override fun openProfile() = actions.openProfile(post.author.id)
+                }
+            }
+            PostCard(post = post, actions = cardActions)
         }
         if (endReached) {
             item(key = "caught_up") {
@@ -220,11 +240,7 @@ private fun HomeFeedPreview() {
         HomeScreen(
             uiState = HomeUiState.Feed(SamplePosts, endReached = true),
             isRefreshing = false,
-            onRefresh = {},
-            onToggleLike = {},
-            onToggleBookmark = {},
-            onOpenSettings = {},
-            onOpenProfile = {},
+            actions = ActionsInvocationHandler.createActionsProxy(),
         )
     }
 }
@@ -236,11 +252,7 @@ private fun HomeLoadingPreview() {
         HomeScreen(
             uiState = HomeUiState.Loading,
             isRefreshing = false,
-            onRefresh = {},
-            onToggleLike = {},
-            onToggleBookmark = {},
-            onOpenSettings = {},
-            onOpenProfile = {},
+            actions = ActionsInvocationHandler.createActionsProxy(),
         )
     }
 }
