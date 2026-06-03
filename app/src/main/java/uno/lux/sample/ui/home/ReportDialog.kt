@@ -31,12 +31,12 @@ import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.data.ReportReason
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.util.ActionsInvocationHandler
+import uno.lux.sample.util.createActionsProxy
 
 /**
  * The outcomes a [ReportPostDialog] reports back, bundled into one [Stable] interface so the
  * dialog takes a single parameter and a preview can hand it a no-op proxy from
- * [ActionsInvocationHandler.createActionsProxy].
+ * [createActionsProxy].
  */
 @Stable
 interface ReportActions {
@@ -138,6 +138,6 @@ private fun ReportReason.labelRes(): Int = when (this) {
 @Composable
 private fun ReportPostDialogPreview() {
     MosaicTheme {
-        ReportPostDialog(actions = ActionsInvocationHandler.createActionsProxy())
+        ReportPostDialog(actions = createActionsProxy())
     }
 }

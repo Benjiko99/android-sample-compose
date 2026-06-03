@@ -38,14 +38,14 @@ import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.util.ActionsInvocationHandler
+import uno.lux.sample.util.createActionsProxy
 
 /**
  * Everything the feed can ask its host to do — refresh, like / bookmark a post by id, open
  * settings, or open an author's profile. Bundled into one [Stable] interface so the screen takes
  * a single parameter rather than a callback each, keeps skipping recomposition when only its
  * data changes, and lets a preview supply a no-op proxy via
- * [ActionsInvocationHandler.createActionsProxy].
+ * [createActionsProxy].
  */
 @Stable
 interface HomeActions {
@@ -240,7 +240,7 @@ private fun HomeFeedPreview() {
         HomeScreen(
             uiState = HomeUiState.Feed(SamplePosts, endReached = true),
             isRefreshing = false,
-            actions = ActionsInvocationHandler.createActionsProxy(),
+            actions = createActionsProxy(),
         )
     }
 }
@@ -252,7 +252,7 @@ private fun HomeLoadingPreview() {
         HomeScreen(
             uiState = HomeUiState.Loading,
             isRefreshing = false,
-            actions = ActionsInvocationHandler.createActionsProxy(),
+            actions = createActionsProxy(),
         )
     }
 }

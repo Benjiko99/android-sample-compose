@@ -83,14 +83,14 @@ import uno.lux.sample.ui.home.PostCard
 import uno.lux.sample.ui.home.PostCardActions
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.util.ActionsInvocationHandler
 import uno.lux.sample.util.compactCount
+import uno.lux.sample.util.createActionsProxy
 import uno.lux.sample.util.formatVideoDuration
 
 /**
  * The actions a profile screen can raise — open settings, like / bookmark a post by id. Bundled
  * into one [Stable] interface so the screen takes a single parameter and a preview can supply a
- * no-op proxy via [ActionsInvocationHandler.createActionsProxy]. Back navigation stays a separate
+ * no-op proxy via [createActionsProxy]. Back navigation stays a separate
  * parameter, since its nullability also decides whether an up-affordance is shown (see below).
  */
 @Stable
@@ -790,7 +790,7 @@ private fun ProfileScreenPreview() {
     MosaicTheme {
         ProfileScreen(
             uiState = ProfileUiState.Loaded(sampleProfile()),
-            actions = ActionsInvocationHandler.createActionsProxy(),
+            actions = createActionsProxy(),
             onBack = {},
         )
     }

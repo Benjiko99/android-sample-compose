@@ -60,15 +60,15 @@ import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.util.ActionsInvocationHandler
 import uno.lux.sample.util.compactCount
+import uno.lux.sample.util.createActionsProxy
 import uno.lux.sample.util.postLink
 import uno.lux.sample.util.relativeTime
 
 /**
  * The actions a [PostCard] can raise, bundled into one [Stable] interface so the card takes a
  * single parameter rather than a lambda per action — and a preview can hand it a no-op proxy
- * from [ActionsInvocationHandler.createActionsProxy]. The card already holds its [Post], so the
+ * from [createActionsProxy]. The card already holds its [Post], so the
  * methods are argument-free; the host maps each onto the right post.
  */
 @Stable
@@ -482,7 +482,7 @@ private fun PostCardPreview() {
     MosaicTheme {
         PostCard(
             post = SamplePosts.first(),
-            actions = ActionsInvocationHandler.createActionsProxy(),
+            actions = createActionsProxy(),
         )
     }
 }

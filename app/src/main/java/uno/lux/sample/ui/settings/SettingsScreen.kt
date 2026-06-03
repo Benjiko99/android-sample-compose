@@ -31,12 +31,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import uno.lux.sample.R
 import uno.lux.sample.data.ThemeMode
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.util.ActionsInvocationHandler
+import uno.lux.sample.util.createActionsProxy
 
 /**
  * The actions the settings screen can raise — change the theme, or navigate back. Bundled into
  * one [Stable] interface so the screen takes a single parameter and a preview can supply a no-op
- * proxy via [ActionsInvocationHandler.createActionsProxy].
+ * proxy via [createActionsProxy].
  */
 @Stable
 interface SettingsActions {
@@ -157,7 +157,7 @@ private fun SettingsScreenPreview() {
     MosaicTheme {
         SettingsScreen(
             themeMode = ThemeMode.SYSTEM,
-            actions = ActionsInvocationHandler.createActionsProxy(),
+            actions = createActionsProxy(),
         )
     }
 }
