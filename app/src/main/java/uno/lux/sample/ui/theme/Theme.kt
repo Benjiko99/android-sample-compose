@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 
 // Indigo accent for selected/active states; `secondaryContainer` is the soft accent used by
 // the nav indicator and segmented buttons. `surfaceTint` is transparent so elevated surfaces
-// keep their exact Mosaic colour while still casting the soft card shadow.
+// keep their exact Mosaic color while still casting the soft card shadow.
 
 private val LightColors = lightColorScheme(
     primary = MosaicAccent,

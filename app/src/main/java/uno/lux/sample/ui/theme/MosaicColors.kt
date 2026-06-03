@@ -5,9 +5,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * Mosaic tokens that don't map cleanly onto a Material colour role:
+ * Mosaic tokens that don't map cleanly onto a Material color role:
  * [textTertiary] is the most muted text (bylines, the end-of-feed marker), and [like] is the
- * coral like-state colour. Provided through [LocalMosaicColors] by `SampleTheme`.
+ * coral like-state color. Provided through [LocalMosaicColors] by `SampleTheme`.
  */
 @Immutable
 data class MosaicColors(

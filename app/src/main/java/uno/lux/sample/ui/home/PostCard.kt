@@ -290,7 +290,7 @@ private fun PostActions(
     modifier: Modifier = Modifier,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    // Crossfade the heart between muted and coral so the colour change tracks the like pop
+    // Crossfade the heart between muted and coral so the color change tracks the like pop
     // (and fades back the same way on unlike) rather than snapping.
     val likeTint by animateColorAsState(
         targetValue = if (post.isLiked) LocalMosaicColors.current.like else muted,

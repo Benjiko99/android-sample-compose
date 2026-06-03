@@ -6,7 +6,7 @@ enum class ThemeMode {
     DARK,
     SYSTEM;
 
-    /** Resolves whether dark colours should apply, given the current [systemInDark] state. */
+    /** Resolves whether dark colors should apply, given the current [systemInDark] state. */
     fun isDark(systemInDark: Boolean): Boolean = when (this) {
         LIGHT -> false
         DARK -> true
