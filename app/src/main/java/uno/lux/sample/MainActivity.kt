@@ -24,7 +24,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +37,7 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.data.ThemeMode
 import uno.lux.sample.ui.PlaceholderScreen
+import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.profile.ProfileScreen
 import uno.lux.sample.ui.settings.SettingsScreen
@@ -134,10 +134,10 @@ fun SampleApp() {
 }
 
 /**
- * The bottom-nav shell: [NavigationSuiteScaffold] adapts the navigation affordance to the
- * window size — bottom bar on phones, navigation rail or drawer on larger or unfolded screens
- * — and the selected [AppDestinations] entry chooses which screen fills the content area.
- * Tabs are peer destinations, so the content cross-fades (fade-through) rather than sliding.
+ * The bottom-nav shell: [DividedNavigationSuiteScaffold] adapts the navigation affordance to the
+ * window size — bottom bar on phones, navigation rail on larger or unfolded screens — and the
+ * selected [AppDestinations] entry chooses which screen fills the content area. Tabs are peer
+ * destinations, so the content cross-fades (fade-through) rather than sliding.
  */
 @Composable
 private fun HomeNavShell(
@@ -155,7 +155,7 @@ private fun HomeNavShell(
             unselectedTextColor = LocalMosaicColors.current.textTertiary,
         ),
     )
-    NavigationSuiteScaffold(
+    DividedNavigationSuiteScaffold(
         navigationSuiteItems = {
             AppDestinations.entries.forEach { destination ->
                 item(
