@@ -26,6 +26,25 @@
     <string name="post_menu_hide">Hide this post</string>
     <string name="post_menu_mute">Mute %1$s</string>
     <string name="post_menu_report">Report</string>
+    <!-- Share / copy link -->
+    <string name="post_share_chooser">Share post</string>
+    <string name="post_link_clip_label">Post link</string>
+    <string name="post_link_copied">Link copied</string>
+    <!-- Shown for sheet actions that aren't wired up yet -->
+    <string name="action_not_implemented">Action not implemented</string>
+    <!-- Report -->
+    <string name="report_dialog_title">Report post</string>
+    <string name="report_dialog_prompt">Why are you reporting this post?</string>
+    <string name="report_reason_spam">Spam</string>
+    <string name="report_reason_harassment">Harassment or bullying</string>
+    <string name="report_reason_hate_speech">Hate speech</string>
+    <string name="report_reason_misinformation">False information</string>
+    <string name="report_reason_violence">Violence or dangerous content</string>
+    <string name="report_reason_other">Something else</string>
+    <string name="report_details_hint">Add details (optional)</string>
+    <string name="report_send">Send</string>
+    <string name="report_cancel">Cancel</string>
+    <string name="report_sent">Report was sent, thank you</string>
     <string name="post_action_like">Like</string>
     <string name="post_action_unlike">Unlike</string>
     <string name="post_action_comment">Comment</string>

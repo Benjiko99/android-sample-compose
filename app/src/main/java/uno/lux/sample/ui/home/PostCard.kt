@@ -1,5 +1,10 @@
 package uno.lux.sample.ui.home
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Build
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -37,11 +42,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ShareCompat
+import androidx.core.content.getSystemService
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
@@ -51,6 +59,7 @@ import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.SampleTheme
 import uno.lux.sample.util.compactCount
+import uno.lux.sample.util.postLink
 import uno.lux.sample.util.relativeTime
 
 /**
@@ -143,7 +152,9 @@ private fun OverflowMenu(
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     var showSheet by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
     IconButton(onClick = { showSheet = true }, modifier = modifier) {
         Icon(
             painter = painterResource(R.drawable.ic_more_vert),
@@ -157,6 +168,17 @@ private fun OverflowMenu(
             post = post,
             onDismiss = { showSheet = false },
             onToggleBookmark = onToggleBookmark,
+            onReport = { showReportDialog = true },
+        )
+    }
+    if (showReportDialog) {
+        ReportPostDialog(
+            onDismiss = { showReportDialog = false },
+            // Reporting isn't wired to a backend yet — acknowledge and discard the report.
+            onSubmit = { _, _ ->
+                context.toast(R.string.report_sent)
+                showReportDialog = false
+            },
         )
     }
 }
@@ -167,9 +189,11 @@ private fun PostOverflowSheet(
     post: Post,
     onDismiss: () -> Unit,
     onToggleBookmark: () -> Unit,
+    onReport: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val dismiss: () -> Unit = {
         scope.launch { sheetState.hide() }.invokeOnCompletion {
             if (!sheetState.isVisible) onDismiss()
@@ -212,21 +236,69 @@ private fun PostOverflowSheet(
             ),
             onClick = { onToggleBookmark(); dismiss() },
         )
-        SheetRow(R.drawable.ic_share, stringResource(R.string.post_menu_share), onClick = dismiss)
-        SheetRow(R.drawable.ic_link, stringResource(R.string.post_menu_copy_link), onClick = dismiss)
-        SheetRow(R.drawable.ic_visibility_off, stringResource(R.string.post_menu_hide), onClick = dismiss)
+        SheetRow(
+            iconRes = R.drawable.ic_share,
+            label = stringResource(R.string.post_menu_share),
+            onClick = { sharePostLink(context, post); dismiss() },
+        )
+        SheetRow(
+            iconRes = R.drawable.ic_link,
+            label = stringResource(R.string.post_menu_copy_link),
+            onClick = { copyPostLink(context, post); dismiss() },
+        )
+        SheetRow(
+            iconRes = R.drawable.ic_visibility_off,
+            label = stringResource(R.string.post_menu_hide),
+            onClick = { context.toast(R.string.action_not_implemented); dismiss() },
+        )
         SheetRow(
             iconRes = R.drawable.ic_volume_off,
             label = stringResource(R.string.post_menu_mute, post.author.handle),
-            onClick = dismiss,
+            onClick = { context.toast(R.string.action_not_implemented); dismiss() },
         )
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(horizontal = 22.dp, vertical = 6.dp),
         )
-        SheetRow(R.drawable.ic_flag, stringResource(R.string.post_menu_report), danger = true, onClick = dismiss)
+        SheetRow(
+            iconRes = R.drawable.ic_flag,
+            label = stringResource(R.string.post_menu_report),
+            danger = true,
+            onClick = { onReport(); dismiss() },
+        )
         Spacer(Modifier.height(16.dp))
     }
+}
+
+/**
+ * Hands the post's link to the system share sheet. The link is a placeholder until the app has
+ * real deep links; the post title rides along as the subject for targets that use one (e.g. email).
+ */
+private fun sharePostLink(context: Context, post: Post) {
+    ShareCompat.IntentBuilder(context)
+        .setType("text/plain")
+        .setSubject(post.title)
+        .setText(postLink(post.id))
+        .setChooserTitle(R.string.post_share_chooser)
+        .startChooser()
+}
+
+/**
+ * Copies the post's link to the clipboard. From Android 13 the system shows its own copy
+ * confirmation, so the toast fallback is only needed on older versions.
+ */
+private fun copyPostLink(context: Context, post: Post) {
+    val clipboard = context.getSystemService<ClipboardManager>()!!
+    val label = context.getString(R.string.post_link_clip_label)
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, postLink(post.id)))
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        context.toast(R.string.post_link_copied)
+    }
+}
+
+/** Shows a short toast for [messageRes] — the shared form behind the sheet's placeholder actions. */
+private fun Context.toast(@StringRes messageRes: Int) {
+    Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
 }
 
 @Composable
