@@ -1,45 +1,39 @@
 package uno.lux.sample.ui.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import uno.lux.sample.R
 import uno.lux.sample.ui.theme.Bricolage
+import uno.lux.sample.ui.theme.MosaicTheme
 
-/** The Mosaic brand lockup: a rotated accent diamond and the wordmark in Bricolage Grotesque. */
 @Composable
 fun MosaicWordmark(modifier: Modifier = Modifier) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(
-            modifier = Modifier
-                .size(28.dp)
-                .rotate(45f)
-                .clip(RoundedCornerShape(9.dp))
-                .background(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.size(28.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                Modifier
-                    .size(9.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(Color.White),
+            Image(
+                painter = painterResource(R.drawable.ic_app),
+                contentDescription = null,
+                modifier = Modifier.requiredSize(54.dp),
             )
         }
         Spacer(Modifier.width(10.dp))
@@ -53,5 +47,13 @@ fun MosaicWordmark(modifier: Modifier = Modifier) {
             ),
             color = MaterialTheme.colorScheme.onSurface,
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun MosaicWordmarkPreview() {
+    MosaicTheme {
+        MosaicWordmark()
     }
 }
