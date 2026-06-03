@@ -17,7 +17,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,35 +30,24 @@ import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.data.ReportReason
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.util.createActionsProxy
-
-/**
- * The outcomes a [ReportPostDialog] reports back, bundled into one [Stable] interface so the
- * dialog takes a single parameter and a preview can hand it a no-op proxy from
- * [createActionsProxy].
- */
-@Stable
-interface ReportActions {
-    fun dismiss()
-    fun submit(reason: ReportReason, details: String)
-}
 
 /**
  * The report-a-post dialog: a single-choice list of [ReportReason]s plus an optional free-text
- * field. The chosen reason and trimmed details are handed to [ReportActions.submit]; Send stays
- * disabled until a reason is picked. The transient selection is owned here, so the host deals
- * only with the submit / dismiss outcomes.
+ * field. The chosen reason and trimmed details are handed to [onSubmit]; Send stays disabled
+ * until a reason is picked. The transient selection is owned here, so the host deals only with
+ * the submit / dismiss outcomes.
  */
 @Composable
 internal fun ReportPostDialog(
-    actions: ReportActions,
+    onDismiss: () -> Unit,
+    onSubmit: (reason: ReportReason, details: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedReason by remember { mutableStateOf<ReportReason?>(null) }
     var details by remember { mutableStateOf("") }
 
     AlertDialog(
-        onDismissRequest = actions::dismiss,
+        onDismissRequest = onDismiss,
         modifier = modifier,
         title = { Text(stringResource(R.string.report_dialog_title)) },
         text = {
@@ -89,14 +77,14 @@ internal fun ReportPostDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { selectedReason?.let { actions.submit(it, details.trim()) } },
+                onClick = { selectedReason?.let { onSubmit(it, details.trim()) } },
                 enabled = selectedReason != null,
             ) {
                 Text(stringResource(R.string.report_send))
             }
         },
         dismissButton = {
-            TextButton(onClick = actions::dismiss) {
+            TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.report_cancel))
             }
         },
@@ -138,6 +126,6 @@ private fun ReportReason.labelRes(): Int = when (this) {
 @Composable
 private fun ReportPostDialogPreview() {
     MosaicTheme {
-        ReportPostDialog(actions = createActionsProxy())
+        ReportPostDialog(onDismiss = {}, onSubmit = { _, _ -> })
     }
 }

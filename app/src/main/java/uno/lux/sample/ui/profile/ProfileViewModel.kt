@@ -21,7 +21,7 @@ import uno.lux.sample.util.stateInWhileSubscribed
 class ProfileViewModel(
     private val repository: ProfileRepository,
     userId: String,
-) : ViewModel() {
+) : ViewModel(), ProfileActions {
 
     val uiState: StateFlow<ProfileUiState> = repository.profile(userId)
         .map { profile ->
@@ -29,11 +29,11 @@ class ProfileViewModel(
         }
         .stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
 
-    fun onToggleLike(postId: String) {
+    override fun onToggleLike(postId: String) {
         viewModelScope.launch { repository.toggleLike(postId) }
     }
 
-    fun onToggleBookmark(postId: String) {
+    override fun onToggleBookmark(postId: String) {
         viewModelScope.launch { repository.toggleBookmark(postId) }
     }
 

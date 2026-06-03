@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,39 +53,26 @@ import androidx.core.content.getSystemService
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
-import uno.lux.sample.data.ReportReason
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.compactCount
-import uno.lux.sample.util.createActionsProxy
 import uno.lux.sample.util.postLink
 import uno.lux.sample.util.relativeTime
 
 /**
- * The actions a [PostCard] can raise, bundled into one [Stable] interface so the card takes a
- * single parameter rather than a lambda per action — and a preview can hand it a no-op proxy
- * from [createActionsProxy]. The card already holds its [Post], so the
- * methods are argument-free; the host maps each onto the right post.
- */
-@Stable
-interface PostCardActions {
-    fun toggleLike()
-    fun toggleBookmark()
-    fun openProfile()
-}
-
-/**
  * A single feed post (Mosaic design): an edge-to-edge surface item separated by a bottom
  * divider — author header with overflow menu, the title (Bricolage) and body (Manrope), and
- * the like / comment / bookmark actions. Stateless; every interaction is hoisted to [actions].
+ * the like / comment / bookmark actions. Stateless; every interaction is hoisted to the caller.
  */
 @Composable
 internal fun PostCard(
     post: Post,
-    actions: PostCardActions,
+    onToggleLike: () -> Unit,
+    onToggleBookmark: () -> Unit,
+    onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -94,9 +80,17 @@ internal fun PostCard(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        PostHeader(post = post, actions = actions)
+        PostHeader(
+            post = post,
+            onToggleBookmark = onToggleBookmark,
+            onOpenProfile = onOpenProfile,
+        )
         PostBody(title = post.title, body = post.body)
-        PostActions(post = post, actions = actions)
+        PostActions(
+            post = post,
+            onToggleLike = onToggleLike,
+            onToggleBookmark = onToggleBookmark,
+        )
         Spacer(Modifier.height(4.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
@@ -105,7 +99,8 @@ internal fun PostCard(
 @Composable
 private fun PostHeader(
     post: Post,
-    actions: PostCardActions,
+    onToggleBookmark: () -> Unit,
+    onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -119,7 +114,7 @@ private fun PostHeader(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = actions::openProfile)
+                .clickable(onClick = onOpenProfile)
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -147,7 +142,7 @@ private fun PostHeader(
                 )
             }
         }
-        OverflowMenu(post = post, onToggleBookmark = actions::toggleBookmark)
+        OverflowMenu(post = post, onToggleBookmark = onToggleBookmark)
     }
 }
 
@@ -178,16 +173,11 @@ private fun OverflowMenu(
     }
     if (showReportDialog) {
         ReportPostDialog(
-            actions = object : ReportActions {
-                override fun dismiss() {
-                    showReportDialog = false
-                }
-
-                // Reporting isn't wired to a backend yet — acknowledge and discard the report.
-                override fun submit(reason: ReportReason, details: String) {
-                    context.toast(R.string.report_sent)
-                    showReportDialog = false
-                }
+            onDismiss = { showReportDialog = false },
+            // Reporting isn't wired to a backend yet — acknowledge and discard the report.
+            onSubmit = { _, _ ->
+                context.toast(R.string.report_sent)
+                showReportDialog = false
             },
         )
     }
@@ -367,7 +357,8 @@ private fun PostBody(
 @Composable
 private fun PostActions(
     post: Post,
-    actions: PostCardActions,
+    onToggleLike: () -> Unit,
+    onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
@@ -388,7 +379,7 @@ private fun PostActions(
             contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
             label = compactCount(post.likeCount).asText(),
             tint = likeTint,
-            onClick = actions::toggleLike,
+            onClick = onToggleLike,
             iconModifier = Modifier.likePop(post.isLiked),
         )
         Spacer(Modifier.width(2.dp))
@@ -405,7 +396,7 @@ private fun PostActions(
             contentDescriptionRes = if (post.isBookmarked) R.string.post_action_unbookmark else R.string.post_action_bookmark,
             label = null,
             tint = if (post.isBookmarked) MaterialTheme.colorScheme.primary else muted,
-            onClick = actions::toggleBookmark,
+            onClick = onToggleBookmark,
         )
     }
 }
@@ -482,7 +473,9 @@ private fun PostCardPreview() {
     MosaicTheme {
         PostCard(
             post = SamplePosts.first(),
-            actions = createActionsProxy(),
+            onToggleLike = {},
+            onToggleBookmark = {},
+            onOpenProfile = {},
         )
     }
 }

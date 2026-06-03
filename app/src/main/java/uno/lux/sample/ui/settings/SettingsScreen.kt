@@ -20,7 +20,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -34,14 +33,14 @@ import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
 
 /**
- * The actions the settings screen can raise — change the theme, or navigate back. Bundled into
- * one [Stable] interface so the screen takes a single parameter and a preview can supply a no-op
- * proxy via [createActionsProxy].
+ * The settings screen's one ViewModel-backed intent, as a [Stable] seam the stateless
+ * [SettingsScreen] depends on. [SettingsViewModel] implements it, so the binder passes the
+ * ViewModel directly and a preview passes a no-op [createActionsProxy]. Back navigation is the
+ * host's concern, so it stays a separate lambda.
  */
 @Stable
 interface SettingsActions {
-    fun changeTheme(mode: ThemeMode)
-    fun navigateBack()
+    fun setThemeMode(mode: ThemeMode)
 }
 
 /**
@@ -55,15 +54,10 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-    val actions = remember(viewModel, onBack) {
-        object : SettingsActions {
-            override fun changeTheme(mode: ThemeMode) = viewModel.setThemeMode(mode)
-            override fun navigateBack() = onBack()
-        }
-    }
     SettingsScreen(
         themeMode = themeMode,
-        actions = actions,
+        actions = viewModel,
+        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -73,6 +67,7 @@ fun SettingsScreen(
 internal fun SettingsScreen(
     themeMode: ThemeMode,
     actions: SettingsActions,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -81,7 +76,7 @@ internal fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_settings)) },
                 navigationIcon = {
-                    IconButton(onClick = actions::navigateBack) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.navigate_back),
@@ -101,7 +96,7 @@ internal fun SettingsScreen(
             SettingsSection(title = stringResource(R.string.settings_appearance)) {
                 ThemeModeSelector(
                     selected = themeMode,
-                    onSelected = actions::changeTheme,
+                    onSelected = actions::setThemeMode,
                 )
             }
         }
@@ -158,6 +153,7 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             themeMode = ThemeMode.SYSTEM,
             actions = createActionsProxy(),
+            onBack = {},
         )
     }
 }

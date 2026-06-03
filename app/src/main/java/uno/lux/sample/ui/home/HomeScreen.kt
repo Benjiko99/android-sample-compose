@@ -20,7 +20,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -41,19 +40,16 @@ import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
 
 /**
- * Everything the feed can ask its host to do — refresh, like / bookmark a post by id, open
- * settings, or open an author's profile. Bundled into one [Stable] interface so the screen takes
- * a single parameter rather than a callback each, keeps skipping recomposition when only its
- * data changes, and lets a preview supply a no-op proxy via
- * [createActionsProxy].
+ * The feed's ViewModel-backed intents, as one [Stable] seam the stateless [HomeScreen] depends
+ * on. [HomeViewModel] implements it, so the binder passes the ViewModel directly and a preview
+ * passes a no-op [createActionsProxy]. Navigation (opening settings or a profile) is the host's
+ * concern, so it stays a separate lambda rather than living here.
  */
 @Stable
 interface HomeActions {
     fun refresh()
-    fun toggleLike(postId: String)
-    fun toggleBookmark(postId: String)
-    fun openSettings()
-    fun openProfile(userId: String)
+    fun onToggleLike(postId: String)
+    fun onToggleBookmark(postId: String)
 }
 
 /**
@@ -69,19 +65,12 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val actions = remember(viewModel, onOpenSettings, onOpenProfile) {
-        object : HomeActions {
-            override fun refresh() = viewModel.refresh()
-            override fun toggleLike(postId: String) = viewModel.onToggleLike(postId)
-            override fun toggleBookmark(postId: String) = viewModel.onToggleBookmark(postId)
-            override fun openSettings() = onOpenSettings()
-            override fun openProfile(userId: String) = onOpenProfile(userId)
-        }
-    }
     HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
-        actions = actions,
+        actions = viewModel,
+        onOpenSettings = onOpenSettings,
+        onOpenProfile = onOpenProfile,
         modifier = modifier,
     )
 }
@@ -96,6 +85,8 @@ internal fun HomeScreen(
     uiState: HomeUiState,
     isRefreshing: Boolean,
     actions: HomeActions,
+    onOpenSettings: () -> Unit,
+    onOpenProfile: (userId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -108,7 +99,7 @@ internal fun HomeScreen(
         topBar = {
             FeedTopBar(
                 elevated = elevated,
-                onOpenSettings = actions::openSettings,
+                onOpenSettings = onOpenSettings,
             )
         },
     ) { contentPadding ->
@@ -130,6 +121,7 @@ internal fun HomeScreen(
                             endReached = uiState.endReached,
                             listState = listState,
                             actions = actions,
+                            onOpenProfile = onOpenProfile,
                         )
                     }
             }
@@ -173,20 +165,17 @@ private fun FeedList(
     endReached: Boolean,
     listState: LazyListState,
     actions: HomeActions,
+    onOpenProfile: (userId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         items(posts, key = { it.id }) { post ->
-            // Adapt the feed-level actions to this post: the card's argument-free callbacks map
-            // onto HomeActions with the post's ids. Remembered per post so the card stays skippable.
-            val cardActions = remember(post, actions) {
-                object : PostCardActions {
-                    override fun toggleLike() = actions.toggleLike(post.id)
-                    override fun toggleBookmark() = actions.toggleBookmark(post.id)
-                    override fun openProfile() = actions.openProfile(post.author.id)
-                }
-            }
-            PostCard(post = post, actions = cardActions)
+            PostCard(
+                post = post,
+                onToggleLike = { actions.onToggleLike(post.id) },
+                onToggleBookmark = { actions.onToggleBookmark(post.id) },
+                onOpenProfile = { onOpenProfile(post.author.id) },
+            )
         }
         if (endReached) {
             item(key = "caught_up") {
@@ -241,6 +230,8 @@ private fun HomeFeedPreview() {
             uiState = HomeUiState.Feed(SamplePosts, endReached = true),
             isRefreshing = false,
             actions = createActionsProxy(),
+            onOpenSettings = {},
+            onOpenProfile = {},
         )
     }
 }
@@ -253,6 +244,8 @@ private fun HomeLoadingPreview() {
             uiState = HomeUiState.Loading,
             isRefreshing = false,
             actions = createActionsProxy(),
+            onOpenSettings = {},
+            onOpenProfile = {},
         )
     }
 }

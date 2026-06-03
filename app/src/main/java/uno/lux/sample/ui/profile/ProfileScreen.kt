@@ -80,7 +80,6 @@ import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.home.PostCard
-import uno.lux.sample.ui.home.PostCardActions
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.compactCount
@@ -88,16 +87,15 @@ import uno.lux.sample.util.createActionsProxy
 import uno.lux.sample.util.formatVideoDuration
 
 /**
- * The actions a profile screen can raise — open settings, like / bookmark a post by id. Bundled
- * into one [Stable] interface so the screen takes a single parameter and a preview can supply a
- * no-op proxy via [createActionsProxy]. Back navigation stays a separate
- * parameter, since its nullability also decides whether an up-affordance is shown (see below).
+ * The profile's ViewModel-backed intents — liking / bookmarking the viewed user's posts — as one
+ * [Stable] seam the stateless [ProfileScreen] depends on. [ProfileViewModel] implements it, so the
+ * binder passes the ViewModel directly and a preview passes a no-op [createActionsProxy].
+ * Navigation (settings, back) is the host's concern, so it stays a separate lambda.
  */
 @Stable
 interface ProfileActions {
-    fun openSettings()
-    fun toggleLike(postId: String)
-    fun toggleBookmark(postId: String)
+    fun onToggleLike(postId: String)
+    fun onToggleBookmark(postId: String)
 }
 
 /**
@@ -120,16 +118,10 @@ fun ProfileScreen(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val actions = remember(viewModel, onOpenSettings) {
-        object : ProfileActions {
-            override fun openSettings() = onOpenSettings()
-            override fun toggleLike(postId: String) = viewModel.onToggleLike(postId)
-            override fun toggleBookmark(postId: String) = viewModel.onToggleBookmark(postId)
-        }
-    }
     ProfileScreen(
         uiState = uiState,
-        actions = actions,
+        actions = viewModel,
+        onOpenSettings = onOpenSettings,
         onBack = onBack,
         modifier = modifier,
     )
@@ -143,6 +135,7 @@ fun ProfileScreen(
 internal fun ProfileScreen(
     uiState: ProfileUiState,
     actions: ProfileActions,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
@@ -166,6 +159,7 @@ internal fun ProfileScreen(
             is ProfileUiState.Loaded -> ProfileContent(
                 profile = uiState.profile,
                 actions = actions,
+                onOpenSettings = onOpenSettings,
                 onBack = onBack,
             )
         }
@@ -177,6 +171,7 @@ internal fun ProfileScreen(
 private fun ProfileContent(
     profile: Profile,
     actions: ProfileActions,
+    onOpenSettings: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -230,7 +225,7 @@ private fun ProfileContent(
         ProfileTopBar(
             scrollBehavior = scrollBehavior,
             onBack = onBack,
-            onOpenSettings = actions::openSettings,
+            onOpenSettings = onOpenSettings,
         )
     }
 }
@@ -468,15 +463,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.postsTab(
         return
     }
     items(profile.posts, key = { it.id }) { post ->
-        val cardActions = remember(post, actions) {
-            object : PostCardActions {
-                override fun toggleLike() = actions.toggleLike(post.id)
-                override fun toggleBookmark() = actions.toggleBookmark(post.id)
-                // Already on this author's profile — tapping the header again is a no-op.
-                override fun openProfile() {}
-            }
-        }
-        PostCard(post = post, actions = cardActions)
+        PostCard(
+            post = post,
+            onToggleLike = { actions.onToggleLike(post.id) },
+            onToggleBookmark = { actions.onToggleBookmark(post.id) },
+            // Already on this author's profile — tapping the header again is a no-op.
+            onOpenProfile = {},
+        )
     }
 }
 
@@ -791,6 +784,7 @@ private fun ProfileScreenPreview() {
         ProfileScreen(
             uiState = ProfileUiState.Loaded(sampleProfile()),
             actions = createActionsProxy(),
+            onOpenSettings = {},
             onBack = {},
         )
     }

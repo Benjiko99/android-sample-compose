@@ -20,12 +20,12 @@ import uno.lux.sample.util.stateInWhileSubscribed
  */
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
-) : ViewModel() {
+) : ViewModel(), SettingsActions {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
         .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
 
-    fun setThemeMode(mode: ThemeMode) {
+    override fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     }
 

@@ -22,7 +22,7 @@ import uno.lux.sample.util.stateInWhileSubscribed
  */
 class HomeViewModel(
     private val repository: PostRepository,
-) : ViewModel() {
+) : ViewModel(), HomeActions {
 
     val uiState: StateFlow<HomeUiState> = repository.posts
         .map { posts ->
@@ -36,7 +36,7 @@ class HomeViewModel(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     /** Re-fetches the feed, surfacing progress through [isRefreshing] for pull-to-refresh. */
-    fun refresh() {
+    override fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
@@ -47,11 +47,11 @@ class HomeViewModel(
         }
     }
 
-    fun onToggleLike(postId: String) {
+    override fun onToggleLike(postId: String) {
         viewModelScope.launch { repository.toggleLike(postId) }
     }
 
-    fun onToggleBookmark(postId: String) {
+    override fun onToggleBookmark(postId: String) {
         viewModelScope.launch { repository.toggleBookmark(postId) }
     }
 
