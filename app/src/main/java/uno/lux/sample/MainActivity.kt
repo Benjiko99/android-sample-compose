@@ -42,7 +42,7 @@ import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.profile.ProfileScreen
 import uno.lux.sample.ui.settings.SettingsScreen
 import uno.lux.sample.ui.theme.LocalMosaicColors
-import uno.lux.sample.ui.theme.SampleTheme
+import uno.lux.sample.ui.theme.MosaicTheme
 
 // Scrims drawn behind the gesture navigation bar, per the AndroidX edge-to-edge guidance.
 private val LightScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                 onDispose {}
             }
 
-            SampleTheme(darkTheme = darkTheme) {
+            MosaicTheme(darkTheme = darkTheme) {
                 SampleApp()
             }
         }

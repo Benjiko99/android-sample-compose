@@ -85,7 +85,7 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun SampleTheme(
+fun MosaicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {

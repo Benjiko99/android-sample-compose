@@ -28,7 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import uno.lux.sample.R
 import uno.lux.sample.data.ThemeMode
-import uno.lux.sample.ui.theme.SampleTheme
+import uno.lux.sample.ui.theme.MosaicTheme
 
 /**
  * Stateful entry point: binds the [SettingsViewModel] and forwards state and intent to the
@@ -136,7 +136,7 @@ private fun ThemeMode.labelRes(): Int = when (this) {
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenPreview() {
-    SampleTheme {
+    MosaicTheme {
         SettingsScreen(
             themeMode = ThemeMode.SYSTEM,
             onThemeModeChange = {},

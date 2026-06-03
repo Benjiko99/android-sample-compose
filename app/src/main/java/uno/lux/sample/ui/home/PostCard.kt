@@ -57,7 +57,7 @@ import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
-import uno.lux.sample.ui.theme.SampleTheme
+import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.postLink
 import uno.lux.sample.util.relativeTime
@@ -470,7 +470,7 @@ private fun Modifier.likePop(active: Boolean): Modifier {
 @Preview(showBackground = true)
 @Composable
 private fun PostCardPreview() {
-    SampleTheme {
+    MosaicTheme {
         PostCard(
             post = SamplePosts.first(),
             onToggleLike = {},

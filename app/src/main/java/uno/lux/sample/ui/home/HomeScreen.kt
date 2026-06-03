@@ -35,7 +35,7 @@ import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
-import uno.lux.sample.ui.theme.SampleTheme
+import uno.lux.sample.ui.theme.MosaicTheme
 
 /**
  * Stateful entry point: binds the [HomeViewModel] and forwards state and intent to the
@@ -216,7 +216,7 @@ private fun CaughtUpFooter(modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 private fun HomeFeedPreview() {
-    SampleTheme {
+    MosaicTheme {
         HomeScreen(
             uiState = HomeUiState.Feed(SamplePosts, endReached = true),
             isRefreshing = false,
@@ -232,7 +232,7 @@ private fun HomeFeedPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun HomeLoadingPreview() {
-    SampleTheme {
+    MosaicTheme {
         HomeScreen(
             uiState = HomeUiState.Loading,
             isRefreshing = false,

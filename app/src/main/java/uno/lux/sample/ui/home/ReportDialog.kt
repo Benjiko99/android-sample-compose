@@ -29,7 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.data.ReportReason
-import uno.lux.sample.ui.theme.SampleTheme
+import uno.lux.sample.ui.theme.MosaicTheme
 
 /**
  * The report-a-post dialog: a single-choice list of [ReportReason]s plus an optional free-text
@@ -125,7 +125,7 @@ private fun ReportReason.labelRes(): Int = when (this) {
 @Preview(showBackground = true)
 @Composable
 private fun ReportPostDialogPreview() {
-    SampleTheme {
+    MosaicTheme {
         ReportPostDialog(onDismiss = {}, onSubmit = { _, _ -> })
     }
 }
