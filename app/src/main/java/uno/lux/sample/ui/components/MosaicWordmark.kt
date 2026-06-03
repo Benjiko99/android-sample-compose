@@ -44,7 +44,7 @@ fun MosaicWordmark(modifier: Modifier = Modifier) {
         }
         Spacer(Modifier.width(10.dp))
         Text(
-            text = stringResource(R.string.brand_name),
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.titleLarge.copy(
                 fontFamily = Bricolage,
                 fontWeight = FontWeight.Bold,

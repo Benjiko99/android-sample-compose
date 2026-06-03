@@ -8,14 +8,14 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import uno.lux.sample.SampleApplication
+import uno.lux.sample.MosaicApp
 import uno.lux.sample.data.SettingsRepository
 import uno.lux.sample.data.ThemeMode
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Exposes the current [themeMode] and applies the user's selection through the
- * [SettingsRepository]. [Factory] pulls the app-scoped repository off the [SampleApplication]
+ * [SettingsRepository]. [Factory] pulls the app-scoped repository off the [MosaicApp]
  * until a DI framework provides it.
  */
 class SettingsViewModel(
@@ -32,7 +32,7 @@ class SettingsViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = this[APPLICATION_KEY] as SampleApplication
+                val application = this[APPLICATION_KEY] as MosaicApp
                 SettingsViewModel(application.settingsRepository)
             }
         }

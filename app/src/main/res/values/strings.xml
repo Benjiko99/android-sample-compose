@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">Sample</string>
-    <string name="brand_name">Mosaic</string>
+    <string name="app_name">Mosaic</string>
 
     <!-- Navigation destinations -->
     <string name="nav_home">Home</string>

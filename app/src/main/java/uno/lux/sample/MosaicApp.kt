@@ -9,7 +9,7 @@ import uno.lux.sample.data.SharedPreferencesSettingsRepository
  * (which writes it) and the app root (which applies it), so its repository lives here rather
  * than being created per-ViewModel. A DI framework (Hilt) would eventually replace this.
  */
-class SampleApplication : Application() {
+class MosaicApp : Application() {
     val settingsRepository: SettingsRepository by lazy {
         SharedPreferencesSettingsRepository(getSharedPreferences("settings", MODE_PRIVATE))
     }

@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val settingsRepository = (application as SampleApplication).settingsRepository
+            val settingsRepository = (application as MosaicApp).settingsRepository
             val themeMode by settingsRepository.themeMode
                 .collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
             val darkTheme = themeMode.isDark(isSystemInDarkTheme())
