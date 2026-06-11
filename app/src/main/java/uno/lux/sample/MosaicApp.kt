@@ -1,16 +1,12 @@
 package uno.lux.sample
 
 import android.app.Application
-import uno.lux.sample.data.SettingsRepository
-import uno.lux.sample.data.SharedPreferencesSettingsRepository
+import dagger.hilt.android.HiltAndroidApp
 
 /**
- * Owns app-wide singletons. The theme preference must be shared between the settings screen
- * (which writes it) and the app root (which applies it), so its repository lives here rather
- * than being created per-ViewModel. A DI framework (Hilt) would eventually replace this.
+ * [HiltAndroidApp] root of the dependency graph. App-wide singletons (the repositories) are
+ * declared in [uno.lux.sample.di.DataModule] rather than held here, so this class stays
+ * empty — it only anchors Hilt's code generation.
  */
-class MosaicApp : Application() {
-    val settingsRepository: SettingsRepository by lazy {
-        SharedPreferencesSettingsRepository(getSharedPreferences("settings", MODE_PRIVATE))
-    }
-}
+@HiltAndroidApp
+class MosaicApp : Application()

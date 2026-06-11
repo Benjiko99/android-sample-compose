@@ -6,6 +6,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -33,9 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import uno.lux.sample.data.ThemeMode
+import dagger.hilt.android.AndroidEntryPoint
 import uno.lux.sample.ui.PlaceholderScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.home.HomeScreen
@@ -48,13 +48,15 @@ import uno.lux.sample.ui.theme.MosaicTheme
 private val LightScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
 private val DarkScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: MainViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val settingsRepository = (application as MosaicApp).settingsRepository
-            val themeMode by settingsRepository.themeMode
-                .collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             val darkTheme = themeMode.isDark(isSystemInDarkTheme())
 
             // Re-apply edge-to-edge styling whenever the resolved theme flips, so the system
@@ -85,7 +87,6 @@ class MainActivity : ComponentActivity() {
  * inside the shell. Back handling is hoisted here, reflecting the top view independent of the
  * in-flight animation.
  */
-@PreviewScreenSizes
 @Composable
 fun SampleApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }

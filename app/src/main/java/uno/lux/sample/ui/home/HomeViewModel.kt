@@ -1,26 +1,24 @@
 package uno.lux.sample.ui.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.InMemoryPostRepository
 import uno.lux.sample.data.PostRepository
 import uno.lux.sample.util.stateInWhileSubscribed
+import javax.inject.Inject
 
 /**
  * Holds feed state and translates user intent (likes, bookmarks) into repository
  * mutations. The repository is a constructor dependency so the ViewModel can be unit
- * tested against a fake; [Factory] supplies the production wiring until a DI framework is
- * introduced.
+ * tested against a fake; in production Hilt injects the app-wide singleton.
  */
-class HomeViewModel(
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val repository: PostRepository,
 ) : ViewModel(), HomeActions {
 
@@ -53,11 +51,5 @@ class HomeViewModel(
 
     override fun onToggleBookmark(postId: String) {
         viewModelScope.launch { repository.toggleBookmark(postId) }
-    }
-
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer { HomeViewModel(InMemoryPostRepository()) }
-        }
     }
 }

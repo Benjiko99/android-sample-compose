@@ -1,27 +1,35 @@
 package uno.lux.sample.ui.profile
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.InMemoryProfileRepository
 import uno.lux.sample.data.ProfileRepository
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Holds the profile state for one [userId] and translates like / bookmark intent into
- * repository mutations. The repository and id are constructor dependencies so the ViewModel
- * can be unit tested against a fake; [provideFactory] supplies the production wiring (and
- * binds the id) until a DI framework is introduced.
+ * repository mutations. The repository is a constructor dependency so the ViewModel can be
+ * unit tested against a fake; the id is a runtime argument, so production wiring goes
+ * through assisted injection — Hilt fills in the repository, the caller supplies the id
+ * via [Factory].
  */
-class ProfileViewModel(
+@HiltViewModel(assistedFactory = ProfileViewModel.Factory::class)
+class ProfileViewModel @AssistedInject constructor(
     private val repository: ProfileRepository,
-    userId: String,
+    @Assisted userId: String,
 ) : ViewModel(), ProfileActions {
+
+    /** Creates a [ProfileViewModel] bound to one user; Hilt generates the implementation. */
+    @AssistedFactory
+    interface Factory {
+        fun create(userId: String): ProfileViewModel
+    }
 
     val uiState: StateFlow<ProfileUiState> = repository.profile(userId)
         .map { profile ->
@@ -35,12 +43,5 @@ class ProfileViewModel(
 
     override fun onToggleBookmark(postId: String) {
         viewModelScope.launch { repository.toggleBookmark(postId) }
-    }
-
-    companion object {
-        /** A factory bound to [userId], since a ViewModel can't take runtime arguments directly. */
-        fun provideFactory(userId: String): ViewModelProvider.Factory = viewModelFactory {
-            initializer { ProfileViewModel(InMemoryProfileRepository(), userId) }
-        }
     }
 }

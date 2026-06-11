@@ -65,8 +65,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import uno.lux.sample.R
 import uno.lux.sample.data.Album
 import uno.lux.sample.data.Profile
@@ -109,13 +109,14 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
-    // Key the ViewModel by userId. Without a key, `viewModel()` caches one instance per class
-    // in the (Activity-scoped) store and reuses it for every profile — so the factory's userId
+    // Key the ViewModel by userId. Without a key, the store caches one instance per class
+    // in the (Activity-scoped) store and reuses it for every profile — so the assisted userId
     // would only ever take effect for the first user opened. The key gives each user their own.
-    viewModel: ProfileViewModel = viewModel(
+    viewModel: ProfileViewModel = hiltViewModel<ProfileViewModel, ProfileViewModel.Factory>(
         key = "profile:$userId",
-        factory = ProfileViewModel.provideFactory(userId),
-    ),
+    ) { factory ->
+        factory.create(userId)
+    },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ProfileScreen(
