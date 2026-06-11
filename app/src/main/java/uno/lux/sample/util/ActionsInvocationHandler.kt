@@ -9,14 +9,12 @@ import java.lang.reflect.Proxy
  *
  * The stateless composables take their callbacks bundled as a single `@Stable` *actions*
  * interface. A preview doesn't care what those callbacks do, so rather than hand-write an empty
- * override for each method, this returns a [Proxy] — backed by [ActionsInvocationHandler] — whose
- * every call is a no-op. Top-level, so a preview reads simply:
+ * override for each method, this returns a [Proxy] — backed by [ActionsInvocationHandler] — who's
+ * every call is a no-op. So a preview reads simply:
  *
  * ```
  * HomeScreen(uiState = …, actions = createActionsProxy())
  * ```
- *
- * [T] must be an interface, since a [Proxy] can only stand in for interfaces.
  */
 inline fun <reified T> createActionsProxy(): T =
     Proxy.newProxyInstance(

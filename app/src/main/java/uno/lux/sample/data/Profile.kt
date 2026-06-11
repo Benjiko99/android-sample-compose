@@ -8,8 +8,7 @@ data class Profile(
     val posts: List<Post>,
     val albums: List<Album>,
     val videos: List<Video>,
-) {
-    val postCount: Int get() = posts.size
-    val albumCount: Int get() = albums.size
-    val videoCount: Int get() = videos.size
-}
+    val postsCount: Int,
+    val albumsCount: Int,
+    val videosCount: Int,
+)

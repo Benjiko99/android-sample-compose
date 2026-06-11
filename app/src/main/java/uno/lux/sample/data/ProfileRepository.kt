@@ -35,11 +35,17 @@ class InMemoryProfileRepository(
     override fun profile(userId: String): Flow<Profile?> {
         val user = users.firstOrNull { it.id == userId } ?: return flowOf(null)
         return postRepository.posts.map { posts ->
+            val userPosts = posts.filter { it.author.id == userId }
+            val userAlbums = albumsByUser[userId].orEmpty()
+            val userVideos = videosByUser[userId].orEmpty()
             Profile(
                 user = user,
-                posts = posts.filter { it.author.id == userId },
-                albums = albumsByUser[userId].orEmpty(),
-                videos = videosByUser[userId].orEmpty(),
+                posts = userPosts,
+                albums = userAlbums,
+                videos = userVideos,
+                postsCount = userPosts.size,
+                albumsCount = userAlbums.size,
+                videosCount = userVideos.size,
             )
         }
     }

@@ -59,8 +59,8 @@ class ProfileViewModelTest {
         val loaded = viewModel.uiState.value as ProfileUiState.Loaded
         assertEquals(ada, loaded.profile.user)
         assertEquals(listOf(post), loaded.profile.posts)
-        assertEquals(1, loaded.profile.albumCount)
-        assertEquals(1, loaded.profile.videoCount)
+        assertEquals(1, loaded.profile.albumsCount)
+        assertEquals(1, loaded.profile.videosCount)
     }
 
     @Test

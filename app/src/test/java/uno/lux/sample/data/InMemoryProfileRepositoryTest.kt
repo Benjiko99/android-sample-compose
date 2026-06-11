@@ -41,7 +41,7 @@ class InMemoryProfileRepositoryTest {
         val profile = repository().profile("u2").first()!!
 
         assertEquals(listOf(gracePost), profile.posts)
-        assertEquals(1, profile.postCount)
+        assertEquals(1, profile.postsCount)
     }
 
     @Test

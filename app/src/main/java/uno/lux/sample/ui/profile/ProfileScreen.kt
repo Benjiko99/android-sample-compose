@@ -183,7 +183,7 @@ private fun ProfileContent(
     // from the header item's own geometry — independent of the inset, so it can't oscillate.
     val density = LocalDensity.current
     val barBottomPx = WindowInsets.statusBars.getTop(density) +
-        with(density) { ProfileBarHeight.toPx() }
+            with(density) { ProfileBarHeight.toPx() }
     val tabInset by remember(barBottomPx) {
         derivedStateOf {
             val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "header" }
@@ -404,9 +404,9 @@ private enum class ProfileTab(
     @get:StringRes val labelRes: Int,
     val count: (Profile) -> Int,
 ) {
-    POSTS(R.string.profile_tab_posts, Profile::postCount),
-    ALBUMS(R.string.profile_tab_albums, Profile::albumCount),
-    VIDEOS(R.string.profile_tab_videos, Profile::videoCount),
+    POSTS(R.string.profile_tab_posts, Profile::postsCount),
+    ALBUMS(R.string.profile_tab_albums, Profile::albumsCount),
+    VIDEOS(R.string.profile_tab_videos, Profile::videosCount),
 }
 
 @Composable
@@ -541,7 +541,11 @@ private fun AlbumCell(album: Album, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = pluralStringResource(R.plurals.profile_album_photos, album.itemCount, album.itemCount),
+            text = pluralStringResource(
+                R.plurals.profile_album_photos,
+                album.itemCount,
+                album.itemCount
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = LocalMosaicColors.current.textTertiary,
         )
@@ -589,7 +593,10 @@ private fun VideoCell(video: Video, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = stringResource(R.string.profile_video_views, compactCount(video.viewCount).asText()),
+            text = stringResource(
+                R.string.profile_video_views,
+                compactCount(video.viewCount).asText()
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = LocalMosaicColors.current.textTertiary,
         )
@@ -769,11 +776,18 @@ private fun CenteredMessage(message: String) {
 
 private fun sampleProfile(): Profile {
     val user = SampleUsers.first()
+    val posts = SamplePosts.filter { it.author.id == user.id }
+    val albums = SampleAlbums.getValue(user.id)
+    val videos = SampleVideos.getValue(user.id)
+
     return Profile(
         user = user,
-        posts = SamplePosts.filter { it.author.id == user.id },
-        albums = SampleAlbums.getValue(user.id),
-        videos = SampleVideos.getValue(user.id),
+        posts = posts,
+        albums = albums,
+        videos = videos,
+        postsCount = posts.size,
+        albumsCount = albums.size,
+        videosCount = videos.size,
     )
 }
 

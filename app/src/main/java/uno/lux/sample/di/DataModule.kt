@@ -2,7 +2,6 @@ package uno.lux.sample.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
@@ -53,9 +52,5 @@ object DataModule {
     @Provides
     @Singleton
     fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
-        PreferenceDataStoreFactory.create(
-            // Settings used to live in a SharedPreferences file of the same name; carry the
-            // saved values over once, then DataStore owns them.
-            migrations = listOf(SharedPreferencesMigration(context, "settings")),
-        ) { context.preferencesDataStoreFile("settings") }
+        PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("settings") }
 }
