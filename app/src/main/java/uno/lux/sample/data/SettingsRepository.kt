@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Stores user settings. Exposes [themeMode] reactively and updates it on request.
  *
- * Backed by in-memory state for now; the interface is the seam a DataStore-backed
- * implementation — which would persist the preference across restarts — slots into.
+ * [DataStoreSettingsRepository] is the persistent production implementation;
+ * [InMemorySettingsRepository] is the in-memory double for tests and previews.
  */
 interface SettingsRepository {
     val themeMode: Flow<ThemeMode>

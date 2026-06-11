@@ -1,17 +1,22 @@
 package uno.lux.sample.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.SharedPreferencesMigration
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import uno.lux.sample.data.DataStoreSettingsRepository
 import uno.lux.sample.data.InMemoryPostRepository
 import uno.lux.sample.data.InMemoryProfileRepository
 import uno.lux.sample.data.PostRepository
 import uno.lux.sample.data.ProfileRepository
 import uno.lux.sample.data.SettingsRepository
-import uno.lux.sample.data.SharedPreferencesSettingsRepository
 import javax.inject.Singleton
 
 /**
@@ -19,9 +24,10 @@ import javax.inject.Singleton
  * implementation here, and nowhere else needs to know which one that is.
  *
  * Everything is [Singleton]-scoped because each repository *is* the app's source of truth —
- * the in-memory ones hold the state itself, so two instances would mean two diverging copies.
- * [provideProfileRepository] takes the bound [PostRepository] so profile pages and the feed
- * share one post store: a like toggled in either place is visible in both.
+ * the in-memory ones hold the state itself, so two instances would mean two diverging copies
+ * (and DataStore requires a single instance per file). [provideProfileRepository] takes the
+ * bound [PostRepository] so profile pages and the feed share one post store: a like toggled
+ * in either place is visible in both.
  *
  * The repositories stay free of DI annotations (constructed here via [Provides] rather than
  * `@Inject`), keeping the data layer plain JVM with no framework dependency.
@@ -41,8 +47,15 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideSettingsRepository(@ApplicationContext context: Context): SettingsRepository =
-        SharedPreferencesSettingsRepository(
-            context.getSharedPreferences("settings", Context.MODE_PRIVATE),
-        )
+    fun provideSettingsRepository(dataStore: DataStore<Preferences>): SettingsRepository =
+        DataStoreSettingsRepository(dataStore)
+
+    @Provides
+    @Singleton
+    fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            // Settings used to live in a SharedPreferences file of the same name; carry the
+            // saved values over once, then DataStore owns them.
+            migrations = listOf(SharedPreferencesMigration(context, "settings")),
+        ) { context.preferencesDataStoreFile("settings") }
 }
