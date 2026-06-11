@@ -109,14 +109,11 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
-    // Key the ViewModel by userId. Without a key, the store caches one instance per class
-    // in the (Activity-scoped) store and reuses it for every profile — so the assisted userId
-    // would only ever take effect for the first user opened. The key gives each user their own.
+    // The ViewModel store is per back-stack entry, so each opened profile page gets its own
+    // ProfileViewModel, created for that entry's userId and cleared when the page pops.
     viewModel: ProfileViewModel = hiltViewModel<ProfileViewModel, ProfileViewModel.Factory>(
-        key = "profile:$userId",
-    ) { factory ->
-        factory.create(userId)
-    },
+        creationCallback = { factory -> factory.create(userId) },
+    ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ProfileScreen(
