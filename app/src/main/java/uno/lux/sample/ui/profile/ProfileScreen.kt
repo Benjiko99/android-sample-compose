@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -452,7 +454,7 @@ private fun ProfileTabs(
 
 // region Tab content
 
-private fun androidx.compose.foundation.lazy.LazyListScope.postsTab(
+private fun LazyListScope.postsTab(
     profile: Profile,
     actions: ProfileActions,
 ) {
@@ -471,7 +473,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.postsTab(
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.albumsTab(albums: List<Album>) {
+private fun LazyListScope.albumsTab(albums: List<Album>) {
     if (albums.isEmpty()) {
         item(key = "albums-empty") { EmptyTab(stringResource(R.string.profile_empty_albums)) }
         return
@@ -479,7 +481,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.albumsTab(albums: Lis
     gridRows(albums, key = { it.id }) { album -> AlbumCell(album, Modifier.weight(1f)) }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(videos: List<Video>) {
+private fun LazyListScope.videosTab(videos: List<Video>) {
     if (videos.isEmpty()) {
         item(key = "videos-empty") { EmptyTab(stringResource(R.string.profile_empty_videos)) }
         return
@@ -493,10 +495,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.videosTab(videos: Lis
  * the **sticky** tab header share one scroll container with the grid — `LazyVerticalGrid` has
  * no sticky-header support.
  */
-private fun <T> androidx.compose.foundation.lazy.LazyListScope.gridRows(
+private fun <T> LazyListScope.gridRows(
     items: List<T>,
     key: (T) -> Any,
-    cell: @Composable androidx.compose.foundation.layout.RowScope.(T) -> Unit,
+    cell: @Composable RowScope.(T) -> Unit,
 ) {
     val rows = items.chunked(2)
     items(rows, key = { row -> "row-${key(row.first())}" }) { row ->

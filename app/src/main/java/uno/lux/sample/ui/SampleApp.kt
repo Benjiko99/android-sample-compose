@@ -50,15 +50,13 @@ import uno.lux.sample.ui.theme.LocalMosaicColors
 @Composable
 fun SampleApp() {
     val backStack = rememberNavBackStack(Screen.Shell)
-    // Guard against re-adding the page already on top (e.g. a double-tap on the gear while
-    // the push animation is still running), which would otherwise stack a duplicate entry.
-    val openSettings = {
-        if (backStack.lastOrNull() != Screen.Settings) backStack.add(Screen.Settings)
+    // Push a page unless it's already on top — guards against re-adding the current page (e.g. a
+    // double-tap on the gear while its push animation still runs), which would stack a duplicate.
+    fun pushUnique(screen: Screen) {
+        if (backStack.lastOrNull() != screen) backStack.add(screen)
     }
-    val openProfile = { userId: String ->
-        val profile = Screen.Profile(userId)
-        if (backStack.lastOrNull() != profile) backStack.add(profile)
-    }
+    val openSettings = { pushUnique(Screen.Settings) }
+    val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
     NavDisplay(
