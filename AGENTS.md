@@ -1,0 +1,63 @@
+# AGENTS.md
+
+This file provides guidance to AI agents when working with code in this repository.
+
+## Project purpose
+
+A sample Android app (`uno.lux.sample`, displayed as "Sample") built as a resume/portfolio piece to demonstrate modern Android architecture. Code quality, idiomatic Compose, and architectural clarity are the point of the project, not just working features — prefer the current, recommended Android way of doing things over expedient shortcuts.
+
+## Testing philosophy — tests first
+
+Tests are the **primary consumer** of this codebase; real users come second. Production code exists first to satisfy a test — we write the code that makes tests pass, and only then does it also happen to serve users. In practice:
+
+- **Write the test first.** Express the desired behaviour as a failing test, then write the code that makes it pass. A change isn't done until tests cover it and they're green; new logic lands with its test in the same change.
+- **Design for the test.** Keep logic in plain-JVM, dependency-injected units so a test can drive it directly. The `data` layer and ViewModels take their collaborators as constructor parameters and avoid Android dependencies; pure functions take their inputs (e.g. `now`) as parameters instead of reading ambient state. This is *why* the architecture is shaped the way it is — testability drives the design, not the other way round.
+- **Same rule for UI.** Stateless composables take data + callbacks so they can be exercised in isolation; ViewModels expose state as a `StateFlow` a test asserts against.
+
+Run the unit suite with `.\gradlew.bat testDebugUnitTest` (single class: `--tests "uno.lux.sample.FormattingTest"`).
+
+## Commands
+
+The shell is Windows PowerShell; invoke the wrapper as `.\gradlew.bat`.
+
+- Build debug APK: `.\gradlew.bat assembleDebug`
+- Install on a running device/emulator: `.\gradlew.bat installDebug`
+- Android Lint (the only linter configured): `.\gradlew.bat lint` → report at `app/build/reports/lint-results-debug.html`
+- All JVM unit tests: `.\gradlew.bat testDebugUnitTest`
+- A single unit test class/method: `.\gradlew.bat testDebugUnitTest --tests "uno.lux.sample.ExampleUnitTest.addition_isCorrect"`
+- Instrumented tests (needs a connected device/emulator): `.\gradlew.bat connectedDebugAndroidTest`
+- A single instrumented test: `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=uno.lux.sample.ExampleInstrumentedTest`
+
+## Toolchain / build setup
+
+- **Kotlin 2.2.10**, **AGP 9.2.1**, **Gradle 9.4.1**, Compose BOM **2025.12.00**.
+- `compileSdk` is **36.1**, expressed with the newer AGP DSL `release(36) { minorApiLevel = 1 }`; `minSdk = 26`, `targetSdk = 36`.
+- Source/target compatibility is **Java 11**, but the Gradle daemon runs on **JDK 21** (`gradle/gradle-daemon-jvm.properties`, auto-provisioned via foojay).
+- AGP 9's **built-in Kotlin** is in use — there is no standalone `org.jetbrains.kotlin.android` plugin. Annotation processing runs through **KSP** (kapt is incompatible with built-in Kotlin); Hilt's codegen rides on it.
+- Dependencies are managed through the **version catalog** at `gradle/libs.versions.toml`. Add or bump dependencies there and reference them via the generated `libs.*` accessors in `app/build.gradle.kts` — do not hardcode versions in the build script.
+
+## Architecture
+
+Single-activity, 100% Jetpack Compose app — there are no Fragments and no XML view layouts (XML under `res/` is only resources: themes, colors, vector icons, backup rules). The entire UI tree is built in Kotlin.
+
+- **Entry point** — `MainActivity` (`app/src/main/java/uno/lux/sample/MainActivity.kt`) is the only Activity and stays a thin shell. In `setContent` it collects the `ThemeMode` preference from `MainViewModel`, resolves the dark/light choice, applies it to `MosaicTheme`, and hosts `SampleApp()` (`ui/SampleApp.kt`).
+
+- **Navigation — Navigation 3 with a tabbed root shell.** `SampleApp()` owns a `rememberNavBackStack` of `@Serializable` `Screen` keys (`ui/navigation/Screen.kt`): `Screen.Shell` is the permanent root, and `Screen.Profile(userId)` (tapping a post's author) or `Screen.Settings` (the gear in any top bar) push over it as full-screen pages — settings stacks over a profile, too. `NavDisplay` renders the top entry with directional push/pop slide transitions, predictive back included; back handling is just `onBack` popping the stack — there are no hand-rolled `BackHandler`s. The entry decorators give every entry its own saveable state and **ViewModel store**, so each pushed page's ViewModel is created on push and cleared on pop (each opened profile gets its own `ProfileViewModel` without manual keying). The back stack survives configuration changes and process death because the keys are serializable.
+
+- **Adaptive navigation inside the shell.** The `Shell` entry hosts `HomeNavShell`: Material 3's `NavigationSuiteScaffold` (via the project's `DividedNavigationSuiteScaffold`) adapts the navigation UI to the window size — bottom nav bar on phones, navigation rail / drawer on larger or unfolded screens — without per-form-factor code. Destinations are data-driven: the `AppDestinations` enum (a `@StringRes` label + icon drawable per entry: HOME, FAVORITES, PROFILE) is the single source of truth, and the nav items are generated by iterating `AppDestinations.entries` — add or change a tab by editing the enum. **Tab selection is deliberately plain `rememberSaveable` state, not back-stack entries**: switching tabs is not a navigation event, so system back never walks through tabs. HOME → `HomeScreen` (the feed); FAVORITES and the PROFILE **tab** → a shared `PlaceholderScreen` for now. Each screen owns its own `Scaffold`/`TopAppBar` rather than sharing one, so screens control their own chrome; tab switches cross-fade (fade-through) while page pushes slide.
+
+- **Feature architecture — the HOME feed sets the pattern to follow.** Code is layered by responsibility:
+  - `data/` — domain models (`Post`, `User`) and repository interfaces, the seam real implementations slot into. `PostRepository` is in-memory (`StateFlow<List<Post>>` seeded from `SampleData`). `SettingsRepository` has an `InMemorySettingsRepository` (the test double) and the production `DataStoreSettingsRepository`, which persists the theme choice in a Preferences **DataStore**; the store is a constructor dependency, so its unit tests drive a *real* DataStore over a temp file on the JVM. The DataStore itself is provided in `DataModule` with a one-time `SharedPreferencesMigration` from the legacy `"settings"` prefs file (the persisted key `theme_mode` is that migration's contract — tests pin it). The profile layer adds `Profile` (a `User` with their `posts`/`albums`/`videos`), the `Album`/`Video` stand-ins, and `ProfileRepository` — whose in-memory impl **composes** a `PostRepository` (a profile's posts are simply the feed posts authored by that user) rather than duplicating mutation logic, and layers the static user directory + album/video maps on top. Domain models, the interfaces, and every repository implementation carry no Android dependencies, so the whole layer is plain-JVM testable.
+  - `ui/home/` — MVVM with unidirectional data flow. `HomeViewModel` exposes `StateFlow<HomeUiState>` (a sealed interface: `Loading` / `Feed`) and converts intent (`onToggleLike`, `onToggleBookmark`) into repository mutations via `viewModelScope`. `HomeScreen` is split into a **stateful** binder (collects state, injects the ViewModel) and an **internal stateless** composable (pure inputs + callbacks) so it previews and tests without a ViewModel. `PostCard` and its sub-composables are likewise stateless with hoisted callbacks; the header (avatar / name / handle) is one tappable target that opens the author's profile.
+  - `ui/profile/` — the same MVVM split, parameterized by user. `ProfileViewModel` is bound to a `userId` through Hilt assisted injection (a ViewModel can't take runtime args directly) and exposes `StateFlow<ProfileUiState>` (`Loading` / `Loaded` / `NotFound`). `ProfileScreen` is a stateful binder + internal stateless composable: a full-bleed gradient cover with an overlapping surface-ringed avatar, an identity block (age/gender/location chips, bio, follower/following stats, *Edit profile* + settings), then **sticky** Material tabs — Posts (reusing `PostCard`), Albums and Videos rendered as 2-column grids built from `chunked(2)` rows inside the single `LazyColumn`. Cover/album/video imagery is deterministic gradient stand-ins keyed by id, mirroring `Avatar`.
+  - `util/` — pure, unit-tested formatters (`relativeTime`, `compactCount`, `formatVideoDuration`); reusable UI like `Avatar` lives in `ui/components/`.
+
+- **Dependency injection — Hilt.** `MosaicApp` is the `@HiltAndroidApp` root and `MainActivity` an `@AndroidEntryPoint`; both stay empty of wiring. All production bindings live in `di/DataModule.kt`, which `@Provides` each repository interface's implementation as a `@Singleton` — singletons because the in-memory repositories *are* the source of truth, so two instances would mean two diverging copies of the data (`ProfileRepository` explicitly composes the bound `PostRepository` so the feed and profile share one post store). ViewModels are `@HiltViewModel` with `@Inject` constructors, bound in screens via `hiltViewModel()` (from `androidx.hilt:hilt-lifecycle-viewmodel-compose` — the `hilt-navigation-compose` copy is deprecated). `ProfileViewModel` takes its runtime `userId` through **assisted injection** (`@HiltViewModel(assistedFactory = …)` + `hiltViewModel(key, creationCallback)`). Tests never touch Hilt: they construct ViewModels directly with fakes, which is why ViewModels keep plain constructor parameters. The repositories themselves carry no DI annotations (constructed in the module, not `@Inject`), keeping the data layer framework-free.
+
+- **Theming** lives in `app/src/main/java/uno/lux/sample/ui/theme/` and implements the **Mosaic** design system (a claude.ai/design handoff). `MosaicTheme` applies a fixed brand palette — indigo accent, warm-neutral surfaces, coral like-state, with full light/dark token sets in `Color.kt`. There is **no dynamic color** (the brand must stay consistent), and `surfaceTint` is transparent so cards keep their exact colour while still casting the soft shadow. `Type.kt` wires two **bundled variable fonts** (`res/font/`, OFL in `licenses/`): **Bricolage Grotesque** for the brand wordmark and post titles, **Manrope** for UI and body. Tokens with no Material role — the muted `textTertiary` and the coral `like` — are carried as `MosaicColors` via `LocalMosaicColors`. Wrap any new top-level Compose content (and `@Preview`s) in `MosaicTheme`. The light/dark choice is **user-controlled**: `MainActivity` collects the `ThemeMode` (Light/Dark/System) from `MainViewModel`, resolves it with `ThemeMode.isDark(isSystemInDarkTheme())`, and passes the result to `MosaicTheme(darkTheme = …)`; the settings screen changes it through `SettingsViewModel`. Edge-to-edge system-bar styling is re-applied in a `DisposableEffect` keyed on the resolved theme so the bar icons keep contrast.
+
+## Localization
+
+All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum; `PlaceholderScreen` takes a `@StringRes` title.
+
+Computed text (relative time, compact counts) keeps its *logic* pure and testable in `util`: `relativeTime()` and `compactCount()` return structured buckets (`RelativeTime`, `CompactCount`) with no display strings, and the `ui/format` layer's `asText()` resolves a bucket to a localized resource. That's how format tokens like "5m" or "1.2K" stay localizable without making the formatters depend on Android. Post *content* in `SampleData` is stand-in data, not UI chrome, so it remains literal.
