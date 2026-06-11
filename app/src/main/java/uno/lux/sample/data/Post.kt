@@ -2,12 +2,6 @@ package uno.lux.sample.data
 
 import java.time.Instant
 
-/**
- * A text post in the feed.
- *
- * [isLiked] and [isBookmarked] are per-viewer state that the feed toggles; [likeCount]
- * already accounts for the viewer's own like so the UI never has to reconcile the two.
- */
 data class Post(
     val id: String,
     val author: User,
