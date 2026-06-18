@@ -8,8 +8,8 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -395,7 +395,7 @@ private fun PostActions(
             label = compactCount(post.likeCount).asText(),
             tint = likeTint,
             onClick = onToggleLike,
-            iconModifier = Modifier.likePop(post.isLiked),
+            iconModifier = Modifier.pop(post.isLiked),
         )
         Spacer(Modifier.width(2.dp))
         ActionButton(
@@ -412,6 +412,7 @@ private fun PostActions(
             label = null,
             tint = if (post.isBookmarked) MaterialTheme.colorScheme.primary else muted,
             onClick = onToggleBookmark,
+            iconModifier = Modifier.pop(post.isBookmarked),
         )
     }
 }
@@ -453,25 +454,32 @@ private fun ActionButton(
     }
 }
 
+/** The Mosaic "pop": overshoot to 1.35×, dip to 0.9×, settle — the design's like/save curve. */
+private val PopEasing = CubicBezierEasing(0.2f, 1.3f, 0.5f, 1f)
+
 /**
- * Scales the icon up and lets it spring back to rest whenever [active] turns true — the "pop"
- * when a post is liked. The current value is captured up front so an already-liked post
- * scrolling back into view doesn't replay it; only a fresh like (false → true) animates.
- * Scaling happens in a [graphicsLayer], so the pop draws over the row without reflowing it.
+ * Plays the Mosaic "pop" (`@keyframes pop` in the design — scale 1 → 1.35 → 0.9 → 1 over 400ms)
+ * whenever [active] turns true, the shared feedback for liking and saving a post. The current
+ * value is captured up front so an already-active post scrolling back into view doesn't replay
+ * it; only a fresh activation (false → true) animates. Scaling happens in a [graphicsLayer], so
+ * the pop draws over the row without reflowing it.
  */
 @Composable
-private fun Modifier.likePop(active: Boolean): Modifier {
+private fun Modifier.pop(active: Boolean): Modifier {
     val scale = remember { Animatable(1f) }
     var wasActive by remember { mutableStateOf(active) }
     LaunchedEffect(active) {
         if (active && !wasActive) {
-            scale.animateTo(1.3f, spring(stiffness = Spring.StiffnessHigh))
+            scale.snapTo(1f)
             scale.animateTo(
                 targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium,
-                ),
+                animationSpec = keyframes {
+                    durationMillis = 400
+                    1f at 0 using PopEasing
+                    1.35f at 140 using PopEasing // 35%
+                    0.9f at 240 using PopEasing // 60%
+                    1f at 400
+                },
             )
         }
         wasActive = active
