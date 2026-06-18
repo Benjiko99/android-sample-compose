@@ -68,6 +68,9 @@ internal val SampleUsers = listOf(
     ),
 )
 
+/** The sample user signed in as "me" — their own profile shows the Edit-profile action. */
+const val LoggedInUserId = "u1"
+
 /** The stand-in stream every sample [Video] points at — a short, freely hosted MP4. */
 const val SampleVideoUrl = "https://samplelib.com/mp4/sample-5s-720p.mp4"
 

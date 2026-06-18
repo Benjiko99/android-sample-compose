@@ -5,6 +5,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -24,6 +25,7 @@ class ProfileViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val ada = User(id = "u1", nickname = "Ada", handle = "@ada")
+    private val grace = User(id = "u2", nickname = "Grace", handle = "@grace")
     private val post = Post(
         id = "p1",
         author = ada,
@@ -34,13 +36,14 @@ class ProfileViewModelTest {
         commentCount = 2,
     )
 
-    private fun viewModel(userId: String = "u1") = ProfileViewModel(
+    private fun viewModel(userId: String = "u1", currentUserId: String = "u1") = ProfileViewModel(
         repository = InMemoryProfileRepository(
-            users = listOf(ada),
+            users = listOf(ada, grace),
             postRepository = InMemoryPostRepository(listOf(post)),
             albumsByUser = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8))),
             videosByUser = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4"))),
         ),
+        currentUserId = currentUserId,
         userId = userId,
     )
 
@@ -61,6 +64,26 @@ class ProfileViewModelTest {
         assertEquals(listOf(post), loaded.profile.posts)
         assertEquals(1, loaded.profile.albumsCount)
         assertEquals(1, loaded.profile.videosCount)
+    }
+
+    @Test
+    fun `uiState marks the signed-in user's own profile as current`() = runTest {
+        val viewModel = viewModel(userId = "u1", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertTrue((viewModel.uiState.value as ProfileUiState.Loaded).isCurrentUser)
+    }
+
+    @Test
+    fun `uiState marks another user's profile as not current`() = runTest {
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertFalse((viewModel.uiState.value as ProfileUiState.Loaded).isCurrentUser)
     }
 
     @Test

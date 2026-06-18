@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.ProfileRepository
+import uno.lux.sample.di.CurrentUserId
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
@@ -22,6 +23,7 @@ import uno.lux.sample.util.stateInWhileSubscribed
 @HiltViewModel(assistedFactory = ProfileViewModel.Factory::class)
 class ProfileViewModel @AssistedInject constructor(
     private val repository: ProfileRepository,
+    @CurrentUserId private val currentUserId: String,
     @Assisted userId: String,
 ) : ViewModel(), ProfileActions {
 
@@ -33,7 +35,11 @@ class ProfileViewModel @AssistedInject constructor(
 
     val uiState: StateFlow<ProfileUiState> = repository.profile(userId)
         .map { profile ->
-            if (profile == null) ProfileUiState.NotFound else ProfileUiState.Loaded(profile)
+            if (profile == null) {
+                ProfileUiState.NotFound
+            } else {
+                ProfileUiState.Loaded(profile, isCurrentUser = profile.user.id == currentUserId)
+            }
         }
         .stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
 

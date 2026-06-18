@@ -162,6 +162,7 @@ internal fun ProfileScreen(
             // The loaded state owns its own scroll-reactive TopAppBar over the cover.
             is ProfileUiState.Loaded -> ProfileContent(
                 profile = uiState.profile,
+                isCurrentUser = uiState.isCurrentUser,
                 actions = actions,
                 onOpenSettings = onOpenSettings,
                 onOpenVideo = onOpenVideo,
@@ -175,6 +176,7 @@ internal fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     profile: Profile,
+    isCurrentUser: Boolean,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -205,7 +207,7 @@ private fun ProfileContent(
     ) {
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             item(key = "header") {
-                ProfileHeader(user = profile.user)
+                ProfileHeader(user = profile.user, isCurrentUser = isCurrentUser)
             }
             stickyHeader(key = "tabs") {
                 ProfileTabs(
@@ -247,6 +249,7 @@ private val ProfileBarHeight = 64.dp // Material small TopAppBar content height 
 @Composable
 private fun ProfileHeader(
     user: User,
+    isCurrentUser: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -265,19 +268,22 @@ private fun ProfileHeader(
                     .background(MosaicGradients.mediaBrush(user.id)),
             )
             // Edit profile, bottom-right across from the avatar (settings live in the app bar).
-            FilledTonalButton(
-                onClick = { /* Edit is a later iteration. */ },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 6.dp),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.profile_edit))
+            // Shown only on the signed-in user's own profile.
+            if (isCurrentUser) {
+                FilledTonalButton(
+                    onClick = { /* Edit is a later iteration. */ },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 6.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_edit),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.profile_edit))
+                }
             }
             AvatarRing(
                 name = user.nickname,
@@ -808,7 +814,7 @@ private fun sampleProfile(): Profile {
 private fun ProfileScreenPreview() {
     MosaicTheme {
         ProfileScreen(
-            uiState = ProfileUiState.Loaded(sampleProfile()),
+            uiState = ProfileUiState.Loaded(sampleProfile(), isCurrentUser = true),
             actions = createActionsProxy(),
             onOpenSettings = {},
             onOpenVideo = {},

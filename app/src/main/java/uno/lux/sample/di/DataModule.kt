@@ -13,6 +13,7 @@ import dagger.hilt.components.SingletonComponent
 import uno.lux.sample.data.DataStoreSettingsRepository
 import uno.lux.sample.data.InMemoryPostRepository
 import uno.lux.sample.data.InMemoryProfileRepository
+import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.PostRepository
 import uno.lux.sample.data.ProfileRepository
 import uno.lux.sample.data.SettingsRepository
@@ -53,4 +54,9 @@ object DataModule {
     @Singleton
     fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("settings") }
+
+    /** The signed-in user's id. A real app would resolve this from an auth/session source. */
+    @Provides
+    @CurrentUserId
+    fun provideCurrentUserId(): String = LoggedInUserId
 }
