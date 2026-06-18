@@ -89,6 +89,10 @@ internal fun PostCard(
             onOpenProfile = onOpenProfile,
         )
         PostBody(title = post.title, body = post.body)
+        if (post.album != null) {
+            Spacer(Modifier.height(12.dp))
+            AlbumPostGallery(album = post.album)
+        }
         if (post.video != null) {
             Spacer(Modifier.height(12.dp))
             VideoPostPlayer(

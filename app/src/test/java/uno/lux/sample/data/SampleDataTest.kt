@@ -33,4 +33,18 @@ class SampleDataTest {
             )
         }
     }
+
+    @Test
+    fun `sample album posts show the sample album images`() {
+        val albumPosts = SamplePosts.mapNotNull { it.album }
+
+        assertTrue("expected at least one album post", albumPosts.isNotEmpty())
+        albumPosts.forEach { album ->
+            assertEquals(
+                "album ${album.id} should show the sample images",
+                SampleAlbumImages,
+                album.images,
+            )
+        }
+    }
 }

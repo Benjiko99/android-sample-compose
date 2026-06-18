@@ -68,6 +68,16 @@ internal val SampleUsers = listOf(
     ),
 )
 
+/** The stand-in stream every sample [Video] points at — a short, freely hosted MP4. */
+const val SampleVideoUrl = "https://samplelib.com/mp4/sample-5s-720p.mp4"
+
+/** The stand-in photos every feed album post shows, as freely hosted JPEGs. */
+val SampleAlbumImages = listOf(
+    "https://samplelib.com/jpeg/sample-clouds-400x300.jpg",
+    "https://samplelib.com/jpeg/sample-city-park-400x300.jpg",
+    "https://samplelib.com/jpeg/sample-birch-400x300.jpg",
+)
+
 internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
 
 private fun buildSamplePosts(now: Instant): List<Post> = listOf(
@@ -81,6 +91,12 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         likeCount = 128,
         commentCount = 17,
         isLiked = true,
+        album = Album(
+            id = "pa1",
+            title = "Engine sketches",
+            itemCount = SampleAlbumImages.size,
+            images = SampleAlbumImages,
+        ),
     ),
     Post(
         id = "p2",
@@ -122,6 +138,19 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         commentCount = 88,
         isLiked = true,
         isBookmarked = true,
+        video = Video(
+            id = "pv4",
+            title = "Touchdown replay",
+            durationSeconds = 5,
+            viewCount = 1_540_000,
+            videoUrl = SampleVideoUrl,
+        ),
+        album = Album(
+            id = "pa4",
+            title = "Launch room",
+            itemCount = SampleAlbumImages.size,
+            images = SampleAlbumImages,
+        ),
     ),
     Post(
         id = "p5",
@@ -180,12 +209,6 @@ internal val SampleAlbums: Map<String, List<Album>> = mapOf(
         Album(id = "a14", title = "Diving Trips", itemCount = 11),
     ),
 )
-
-/**
- * The stand-in stream every [Video] points at — a short, freely hosted MP4. Real content would
- * carry a per-video URL; the sample reuses one so the player is exercisable end to end.
- */
-const val SampleVideoUrl = "https://samplelib.com/mp4/sample-5s-720p.mp4"
 
 /** Video stand-ins per user id, surfaced on the profile's Videos tab. */
 internal val SampleVideos: Map<String, List<Video>> = mapOf(
