@@ -37,6 +37,7 @@ import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.ui.profile.ProfileScreen
 import uno.lux.sample.ui.settings.SettingsScreen
 import uno.lux.sample.ui.theme.LocalMosaicColors
+import uno.lux.sample.ui.video.VideoPlayerScreen
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberNavBackStack] back
@@ -57,6 +58,7 @@ fun SampleApp() {
     }
     val openSettings = { pushUnique(Screen.Settings) }
     val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
+    val openVideo = { url: String, title: String -> pushUnique(Screen.VideoPlayer(url, title)) }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
     NavDisplay(
@@ -81,11 +83,19 @@ fun SampleApp() {
                 ProfileScreen(
                     userId = profile.userId,
                     onOpenSettings = openSettings,
+                    onOpenVideo = openVideo,
                     onBack = goBack,
                 )
             }
             entry<Screen.Settings> {
                 SettingsScreen(onBack = goBack)
+            }
+            entry<Screen.VideoPlayer> { videoPlayer ->
+                VideoPlayerScreen(
+                    url = videoPlayer.url,
+                    title = videoPlayer.title,
+                    onBack = goBack,
+                )
             }
         },
     )

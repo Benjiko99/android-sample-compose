@@ -167,29 +167,35 @@ internal val SampleAlbums: Map<String, List<Album>> = mapOf(
     ),
 )
 
+/**
+ * The stand-in stream every [Video] points at — a short, freely hosted MP4. Real content would
+ * carry a per-video URL; the sample reuses one so the player is exercisable end to end.
+ */
+const val SampleVideoUrl = "https://samplelib.com/mp4/sample-5s-720p.mp4"
+
 /** Video stand-ins per user id, surfaced on the profile's Videos tab. */
 internal val SampleVideos: Map<String, List<Video>> = mapOf(
     "u1" to listOf(
-        Video(id = "v1", title = "Weaving algebra on the Analytical Engine", durationSeconds = 222, viewCount = 41_200),
-        Video(id = "v2", title = "Note G, explained", durationSeconds = 615, viewCount = 12_800),
-        Video(id = "v3", title = "Poetical science", durationSeconds = 95, viewCount = 8_400),
+        Video(id = "v1", title = "Weaving algebra on the Analytical Engine", durationSeconds = 222, viewCount = 41_200, videoUrl = SampleVideoUrl),
+        Video(id = "v2", title = "Note G, explained", durationSeconds = 615, viewCount = 12_800, videoUrl = SampleVideoUrl),
+        Video(id = "v3", title = "Poetical science", durationSeconds = 95, viewCount = 8_400, videoUrl = SampleVideoUrl),
     ),
     "u2" to listOf(
-        Video(id = "v4", title = "How a compiler thinks", durationSeconds = 1325, viewCount = 220_000),
-        Video(id = "v5", title = "A nanosecond in your hand", durationSeconds = 184, viewCount = 1_200_000),
+        Video(id = "v4", title = "How a compiler thinks", durationSeconds = 1325, viewCount = 220_000, videoUrl = SampleVideoUrl),
+        Video(id = "v5", title = "A nanosecond in your hand", durationSeconds = 184, viewCount = 1_200_000, videoUrl = SampleVideoUrl),
     ),
     "u3" to listOf(
-        Video(id = "v6", title = "The imitation game", durationSeconds = 742, viewCount = 980_000),
-        Video(id = "v7", title = "On computable numbers", durationSeconds = 2010, viewCount = 154_000),
-        Video(id = "v8", title = "Breaking Enigma", durationSeconds = 366, viewCount = 512_300),
+        Video(id = "v6", title = "The imitation game", durationSeconds = 742, viewCount = 980_000, videoUrl = SampleVideoUrl),
+        Video(id = "v7", title = "On computable numbers", durationSeconds = 2010, viewCount = 154_000, videoUrl = SampleVideoUrl),
+        Video(id = "v8", title = "Breaking Enigma", durationSeconds = 366, viewCount = 512_300, videoUrl = SampleVideoUrl),
     ),
     "u4" to listOf(
-        Video(id = "v9", title = "The 1202 alarm", durationSeconds = 488, viewCount = 1_540_000),
-        Video(id = "v10", title = "Software, taken seriously", durationSeconds = 277, viewCount = 96_500),
+        Video(id = "v9", title = "The 1202 alarm", durationSeconds = 488, viewCount = 1_540_000, videoUrl = SampleVideoUrl),
+        Video(id = "v10", title = "Software, taken seriously", durationSeconds = 277, viewCount = 96_500, videoUrl = SampleVideoUrl),
     ),
     "u5" to listOf(
-        Video(id = "v11", title = "Talk is cheap", durationSeconds = 132, viewCount = 3_100_000),
-        Video(id = "v12", title = "Git in ten minutes", durationSeconds = 631, viewCount = 2_050_000),
-        Video(id = "v13", title = "Why monolithic", durationSeconds = 1442, viewCount = 740_000),
+        Video(id = "v11", title = "Talk is cheap", durationSeconds = 132, viewCount = 3_100_000, videoUrl = SampleVideoUrl),
+        Video(id = "v12", title = "Git in ten minutes", durationSeconds = 631, viewCount = 2_050_000, videoUrl = SampleVideoUrl),
+        Video(id = "v13", title = "Why monolithic", durationSeconds = 1442, viewCount = 740_000, videoUrl = SampleVideoUrl),
     ),
 )

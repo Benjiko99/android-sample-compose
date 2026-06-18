@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -109,6 +110,7 @@ interface ProfileActions {
 fun ProfileScreen(
     userId: String,
     onOpenSettings: () -> Unit,
+    onOpenVideo: (url: String, title: String) -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
@@ -122,6 +124,7 @@ fun ProfileScreen(
         uiState = uiState,
         actions = viewModel,
         onOpenSettings = onOpenSettings,
+        onOpenVideo = onOpenVideo,
         onBack = onBack,
         modifier = modifier,
     )
@@ -136,6 +139,7 @@ internal fun ProfileScreen(
     uiState: ProfileUiState,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
+    onOpenVideo: (url: String, title: String) -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
@@ -160,6 +164,7 @@ internal fun ProfileScreen(
                 profile = uiState.profile,
                 actions = actions,
                 onOpenSettings = onOpenSettings,
+                onOpenVideo = onOpenVideo,
                 onBack = onBack,
             )
         }
@@ -172,6 +177,7 @@ private fun ProfileContent(
     profile: Profile,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
+    onOpenVideo: (url: String, title: String) -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -215,7 +221,7 @@ private fun ProfileContent(
                 )
 
                 ProfileTab.ALBUMS -> albumsTab(profile.albums)
-                ProfileTab.VIDEOS -> videosTab(profile.videos)
+                ProfileTab.VIDEOS -> videosTab(profile.videos, onOpenVideo)
             }
             item(key = "bottom-inset") {
                 Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -470,12 +476,21 @@ private fun LazyListScope.albumsTab(albums: List<Album>) {
     gridRows(albums, key = { it.id }) { album -> AlbumCell(album, Modifier.weight(1f)) }
 }
 
-private fun LazyListScope.videosTab(videos: List<Video>) {
+private fun LazyListScope.videosTab(
+    videos: List<Video>,
+    onOpenVideo: (url: String, title: String) -> Unit,
+) {
     if (videos.isEmpty()) {
         item(key = "videos-empty") { EmptyTab(stringResource(R.string.profile_empty_videos)) }
         return
     }
-    gridRows(videos, key = { it.id }) { video -> VideoCell(video, Modifier.weight(1f)) }
+    gridRows(videos, key = { it.id }) { video ->
+        VideoCell(
+            video = video,
+            onClick = { onOpenVideo(video.videoUrl, video.title) },
+            modifier = Modifier.weight(1f),
+        )
+    }
 }
 
 /**
@@ -542,14 +557,19 @@ private fun AlbumCell(album: Album, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun VideoCell(video: Video, modifier: Modifier = Modifier) {
+private fun VideoCell(
+    video: Video,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(14.dp))
-                .background(MosaicGradients.mediaBrush(video.id)),
+                .background(MosaicGradients.mediaBrush(video.id))
+                .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -788,6 +808,7 @@ private fun ProfileScreenPreview() {
             uiState = ProfileUiState.Loaded(sampleProfile()),
             actions = createActionsProxy(),
             onOpenSettings = {},
+            onOpenVideo = { _, _ -> },
             onBack = {},
         )
     }

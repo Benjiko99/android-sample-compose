@@ -17,7 +17,7 @@ class InMemoryProfileRepositoryTest {
     private val gracePost = post(id = "p2", author = grace)
 
     private val albums = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8)))
-    private val videos = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40)))
+    private val videos = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4")))
 
     private fun repository() = InMemoryProfileRepository(
         users = listOf(ada, grace),

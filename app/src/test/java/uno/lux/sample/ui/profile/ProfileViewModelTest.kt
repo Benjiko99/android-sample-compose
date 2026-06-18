@@ -39,7 +39,7 @@ class ProfileViewModelTest {
             users = listOf(ada),
             postRepository = InMemoryPostRepository(listOf(post)),
             albumsByUser = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8))),
-            videosByUser = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40))),
+            videosByUser = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4"))),
         ),
         userId = userId,
     )
