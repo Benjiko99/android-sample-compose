@@ -459,17 +459,18 @@ private val PopEasing = CubicBezierEasing(0.2f, 1.3f, 0.5f, 1f)
 
 /**
  * Plays the Mosaic "pop" (`@keyframes pop` in the design — scale 1 → 1.35 → 0.9 → 1 over 400ms)
- * whenever [active] turns true, the shared feedback for liking and saving a post. The current
- * value is captured up front so an already-active post scrolling back into view doesn't replay
- * it; only a fresh activation (false → true) animates. Scaling happens in a [graphicsLayer], so
- * the pop draws over the row without reflowing it.
+ * whenever [active] *changes*, the shared feedback for toggling like and save. Like the design,
+ * it pops in both directions — liking and unliking, saving and unsaving. The current value is
+ * captured up front so a post scrolling back into view doesn't replay it; only an actual toggle
+ * animates. Scaling happens in a [graphicsLayer], so the pop draws over the row without
+ * reflowing it.
  */
 @Composable
 private fun Modifier.pop(active: Boolean): Modifier {
     val scale = remember { Animatable(1f) }
     var wasActive by remember { mutableStateOf(active) }
     LaunchedEffect(active) {
-        if (active && !wasActive) {
+        if (active != wasActive) {
             scale.snapTo(1f)
             scale.animateTo(
                 targetValue = 1f,
