@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
             }
 
             MosaicTheme(darkTheme = darkTheme) {
-                SampleApp()
+                SampleApp(currentUserId = viewModel.currentUserId)
             }
         }
     }

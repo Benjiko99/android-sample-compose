@@ -61,7 +61,7 @@ import uno.lux.sample.ui.video.findActivity
  * store, so a pushed page's ViewModel is created on push and cleared on pop.
  */
 @Composable
-fun SampleApp() {
+fun SampleApp(currentUserId: String) {
     val backStack = rememberNavBackStack(Screen.Shell)
     // Push a page unless it's already on top — guards against re-adding the current page (e.g. a
     // double-tap on the gear while its push animation still runs), which would stack a duplicate.
@@ -106,6 +106,7 @@ fun SampleApp() {
             entryProvider = entryProvider {
                 entry<Screen.Shell> {
                     HomeNavShell(
+                        currentUserId = currentUserId,
                         onOpenSettings = openSettings,
                         onOpenProfile = openProfile,
                         onOpenVideo = openVideo,
@@ -144,6 +145,7 @@ fun SampleApp() {
  */
 @Composable
 private fun HomeNavShell(
+    currentUserId: String,
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -193,7 +195,15 @@ private fun HomeNavShell(
                     onOpenVideo = onOpenVideo,
                 )
 
-                AppDestinations.FAVORITES, AppDestinations.PROFILE ->
+                // The Profile tab is the signed-in user's own profile (no up-affordance, so
+                // onBack stays null); tapping another author still pushes Screen.Profile.
+                AppDestinations.PROFILE -> ProfileScreen(
+                    userId = currentUserId,
+                    onOpenSettings = onOpenSettings,
+                    onOpenVideo = onOpenVideo,
+                )
+
+                AppDestinations.FAVORITES ->
                     PlaceholderScreen(
                         titleRes = destination.labelRes,
                         onOpenSettings = onOpenSettings,
