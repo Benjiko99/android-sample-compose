@@ -102,6 +102,13 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         createdAt = now.minus(Duration.ofHours(2)),
         likeCount = 891,
         commentCount = 203,
+        video = Video(
+            id = "pv3",
+            title = "The imitation game, in five seconds",
+            durationSeconds = 5,
+            viewCount = 48_900,
+            videoUrl = SampleVideoUrl,
+        ),
     ),
     Post(
         id = "p4",
@@ -126,6 +133,13 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         createdAt = now.minus(Duration.ofDays(1)),
         likeCount = 5200,
         commentCount = 612,
+        video = Video(
+            id = "pv5",
+            title = "Booting the kernel",
+            durationSeconds = 5,
+            viewCount = 2_050_000,
+            videoUrl = SampleVideoUrl,
+        ),
     ),
     Post(
         id = "p6",

@@ -54,10 +54,12 @@ import kotlinx.coroutines.launch
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.data.Video
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
+import uno.lux.sample.ui.video.VideoPostPlayer
 import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.postLink
 import uno.lux.sample.util.relativeTime
@@ -73,6 +75,7 @@ internal fun PostCard(
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
+    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -86,6 +89,14 @@ internal fun PostCard(
             onOpenProfile = onOpenProfile,
         )
         PostBody(title = post.title, body = post.body)
+        if (post.video != null) {
+            Spacer(Modifier.height(12.dp))
+            VideoPostPlayer(
+                video = post.video,
+                onOpenFullscreen = onOpenVideo,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
         PostActions(
             post = post,
             onToggleLike = onToggleLike,
@@ -476,6 +487,7 @@ private fun PostCardPreview() {
             onToggleLike = {},
             onToggleBookmark = {},
             onOpenProfile = {},
+            onOpenVideo = {},
         )
     }
 }

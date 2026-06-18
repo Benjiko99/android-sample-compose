@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.data.Video
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -60,6 +61,7 @@ interface HomeActions {
 fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -71,6 +73,7 @@ fun HomeScreen(
         actions = viewModel,
         onOpenSettings = onOpenSettings,
         onOpenProfile = onOpenProfile,
+        onOpenVideo = onOpenVideo,
         modifier = modifier,
     )
 }
@@ -87,6 +90,7 @@ internal fun HomeScreen(
     actions: HomeActions,
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -122,6 +126,7 @@ internal fun HomeScreen(
                             listState = listState,
                             actions = actions,
                             onOpenProfile = onOpenProfile,
+                            onOpenVideo = onOpenVideo,
                         )
                     }
             }
@@ -166,6 +171,7 @@ private fun FeedList(
     listState: LazyListState,
     actions: HomeActions,
     onOpenProfile: (userId: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
@@ -175,6 +181,7 @@ private fun FeedList(
                 onToggleLike = { actions.onToggleLike(post.id) },
                 onToggleBookmark = { actions.onToggleBookmark(post.id) },
                 onOpenProfile = { onOpenProfile(post.author.id) },
+                onOpenVideo = onOpenVideo,
             )
         }
         if (endReached) {
@@ -232,6 +239,7 @@ private fun HomeFeedPreview() {
             actions = createActionsProxy(),
             onOpenSettings = {},
             onOpenProfile = {},
+            onOpenVideo = {},
         )
     }
 }
@@ -246,6 +254,7 @@ private fun HomeLoadingPreview() {
             actions = createActionsProxy(),
             onOpenSettings = {},
             onOpenProfile = {},
+            onOpenVideo = {},
         )
     }
 }

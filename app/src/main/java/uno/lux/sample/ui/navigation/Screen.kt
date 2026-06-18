@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 /**
  * The full-screen pages of the app — the keys Navigation 3's back stack is made of. [Shell]
  * is the permanent root carrying the navigation-suite tabs; [Profile], [Settings] and
- * [VideoPlayer] are pushed over it (settings can stack on top of a profile, too). Keys are
+ * [FullscreenVideo] are pushed over it (settings can stack on top of a profile, too). Keys are
  * [Serializable] so `rememberNavBackStack` can persist the stack across configuration changes
  * and process death.
  */
@@ -25,7 +25,11 @@ sealed interface Screen : NavKey {
     @Serializable
     data object Settings : Screen
 
-    /** The full-screen video player, opened by tapping a video on a profile's Videos tab. */
+    /**
+     * The full-screen video page. Opened by a profile-grid video (which it loads itself) or by
+     * an inline post player's fullscreen control (whose running player it reuses). [videoId]
+     * keys the shared player so the inline → full-screen hand-off keeps the same instance.
+     */
     @Serializable
-    data class VideoPlayer(val url: String, val title: String) : Screen
+    data class FullscreenVideo(val videoId: String, val url: String, val title: String) : Screen
 }

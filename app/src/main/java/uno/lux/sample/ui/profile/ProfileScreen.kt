@@ -110,7 +110,7 @@ interface ProfileActions {
 fun ProfileScreen(
     userId: String,
     onOpenSettings: () -> Unit,
-    onOpenVideo: (url: String, title: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
@@ -139,7 +139,7 @@ internal fun ProfileScreen(
     uiState: ProfileUiState,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
-    onOpenVideo: (url: String, title: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
@@ -177,7 +177,7 @@ private fun ProfileContent(
     profile: Profile,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
-    onOpenVideo: (url: String, title: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -218,6 +218,7 @@ private fun ProfileContent(
                 ProfileTab.POSTS -> postsTab(
                     profile = profile,
                     actions = actions,
+                    onOpenVideo = onOpenVideo,
                 )
 
                 ProfileTab.ALBUMS -> albumsTab(profile.albums)
@@ -452,6 +453,7 @@ private fun ProfileTabs(
 private fun LazyListScope.postsTab(
     profile: Profile,
     actions: ProfileActions,
+    onOpenVideo: (Video) -> Unit,
 ) {
     if (profile.posts.isEmpty()) {
         item(key = "posts-empty") { EmptyTab(stringResource(R.string.profile_empty_posts)) }
@@ -464,6 +466,7 @@ private fun LazyListScope.postsTab(
             onToggleBookmark = { actions.onToggleBookmark(post.id) },
             // Already on this author's profile — tapping the header again is a no-op.
             onOpenProfile = {},
+            onOpenVideo = onOpenVideo,
         )
     }
 }
@@ -478,7 +481,7 @@ private fun LazyListScope.albumsTab(albums: List<Album>) {
 
 private fun LazyListScope.videosTab(
     videos: List<Video>,
-    onOpenVideo: (url: String, title: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
 ) {
     if (videos.isEmpty()) {
         item(key = "videos-empty") { EmptyTab(stringResource(R.string.profile_empty_videos)) }
@@ -487,7 +490,7 @@ private fun LazyListScope.videosTab(
     gridRows(videos, key = { it.id }) { video ->
         VideoCell(
             video = video,
-            onClick = { onOpenVideo(video.videoUrl, video.title) },
+            onClick = { onOpenVideo(video) },
             modifier = Modifier.weight(1f),
         )
     }
@@ -808,7 +811,7 @@ private fun ProfileScreenPreview() {
             uiState = ProfileUiState.Loaded(sampleProfile()),
             actions = createActionsProxy(),
             onOpenSettings = {},
-            onOpenVideo = { _, _ -> },
+            onOpenVideo = {},
             onBack = {},
         )
     }

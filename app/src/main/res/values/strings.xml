@@ -70,6 +70,9 @@
     <string name="profile_tab_albums">Albums</string>
     <string name="profile_tab_videos">Videos</string>
     <string name="profile_play">Play</string>
+
+    <!-- Video -->
+    <string name="video_play">Play video</string>
     <!-- Compact view count, e.g. "1.2M views" -->
     <string name="profile_video_views">%1$s views</string>
     <string name="profile_empty_posts">No posts yet</string>

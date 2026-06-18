@@ -19,4 +19,18 @@ class SampleDataTest {
             )
         }
     }
+
+    @Test
+    fun `sample video posts carry a video streaming from the sample url`() {
+        val videoPosts = SamplePosts.mapNotNull { it.video }
+
+        assertTrue("expected at least one video post", videoPosts.isNotEmpty())
+        videoPosts.forEach { video ->
+            assertEquals(
+                "post video ${video.id} should use the sample stream",
+                SampleVideoUrl,
+                video.videoUrl,
+            )
+        }
+    }
 }

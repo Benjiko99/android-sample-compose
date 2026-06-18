@@ -12,4 +12,6 @@ data class Post(
     val commentCount: Int,
     val isLiked: Boolean = false,
     val isBookmarked: Boolean = false,
+    /** When set, the post carries a video that plays inline in the feed. */
+    val video: Video? = null,
 )

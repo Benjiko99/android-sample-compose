@@ -1,8 +1,5 @@
 package uno.lux.sample.ui.video
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,7 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,57 +26,37 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import uno.lux.sample.R
 
 /**
- * A full-screen video player for [url], pushed over the rest of the app. It owns an [ExoPlayer]
- * built once per [url], hands it to a Media3 [PlayerView] (which brings its own transport
- * controls), and releases it on dispose. Playback is paused when the page leaves the foreground
- * and resumed when it returns, so the stream doesn't keep running behind the lock screen. While
- * the player is shown the system bars are hidden for an immersive, edge-to-edge stage and
- * restored when it pops.
- *
- * The player is inherently a stateful Android component with no business logic to unit test, so
- * it stays a self-contained composable rather than a ViewModel-backed screen.
+ * The full-screen video page, pushed over the rest of the app. It does not own a player: it
+ * reuses the shared one from [LocalVideoPlayback], so a video promoted from an inline post keeps
+ * playing from the same position. [openFullscreen] either adopts the running inline player or, if
+ * this page is the entry point (a profile thumbnail), loads the video fresh; the matching teardown
+ * runs in [exitFullscreen] when the page is really popped. The system bars hide for an immersive
+ * stage and are restored on the way out.
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun VideoPlayerScreen(
+fun FullscreenVideoScreen(
+    videoId: String,
     url: String,
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val player = remember(url) {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(url))
-            playWhenReady = true
-            prepare()
-        }
+    val playback = LocalVideoPlayback.current
+    LaunchedEffect(playback, videoId, url) {
+        playback?.openFullscreen(videoId, url)
     }
 
-    // Pause when backgrounded, resume when foregrounded, and release the player on dispose.
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, player) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> player.pause()
-                Lifecycle.Event.ON_RESUME -> player.play()
-                else -> Unit
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
+    // Exit only on a real pop, not a configuration change — a rotation must keep playing.
+    val activity = LocalContext.current.findActivity()
+    DisposableEffect(playback) {
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            player.release()
+            if (activity?.isChangingConfigurations != true) playback?.exitFullscreen()
         }
     }
 
@@ -93,12 +70,16 @@ fun VideoPlayerScreen(
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
-                    this.player = player
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
                     contentDescription = title
+                    // The control already reads as "exit full screen"; tapping it pops the page.
+                    setFullscreenButtonState(true)
+                    setFullscreenButtonClickListener { onBack() }
                 }
             },
+            update = { view -> view.player = playback?.player },
+            onRelease = { view -> view.player = null },
             modifier = Modifier.fillMaxSize(),
         )
         IconButton(
@@ -139,10 +120,4 @@ private fun ImmersiveSystemBars() {
         }
         onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
     }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }

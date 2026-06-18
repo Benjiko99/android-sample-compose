@@ -1,5 +1,6 @@
 package uno.lux.sample.ui
 
+import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -18,26 +19,37 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
+import uno.lux.sample.data.Video
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.ui.profile.ProfileScreen
 import uno.lux.sample.ui.settings.SettingsScreen
 import uno.lux.sample.ui.theme.LocalMosaicColors
-import uno.lux.sample.ui.video.VideoPlayerScreen
+import uno.lux.sample.ui.video.FullscreenVideoScreen
+import uno.lux.sample.ui.video.LocalVideoPlayback
+import uno.lux.sample.ui.video.VideoPlaybackViewModel
+import uno.lux.sample.ui.video.findActivity
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberNavBackStack] back
@@ -58,47 +70,69 @@ fun SampleApp() {
     }
     val openSettings = { pushUnique(Screen.Settings) }
     val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
-    val openVideo = { url: String, title: String -> pushUnique(Screen.VideoPlayer(url, title)) }
+    val openVideo = { video: Video ->
+        pushUnique(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
+    }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
-    NavDisplay(
-        backStack = backStack,
-        onBack = goBack,
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator(),
-        ),
-        transitionSpec = { pushTransition() },
-        popTransitionSpec = { popTransition() },
-        predictivePopTransitionSpec = { popTransition() },
-        modifier = Modifier.fillMaxSize(),
-        entryProvider = entryProvider {
-            entry<Screen.Shell> {
-                HomeNavShell(
-                    onOpenSettings = openSettings,
-                    onOpenProfile = openProfile,
-                )
-            }
-            entry<Screen.Profile> { profile ->
-                ProfileScreen(
-                    userId = profile.userId,
-                    onOpenSettings = openSettings,
-                    onOpenVideo = openVideo,
-                    onBack = goBack,
-                )
-            }
-            entry<Screen.Settings> {
-                SettingsScreen(onBack = goBack)
-            }
-            entry<Screen.VideoPlayer> { videoPlayer ->
-                VideoPlayerScreen(
-                    url = videoPlayer.url,
-                    title = videoPlayer.title,
-                    onBack = goBack,
-                )
-            }
-        },
-    )
+    // The shared player lives in an activity-scoped ViewModel so it survives the push to full
+    // screen and configuration changes, and is released when the activity finishes. Provided to
+    // the whole back stack so inline posts and the full-screen page reach the same instance.
+    val activity = LocalContext.current.findActivity() as ComponentActivity
+    val playback = hiltViewModel<VideoPlaybackViewModel>(activity).controller
+
+    // Pause playback when the app is backgrounded; it resumes on the user's next tap.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, playback) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) playback.pause()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    CompositionLocalProvider(LocalVideoPlayback provides playback) {
+        NavDisplay(
+            backStack = backStack,
+            onBack = goBack,
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
+            transitionSpec = { pushTransition() },
+            popTransitionSpec = { popTransition() },
+            predictivePopTransitionSpec = { popTransition() },
+            modifier = Modifier.fillMaxSize(),
+            entryProvider = entryProvider {
+                entry<Screen.Shell> {
+                    HomeNavShell(
+                        onOpenSettings = openSettings,
+                        onOpenProfile = openProfile,
+                        onOpenVideo = openVideo,
+                    )
+                }
+                entry<Screen.Profile> { profile ->
+                    ProfileScreen(
+                        userId = profile.userId,
+                        onOpenSettings = openSettings,
+                        onOpenVideo = openVideo,
+                        onBack = goBack,
+                    )
+                }
+                entry<Screen.Settings> {
+                    SettingsScreen(onBack = goBack)
+                }
+                entry<Screen.FullscreenVideo> { video ->
+                    FullscreenVideoScreen(
+                        videoId = video.videoId,
+                        url = video.url,
+                        title = video.title,
+                        onBack = goBack,
+                    )
+                }
+            },
+        )
+    }
 }
 
 /**
@@ -112,6 +146,7 @@ fun SampleApp() {
 private fun HomeNavShell(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
+    onOpenVideo: (Video) -> Unit,
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val navItemColors = NavigationSuiteDefaults.itemColors(
@@ -155,6 +190,7 @@ private fun HomeNavShell(
                 AppDestinations.HOME -> HomeScreen(
                     onOpenSettings = onOpenSettings,
                     onOpenProfile = onOpenProfile,
+                    onOpenVideo = onOpenVideo,
                 )
 
                 AppDestinations.FAVORITES, AppDestinations.PROFILE ->
