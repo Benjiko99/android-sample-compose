@@ -204,7 +204,6 @@ private fun ProfileContent(
             stickyHeader(key = "tabs") {
                 ProfileTabs(
                     selected = selectedTab,
-                    profile = profile,
                     onSelect = { selectedTab = it },
                     topInset = tabInset,
                 )
@@ -402,17 +401,15 @@ private fun Stat(value: Int, label: String) {
 
 private enum class ProfileTab(
     @get:StringRes val labelRes: Int,
-    val count: (Profile) -> Int,
 ) {
-    POSTS(R.string.profile_tab_posts, Profile::postsCount),
-    ALBUMS(R.string.profile_tab_albums, Profile::albumsCount),
-    VIDEOS(R.string.profile_tab_videos, Profile::videosCount),
+    POSTS(R.string.profile_tab_posts),
+    ALBUMS(R.string.profile_tab_albums),
+    VIDEOS(R.string.profile_tab_videos),
 }
 
 @Composable
 private fun ProfileTabs(
     selected: ProfileTab,
-    profile: Profile,
     onSelect: (ProfileTab) -> Unit,
     topInset: Dp,
 ) {
@@ -431,19 +428,11 @@ private fun ProfileTabs(
                     selectedContentColor = MaterialTheme.colorScheme.primary,
                     unselectedContentColor = LocalMosaicColors.current.textTertiary,
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 10.dp),
-                    ) {
-                        Text(
-                            text = stringResource(tab.labelRes),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Text(
-                            text = compactCount(tab.count(profile)).asText(),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
+                    Text(
+                        text = stringResource(tab.labelRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(vertical = 14.dp),
+                    )
                 }
             }
         }
