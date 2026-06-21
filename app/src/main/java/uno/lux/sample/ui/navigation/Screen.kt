@@ -32,4 +32,8 @@ sealed interface Screen : NavKey {
      */
     @Serializable
     data class FullscreenVideo(val videoId: String, val url: String, val title: String) : Screen
+
+    /** A post's detail page: full content, media, and the comment thread. */
+    @Serializable
+    data class PostDetail(val postId: String) : Screen
 }

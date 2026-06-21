@@ -213,6 +213,54 @@ internal val SampleAlbums: Map<String, List<Album>> = mapOf(
     ),
 )
 
+/** Sample comments seeded per post id; timestamps are anchored to first access. */
+internal val SampleComments: Map<String, List<Comment>> = buildSampleComments(Instant.now())
+
+private fun buildSampleComments(now: Instant): Map<String, List<Comment>> = mapOf(
+    // p1 "The engine weaves algebraic patterns" — post is 4m old
+    "p1" to listOf(
+        Comment("c1p1", SampleUsers[1], now.minus(Duration.ofMinutes(3)),
+            "The loom analogy is poetic — your best one yet.", 24),
+        Comment("c2p1", SampleUsers[2], now.minus(Duration.ofMinutes(1)),
+            "Did Ada ever see a Jacquard loom? I believe she did.", 9),
+    ),
+    // p2 "Found the bug" — post is 38m old
+    "p2" to listOf(
+        Comment("c1p2", SampleUsers[2], now.minus(Duration.ofMinutes(35)),
+            "First recorded debugging session. The logbook is incredible.", 61),
+        Comment("c2p2", SampleUsers[3], now.minus(Duration.ofMinutes(20)),
+            "It's always the actual bugs, isn't it.", 18),
+    ),
+    // p3 "Can machines think?" — post is 2h old
+    "p3" to listOf(
+        Comment("c1p3", SampleUsers[0], now.minus(Duration.ofMinutes(115)),
+            "The imitation game is really a test of our assumptions, not the machine.", 44),
+        Comment("c2p3", SampleUsers[3], now.minus(Duration.ofMinutes(90)),
+            "The question itself is the insight. Brilliant framing.", 12),
+        Comment("c3p3", SampleUsers[4], now.minus(Duration.ofMinutes(38)),
+            "Philosophy embedded in a practical test.", 3),
+    ),
+    // p4 "Priority scheduling saved the landing" — post is 6h old
+    "p4" to listOf(
+        Comment("c1p4", SampleUsers[0], now.minus(Duration.ofMinutes(350)),
+            "The 1202 alarm story is one of the best in engineering. They kept going.", 31),
+        Comment("c2p4", SampleUsers[2], now.minus(Duration.ofHours(3)),
+            "Priority scheduling is underappreciated in computing history.", 7),
+    ),
+    // p5 "Just a hobby, won't be big" — post is 1d old
+    "p5" to listOf(
+        Comment("c1p5", SampleUsers[1], now.minus(Duration.ofHours(20)),
+            "Famous last words. The kernel is still running.", 22),
+        Comment("c2p5", SampleUsers[0], now.minus(Duration.ofHours(16)),
+            "I love how this turned out to be just a hobby.", 15),
+    ),
+    // p6 "On numbers and music" — post is 3d old
+    "p6" to listOf(
+        Comment("c1p6", SampleUsers[1], now.minus(Duration.ofDays(2)),
+            "The Analytical Engine composing music — a beautiful idea.", 11),
+    ),
+)
+
 /** Video stand-ins per user id, surfaced on the profile's Videos tab. */
 internal val SampleVideos: Map<String, List<Video>> = mapOf(
     "u1" to listOf(

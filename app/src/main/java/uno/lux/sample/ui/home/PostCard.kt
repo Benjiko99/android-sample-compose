@@ -76,6 +76,7 @@ internal fun PostCard(
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -105,6 +106,7 @@ internal fun PostCard(
             post = post,
             onToggleLike = onToggleLike,
             onToggleBookmark = onToggleBookmark,
+            onOpenPost = onOpenPost,
         )
         Spacer(Modifier.height(4.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -374,6 +376,7 @@ private fun PostActions(
     post: Post,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
+    onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
@@ -403,7 +406,7 @@ private fun PostActions(
             contentDescriptionRes = R.string.post_action_comment,
             label = compactCount(post.commentCount).asText(),
             tint = muted,
-            onClick = { /* Opens the comment thread in a later iteration. */ },
+            onClick = onOpenPost,
         )
         Spacer(Modifier.weight(1f))
         ActionButton(
@@ -501,6 +504,7 @@ private fun PostCardPreview() {
             onToggleBookmark = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenPost = {},
         )
     }
 }

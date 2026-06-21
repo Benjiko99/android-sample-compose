@@ -62,6 +62,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -74,6 +75,7 @@ fun HomeScreen(
         onOpenSettings = onOpenSettings,
         onOpenProfile = onOpenProfile,
         onOpenVideo = onOpenVideo,
+        onOpenPost = onOpenPost,
         modifier = modifier,
     )
 }
@@ -91,6 +93,7 @@ internal fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -127,6 +130,7 @@ internal fun HomeScreen(
                             actions = actions,
                             onOpenProfile = onOpenProfile,
                             onOpenVideo = onOpenVideo,
+                            onOpenPost = onOpenPost,
                         )
                     }
             }
@@ -172,6 +176,7 @@ private fun FeedList(
     actions: HomeActions,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
@@ -182,6 +187,7 @@ private fun FeedList(
                 onToggleBookmark = { actions.onToggleBookmark(post.id) },
                 onOpenProfile = { onOpenProfile(post.author.id) },
                 onOpenVideo = onOpenVideo,
+                onOpenPost = { onOpenPost(post.id) },
             )
         }
         if (endReached) {
@@ -240,6 +246,7 @@ private fun HomeFeedPreview() {
             onOpenSettings = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenPost = {},
         )
     }
 }
@@ -255,6 +262,7 @@ private fun HomeLoadingPreview() {
             onOpenSettings = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenPost = {},
         )
     }
 }

@@ -43,6 +43,7 @@ import uno.lux.sample.data.Video
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.navigation.Screen
+import uno.lux.sample.ui.post.PostDetailScreen
 import uno.lux.sample.ui.profile.ProfileScreen
 import uno.lux.sample.ui.settings.SettingsScreen
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -70,6 +71,7 @@ fun SampleApp(currentUserId: String) {
     }
     val openSettings = { pushUnique(Screen.Settings) }
     val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
+    val openPost = { postId: String -> pushUnique(Screen.PostDetail(postId)) }
     val openVideo = { video: Video ->
         pushUnique(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
     }
@@ -110,6 +112,7 @@ fun SampleApp(currentUserId: String) {
                         onOpenSettings = openSettings,
                         onOpenProfile = openProfile,
                         onOpenVideo = openVideo,
+                        onOpenPost = openPost,
                     )
                 }
                 entry<Screen.Profile> { profile ->
@@ -117,6 +120,7 @@ fun SampleApp(currentUserId: String) {
                         userId = profile.userId,
                         onOpenSettings = openSettings,
                         onOpenVideo = openVideo,
+                        onOpenPost = openPost,
                         onBack = goBack,
                     )
                 }
@@ -129,6 +133,14 @@ fun SampleApp(currentUserId: String) {
                         url = video.url,
                         title = video.title,
                         onBack = goBack,
+                    )
+                }
+                entry<Screen.PostDetail> { detail ->
+                    PostDetailScreen(
+                        postId = detail.postId,
+                        onBack = goBack,
+                        onOpenProfile = openProfile,
+                        onOpenVideo = openVideo,
                     )
                 }
             },
@@ -149,6 +161,7 @@ private fun HomeNavShell(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenPost: (postId: String) -> Unit,
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val navItemColors = NavigationSuiteDefaults.itemColors(
@@ -193,6 +206,7 @@ private fun HomeNavShell(
                     onOpenSettings = onOpenSettings,
                     onOpenProfile = onOpenProfile,
                     onOpenVideo = onOpenVideo,
+                    onOpenPost = onOpenPost,
                 )
 
                 // The Profile tab is the signed-in user's own profile (no up-affordance, so
@@ -201,6 +215,7 @@ private fun HomeNavShell(
                     userId = currentUserId,
                     onOpenSettings = onOpenSettings,
                     onOpenVideo = onOpenVideo,
+                    onOpenPost = onOpenPost,
                 )
 
                 AppDestinations.FAVORITES ->

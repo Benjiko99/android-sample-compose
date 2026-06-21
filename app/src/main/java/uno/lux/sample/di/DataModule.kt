@@ -10,13 +10,17 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import uno.lux.sample.data.CommentRepository
 import uno.lux.sample.data.DataStoreSettingsRepository
+import uno.lux.sample.data.InMemoryCommentRepository
 import uno.lux.sample.data.InMemoryPostRepository
 import uno.lux.sample.data.InMemoryProfileRepository
 import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.PostRepository
 import uno.lux.sample.data.ProfileRepository
+import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.SettingsRepository
+import uno.lux.sample.data.User
 import javax.inject.Singleton
 
 /**
@@ -59,4 +63,15 @@ object DataModule {
     @Provides
     @CurrentUserId
     fun provideCurrentUserId(): String = LoggedInUserId
+
+    /** The signed-in [User] object resolved from [provideCurrentUserId]. */
+    @Provides
+    @CurrentUser
+    fun provideCurrentUser(@CurrentUserId currentUserId: String): User =
+        SampleUsers.first { it.id == currentUserId }
+
+    @Provides
+    @Singleton
+    fun provideCommentRepository(@CurrentUser currentUser: User): CommentRepository =
+        InMemoryCommentRepository(currentUser = currentUser)
 }
