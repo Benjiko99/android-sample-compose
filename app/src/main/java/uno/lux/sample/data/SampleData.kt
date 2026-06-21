@@ -72,13 +72,13 @@ internal val SampleUsers = listOf(
 const val LoggedInUserId = "u1"
 
 /** The stand-in stream every sample [Video] points at — a short, freely hosted MP4. */
-const val SampleVideoUrl = "https://samplelib.com/mp4/sample-5s-720p.mp4"
+const val SampleVideoUrl = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
 
 /** The stand-in photos every feed album post shows, as freely hosted JPEGs. */
 val SampleAlbumImages = listOf(
-    "https://samplelib.com/jpeg/sample-clouds-400x300.jpg",
-    "https://samplelib.com/jpeg/sample-city-park-400x300.jpg",
-    "https://samplelib.com/jpeg/sample-birch-400x300.jpg",
+    "https://getsamplefiles.com/download/jpg/sample-2.jpg",
+    "https://getsamplefiles.com/download/jpg/sample-4.jpg",
+    "https://getsamplefiles.com/download/jpg/sample-5.jpg",
 )
 
 internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
