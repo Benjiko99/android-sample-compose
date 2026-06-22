@@ -9,9 +9,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.CommentRepository
-import uno.lux.sample.data.PostRepository
 import uno.lux.sample.data.User
+import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.di.CurrentUser
 import uno.lux.sample.util.stateInWhileSubscribed
 

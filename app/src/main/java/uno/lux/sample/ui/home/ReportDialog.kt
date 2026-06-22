@@ -28,7 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
-import uno.lux.sample.data.ReportReason
+import uno.lux.sample.data.post.ReportReason
 import uno.lux.sample.ui.theme.MosaicTheme
 
 /**

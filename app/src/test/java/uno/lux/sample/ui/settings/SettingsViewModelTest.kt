@@ -8,8 +8,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.InMemorySettingsRepository
-import uno.lux.sample.data.ThemeMode
+import uno.lux.sample.data.settings.InMemorySettingsRepository
+import uno.lux.sample.data.settings.ThemeMode
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {

@@ -39,8 +39,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
-import uno.lux.sample.data.Album
-import uno.lux.sample.data.Video
+import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.album.AlbumViewerScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.home.HomeScreen

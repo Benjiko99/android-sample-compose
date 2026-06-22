@@ -1,10 +1,12 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.post
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.time.Instant
+import uno.lux.sample.data.SampleComments
+import uno.lux.sample.data.User
 
 /**
  * Single source of truth for post comments.

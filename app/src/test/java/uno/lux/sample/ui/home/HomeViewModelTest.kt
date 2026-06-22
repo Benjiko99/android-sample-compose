@@ -13,10 +13,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.InMemoryPostRepository
-import uno.lux.sample.data.Post
-import uno.lux.sample.data.PostRepository
 import uno.lux.sample.data.User
+import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.PostRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)

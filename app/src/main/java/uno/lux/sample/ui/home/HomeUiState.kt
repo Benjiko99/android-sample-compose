@@ -1,6 +1,6 @@
 package uno.lux.sample.ui.home
 
-import uno.lux.sample.data.Post
+import uno.lux.sample.data.post.Post
 
 /**
  * Exhaustive state for the feed screen, rendered by a stateless `HomeScreen`. Modeled as

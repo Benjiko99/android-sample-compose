@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.settings
 
 /** The user's theme preference. [SYSTEM] follows the device's light/dark setting. */
 enum class ThemeMode {

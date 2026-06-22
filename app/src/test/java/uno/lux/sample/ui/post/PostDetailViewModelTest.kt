@@ -11,11 +11,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.Comment
-import uno.lux.sample.data.InMemoryCommentRepository
-import uno.lux.sample.data.InMemoryPostRepository
-import uno.lux.sample.data.Post
 import uno.lux.sample.data.User
+import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.post.InMemoryCommentRepository
+import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.Post
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)

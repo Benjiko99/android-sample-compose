@@ -9,7 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.ProfileRepository
+import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.di.CurrentUserId
 import uno.lux.sample.util.stateInWhileSubscribed
 

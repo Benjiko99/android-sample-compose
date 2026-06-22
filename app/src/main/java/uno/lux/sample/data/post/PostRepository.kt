@@ -1,10 +1,11 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.post
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import uno.lux.sample.data.SamplePosts
 
 /**
  * Single source of truth for feed posts.

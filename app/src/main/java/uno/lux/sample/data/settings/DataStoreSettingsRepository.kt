@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

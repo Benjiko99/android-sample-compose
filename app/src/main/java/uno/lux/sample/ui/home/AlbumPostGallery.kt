@@ -28,7 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
-import uno.lux.sample.data.Album
+import uno.lux.sample.data.post.Album
 import uno.lux.sample.ui.components.MosaicGradients
 
 /**

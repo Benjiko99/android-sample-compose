@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.PostRepository
+import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 

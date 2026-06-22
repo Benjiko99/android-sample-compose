@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.settings
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.settings
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

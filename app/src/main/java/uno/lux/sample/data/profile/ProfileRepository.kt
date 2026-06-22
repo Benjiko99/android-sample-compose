@@ -1,8 +1,16 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.profile
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import uno.lux.sample.data.SampleAlbums
+import uno.lux.sample.data.SampleUsers
+import uno.lux.sample.data.SampleVideos
+import uno.lux.sample.data.User
+import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.Video
 
 /**
  * Single source of truth for a user's profile.

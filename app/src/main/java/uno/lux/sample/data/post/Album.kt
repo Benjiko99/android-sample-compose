@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.post
 
 /**
  * An image album. On the profile grid the cover is a deterministic gradient stand-in keyed by

@@ -2,6 +2,10 @@ package uno.lux.sample.data
 
 import java.time.Duration
 import java.time.Instant
+import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.Video
 
 /**
  * Stand-in content for the in-memory repository and Compose previews. Timestamps are

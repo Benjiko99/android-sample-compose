@@ -1,6 +1,6 @@
 package uno.lux.sample.ui.profile
 
-import uno.lux.sample.data.Profile
+import uno.lux.sample.data.profile.Profile
 
 /** The profile screen's state: loading, the loaded [Profile], or an unknown user. */
 sealed interface ProfileUiState {

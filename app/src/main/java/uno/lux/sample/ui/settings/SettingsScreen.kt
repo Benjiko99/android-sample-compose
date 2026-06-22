@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.data.ThemeMode
+import uno.lux.sample.data.settings.ThemeMode
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
 

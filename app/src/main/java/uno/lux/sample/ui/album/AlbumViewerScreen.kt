@@ -47,7 +47,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
-import uno.lux.sample.data.Album
+import uno.lux.sample.data.post.Album
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.video.findActivity
 

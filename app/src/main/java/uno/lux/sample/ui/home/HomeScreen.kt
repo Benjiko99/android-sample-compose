@@ -35,10 +35,10 @@ import androidx.compose.ui.unit.em
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.data.Album
-import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
-import uno.lux.sample.data.Video
+import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors

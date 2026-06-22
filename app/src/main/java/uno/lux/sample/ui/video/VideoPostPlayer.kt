@@ -26,7 +26,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import uno.lux.sample.R
-import uno.lux.sample.data.Video
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.util.formatVideoDuration
 

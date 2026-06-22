@@ -1,7 +1,7 @@
 package uno.lux.sample.ui.post
 
-import uno.lux.sample.data.Comment
-import uno.lux.sample.data.Post
+import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.post.Post
 
 sealed interface PostDetailUiState {
     data object Loading : PostDetailUiState

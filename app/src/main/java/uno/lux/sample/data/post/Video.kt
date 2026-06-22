@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.post
 
 data class Video(
     val id: String,

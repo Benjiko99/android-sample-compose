@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.post
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.User
 import java.time.Instant
 
 class InMemoryCommentRepositoryTest {

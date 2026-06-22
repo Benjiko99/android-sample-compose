@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.post
 
 /**
  * Why a user is reporting a post.

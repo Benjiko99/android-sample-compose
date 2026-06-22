@@ -10,17 +10,17 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import uno.lux.sample.data.CommentRepository
-import uno.lux.sample.data.DataStoreSettingsRepository
-import uno.lux.sample.data.InMemoryCommentRepository
-import uno.lux.sample.data.InMemoryPostRepository
-import uno.lux.sample.data.InMemoryProfileRepository
 import uno.lux.sample.data.LoggedInUserId
-import uno.lux.sample.data.PostRepository
-import uno.lux.sample.data.ProfileRepository
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.SettingsRepository
 import uno.lux.sample.data.User
+import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.InMemoryCommentRepository
+import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.profile.InMemoryProfileRepository
+import uno.lux.sample.data.profile.ProfileRepository
+import uno.lux.sample.data.settings.DataStoreSettingsRepository
+import uno.lux.sample.data.settings.SettingsRepository
 import javax.inject.Singleton
 
 /**

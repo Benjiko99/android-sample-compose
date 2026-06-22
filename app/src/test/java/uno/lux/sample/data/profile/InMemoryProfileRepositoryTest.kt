@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.profile
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -6,6 +6,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.User
+import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.Video
 import java.time.Instant
 
 class InMemoryProfileRepositoryTest {

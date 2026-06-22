@@ -72,14 +72,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.data.Album
-import uno.lux.sample.data.Profile
 import uno.lux.sample.data.SampleAlbums
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.SampleVideos
 import uno.lux.sample.data.User
-import uno.lux.sample.data.Video
+import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.format.asText
