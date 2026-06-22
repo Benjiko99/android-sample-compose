@@ -141,13 +141,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         commentCount = 88,
         isLiked = true,
         isBookmarked = true,
-        video = Video(
-            id = "pv4",
-            title = "Touchdown replay",
-            durationSeconds = 5,
-            viewCount = 1_540_000,
-            videoUrl = SampleVideoUrl,
-        ),
+        video = null,
         album = Album(
             id = "pa4",
             title = "Launch room",

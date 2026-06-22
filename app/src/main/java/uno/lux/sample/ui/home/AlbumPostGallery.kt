@@ -1,55 +1,93 @@
 package uno.lux.sample.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import uno.lux.sample.R
 import uno.lux.sample.data.Album
 import uno.lux.sample.ui.components.MosaicGradients
 
 /**
  * An album post's media: its [Album.images] laid out in a horizontally scrolling row, each photo
- * loaded with Coil. While a photo loads (or if it fails) the deterministic Mosaic gradient shows
- * through behind it, so the row never flashes empty. The row scrolls edge to edge with a 16dp
- * inset, matching the feed's gutter.
+ * loaded with Coil. Tapping an image calls [onOpenImage] with its index (for the fullscreen
+ * viewer). A count badge ([Album.itemCount] with an image icon) is pinned to the bottom-end
+ * corner of the row, always visible regardless of scroll position. While a photo loads (or if it
+ * fails) the deterministic Mosaic gradient shows through behind it.
  */
 @Composable
 internal fun AlbumPostGallery(
     album: Album,
+    onOpenImage: (imageIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        itemsIndexed(album.images) { index, url ->
-            Box(
-                modifier = Modifier
-                    .width(240.dp)
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MosaicGradients.mediaBrush("${album.id}-$index")),
-            ) {
-                AsyncImage(
-                    model = url,
-                    contentDescription = album.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
+    Box(modifier = modifier.fillMaxWidth()) {
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            itemsIndexed(album.images) { index, url ->
+                Box(
+                    modifier = Modifier
+                        .width(240.dp)
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MosaicGradients.mediaBrush("${album.id}-$index"))
+                        .clickable { onOpenImage(index) },
+                ) {
+                    AsyncImage(
+                        model = url,
+                        contentDescription = album.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(end = 4.dp, top = 4.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.42f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_image),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = "${index + 1}/${album.itemCount}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White,
+                        )
+                    }
+                }
             }
         }
     }

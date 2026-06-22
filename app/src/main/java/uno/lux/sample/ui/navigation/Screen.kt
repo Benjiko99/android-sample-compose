@@ -36,4 +36,16 @@ sealed interface Screen : NavKey {
     /** A post's detail page: full content, media, and the comment thread. */
     @Serializable
     data class PostDetail(val postId: String) : Screen
+
+    /**
+     * Full-screen album image viewer with a horizontal pager. [images] is the subset carried by
+     * the feed post's [Album]; [initialIndex] opens the pager at the image the user tapped.
+     */
+    @Serializable
+    data class AlbumViewer(
+        val albumId: String,
+        val albumTitle: String,
+        val images: List<String>,
+        val initialIndex: Int,
+    ) : Screen
 }

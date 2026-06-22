@@ -76,6 +76,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
+import uno.lux.sample.data.Album
 import uno.lux.sample.data.Comment
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SampleComments
@@ -104,6 +105,7 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostDetailViewModel = hiltViewModel<PostDetailViewModel, PostDetailViewModel.Factory>(
         creationCallback = { factory -> factory.create(postId) },
@@ -116,6 +118,7 @@ fun PostDetailScreen(
         onBack = onBack,
         onOpenProfile = onOpenProfile,
         onOpenVideo = onOpenVideo,
+        onOpenAlbum = onOpenAlbum,
         onToggleLike = viewModel::onToggleLike,
         onToggleBookmark = viewModel::onToggleBookmark,
         onToggleCommentLike = viewModel::onToggleCommentLike,
@@ -137,6 +140,7 @@ internal fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: String) -> Unit,
@@ -208,6 +212,7 @@ internal fun PostDetailScreen(
                 comments = uiState.comments,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
+                onOpenAlbum = onOpenAlbum,
                 onToggleLike = onToggleLike,
                 onToggleBookmark = onToggleBookmark,
                 onToggleCommentLike = onToggleCommentLike,
@@ -396,6 +401,7 @@ private fun PostDetailContent(
     comments: List<Comment>,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: String) -> Unit,
@@ -410,6 +416,7 @@ private fun PostDetailContent(
                 post = post,
                 onOpenProfile = { onOpenProfile(post.author.id) },
                 onOpenVideo = onOpenVideo,
+                onOpenAlbum = onOpenAlbum,
                 onToggleLike = onToggleLike,
                 onToggleBookmark = onToggleBookmark,
                 onScrollToComments = { scope.launch { listState.animateScrollToItem(index = 1) } },
@@ -440,6 +447,7 @@ private fun DetailPostCard(
     post: Post,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onScrollToComments: () -> Unit,
@@ -454,7 +462,10 @@ private fun DetailPostCard(
         DetailPostBody(title = post.title, body = post.body)
         if (post.album != null) {
             Spacer(Modifier.height(12.dp))
-            AlbumPostGallery(album = post.album)
+            AlbumPostGallery(
+                album = post.album,
+                onOpenImage = { index -> onOpenAlbum(post.album, index) },
+            )
         }
         if (post.video != null) {
             Spacer(Modifier.height(12.dp))
@@ -838,6 +849,7 @@ private fun PostDetailLoadedPreview() {
             onBack = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenAlbum = { _, _ -> },
             onToggleLike = {},
             onToggleBookmark = {},
             onToggleCommentLike = {},
@@ -856,6 +868,7 @@ private fun PostDetailLoadingPreview() {
             onBack = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenAlbum = { _, _ -> },
             onToggleLike = {},
             onToggleBookmark = {},
             onToggleCommentLike = {},

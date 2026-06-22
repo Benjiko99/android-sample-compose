@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -18,8 +19,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -31,6 +34,7 @@ import androidx.compose.ui.unit.em
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
+import uno.lux.sample.data.Album
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.Video
@@ -38,6 +42,7 @@ import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
+import uno.lux.sample.ui.video.LocalVideoPlayback
 import uno.lux.sample.util.createActionsProxy
 
 /**
@@ -62,6 +67,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -75,6 +81,7 @@ fun HomeScreen(
         onOpenSettings = onOpenSettings,
         onOpenProfile = onOpenProfile,
         onOpenVideo = onOpenVideo,
+        onOpenAlbum = onOpenAlbum,
         onOpenPost = onOpenPost,
         modifier = modifier,
     )
@@ -93,6 +100,7 @@ internal fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -130,6 +138,7 @@ internal fun HomeScreen(
                             actions = actions,
                             onOpenProfile = onOpenProfile,
                             onOpenVideo = onOpenVideo,
+                            onOpenAlbum = onOpenAlbum,
                             onOpenPost = onOpenPost,
                         )
                     }
@@ -176,9 +185,18 @@ private fun FeedList(
     actions: HomeActions,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val playback = LocalVideoPlayback.current
+    LaunchedEffect(listState, posts, playback) {
+        snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
+            if (playback == null || playback.isFullscreen) return@collect
+            val video = autoPlayVideo(layoutInfo, posts)
+            if (video != null) playback.playInline(video.id, video.videoUrl) else playback.stop()
+        }
+    }
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         items(posts, key = { it.id }) { post ->
             PostCard(
@@ -187,6 +205,7 @@ private fun FeedList(
                 onToggleBookmark = { actions.onToggleBookmark(post.id) },
                 onOpenProfile = { onOpenProfile(post.author.id) },
                 onOpenVideo = onOpenVideo,
+                onOpenAlbum = onOpenAlbum,
                 onOpenPost = { onOpenPost(post.id) },
             )
         }
@@ -235,6 +254,28 @@ private fun CaughtUpFooter(modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * Returns the [Video] that should auto-play — the video post with the greatest on-screen fraction
+ * that meets the 50 % visibility threshold — or null when no video qualifies.
+ *
+ * [LazyListItemInfo.index] maps 1:1 to [posts] because [FeedList] emits posts first (indices
+ * 0..lastIndex) then optionally a footer item at [posts.size].
+ */
+private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<Post>): Video? {
+    val viewportStart = layoutInfo.viewportStartOffset
+    val viewportEnd = layoutInfo.viewportEndOffset
+    fun visibleFraction(offset: Int, size: Int): Float {
+        val visibleTop = maxOf(offset, viewportStart)
+        val visibleBottom = minOf(offset + size, viewportEnd)
+        return maxOf(0, visibleBottom - visibleTop).toFloat() / size
+    }
+    return layoutInfo.visibleItemsInfo
+        .filter { it.index < posts.size && posts[it.index].video != null }
+        .maxByOrNull { visibleFraction(it.offset, it.size) }
+        ?.takeIf { visibleFraction(it.offset, it.size) >= 0.5f }
+        ?.let { posts[it.index].video }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun HomeFeedPreview() {
@@ -246,6 +287,7 @@ private fun HomeFeedPreview() {
             onOpenSettings = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenAlbum = { _, _ -> },
             onOpenPost = {},
         )
     }
@@ -262,6 +304,7 @@ private fun HomeLoadingPreview() {
             onOpenSettings = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenAlbum = { _, _ -> },
             onOpenPost = {},
         )
     }

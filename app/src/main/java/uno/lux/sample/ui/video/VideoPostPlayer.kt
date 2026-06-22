@@ -61,6 +61,8 @@ internal fun VideoPostPlayer(
                     PlayerView(ctx).apply {
                         setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                         setBackgroundColor(android.graphics.Color.BLACK)
+                        setShowNextButton(false)
+                        setShowPreviousButton(false)
                         contentDescription = video.title
                         setFullscreenButtonClickListener {
                             // Detach inline first so only the full-screen surface owns the player.

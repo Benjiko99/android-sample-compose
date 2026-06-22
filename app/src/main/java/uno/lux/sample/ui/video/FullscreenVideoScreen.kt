@@ -72,6 +72,8 @@ fun FullscreenVideoScreen(
                 PlayerView(ctx).apply {
                     setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
                     setBackgroundColor(android.graphics.Color.BLACK)
+                    setShowNextButton(false)
+                    setShowPreviousButton(false)
                     contentDescription = title
                     // The control already reads as "exit full screen"; tapping it pops the page.
                     setFullscreenButtonState(true)

@@ -39,7 +39,9 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
+import uno.lux.sample.data.Album
 import uno.lux.sample.data.Video
+import uno.lux.sample.ui.album.AlbumViewerScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.navigation.Screen
@@ -74,6 +76,9 @@ fun SampleApp(currentUserId: String) {
     val openPost = { postId: String -> pushUnique(Screen.PostDetail(postId)) }
     val openVideo = { video: Video ->
         pushUnique(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
+    }
+    val openAlbum = { album: Album, initialIndex: Int ->
+        pushUnique(Screen.AlbumViewer(album.id, album.title, album.images, initialIndex))
     }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
@@ -112,6 +117,7 @@ fun SampleApp(currentUserId: String) {
                         onOpenSettings = openSettings,
                         onOpenProfile = openProfile,
                         onOpenVideo = openVideo,
+                        onOpenAlbum = openAlbum,
                         onOpenPost = openPost,
                     )
                 }
@@ -121,6 +127,7 @@ fun SampleApp(currentUserId: String) {
                         onOpenSettings = openSettings,
                         onOpenVideo = openVideo,
                         onOpenPost = openPost,
+                        onOpenAlbum = openAlbum,
                         onBack = goBack,
                     )
                 }
@@ -141,6 +148,19 @@ fun SampleApp(currentUserId: String) {
                         onBack = goBack,
                         onOpenProfile = openProfile,
                         onOpenVideo = openVideo,
+                        onOpenAlbum = openAlbum,
+                    )
+                }
+                entry<Screen.AlbumViewer> { key ->
+                    AlbumViewerScreen(
+                        album = Album(
+                            id = key.albumId,
+                            title = key.albumTitle,
+                            images = key.images,
+                            itemCount = key.images.size,
+                        ),
+                        initialIndex = key.initialIndex,
+                        onBack = goBack,
                     )
                 }
             },
@@ -161,6 +181,7 @@ private fun HomeNavShell(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
@@ -206,6 +227,7 @@ private fun HomeNavShell(
                     onOpenSettings = onOpenSettings,
                     onOpenProfile = onOpenProfile,
                     onOpenVideo = onOpenVideo,
+                    onOpenAlbum = onOpenAlbum,
                     onOpenPost = onOpenPost,
                 )
 
@@ -216,6 +238,7 @@ private fun HomeNavShell(
                     onOpenSettings = onOpenSettings,
                     onOpenVideo = onOpenVideo,
                     onOpenPost = onOpenPost,
+                    onOpenAlbum = onOpenAlbum,
                 )
 
                 AppDestinations.FAVORITES ->

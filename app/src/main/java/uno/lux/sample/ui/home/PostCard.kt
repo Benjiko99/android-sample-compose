@@ -52,6 +52,7 @@ import androidx.core.app.ShareCompat
 import androidx.core.content.getSystemService
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
+import uno.lux.sample.data.Album
 import uno.lux.sample.data.Post
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.Video
@@ -76,6 +77,7 @@ internal fun PostCard(
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -92,7 +94,10 @@ internal fun PostCard(
         PostBody(title = post.title, body = post.body)
         if (post.album != null) {
             Spacer(Modifier.height(12.dp))
-            AlbumPostGallery(album = post.album)
+            AlbumPostGallery(
+                album = post.album,
+                onOpenImage = { index -> onOpenAlbum(post.album, index) },
+            )
         }
         if (post.video != null) {
             Spacer(Modifier.height(12.dp))
@@ -504,6 +509,7 @@ private fun PostCardPreview() {
             onToggleBookmark = {},
             onOpenProfile = {},
             onOpenVideo = {},
+            onOpenAlbum = { _, _ -> },
             onOpenPost = {},
         )
     }

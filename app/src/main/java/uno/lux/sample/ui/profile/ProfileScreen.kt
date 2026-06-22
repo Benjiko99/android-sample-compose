@@ -112,6 +112,7 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenPost: (postId: String) -> Unit = {},
+    onOpenAlbum: (Album, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
@@ -127,6 +128,7 @@ fun ProfileScreen(
         onOpenSettings = onOpenSettings,
         onOpenVideo = onOpenVideo,
         onOpenPost = onOpenPost,
+        onOpenAlbum = onOpenAlbum,
         onBack = onBack,
         modifier = modifier,
     )
@@ -143,6 +145,7 @@ internal fun ProfileScreen(
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenPost: (postId: String) -> Unit = {},
+    onOpenAlbum: (Album, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
@@ -169,6 +172,7 @@ internal fun ProfileScreen(
                 actions = actions,
                 onOpenSettings = onOpenSettings,
                 onOpenVideo = onOpenVideo,
+                onOpenAlbum = onOpenAlbum,
                 onOpenPost = onOpenPost,
                 onBack = onBack,
             )
@@ -184,6 +188,7 @@ private fun ProfileContent(
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -226,6 +231,7 @@ private fun ProfileContent(
                     profile = profile,
                     actions = actions,
                     onOpenVideo = onOpenVideo,
+                    onOpenAlbum = onOpenAlbum,
                     onOpenPost = onOpenPost,
                 )
 
@@ -466,6 +472,7 @@ private fun LazyListScope.postsTab(
     profile: Profile,
     actions: ProfileActions,
     onOpenVideo: (Video) -> Unit,
+    onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
 ) {
     if (profile.posts.isEmpty()) {
@@ -480,6 +487,7 @@ private fun LazyListScope.postsTab(
             // Already on this author's profile — tapping the header again is a no-op.
             onOpenProfile = {},
             onOpenVideo = onOpenVideo,
+            onOpenAlbum = onOpenAlbum,
             onOpenPost = { onOpenPost(post.id) },
         )
     }
