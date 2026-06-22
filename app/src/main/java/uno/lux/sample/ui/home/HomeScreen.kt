@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -190,10 +191,15 @@ private fun FeedList(
     modifier: Modifier = Modifier,
 ) {
     val playback = LocalVideoPlayback.current
-    LaunchedEffect(listState, posts, playback) {
+    // Read the latest posts inside the collector without keying the effect on them: a like or
+    // bookmark toggle replaces the list instance but never changes which posts carry a video or
+    // where they sit, so restarting the autoplay collector on every toggle is wasted work. A
+    // change that actually matters (scroll, refresh) re-lays out the list and re-emits layoutInfo.
+    val currentPosts by rememberUpdatedState(posts)
+    LaunchedEffect(listState, playback) {
         snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
             if (playback == null || playback.isFullscreen) return@collect
-            val video = autoPlayVideo(layoutInfo, posts)
+            val video = autoPlayVideo(layoutInfo, currentPosts)
             if (video != null) playback.playInline(video.id, video.videoUrl) else playback.stop()
         }
     }

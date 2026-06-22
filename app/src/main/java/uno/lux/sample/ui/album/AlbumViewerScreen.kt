@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,25 +85,14 @@ fun AlbumViewerScreen(
         }
 
         if (album.images.size > 1) {
-            Box(
+            PageIndicator(
+                pagerState = pagerState,
+                total = album.images.size,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .safeDrawingPadding()
-                    .padding(bottom = 20.dp)
-                    .clip(RoundedCornerShape(100.dp))
-                    .background(Color.Black.copy(alpha = 0.42f))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-            ) {
-                Text(
-                    text = stringResource(
-                        R.string.album_viewer_page,
-                        pagerState.currentPage + 1,
-                        album.images.size,
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
-                )
-            }
+                    .padding(bottom = 20.dp),
+            )
         }
 
         IconButton(
@@ -127,6 +117,31 @@ fun AlbumViewerScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * The "n / total" page counter pill. It reads [PagerState.currentPage] in its own scope, so
+ * swiping between pages recomposes only this pill — not the pager, the zoom state, or the back
+ * button — keeping the read off the screen's top-level scope.
+ */
+@Composable
+private fun PageIndicator(
+    pagerState: PagerState,
+    total: Int,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(100.dp))
+            .background(Color.Black.copy(alpha = 0.42f))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.album_viewer_page, pagerState.currentPage + 1, total),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+        )
     }
 }
 
