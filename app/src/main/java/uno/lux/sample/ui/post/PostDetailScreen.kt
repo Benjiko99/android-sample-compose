@@ -10,7 +10,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import uno.lux.sample.ui.components.debouncedClickable
+import uno.lux.sample.ui.components.rememberDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -159,7 +160,7 @@ internal fun PostDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack.rememberDebounced()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.navigate_back),
@@ -234,7 +235,7 @@ private fun PostDetailMoreButton(
     var showSheet by remember { mutableStateOf(false) }
     var showReport by remember { mutableStateOf(false) }
 
-    IconButton(onClick = { showSheet = true }, modifier = modifier) {
+    IconButton(onClick = ({ showSheet = true }).rememberDebounced(), modifier = modifier) {
         Icon(
             painter = painterResource(R.drawable.ic_more_vert),
             contentDescription = stringResource(R.string.post_more_options),
@@ -378,7 +379,7 @@ private fun MoreSheetRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .debouncedClickable(onClick = onClick)
             .padding(horizontal = 22.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -501,7 +502,7 @@ private fun DetailPostHeader(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onOpenProfile)
+                .debouncedClickable(onClick = onOpenProfile)
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -617,7 +618,7 @@ private fun DetailActionButton(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(100.dp))
-            .clickable(onClick = onClick)
+            .debouncedClickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -705,7 +706,7 @@ private fun CommentRow(
         Box(
             modifier = Modifier
                 .clip(CircleShape)
-                .clickable(onClick = onOpenProfile),
+                .debouncedClickable(onClick = onOpenProfile),
         ) {
             Avatar(name = comment.author.nickname, size = 36.dp)
         }
@@ -748,7 +749,7 @@ private fun CommentRow(
         }
 
         IconButton(
-            onClick = onLike,
+            onClick = onLike.rememberDebounced(),
             modifier = Modifier.size(36.dp),
         ) {
             Icon(

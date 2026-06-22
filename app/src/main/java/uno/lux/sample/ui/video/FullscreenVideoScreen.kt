@@ -29,6 +29,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import uno.lux.sample.R
+import uno.lux.sample.ui.components.rememberDebounced
 
 /**
  * The full-screen video page, pushed over the rest of the app. It does not own a player: it
@@ -85,7 +86,7 @@ fun FullscreenVideoScreen(
             modifier = Modifier.fillMaxSize(),
         )
         IconButton(
-            onClick = onBack,
+            onClick = onBack.rememberDebounced(),
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .safeDrawingPadding()

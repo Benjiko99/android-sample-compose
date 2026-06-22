@@ -10,7 +10,7 @@ import uno.lux.sample.R
 /** Top-app-bar action that opens the settings screen. */
 @Composable
 fun SettingsAction(onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick.rememberDebounced()) {
         Icon(
             painter = painterResource(R.drawable.ic_settings),
             contentDescription = stringResource(R.string.nav_settings),

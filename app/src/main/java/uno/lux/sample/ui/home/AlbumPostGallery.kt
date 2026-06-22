@@ -1,7 +1,7 @@
 package uno.lux.sample.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import uno.lux.sample.ui.components.debouncedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -57,7 +57,7 @@ internal fun AlbumPostGallery(
                         .height(180.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(MosaicGradients.mediaBrush("${album.id}-$index"))
-                        .clickable { onOpenImage(index) },
+                        .debouncedClickable { onOpenImage(index) },
                 ) {
                     AsyncImage(
                         model = url,

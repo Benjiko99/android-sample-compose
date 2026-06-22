@@ -11,7 +11,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import uno.lux.sample.ui.components.debouncedClickable
+import uno.lux.sample.ui.components.rememberDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -136,7 +137,7 @@ private fun PostHeader(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onOpenProfile)
+                .debouncedClickable(onClick = onOpenProfile)
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -177,7 +178,7 @@ private fun OverflowMenu(
     val context = LocalContext.current
     var showSheet by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
-    IconButton(onClick = { showSheet = true }, modifier = modifier) {
+    IconButton(onClick = ({ showSheet = true }).rememberDebounced(), modifier = modifier) {
         Icon(
             painter = painterResource(R.drawable.ic_more_vert),
             contentDescription = stringResource(R.string.post_more_options),
@@ -336,7 +337,7 @@ private fun SheetRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .debouncedClickable(onClick = onClick)
             .padding(horizontal = 22.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -439,7 +440,7 @@ private fun ActionButton(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(100.dp))
-            .clickable(onClick = onClick)
+            .debouncedClickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

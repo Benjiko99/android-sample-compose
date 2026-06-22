@@ -2,7 +2,7 @@ package uno.lux.sample.ui.video
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import uno.lux.sample.ui.components.debouncedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -96,7 +96,7 @@ private fun VideoThumbnail(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .clickable(onClick = onPlay),
+            .debouncedClickable(onClick = onPlay),
         contentAlignment = Alignment.Center,
     ) {
         Box(

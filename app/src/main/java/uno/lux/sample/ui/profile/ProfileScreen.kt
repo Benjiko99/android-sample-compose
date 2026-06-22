@@ -6,7 +6,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import uno.lux.sample.ui.components.debouncedClickable
+import uno.lux.sample.ui.components.rememberDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -594,7 +595,7 @@ private fun VideoCell(
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(14.dp))
                 .background(MosaicGradients.mediaBrush(video.id))
-                .clickable(onClick = onClick),
+                .debouncedClickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -692,7 +693,7 @@ private fun EmptyTab(message: String) {
 @Composable
 private fun PlainBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
     IconButton(
-        onClick = onBack,
+        onClick = onBack.rememberDebounced(),
         modifier = modifier
             .statusBarsPadding()
             .padding(start = 4.dp, top = 4.dp),
@@ -762,7 +763,7 @@ private fun ScrimIconButton(
     progress: Float,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick.rememberDebounced()) {
         Box(
             modifier = Modifier
                 .size(36.dp)
