@@ -9,16 +9,18 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUser
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Holds the state for a single post's detail view, combining the live post from
- * [PostRepository] with the comment thread from [CommentRepository]. Like, bookmark, and
- * comment-like intent are translated into repository mutations; new comments are prepended.
+ * [PostRepository], the resolved author from [UserRepository], and the comment thread from
+ * [CommentRepository]. Like, bookmark, and comment-like intent are translated into repository
+ * mutations; new comments are prepended.
  *
  * [postId] is a runtime argument wired through [Factory] / assisted injection so every opened
  * post gets its own ViewModel, scoped to its back-stack entry.
@@ -27,6 +29,7 @@ import uno.lux.sample.util.stateInWhileSubscribed
 class PostDetailViewModel @AssistedInject constructor(
     private val postRepository: PostRepository,
     private val commentRepository: CommentRepository,
+    private val userRepository: UserRepository,
     @CurrentUser private val currentUser: User,
     @Assisted private val postId: String,
 ) : ViewModel() {
@@ -39,10 +42,13 @@ class PostDetailViewModel @AssistedInject constructor(
     val uiState: StateFlow<PostDetailUiState> = combine(
         postRepository.posts,
         commentRepository.comments(postId),
-    ) { posts, comments ->
+        userRepository.users,
+    ) { posts, comments, users ->
         val post = posts.find { it.id == postId }
-        if (post == null) PostDetailUiState.NotFound
-        else PostDetailUiState.Loaded(post, comments)
+            ?: return@combine PostDetailUiState.NotFound
+        val author = users[post.authorId]
+            ?: return@combine PostDetailUiState.NotFound
+        PostDetailUiState.Loaded(post, author, comments)
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
     /** Nickname of the signed-in user, shown as the composer's avatar label. */

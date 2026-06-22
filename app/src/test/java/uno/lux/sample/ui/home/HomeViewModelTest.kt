@@ -13,10 +13,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.user.InMemoryUserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,9 +26,10 @@ class HomeViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val author = User(id = "u1", nickname = "Ada", handle = "@ada")
     private val post = Post(
         id = "p1",
-        author = User(id = "u1", nickname = "Ada", handle = "@ada"),
+        authorId = "u1",
         title = "Title",
         body = "Body",
         createdAt = Instant.EPOCH,
@@ -35,7 +37,10 @@ class HomeViewModelTest {
         commentCount = 2,
     )
 
-    private fun viewModel() = HomeViewModel(InMemoryPostRepository(listOf(post)))
+    private fun viewModel() = HomeViewModel(
+        repository = InMemoryPostRepository(listOf(post)),
+        userRepository = InMemoryUserRepository(listOf(author)),
+    )
 
     @Test
     fun `uiState is Loading until something collects it`() {
@@ -50,7 +55,7 @@ class HomeViewModelTest {
         }
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
-        assertEquals(listOf(post), feed.posts)
+        assertEquals(listOf(PostCardData(post, author)), feed.posts)
         assertTrue(feed.endReached)
     }
 
@@ -64,8 +69,8 @@ class HomeViewModelTest {
         viewModel.onToggleLike("p1")
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
-        assertTrue(feed.posts.single().isLiked)
-        assertEquals(11, feed.posts.single().likeCount)
+        assertTrue(feed.posts.single().post.isLiked)
+        assertEquals(11, feed.posts.single().post.likeCount)
     }
 
     @Test
@@ -78,13 +83,13 @@ class HomeViewModelTest {
         viewModel.onToggleBookmark("p1")
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
-        assertTrue(feed.posts.single().isBookmarked)
+        assertTrue(feed.posts.single().post.isBookmarked)
     }
 
     @Test
     fun `refresh raises isRefreshing until the repository finishes`() = runTest {
         val repository = FakePostRepository()
-        val viewModel = HomeViewModel(repository)
+        val viewModel = HomeViewModel(repository, InMemoryUserRepository())
 
         assertFalse(viewModel.isRefreshing.value)
         viewModel.refresh()

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.time.Instant
 import uno.lux.sample.data.SampleComments
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 
 /**
  * Single source of truth for post comments.

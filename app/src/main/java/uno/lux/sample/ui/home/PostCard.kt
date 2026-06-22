@@ -54,6 +54,8 @@ import androidx.core.content.getSystemService
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.data.SampleUsers
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.Video
@@ -73,7 +75,7 @@ import uno.lux.sample.util.relativeTime
  */
 @Composable
 internal fun PostCard(
-    post: Post,
+    data: PostCardData,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
@@ -82,6 +84,8 @@ internal fun PostCard(
     onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val post = data.post
+    val author = data.author
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -89,6 +93,7 @@ internal fun PostCard(
     ) {
         PostHeader(
             post = post,
+            author = author,
             onToggleBookmark = onToggleBookmark,
             onOpenProfile = onOpenProfile,
         )
@@ -122,6 +127,7 @@ internal fun PostCard(
 @Composable
 private fun PostHeader(
     post: Post,
+    author: User,
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
@@ -141,11 +147,11 @@ private fun PostHeader(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(name = post.author.nickname, size = 42.dp)
+            Avatar(name = author.nickname, size = 42.dp)
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = post.author.nickname,
+                    text = author.nickname,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -153,7 +159,7 @@ private fun PostHeader(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "${post.author.handle} · ${relativeTime(post.createdAt).asText()}",
+                    text = "${author.handle} · ${relativeTime(post.createdAt).asText()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalMosaicColors.current.textTertiary,
                     maxLines = 1,
@@ -161,13 +167,14 @@ private fun PostHeader(
                 )
             }
         }
-        OverflowMenu(post = post, onToggleBookmark = onToggleBookmark)
+        OverflowMenu(post = post, author = author, onToggleBookmark = onToggleBookmark)
     }
 }
 
 @Composable
 private fun OverflowMenu(
     post: Post,
+    author: User,
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -185,6 +192,7 @@ private fun OverflowMenu(
     if (showSheet) {
         PostOverflowSheet(
             post = post,
+            author = author,
             onDismiss = { showSheet = false },
             onToggleBookmark = onToggleBookmark,
             onReport = { showReportDialog = true },
@@ -206,6 +214,7 @@ private fun OverflowMenu(
 @Composable
 private fun PostOverflowSheet(
     post: Post,
+    author: User,
     onDismiss: () -> Unit,
     onToggleBookmark: () -> Unit,
     onReport: () -> Unit,
@@ -227,10 +236,10 @@ private fun PostOverflowSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Avatar(name = post.author.nickname, size = 38.dp)
+            Avatar(name = author.nickname, size = 38.dp)
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = post.author.nickname,
+                    text = author.nickname,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -272,7 +281,7 @@ private fun PostOverflowSheet(
         )
         SheetRow(
             iconRes = R.drawable.ic_volume_off,
-            label = stringResource(R.string.post_menu_mute, post.author.handle),
+            label = stringResource(R.string.post_menu_mute, author.handle),
             onClick = { context.toast(R.string.action_not_implemented); dismiss() },
         )
         HorizontalDivider(
@@ -499,9 +508,11 @@ private fun Modifier.pop(active: Boolean): Modifier {
 @Preview(showBackground = true)
 @Composable
 private fun PostCardPreview() {
+    val users = SampleUsers.associateBy { it.id }
+    val post = SamplePosts.first()
     MosaicTheme {
         PostCard(
-            post = SamplePosts.first(),
+            data = PostCardData(post, users.getValue(post.authorId)),
             onToggleLike = {},
             onToggleBookmark = {},
             onOpenProfile = {},

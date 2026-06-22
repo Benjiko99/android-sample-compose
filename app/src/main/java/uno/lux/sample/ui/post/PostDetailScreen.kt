@@ -80,6 +80,7 @@ import uno.lux.sample.R
 import uno.lux.sample.data.SampleComments
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.Post
@@ -148,7 +149,9 @@ internal fun PostDetailScreen(
     onAddComment: (text: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val post = (uiState as? PostDetailUiState.Loaded)?.post
+    val loaded = (uiState as? PostDetailUiState.Loaded)
+    val post = loaded?.post
+    val author = loaded?.author
     Scaffold(
         modifier = modifier.imePadding(),
         topBar = {
@@ -168,8 +171,8 @@ internal fun PostDetailScreen(
                     }
                 },
                 actions = {
-                    if (post != null) {
-                        PostDetailMoreButton(post = post, onToggleBookmark = onToggleBookmark)
+                    if (post != null && author != null) {
+                        PostDetailMoreButton(post = post, author = author, onToggleBookmark = onToggleBookmark)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -210,6 +213,7 @@ internal fun PostDetailScreen(
 
             is PostDetailUiState.Loaded -> PostDetailContent(
                 post = uiState.post,
+                author = uiState.author,
                 comments = uiState.comments,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
@@ -228,6 +232,7 @@ internal fun PostDetailScreen(
 @Composable
 private fun PostDetailMoreButton(
     post: Post,
+    author: User,
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -246,6 +251,7 @@ private fun PostDetailMoreButton(
     if (showSheet) {
         PostDetailMoreSheet(
             post = post,
+            author = author,
             onDismiss = { showSheet = false },
             onToggleBookmark = onToggleBookmark,
             onReport = { showReport = true },
@@ -266,6 +272,7 @@ private fun PostDetailMoreButton(
 @Composable
 private fun PostDetailMoreSheet(
     post: Post,
+    author: User,
     onDismiss: () -> Unit,
     onToggleBookmark: () -> Unit,
     onReport: () -> Unit,
@@ -285,10 +292,10 @@ private fun PostDetailMoreSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Avatar(name = post.author.nickname, size = 38.dp)
+            Avatar(name = author.nickname, size = 38.dp)
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = post.author.nickname,
+                    text = author.nickname,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -349,7 +356,7 @@ private fun PostDetailMoreSheet(
         )
         MoreSheetRow(
             iconRes = R.drawable.ic_volume_off,
-            label = stringResource(R.string.post_menu_mute, post.author.handle),
+            label = stringResource(R.string.post_menu_mute, author.handle),
             onClick = { dismiss() },
         )
         HorizontalDivider(
@@ -399,6 +406,7 @@ private fun MoreSheetRow(
 @Composable
 private fun PostDetailContent(
     post: Post,
+    author: User,
     comments: List<Comment>,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -415,7 +423,8 @@ private fun PostDetailContent(
         item {
             DetailPostCard(
                 post = post,
-                onOpenProfile = { onOpenProfile(post.author.id) },
+                author = author,
+                onOpenProfile = { onOpenProfile(author.id) },
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
                 onToggleLike = onToggleLike,
@@ -446,6 +455,7 @@ private fun PostDetailContent(
 @Composable
 private fun DetailPostCard(
     post: Post,
+    author: User,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
@@ -459,7 +469,7 @@ private fun DetailPostCard(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        DetailPostHeader(post = post, onOpenProfile = onOpenProfile)
+        DetailPostHeader(post = post, author = author, onOpenProfile = onOpenProfile)
         DetailPostBody(title = post.title, body = post.body)
         if (post.album != null) {
             Spacer(Modifier.height(12.dp))
@@ -489,6 +499,7 @@ private fun DetailPostCard(
 @Composable
 private fun DetailPostHeader(
     post: Post,
+    author: User,
     onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -506,11 +517,11 @@ private fun DetailPostHeader(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(name = post.author.nickname, size = 42.dp)
+            Avatar(name = author.nickname, size = 42.dp)
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = post.author.nickname,
+                    text = author.nickname,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -518,7 +529,7 @@ private fun DetailPostHeader(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "${post.author.handle} · ${relativeTime(post.createdAt).asText()}",
+                    text = "${author.handle} · ${relativeTime(post.createdAt).asText()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalMosaicColors.current.textTertiary,
                     maxLines = 1,
@@ -840,6 +851,7 @@ private fun PostDetailLoadedPreview() {
         PostDetailScreen(
             uiState = PostDetailUiState.Loaded(
                 post = SamplePosts.first(),
+                author = SampleUsers.first(),
                 comments = SampleComments["p1"] ?: emptyList(),
             ),
             composerUserName = SampleUsers.first().nickname,

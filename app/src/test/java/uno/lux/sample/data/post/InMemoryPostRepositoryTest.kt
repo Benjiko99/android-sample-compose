@@ -6,7 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.data.User
 import java.time.Instant
 
 class InMemoryPostRepositoryTest {
@@ -82,7 +81,7 @@ private fun post(
     isBookmarked: Boolean = false,
 ) = Post(
     id = id,
-    author = User(id = "u-$id", nickname = "User $id", handle = "@$id"),
+    authorId = "u-$id",
     title = "Title $id",
     body = "Body $id",
     createdAt = Instant.EPOCH,

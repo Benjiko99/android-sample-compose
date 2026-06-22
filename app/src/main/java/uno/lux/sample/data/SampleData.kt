@@ -6,6 +6,7 @@ import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.user.User
 
 /**
  * Stand-in content for the in-memory repository and Compose previews. Timestamps are
@@ -21,7 +22,7 @@ internal val SampleUsers = listOf(
         gender = "Woman",
         location = "London, England",
         bio = "Mathematician & writer. The Analytical Engine weaves algebra the way the loom " +
-            "weaves flowers. Poetical science, mostly.",
+                "weaves flowers. Poetical science, mostly.",
         followerCount = 128_400,
         followingCount = 212,
     ),
@@ -55,7 +56,7 @@ internal val SampleUsers = listOf(
         gender = "Woman",
         location = "Cambridge, Massachusetts",
         bio = "I coined \"software engineering\" so they'd take the code as seriously as the " +
-            "hardware. Apollo guidance, priority scheduling.",
+                "hardware. Apollo guidance, priority scheduling.",
         followerCount = 154_300,
         followingCount = 96,
     ),
@@ -90,7 +91,7 @@ internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
 private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     Post(
         id = "p1",
-        author = SampleUsers[0],
+        authorId = SampleUsers[0].id,
         title = "The engine weaves algebraic patterns",
         body = "Just like the Jacquard loom weaves flowers and leaves. A machine need not " +
             "be limited to numbers — give it the right notation and it can compose.",
@@ -107,7 +108,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p2",
-        author = SampleUsers[1],
+        authorId = SampleUsers[1].id,
         title = "Found the bug",
         body = "It was an actual moth, taped into the logbook at 15:45. First recorded " +
             "case of debugging being literal. Onward to the next nanosecond.",
@@ -118,7 +119,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p3",
-        author = SampleUsers[2],
+        authorId = SampleUsers[2].id,
         title = "Can machines think?",
         body = "The question is too meaningless to deserve discussion. So replace it: can a " +
             "machine play the imitation game well enough that you can't tell?",
@@ -135,7 +136,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p4",
-        author = SampleUsers[3],
+        authorId = SampleUsers[3].id,
         title = "Priority scheduling saved the landing",
         body = "Three minutes before touchdown the computer flashed a 1202 alarm. Because we " +
             "designed it to shed low-priority work under overload, it kept the essentials " +
@@ -155,7 +156,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p5",
-        author = SampleUsers[4],
+        authorId = SampleUsers[4].id,
         title = "Just a hobby, won't be big",
         body = "I'm doing a (free) operating system — nothing professional like GNU — for " +
             "386(486) AT clones. It probably never will support anything other than AT " +
@@ -173,7 +174,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p6",
-        author = SampleUsers[0],
+        authorId = SampleUsers[0].id,
         title = "On numbers and music",
         body = "Supposing the relations of pitched sounds could be expressed by the engine, it " +
             "might compose elaborate pieces of music of any degree of complexity.",

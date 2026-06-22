@@ -36,8 +36,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.data.SamplePosts
+import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.post.Album
-import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
@@ -180,7 +180,7 @@ private val TopBarElevation = 4.dp
 
 @Composable
 private fun FeedList(
-    posts: List<Post>,
+    posts: List<PostCardData>,
     endReached: Boolean,
     listState: LazyListState,
     actions: HomeActions,
@@ -204,15 +204,15 @@ private fun FeedList(
         }
     }
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
-        items(posts, key = { it.id }) { post ->
+        items(posts, key = { it.post.id }) { data ->
             PostCard(
-                post = post,
-                onToggleLike = { actions.onToggleLike(post.id) },
-                onToggleBookmark = { actions.onToggleBookmark(post.id) },
-                onOpenProfile = { onOpenProfile(post.author.id) },
+                data = data,
+                onToggleLike = { actions.onToggleLike(data.post.id) },
+                onToggleBookmark = { actions.onToggleBookmark(data.post.id) },
+                onOpenProfile = { onOpenProfile(data.author.id) },
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
-                onOpenPost = { onOpenPost(post.id) },
+                onOpenPost = { onOpenPost(data.post.id) },
             )
         }
         if (endReached) {
@@ -267,7 +267,7 @@ private fun CaughtUpFooter(modifier: Modifier = Modifier) {
  * [LazyListItemInfo.index] maps 1:1 to [posts] because [FeedList] emits posts first (indices
  * 0..lastIndex) then optionally a footer item at [posts.size].
  */
-private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<Post>): Video? {
+private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardData>): Video? {
     val viewportStart = layoutInfo.viewportStartOffset
     val viewportEnd = layoutInfo.viewportEndOffset
     fun visibleFraction(offset: Int, size: Int): Float {
@@ -276,18 +276,22 @@ private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<Post>): Vi
         return maxOf(0, visibleBottom - visibleTop).toFloat() / size
     }
     return layoutInfo.visibleItemsInfo
-        .filter { it.index < posts.size && posts[it.index].video != null }
+        .filter { it.index < posts.size && posts[it.index].post.video != null }
         .maxByOrNull { visibleFraction(it.offset, it.size) }
         ?.takeIf { visibleFraction(it.offset, it.size) >= 0.5f }
-        ?.let { posts[it.index].video }
+        ?.let { posts[it.index].post.video }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun HomeFeedPreview() {
+    val users = SampleUsers.associateBy { it.id }
+    val feed = SamplePosts.mapNotNull { post ->
+        PostCardData(post, users[post.authorId] ?: return@mapNotNull null)
+    }
     MosaicTheme {
         HomeScreen(
-            uiState = HomeUiState.Feed(SamplePosts, endReached = true),
+            uiState = HomeUiState.Feed(feed, endReached = true),
             isRefreshing = false,
             actions = createActionsProxy(),
             onOpenSettings = {},

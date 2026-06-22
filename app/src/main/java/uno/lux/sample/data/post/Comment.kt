@@ -1,7 +1,7 @@
 package uno.lux.sample.data.post
 
 import java.time.Instant
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 
 data class Comment(
     val id: String,

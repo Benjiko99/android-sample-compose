@@ -12,7 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.InMemoryCommentRepository
 import uno.lux.sample.data.post.InMemoryPostRepository
@@ -21,6 +21,8 @@ import uno.lux.sample.data.profile.InMemoryProfileRepository
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.settings.DataStoreSettingsRepository
 import uno.lux.sample.data.settings.SettingsRepository
+import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.user.UserRepository
 import javax.inject.Singleton
 
 /**
@@ -43,6 +45,10 @@ object DataModule {
     @Provides
     @Singleton
     fun providePostRepository(): PostRepository = InMemoryPostRepository()
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(): UserRepository = InMemoryUserRepository()
 
     @Provides
     @Singleton

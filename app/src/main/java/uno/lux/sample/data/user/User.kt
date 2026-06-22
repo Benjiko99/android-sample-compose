@@ -1,4 +1,4 @@
-package uno.lux.sample.data
+package uno.lux.sample.data.user
 
 /**
  * A platform user.

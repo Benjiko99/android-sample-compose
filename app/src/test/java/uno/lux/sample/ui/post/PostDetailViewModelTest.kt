@@ -11,11 +11,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.InMemoryCommentRepository
 import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.user.InMemoryUserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,7 +30,7 @@ class PostDetailViewModelTest {
 
     private val post = Post(
         id = "p1",
-        author = otherUser,
+        authorId = "u2",
         title = "The Title",
         body = "The body.",
         createdAt = Instant.EPOCH,
@@ -52,6 +53,7 @@ class PostDetailViewModelTest {
     ) = PostDetailViewModel(
         postRepository = InMemoryPostRepository(posts),
         commentRepository = InMemoryCommentRepository(currentUser, comments),
+        userRepository = InMemoryUserRepository(listOf(currentUser, otherUser)),
         currentUser = currentUser,
         postId = postId,
     )
@@ -70,6 +72,7 @@ class PostDetailViewModelTest {
 
         val state = vm.uiState.value as PostDetailUiState.Loaded
         assertEquals(post, state.post)
+        assertEquals(otherUser, state.author)
         assertEquals(listOf(seedComment), state.comments)
     }
 

@@ -1,11 +1,10 @@
 package uno.lux.sample.data.post
 
 import java.time.Instant
-import uno.lux.sample.data.User
 
 data class Post(
     val id: String,
-    val author: User,
+    val authorId: String,
     val title: String,
     val body: String,
     val createdAt: Instant,

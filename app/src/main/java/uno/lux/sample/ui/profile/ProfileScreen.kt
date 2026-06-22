@@ -76,14 +76,16 @@ import uno.lux.sample.data.SampleAlbums
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.SampleVideos
-import uno.lux.sample.data.User
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.ui.components.Avatar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import uno.lux.sample.ui.home.PostCard
+import uno.lux.sample.ui.home.PostCardData
 import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.format.asText
-import uno.lux.sample.ui.home.PostCard
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.compactCount
@@ -123,8 +125,11 @@ fun ProfileScreen(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     ProfileScreen(
         uiState = uiState,
+        isRefreshing = isRefreshing,
+        onRefresh = viewModel::refresh,
         actions = viewModel,
         onOpenSettings = onOpenSettings,
         onOpenVideo = onOpenVideo,
@@ -142,6 +147,8 @@ fun ProfileScreen(
 @Composable
 internal fun ProfileScreen(
     uiState: ProfileUiState,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -168,8 +175,10 @@ internal fun ProfileScreen(
 
             // The loaded state owns its own scroll-reactive TopAppBar over the cover.
             is ProfileUiState.Loaded -> ProfileContent(
-                profile = uiState.profile,
+                data = uiState.data,
                 isCurrentUser = uiState.isCurrentUser,
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
                 actions = actions,
                 onOpenSettings = onOpenSettings,
                 onOpenVideo = onOpenVideo,
@@ -184,8 +193,10 @@ internal fun ProfileScreen(
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileContent(
-    profile: Profile,
+    data: ProfileScreenData,
     isCurrentUser: Boolean,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -216,31 +227,37 @@ private fun ProfileContent(
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
     ) {
-        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-            item(key = "header") {
-                ProfileHeader(user = profile.user, isCurrentUser = isCurrentUser)
-            }
-            stickyHeader(key = "tabs") {
-                ProfileTabs(
-                    selected = selectedTab,
-                    onSelect = { selectedTab = it },
-                    topInset = tabInset,
-                )
-            }
-            when (selectedTab) {
-                ProfileTab.POSTS -> postsTab(
-                    profile = profile,
-                    actions = actions,
-                    onOpenVideo = onOpenVideo,
-                    onOpenAlbum = onOpenAlbum,
-                    onOpenPost = onOpenPost,
-                )
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                item(key = "header") {
+                    ProfileHeader(user = data.user, isCurrentUser = isCurrentUser)
+                }
+                stickyHeader(key = "tabs") {
+                    ProfileTabs(
+                        selected = selectedTab,
+                        onSelect = { selectedTab = it },
+                        topInset = tabInset,
+                    )
+                }
+                when (selectedTab) {
+                    ProfileTab.POSTS -> postsTab(
+                        screenData = data,
+                        actions = actions,
+                        onOpenVideo = onOpenVideo,
+                        onOpenAlbum = onOpenAlbum,
+                        onOpenPost = onOpenPost,
+                    )
 
-                ProfileTab.ALBUMS -> albumsTab(profile.albums)
-                ProfileTab.VIDEOS -> videosTab(profile.videos, onOpenVideo)
-            }
-            item(key = "bottom-inset") {
-                Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                    ProfileTab.ALBUMS -> albumsTab(data.profile.albums)
+                    ProfileTab.VIDEOS -> videosTab(data.profile.videos, onOpenVideo)
+                }
+                item(key = "bottom-inset") {
+                    Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                }
             }
         }
         ProfileTopBar(
@@ -470,19 +487,21 @@ private fun ProfileTabs(
 // region Tab content
 
 private fun LazyListScope.postsTab(
-    profile: Profile,
+    screenData: ProfileScreenData,
     actions: ProfileActions,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
 ) {
-    if (profile.posts.isEmpty()) {
+    val posts = screenData.profile.posts
+    val author = screenData.user
+    if (posts.isEmpty()) {
         item(key = "posts-empty") { EmptyTab(stringResource(R.string.profile_empty_posts)) }
         return
     }
-    items(profile.posts, key = { it.id }) { post ->
+    items(posts, key = { it.id }) { post ->
         PostCard(
-            post = post,
+            data = PostCardData(post, author),
             onToggleLike = { actions.onToggleLike(post.id) },
             onToggleBookmark = { actions.onToggleBookmark(post.id) },
             // Already on this author's profile — tapping the header again is a no-op.
@@ -809,20 +828,22 @@ private fun CenteredMessage(message: String) {
 
 // region Previews
 
-private fun sampleProfile(): Profile {
+private fun sampleProfileData(): ProfileScreenData {
     val user = SampleUsers.first()
-    val posts = SamplePosts.filter { it.author.id == user.id }
+    val posts = SamplePosts.filter { it.authorId == user.id }
     val albums = SampleAlbums.getValue(user.id)
     val videos = SampleVideos.getValue(user.id)
-
-    return Profile(
+    return ProfileScreenData(
         user = user,
-        posts = posts,
-        albums = albums,
-        videos = videos,
-        postsCount = posts.size,
-        albumsCount = albums.size,
-        videosCount = videos.size,
+        profile = Profile(
+            userId = user.id,
+            posts = posts,
+            albums = albums,
+            videos = videos,
+            postsCount = posts.size,
+            albumsCount = albums.size,
+            videosCount = videos.size,
+        ),
     )
 }
 
@@ -831,7 +852,9 @@ private fun sampleProfile(): Profile {
 private fun ProfileScreenPreview() {
     MosaicTheme {
         ProfileScreen(
-            uiState = ProfileUiState.Loaded(sampleProfile(), isCurrentUser = true),
+            uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = true),
+            isRefreshing = false,
+            onRefresh = {},
             actions = createActionsProxy(),
             onOpenSettings = {},
             onOpenVideo = {},
