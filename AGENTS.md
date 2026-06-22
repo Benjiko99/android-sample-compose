@@ -69,6 +69,6 @@ Holding recomposition to what actually changed is part of "idiomatic Compose" he
 
 ## Localization
 
-All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum; `PlaceholderScreen` takes a `@StringRes` title.
+All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Exception: strings that contain no actual words — only numbers, punctuation, or symbols (e.g. `"${page} / $total"`) — are fine as plain Kotlin interpolation; there is nothing for a translator to change. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum; `PlaceholderScreen` takes a `@StringRes` title.
 
 Computed text (relative time, compact counts) keeps its *logic* pure and testable in `util`: `relativeTime()` and `compactCount()` return structured buckets (`RelativeTime`, `CompactCount`) with no display strings, and the `ui/format` layer's `asText()` resolves a bucket to a localized resource. That's how format tokens like "5m" or "1.2K" stay localizable without making the formatters depend on Android. Post *content* in `SampleData` is stand-in data, not UI chrome, so it remains literal.

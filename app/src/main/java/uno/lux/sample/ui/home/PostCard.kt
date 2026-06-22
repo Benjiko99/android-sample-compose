@@ -153,11 +153,7 @@ private fun PostHeader(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = stringResource(
-                        R.string.post_byline,
-                        post.author.handle,
-                        relativeTime(post.createdAt).asText(),
-                    ),
+                    text = "${post.author.handle} · ${relativeTime(post.createdAt).asText()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalMosaicColors.current.textTertiary,
                     maxLines = 1,

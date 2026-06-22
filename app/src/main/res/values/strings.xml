@@ -16,8 +16,6 @@
     <string name="placeholder_body">Coming soon</string>
 
     <!-- Post -->
-    <!-- Byline: author handle, then relative time. e.g. "@ada · 5m" -->
-    <string name="post_byline">%1$s · %2$s</string>
     <string name="post_more_options">More options</string>
     <string name="post_menu_save">Save post</string>
     <string name="post_menu_unsave">Remove from saved</string>
@@ -98,10 +96,6 @@
         <item quantity="one">%d photo</item>
         <item quantity="other">%d photos</item>
     </plurals>
-
-    <!-- Album viewer -->
-    <!-- Page counter: "2 / 5" -->
-    <string name="album_viewer_page">%1$d / %2$d</string>
 
     <!-- Settings -->
     <string name="settings_appearance">Appearance</string>

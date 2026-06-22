@@ -138,7 +138,7 @@ private fun PageIndicator(
             .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
         Text(
-            text = stringResource(R.string.album_viewer_page, pagerState.currentPage + 1, total),
+            text = "${pagerState.currentPage + 1} / $total",
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
         )
