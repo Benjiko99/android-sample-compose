@@ -67,6 +67,38 @@ Holding recomposition to what actually changed is part of "idiomatic Compose" he
 - **Don't key a long-lived effect on state you only read inside it.** Keying a `LaunchedEffect` on a frequently-replaced value restarts it on every change. The feed's inline-autoplay collector reads the current posts through `rememberUpdatedState` and keys only on the stable `listState`/playback, so a like toggle no longer tears down and restarts its `snapshotFlow`.
 - **Animate in the draw/layer phase when you can.** The like/bookmark "pop" reads its `Animatable` inside `graphicsLayer { scaleX = … }`, so each frame re-runs the layer, not composition. Composition-scope animation (`animateColorAsState`, `animateFloatAsState`) is still right for short, intentional transitions where recomposing a small subtree per frame costs nothing — that's idiomatic, not something to optimize away.
 
+## Code style
+
+**Separate logical sections within a function with a blank line.** When a function body groups setup/declarations together and then does something with them, put a blank line between the groups. This applies equally to plain Kotlin functions and composables.
+
+```kotlin
+// Declarations first, then a blank line before the work that uses them.
+override fun profile(userId: String): Flow<Profile> =
+    postRepository.posts.map { posts ->
+        val userPosts = posts.filter { it.authorId == userId }
+        val userAlbums = albumsByUser[userId].orEmpty()
+
+        Profile(...)
+    }
+
+// In composables: state declarations first, then a blank line before each UI element.
+@Composable
+private fun OverflowMenu(...) {
+    val context = LocalContext.current
+    var showSheet by remember { mutableStateOf(false) }
+
+    IconButton(...) { ... }
+
+    if (showSheet) {
+        PostOverflowSheet(...)
+    }
+
+    if (showReportDialog) {
+        ReportPostDialog(...)
+    }
+}
+```
+
 ## Localization
 
 All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Exception: strings that contain no actual words — only numbers, punctuation, or symbols (e.g. `"${page} / $total"`) — are fine as plain Kotlin interpolation; there is nothing for a translator to change. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum; `PlaceholderScreen` takes a `@StringRes` title.
