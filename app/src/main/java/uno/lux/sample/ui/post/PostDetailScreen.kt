@@ -114,6 +114,7 @@ fun PostDetailScreen(
     ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     PostDetailScreen(
         uiState = uiState,
         composerUserName = viewModel.composerUserName,
@@ -152,6 +153,7 @@ internal fun PostDetailScreen(
     val loaded = (uiState as? PostDetailUiState.Loaded)
     val post = loaded?.post
     val author = loaded?.author
+
     Scaffold(
         modifier = modifier.imePadding(),
         topBar = {
@@ -248,6 +250,7 @@ private fun PostDetailMoreButton(
             modifier = Modifier.size(22.dp),
         )
     }
+
     if (showSheet) {
         PostDetailMoreSheet(
             post = post,
@@ -257,6 +260,7 @@ private fun PostDetailMoreButton(
             onReport = { showReport = true },
         )
     }
+
     if (showReport) {
         ReportPostDialog(
             onDismiss = { showReport = false },
@@ -312,6 +316,7 @@ private fun PostDetailMoreSheet(
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Spacer(Modifier.height(4.dp))
+
         MoreSheetRow(
             iconRes = R.drawable.ic_bookmark_border,
             label = stringResource(
@@ -383,6 +388,7 @@ private fun MoreSheetRow(
 ) {
     val contentColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     val iconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -578,6 +584,7 @@ private fun DetailPostActions(
         targetValue = if (post.isLiked) LocalMosaicColors.current.like else muted,
         label = "likeTint",
     )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -654,6 +661,7 @@ private val PopEasing = CubicBezierEasing(0.2f, 1.3f, 0.5f, 1f)
 private fun Modifier.pop(active: Boolean): Modifier {
     val scale = remember { Animatable(1f) }
     var wasActive by remember { mutableStateOf(active) }
+
     LaunchedEffect(active) {
         if (active != wasActive) {
             scale.snapTo(1f)
@@ -670,6 +678,7 @@ private fun Modifier.pop(active: Boolean): Modifier {
         }
         wasActive = active
     }
+
     return graphicsLayer {
         scaleX = scale.value
         scaleY = scale.value
@@ -828,6 +837,7 @@ private fun CommentComposer(
                 targetValue = if (hasText) MaterialTheme.colorScheme.primary else muted,
                 label = "sendTint",
             )
+
             IconButton(onClick = send, enabled = hasText) {
                 Icon(
                     painter = painterResource(R.drawable.ic_send),

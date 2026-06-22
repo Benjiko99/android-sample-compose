@@ -19,6 +19,7 @@ sealed interface RelativeTime {
 /** Buckets the gap between [createdAt] and [now]; [now] is injectable for deterministic tests. */
 fun relativeTime(createdAt: Instant, now: Instant = Instant.now()): RelativeTime {
     val elapsed = Duration.between(createdAt, now)
+
     return when {
         elapsed < Duration.ofMinutes(1) -> RelativeTime.Now
         elapsed < Duration.ofHours(1) -> RelativeTime.Minutes(elapsed.toMinutes())
@@ -50,6 +51,7 @@ fun compactCount(count: Int): CompactCount = when {
 private fun scaled(count: Int, unit: Int): String {
     val whole = count / unit
     val tenths = count % unit / (unit / 10)
+
     return if (tenths == 0) "$whole" else "$whole.$tenths"
 }
 
@@ -64,6 +66,7 @@ fun formatVideoDuration(totalSeconds: Int): String {
     val hours = safe / 3_600
     val minutes = safe % 3_600 / 60
     val seconds = safe % 60
+
     return if (hours > 0) {
         "%d:%02d:%02d".format(hours, minutes, seconds)
     } else {

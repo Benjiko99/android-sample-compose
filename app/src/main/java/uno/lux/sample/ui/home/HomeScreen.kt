@@ -75,6 +75,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
     HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
@@ -110,6 +111,7 @@ internal fun HomeScreen(
     // the very top. canScrollBackward is already a coalesced boolean snapshot — it only changes
     // when crossing the top — so reading it directly needs no derivedStateOf wrapper.
     val elevated = listState.canScrollBackward
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -196,6 +198,7 @@ private fun FeedList(
     // where they sit, so restarting the autoplay collector on every toggle is wasted work. A
     // change that actually matters (scroll, refresh) re-lays out the list and re-emits layoutInfo.
     val currentPosts by rememberUpdatedState(posts)
+
     LaunchedEffect(listState, playback) {
         snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
             if (playback == null || playback.isFullscreen) return@collect
@@ -203,6 +206,7 @@ private fun FeedList(
             if (video != null) playback.playInline(video.id, video.videoUrl) else playback.stop()
         }
     }
+
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         items(posts, key = { it.post.id }) { data ->
             PostCard(
@@ -275,6 +279,7 @@ private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardDa
         val visibleBottom = minOf(offset + size, viewportEnd)
         return maxOf(0, visibleBottom - visibleTop).toFloat() / size
     }
+
     return layoutInfo.visibleItemsInfo
         .filter { it.index < posts.size && posts[it.index].post.video != null }
         .maxByOrNull { visibleFraction(it.offset, it.size) }
@@ -289,6 +294,7 @@ private fun HomeFeedPreview() {
     val feed = SamplePosts.mapNotNull { post ->
         PostCardData(post, users[post.authorId] ?: return@mapNotNull null)
     }
+
     MosaicTheme {
         HomeScreen(
             uiState = HomeUiState.Feed(feed, endReached = true),

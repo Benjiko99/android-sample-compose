@@ -126,6 +126,7 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
     ProfileScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
@@ -495,6 +496,7 @@ private fun LazyListScope.postsTab(
 ) {
     val posts = screenData.profile.posts
     val author = screenData.user
+
     if (posts.isEmpty()) {
         item(key = "posts-empty") { EmptyTab(stringResource(R.string.profile_empty_posts)) }
         return
@@ -550,6 +552,7 @@ private fun <T> LazyListScope.gridRows(
     cell: @Composable RowScope.(T) -> Unit,
 ) {
     val rows = items.chunked(2)
+
     items(rows, key = { row -> "row-${key(row.first())}" }) { row ->
         Row(
             modifier = Modifier
@@ -833,6 +836,7 @@ private fun sampleProfileData(): ProfileScreenData {
     val posts = SamplePosts.filter { it.authorId == user.id }
     val albums = SampleAlbums.getValue(user.id)
     val videos = SampleVideos.getValue(user.id)
+
     return ProfileScreenData(
         user = user,
         profile = Profile(

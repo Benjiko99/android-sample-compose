@@ -86,6 +86,7 @@ internal fun PostCard(
 ) {
     val post = data.post
     val author = data.author
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -181,6 +182,7 @@ private fun OverflowMenu(
     val context = LocalContext.current
     var showSheet by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
+
     IconButton(onClick = ({ showSheet = true }).rememberDebounced(), modifier = modifier) {
         Icon(
             painter = painterResource(R.drawable.ic_more_vert),
@@ -189,6 +191,7 @@ private fun OverflowMenu(
             modifier = Modifier.size(22.dp),
         )
     }
+
     if (showSheet) {
         PostOverflowSheet(
             post = post,
@@ -198,6 +201,7 @@ private fun OverflowMenu(
             onReport = { showReportDialog = true },
         )
     }
+
     if (showReportDialog) {
         ReportPostDialog(
             onDismiss = { showReportDialog = false },
@@ -319,6 +323,7 @@ private fun copyPostLink(context: Context, post: Post) {
     val clipboard = context.getSystemService<ClipboardManager>()!!
     val label = context.getString(R.string.post_link_clip_label)
     clipboard.setPrimaryClip(ClipData.newPlainText(label, postLink(post.id)))
+
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         context.toast(R.string.post_link_copied)
     }
@@ -339,6 +344,7 @@ private fun SheetRow(
 ) {
     val contentColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     val iconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -397,6 +403,7 @@ private fun PostActions(
         targetValue = if (post.isLiked) LocalMosaicColors.current.like else muted,
         label = "likeTint",
     )
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -483,6 +490,7 @@ private val PopEasing = CubicBezierEasing(0.2f, 1.3f, 0.5f, 1f)
 private fun Modifier.pop(active: Boolean): Modifier {
     val scale = remember { Animatable(1f) }
     var wasActive by remember { mutableStateOf(active) }
+
     LaunchedEffect(active) {
         if (active != wasActive) {
             scale.snapTo(1f)
@@ -499,6 +507,7 @@ private fun Modifier.pop(active: Boolean): Modifier {
         }
         wasActive = active
     }
+
     return graphicsLayer {
         scaleX = scale.value
         scaleY = scale.value
@@ -510,6 +519,7 @@ private fun Modifier.pop(active: Boolean): Modifier {
 private fun PostCardPreview() {
     val users = SampleUsers.associateBy { it.id }
     val post = SamplePosts.first()
+
     MosaicTheme {
         PostCard(
             data = PostCardData(post, users.getValue(post.authorId)),

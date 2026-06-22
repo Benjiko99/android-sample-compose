@@ -42,6 +42,7 @@ class InMemoryCommentRepository(
             text = text,
             likeCount = 0,
         )
+
         state.update { map ->
             map + (postId to (listOf(comment) + (map[postId] ?: emptyList())))
         }

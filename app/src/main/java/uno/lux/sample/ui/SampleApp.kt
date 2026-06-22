@@ -90,6 +90,7 @@ fun SampleApp(currentUserId: String) {
 
     // Pause playback when the app is backgrounded; it resumes on the user's next tap.
     val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner, playback) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) playback.pause()
@@ -194,6 +195,7 @@ private fun HomeNavShell(
             unselectedTextColor = LocalMosaicColors.current.textTertiary,
         ),
     )
+
     DividedNavigationSuiteScaffold(
         navigationSuiteItems = {
             AppDestinations.entries.forEach { destination ->
@@ -267,6 +269,7 @@ private const val PushPopDurationMillis = 320
 /** Push: the new page slides in from the right while the old one recedes a quarter-width. */
 private fun pushTransition(): ContentTransform {
     val duration = PushPopDurationMillis
+
     return (slideInHorizontally(tween(duration)) { width -> width } + fadeIn(tween(duration))) togetherWith
         (slideOutHorizontally(tween(duration)) { width -> -width / 4 } + fadeOut(tween(duration)))
 }
@@ -274,6 +277,7 @@ private fun pushTransition(): ContentTransform {
 /** Pop: the inverse of [pushTransition] — the leaving page slides back off to the right. */
 private fun popTransition(): ContentTransform {
     val duration = PushPopDurationMillis
+
     return (slideInHorizontally(tween(duration)) { width -> -width / 4 } + fadeIn(tween(duration))) togetherWith
         (slideOutHorizontally(tween(duration)) { width -> width } + fadeOut(tween(duration)))
 }

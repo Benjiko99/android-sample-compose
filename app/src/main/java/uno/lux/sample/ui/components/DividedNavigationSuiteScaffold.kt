@@ -73,6 +73,7 @@ fun DividedNavigationSuiteScaffold(
 private fun Modifier.topDivider(color: Color): Modifier = drawWithContent {
     drawContent()
     val thickness = 1.dp.toPx()
+
     drawLine(
         color = color,
         start = Offset(0f, thickness / 2f),

@@ -209,6 +209,7 @@ private fun ZoomableImage(
 private fun ImmersiveSystemBars() {
     val view = LocalView.current
     val window = LocalContext.current.findActivity()?.window
+
     DisposableEffect(window) {
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
         controller?.apply {

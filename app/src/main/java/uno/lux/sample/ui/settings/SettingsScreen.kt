@@ -55,6 +55,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+
     SettingsScreen(
         themeMode = themeMode,
         actions = viewModel,
@@ -127,6 +128,7 @@ private fun ThemeModeSelector(
     modifier: Modifier = Modifier,
 ) {
     val modes = ThemeMode.entries
+
     SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
         modes.forEachIndexed { index, mode ->
             SegmentedButton(

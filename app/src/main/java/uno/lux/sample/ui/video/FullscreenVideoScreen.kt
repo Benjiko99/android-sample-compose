@@ -49,12 +49,14 @@ fun FullscreenVideoScreen(
     modifier: Modifier = Modifier,
 ) {
     val playback = LocalVideoPlayback.current
+
     LaunchedEffect(playback, videoId, url) {
         playback?.openFullscreen(videoId, url)
     }
 
     // Exit only on a real pop, not a configuration change — a rotation must keep playing.
     val activity = LocalContext.current.findActivity()
+
     DisposableEffect(playback) {
         onDispose {
             if (activity?.isChangingConfigurations != true) playback?.exitFullscreen()
@@ -85,6 +87,7 @@ fun FullscreenVideoScreen(
             onRelease = { view -> view.player = null },
             modifier = Modifier.fillMaxSize(),
         )
+
         IconButton(
             onClick = onBack.rememberDebounced(),
             modifier = Modifier
@@ -115,6 +118,7 @@ fun FullscreenVideoScreen(
 private fun ImmersiveSystemBars() {
     val view = LocalView.current
     val window = LocalContext.current.findActivity()?.window
+
     DisposableEffect(window) {
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
         controller?.apply {

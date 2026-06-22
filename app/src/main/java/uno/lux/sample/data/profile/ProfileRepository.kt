@@ -44,6 +44,7 @@ class InMemoryProfileRepository(
             val userPosts = posts.filter { it.authorId == userId }
             val userAlbums = albumsByUser[userId].orEmpty()
             val userVideos = videosByUser[userId].orEmpty()
+
             Profile(
                 userId = userId,
                 posts = userPosts,

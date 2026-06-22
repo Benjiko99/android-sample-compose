@@ -18,6 +18,7 @@ internal class ClickDebounceGuard(
 
     fun tryFire(action: () -> Unit) {
         val now = timeSource()
+
         if (now - lastClickMs > debounceMs) {
             lastClickMs = now
             action()
@@ -33,6 +34,7 @@ internal class ClickDebounceGuard(
 fun (() -> Unit).rememberDebounced(debounceMs: Long = 500L): () -> Unit {
     val currentAction by rememberUpdatedState(this)
     val guard = remember { ClickDebounceGuard(debounceMs) }
+
     return remember { { guard.tryFire(currentAction) } }
 }
 
@@ -42,5 +44,6 @@ fun Modifier.debouncedClickable(
     onClick: () -> Unit,
 ): Modifier = composed {
     val debounced = onClick.rememberDebounced(debounceMs)
+
     clickable(onClick = debounced)
 }
