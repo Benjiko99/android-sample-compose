@@ -12,16 +12,17 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.user.User
+import uno.lux.sample.data.network.NetworkCommentRepository
+import uno.lux.sample.data.network.NetworkPostRepository
+import uno.lux.sample.data.network.NetworkProfileRepository
+import uno.lux.sample.data.network.NetworkUserRepository
+import uno.lux.sample.data.network.SampleApi
 import uno.lux.sample.data.post.CommentRepository
-import uno.lux.sample.data.post.InMemoryCommentRepository
-import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.profile.InMemoryProfileRepository
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.settings.DataStoreSettingsRepository
 import uno.lux.sample.data.settings.SettingsRepository
-import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 import javax.inject.Singleton
 
@@ -29,11 +30,10 @@ import javax.inject.Singleton
  * Production wiring for the `data` layer: each repository interface gets its concrete
  * implementation here, and nowhere else needs to know which one that is.
  *
- * Everything is [Singleton]-scoped because each repository *is* the app's source of truth —
- * the in-memory ones hold the state itself, so two instances would mean two diverging copies
- * (and DataStore requires a single instance per file). [provideProfileRepository] takes the
- * bound [PostRepository] so profile pages and the feed share one post store: a like toggled
- * in either place is visible in both.
+ * [NetworkUserRepository] is provided twice — once as its concrete type (so
+ * [NetworkPostRepository] can call [NetworkUserRepository.ingest] for feed sideloads) and once
+ * as the [UserRepository] binding consumed by ViewModels. Everything is [Singleton]-scoped so
+ * the user cache and the feed list are shared across the whole app.
  *
  * The repositories stay free of DI annotations (constructed here via [Provides] rather than
  * `@Inject`), keeping the data layer plain JVM with no framework dependency.
@@ -44,16 +44,29 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun providePostRepository(): PostRepository = InMemoryPostRepository()
+    fun provideNetworkUserRepository(api: SampleApi): NetworkUserRepository =
+        NetworkUserRepository(api)
 
     @Provides
     @Singleton
-    fun provideUserRepository(): UserRepository = InMemoryUserRepository()
+    fun provideUserRepository(impl: NetworkUserRepository): UserRepository = impl
 
     @Provides
     @Singleton
-    fun provideProfileRepository(postRepository: PostRepository): ProfileRepository =
-        InMemoryProfileRepository(postRepository = postRepository)
+    fun providePostRepository(
+        api: SampleApi,
+        userRepository: NetworkUserRepository,
+    ): PostRepository = NetworkPostRepository(api, userRepository)
+
+    @Provides
+    @Singleton
+    fun provideProfileRepository(api: SampleApi): ProfileRepository =
+        NetworkProfileRepository(api)
+
+    @Provides
+    @Singleton
+    fun provideCommentRepository(api: SampleApi): CommentRepository =
+        NetworkCommentRepository(api)
 
     @Provides
     @Singleton
@@ -70,14 +83,9 @@ object DataModule {
     @CurrentUserId
     fun provideCurrentUserId(): String = LoggedInUserId
 
-    /** The signed-in [User] object resolved from [provideCurrentUserId]. */
+    /** The signed-in [User] object. Used for the comment composer; resolved from sample data. */
     @Provides
     @CurrentUser
     fun provideCurrentUser(@CurrentUserId currentUserId: String): User =
         SampleUsers.first { it.id == currentUserId }
-
-    @Provides
-    @Singleton
-    fun provideCommentRepository(@CurrentUser currentUser: User): CommentRepository =
-        InMemoryCommentRepository(currentUser = currentUser)
 }
