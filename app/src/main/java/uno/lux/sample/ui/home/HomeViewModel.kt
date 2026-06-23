@@ -21,12 +21,12 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: PostRepository,
+    private val postRepository: PostRepository,
     private val userRepository: UserRepository,
 ) : ViewModel(), HomeActions {
 
     val uiState: StateFlow<HomeUiState> = combine(
-        repository.posts,
+        postRepository.posts,
         userRepository.users,
     ) { posts, users ->
         val cards = posts.mapNotNull { post ->
@@ -44,7 +44,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
-                repository.refresh()
+                postRepository.refresh()
             } finally {
                 _isRefreshing.value = false
             }
@@ -52,10 +52,10 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun onToggleLike(postId: String) {
-        viewModelScope.launch { repository.toggleLike(postId) }
+        viewModelScope.launch { postRepository.toggleLike(postId) }
     }
 
     override fun onToggleBookmark(postId: String) {
-        viewModelScope.launch { repository.toggleBookmark(postId) }
+        viewModelScope.launch { postRepository.toggleBookmark(postId) }
     }
 }

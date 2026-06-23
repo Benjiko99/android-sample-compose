@@ -38,7 +38,7 @@ class HomeViewModelTest {
     )
 
     private fun viewModel() = HomeViewModel(
-        repository = InMemoryPostRepository(listOf(post)),
+        postRepository = InMemoryPostRepository(listOf(post)),
         userRepository = InMemoryUserRepository(listOf(author)),
     )
 
