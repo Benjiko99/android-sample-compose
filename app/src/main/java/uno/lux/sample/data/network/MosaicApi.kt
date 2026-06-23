@@ -16,7 +16,7 @@ import uno.lux.sample.data.network.dto.ProfileStatsResponse
 import uno.lux.sample.data.network.dto.UserPostsResponse
 import uno.lux.sample.data.network.dto.UserResponse
 
-interface SampleApi {
+interface MosaicApi {
 
     @GET("feed")
     suspend fun getFeed(

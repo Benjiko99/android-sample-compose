@@ -15,7 +15,7 @@ import uno.lux.sample.data.post.PostRepository
  * the post list and the user cache.
  */
 class NetworkPostRepository(
-    private val api: SampleApi,
+    private val api: MosaicApi,
     private val userRepository: NetworkUserRepository,
 ) : PostRepository {
 

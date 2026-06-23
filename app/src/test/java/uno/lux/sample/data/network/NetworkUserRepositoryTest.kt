@@ -9,7 +9,7 @@ import org.junit.Test
 
 class NetworkUserRepositoryTest {
 
-    private val repository = NetworkUserRepository(FakeSampleApi())
+    private val repository = NetworkUserRepository(FakeMosaicApi())
 
     @Test
     fun `users starts empty`() = runTest {
@@ -48,7 +48,7 @@ class NetworkUserRepositoryTest {
 
     @Test
     fun `refresh fetches a user by id and adds them to the cache`() = runTest {
-        val api = FakeSampleApi(userById = mapOf("u1" to userDto("u1", "Ada")))
+        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada")))
         val repo = NetworkUserRepository(api)
 
         repo.refresh("u1")

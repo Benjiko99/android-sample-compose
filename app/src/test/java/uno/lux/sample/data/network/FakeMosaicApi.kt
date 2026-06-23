@@ -9,7 +9,6 @@ import uno.lux.sample.data.network.dto.CommentNetworkDto
 import uno.lux.sample.data.network.dto.CommentResponse
 import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.EmptyBody
-import uno.lux.sample.data.network.dto.FeedIncluded
 import uno.lux.sample.data.network.dto.FeedResponse
 import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
 import uno.lux.sample.data.network.dto.LikeToggleResponse
@@ -21,9 +20,11 @@ import uno.lux.sample.data.network.dto.UserPostsResponse
 import uno.lux.sample.data.network.dto.UserResponse
 import uno.lux.sample.data.network.dto.VideoNetworkDto
 
-private val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
+internal val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
 
-class FakeSampleApi(
+private val stubAuthor = userDto("u1", "Ada")
+
+class FakeMosaicApi(
     private val feedResponse: FeedResponse = FeedResponse(data = emptyList(), page = emptyPage),
     private val userById: Map<String, UserNetworkDto> = emptyMap(),
     private val profileStats: Map<String, ProfileStatsNetworkDto> = emptyMap(),
@@ -31,7 +32,7 @@ class FakeSampleApi(
     private val comments: List<CommentNetworkDto> = emptyList(),
     val likeResult: LikeToggleNetworkDto = LikeToggleNetworkDto(isLiked = true, likeCount = 1),
     val bookmarkResult: BookmarkToggleNetworkDto = BookmarkToggleNetworkDto(isBookmarked = true),
-) : SampleApi {
+) : MosaicApi {
 
     override suspend fun getFeed(cursor: String?, limit: Int, include: String): FeedResponse =
         feedResponse
@@ -69,7 +70,7 @@ class FakeSampleApi(
                 createdAt = "2025-01-01T00:00:00.000Z",
                 likeCount = 0,
                 isLiked = false,
-                author = UserNetworkDto("u1", "Ada", "@ada", null, null, null, null, 0, 0),
+                author = stubAuthor,
             )
         )
 
@@ -132,5 +133,5 @@ fun commentDto(
     createdAt = "2025-01-01T00:00:00.000Z",
     likeCount = likeCount,
     isLiked = isLiked,
-    author = UserNetworkDto("u1", "Ada", "@ada", null, null, null, null, 0, 0),
+    author = stubAuthor,
 )

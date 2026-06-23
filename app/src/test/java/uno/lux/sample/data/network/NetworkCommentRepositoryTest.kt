@@ -11,7 +11,7 @@ class NetworkCommentRepositoryTest {
 
     @Test
     fun `comments loads from the API on first collection`() = runTest {
-        val api = FakeSampleApi(comments = listOf(commentDto("c1", "Hello")))
+        val api = FakeMosaicApi(comments = listOf(commentDto("c1", "Hello")))
         val repository = NetworkCommentRepository(api)
 
         val loaded = repository.comments("p1").first()
@@ -23,7 +23,7 @@ class NetworkCommentRepositoryTest {
 
     @Test
     fun `comments returns an empty list when the API returns none`() = runTest {
-        val repository = NetworkCommentRepository(FakeSampleApi(comments = emptyList()))
+        val repository = NetworkCommentRepository(FakeMosaicApi(comments = emptyList()))
 
         val loaded = repository.comments("p1").first()
 
@@ -32,7 +32,7 @@ class NetworkCommentRepositoryTest {
 
     @Test
     fun `addComment prepends the new comment to the list`() = runTest {
-        val api = FakeSampleApi(comments = listOf(commentDto("c1", "First")))
+        val api = FakeMosaicApi(comments = listOf(commentDto("c1", "First")))
         val repository = NetworkCommentRepository(api)
         repository.comments("p1").first() // trigger initial load
 
@@ -46,7 +46,7 @@ class NetworkCommentRepositoryTest {
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             comments = listOf(commentDto("c1", "Hello", isLiked = false, likeCount = 2)),
             likeResult = uno.lux.sample.data.network.dto.LikeToggleNetworkDto(
                 isLiked = true, likeCount = 3,
@@ -64,7 +64,7 @@ class NetworkCommentRepositoryTest {
 
     @Test
     fun `toggleLike only affects the targeted comment`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             comments = listOf(
                 commentDto("c1", "First"),
                 commentDto("c2", "Second"),

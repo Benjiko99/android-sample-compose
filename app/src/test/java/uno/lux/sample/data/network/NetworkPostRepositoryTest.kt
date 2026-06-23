@@ -10,15 +10,12 @@ import uno.lux.sample.data.network.dto.FeedIncluded
 import uno.lux.sample.data.network.dto.FeedResponse
 import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
 import uno.lux.sample.data.network.dto.BookmarkToggleNetworkDto
-import uno.lux.sample.data.network.dto.CursorPageDto
 
 class NetworkPostRepositoryTest {
 
-    private val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
-
     private fun repository(
-        api: FakeSampleApi = FakeSampleApi(),
-        userRepo: NetworkUserRepository = NetworkUserRepository(FakeSampleApi()),
+        api: FakeMosaicApi = FakeMosaicApi(),
+        userRepo: NetworkUserRepository = NetworkUserRepository(FakeMosaicApi()),
     ) = NetworkPostRepository(api, userRepo)
 
     @Test
@@ -28,7 +25,7 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `refresh loads posts from the feed API`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             feedResponse = FeedResponse(listOf(feedItemDto("p1", "u1")), page = emptyPage),
         )
         val repo = repository(api)
@@ -42,14 +39,14 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `refresh ingests sideloaded authors into the user cache`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
                 included = FeedIncluded(users = listOf(userDto("u1", "Ada"))),
                 page = emptyPage,
             ),
         )
-        val userRepo = NetworkUserRepository(FakeSampleApi())
+        val userRepo = NetworkUserRepository(FakeMosaicApi())
         val repo = repository(api, userRepo)
 
         repo.refresh()
@@ -59,14 +56,14 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `refresh without sideload leaves the user cache empty`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
                 included = null,
                 page = emptyPage,
             ),
         )
-        val userRepo = NetworkUserRepository(FakeSampleApi())
+        val userRepo = NetworkUserRepository(FakeMosaicApi())
         val repo = repository(api, userRepo)
 
         repo.refresh()
@@ -76,7 +73,7 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 listOf(feedItemDto("p1", "u1", isLiked = false, likeCount = 5)),
                 page = emptyPage,
@@ -95,7 +92,7 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `toggleBookmark updates isBookmarked from the server response`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 listOf(feedItemDto("p1", "u1", isBookmarked = false)),
                 page = emptyPage,
@@ -112,7 +109,7 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `a toggle only affects the targeted post`() = runTest {
-        val api = FakeSampleApi(
+        val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 listOf(feedItemDto("p1", "u1"), feedItemDto("p2", "u1")),
                 page = emptyPage,

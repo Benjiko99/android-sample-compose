@@ -15,7 +15,7 @@ import uno.lux.sample.data.user.UserRepository
  * individual users are fetched on demand by [refresh].
  */
 class NetworkUserRepository(
-    private val api: SampleApi,
+    private val api: MosaicApi,
 ) : UserRepository {
 
     private val _cache = MutableStateFlow<Map<String, User>>(emptyMap())

@@ -10,7 +10,8 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import uno.lux.sample.data.network.SampleApi
+import uno.lux.sample.BuildConfig
+import uno.lux.sample.data.network.MosaicApi
 import javax.inject.Singleton
 
 @Module
@@ -34,9 +35,11 @@ object NetworkModule {
                         .build()
                 )
             }
-            .addInterceptor(
-                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-            )
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+                }
+            }
             .build()
 
     @Provides
@@ -50,6 +53,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideSampleApi(retrofit: Retrofit): SampleApi =
-        retrofit.create(SampleApi::class.java)
+    fun provideMosaicApi(retrofit: Retrofit): MosaicApi =
+        retrofit.create(MosaicApi::class.java)
 }

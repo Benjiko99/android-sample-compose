@@ -17,36 +17,30 @@ import java.util.concurrent.ConcurrentHashMap
  * [MutableStateFlow] per post. New comments are prepended so they appear at the top.
  */
 class NetworkCommentRepository(
-    private val api: SampleApi,
+    private val api: MosaicApi,
 ) : CommentRepository {
 
     private val commentStates = ConcurrentHashMap<String, MutableStateFlow<List<Comment>>>()
-    private val loadedPosts: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-    private fun commentState(postId: String): MutableStateFlow<List<Comment>> =
-        commentStates.getOrPut(postId) { MutableStateFlow(emptyList()) }
-
-    override fun comments(postId: String): Flow<List<Comment>> {
-        val state = commentState(postId)
-        return flow {
-            if (loadedPosts.add(postId)) {
-                runCatching {
-                    val response = api.getComments(postId)
-                    state.value = response.data.map { it.toDomain() }
-                }
-            }
-            emitAll(state)
+    override fun comments(postId: String): Flow<List<Comment>> = flow {
+        val fresh = MutableStateFlow<List<Comment>>(emptyList())
+        val state = commentStates.putIfAbsent(postId, fresh) ?: run {
+            runCatching { fresh.value = api.getComments(postId).data.map { it.toDomain() } }
+            fresh
         }
+        emitAll(state)
     }
 
     override suspend fun addComment(postId: String, text: String) {
         val created = api.addComment(postId, AddCommentRequestDto(text)).data
-        commentState(postId).update { current -> listOf(created.toDomain()) + current }
+        commentStates.getOrPut(postId) { MutableStateFlow(emptyList()) }.update { current ->
+            listOf(created.toDomain()) + current
+        }
     }
 
     override suspend fun toggleLike(postId: String, commentId: String) {
         val result = api.toggleCommentLike(postId, commentId, EmptyBody()).data
-        commentState(postId).update { comments ->
+        commentStates.getOrPut(postId) { MutableStateFlow(emptyList()) }.update { comments ->
             comments.map { c ->
                 if (c.id == commentId) c.copy(isLiked = result.isLiked, likeCount = result.likeCount)
                 else c

@@ -16,7 +16,7 @@ import uno.lux.sample.data.network.NetworkCommentRepository
 import uno.lux.sample.data.network.NetworkPostRepository
 import uno.lux.sample.data.network.NetworkProfileRepository
 import uno.lux.sample.data.network.NetworkUserRepository
-import uno.lux.sample.data.network.SampleApi
+import uno.lux.sample.data.network.MosaicApi
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.ProfileRepository
@@ -44,7 +44,7 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideNetworkUserRepository(api: SampleApi): NetworkUserRepository =
+    fun provideNetworkUserRepository(api: MosaicApi): NetworkUserRepository =
         NetworkUserRepository(api)
 
     @Provides
@@ -54,18 +54,18 @@ object DataModule {
     @Provides
     @Singleton
     fun providePostRepository(
-        api: SampleApi,
+        api: MosaicApi,
         userRepository: NetworkUserRepository,
     ): PostRepository = NetworkPostRepository(api, userRepository)
 
     @Provides
     @Singleton
-    fun provideProfileRepository(api: SampleApi): ProfileRepository =
+    fun provideProfileRepository(api: MosaicApi): ProfileRepository =
         NetworkProfileRepository(api)
 
     @Provides
     @Singleton
-    fun provideCommentRepository(api: SampleApi): CommentRepository =
+    fun provideCommentRepository(api: MosaicApi): CommentRepository =
         NetworkCommentRepository(api)
 
     @Provides
@@ -85,6 +85,7 @@ object DataModule {
 
     /** The signed-in [User] object. Used for the comment composer; resolved from sample data. */
     @Provides
+    @Singleton
     @CurrentUser
     fun provideCurrentUser(@CurrentUserId currentUserId: String): User =
         SampleUsers.first { it.id == currentUserId }
