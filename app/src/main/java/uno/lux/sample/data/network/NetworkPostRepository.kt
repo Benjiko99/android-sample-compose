@@ -1,12 +1,15 @@
 package uno.lux.sample.data.network
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.updatePost
 
 /**
  * Network-backed [PostRepository] for the home feed. On [refresh] it fetches the first page
@@ -22,29 +25,19 @@ class NetworkPostRepository(
     private val _posts = MutableStateFlow<List<Post>>(emptyList())
     override val posts: Flow<List<Post>> = _posts.asStateFlow()
 
-    override suspend fun refresh() {
+    override suspend fun refresh() = withContext(Dispatchers.IO) {
         val response = api.getFeed(include = "author")
         userRepository.ingest(response.included?.users.orEmpty())
         _posts.value = response.data.map { it.toDomain() }
     }
 
-    override suspend fun toggleLike(postId: String) {
+    override suspend fun toggleLike(postId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleLike(postId, EmptyBody()).data
-        _posts.update { list ->
-            list.map { post ->
-                if (post.id == postId) post.copy(isLiked = result.isLiked, likeCount = result.likeCount)
-                else post
-            }
-        }
+        _posts.update { it.updatePost(postId) { post -> post.copy(isLiked = result.isLiked, likeCount = result.likeCount) } }
     }
 
-    override suspend fun toggleBookmark(postId: String) {
+    override suspend fun toggleBookmark(postId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleBookmark(postId, EmptyBody()).data
-        _posts.update { list ->
-            list.map { post ->
-                if (post.id == postId) post.copy(isBookmarked = result.isBookmarked)
-                else post
-            }
-        }
+        _posts.update { it.updatePost(postId) { post -> post.copy(isBookmarked = result.isBookmarked) } }
     }
 }

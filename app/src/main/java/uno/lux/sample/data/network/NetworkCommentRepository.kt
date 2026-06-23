@@ -1,10 +1,12 @@
 package uno.lux.sample.data.network
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.Comment
@@ -25,20 +27,22 @@ class NetworkCommentRepository(
     override fun comments(postId: String): Flow<List<Comment>> = flow {
         val fresh = MutableStateFlow<List<Comment>>(emptyList())
         val state = commentStates.putIfAbsent(postId, fresh) ?: run {
-            runCatching { fresh.value = api.getComments(postId).data.map { it.toDomain() } }
+            runCatching {
+                fresh.value = withContext(Dispatchers.IO) { api.getComments(postId).data.map { it.toDomain() } }
+            }
             fresh
         }
         emitAll(state)
     }
 
-    override suspend fun addComment(postId: String, text: String) {
+    override suspend fun addComment(postId: String, text: String) = withContext(Dispatchers.IO) {
         val created = api.addComment(postId, AddCommentRequestDto(text)).data
         commentStates.getOrPut(postId) { MutableStateFlow(emptyList()) }.update { current ->
             listOf(created.toDomain()) + current
         }
     }
 
-    override suspend fun toggleLike(postId: String, commentId: String) {
+    override suspend fun toggleLike(postId: String, commentId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleCommentLike(postId, commentId, EmptyBody()).data
         commentStates.getOrPut(postId) { MutableStateFlow(emptyList()) }.update { comments ->
             comments.map { c ->

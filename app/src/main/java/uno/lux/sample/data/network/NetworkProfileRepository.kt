@@ -1,12 +1,14 @@
 package uno.lux.sample.data.network
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.EmptyBody
+import uno.lux.sample.data.post.updatePost
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.data.profile.ProfileRepository
 
@@ -19,7 +21,7 @@ class NetworkProfileRepository(
     override fun profile(userId: String): Flow<Profile> =
         _profiles.map { it[userId] ?: emptyProfile(userId) }
 
-    override suspend fun refresh(userId: String) = coroutineScope {
+    override suspend fun refresh(userId: String) = withContext(Dispatchers.IO) {
         val statsDeferred = async { api.getProfileStats(userId).data }
         val postsDeferred = async { api.getUserPosts(userId).data }
         val albumPostsDeferred = async { api.getUserPosts(userId, type = "photo").data }
@@ -43,26 +45,20 @@ class NetworkProfileRepository(
         }
     }
 
-    override suspend fun toggleLike(postId: String) {
+    override suspend fun toggleLike(postId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleLike(postId, EmptyBody()).data
         _profiles.update { map ->
             map.mapValues { (_, profile) ->
-                profile.copy(posts = profile.posts.map { post ->
-                    if (post.id == postId) post.copy(isLiked = result.isLiked, likeCount = result.likeCount)
-                    else post
-                })
+                profile.copy(posts = profile.posts.updatePost(postId) { it.copy(isLiked = result.isLiked, likeCount = result.likeCount) })
             }
         }
     }
 
-    override suspend fun toggleBookmark(postId: String) {
+    override suspend fun toggleBookmark(postId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleBookmark(postId, EmptyBody()).data
         _profiles.update { map ->
             map.mapValues { (_, profile) ->
-                profile.copy(posts = profile.posts.map { post ->
-                    if (post.id == postId) post.copy(isBookmarked = result.isBookmarked)
-                    else post
-                })
+                profile.copy(posts = profile.posts.updatePost(postId) { it.copy(isBookmarked = result.isBookmarked) })
             }
         }
     }

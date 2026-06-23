@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
@@ -51,19 +52,15 @@ class ProfileViewModel @AssistedInject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    /** Re-fetches user identity and profile content in parallel for pull-to-refresh. */
-    fun refresh() {
-        viewModelScope.launch {
-            _isRefreshing.value = true
-            try {
-                coroutineScope {
-                    launch { userRepository.refresh(userId) }
-                    launch { profileRepository.refresh(userId) }
-                }
-            } finally {
-                _isRefreshing.value = false
-            }
-        }
+    init {
+        viewModelScope.launch { load() }
+    }
+
+    fun refresh() = launchRefresh(_isRefreshing) { load() }
+
+    private suspend fun load() = coroutineScope {
+        launch { userRepository.refresh(userId) }
+        launch { profileRepository.refresh(userId) }
     }
 
     override fun onToggleLike(postId: String) {

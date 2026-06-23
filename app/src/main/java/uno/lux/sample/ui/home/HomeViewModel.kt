@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 
@@ -39,16 +40,14 @@ class HomeViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    /** Re-fetches the feed, surfacing progress through [isRefreshing] for pull-to-refresh. */
-    override fun refresh() {
-        viewModelScope.launch {
-            _isRefreshing.value = true
-            try {
-                postRepository.refresh()
-            } finally {
-                _isRefreshing.value = false
-            }
-        }
+    init {
+        viewModelScope.launch { load() }
+    }
+
+    override fun refresh() = launchRefresh(_isRefreshing) { load() }
+
+    private suspend fun load() {
+        postRepository.refresh()
     }
 
     override fun onToggleLike(postId: String) {

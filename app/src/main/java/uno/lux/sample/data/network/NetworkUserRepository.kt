@@ -1,10 +1,12 @@
 package uno.lux.sample.data.network
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.UserNetworkDto
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
@@ -23,7 +25,7 @@ class NetworkUserRepository(
 
     override fun user(userId: String): Flow<User?> = _cache.map { it[userId] }
 
-    override suspend fun refresh(userId: String) {
+    override suspend fun refresh(userId: String) = withContext(Dispatchers.IO) {
         val dto = api.getUser(userId)
         _cache.update { it + (userId to dto.data.toDomain()) }
     }

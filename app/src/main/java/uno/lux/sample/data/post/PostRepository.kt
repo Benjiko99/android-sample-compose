@@ -60,9 +60,12 @@ class InMemoryPostRepository(
 }
 
 /** Replaces the single post matching [postId], leaving the rest of the list untouched. */
+internal inline fun List<Post>.updatePost(
+    postId: String,
+    transform: (Post) -> Post,
+): List<Post> = map { post -> if (post.id == postId) transform(post) else post }
+
 private inline fun MutableStateFlow<List<Post>>.updatePost(
     postId: String,
     transform: (Post) -> Post,
-) = update { posts ->
-    posts.map { post -> if (post.id == postId) transform(post) else post }
-}
+) = update { it.updatePost(postId, transform) }
