@@ -14,19 +14,21 @@ Tests are the **primary consumer** of this codebase; real users come second. Pro
 - **Design for the test.** Keep logic in plain-JVM, dependency-injected units so a test can drive it directly. The `data` layer and ViewModels take their collaborators as constructor parameters and avoid Android dependencies; pure functions take their inputs (e.g. `now`) as parameters instead of reading ambient state. This is *why* the architecture is shaped the way it is — testability drives the design, not the other way round.
 - **Same rule for UI.** Stateless composables take data + callbacks so they can be exercised in isolation; ViewModels expose state as a `StateFlow` a test asserts against.
 
-Run the unit suite with `.\gradlew.bat testDebugUnitTest` (single class: `--tests "uno.lux.sample.FormattingTest"`).
+Run the unit suite with `.\gradlew.bat testLocalDebugUnitTest` (single class: `--tests "uno.lux.sample.FormattingTest"`). Use `testNetworkDebugUnitTest` to run tests against the network-flavor wiring.
 
 ## Commands
 
 The shell is Windows PowerShell; invoke the wrapper as `.\gradlew.bat`.
 
-- Build debug APK: `.\gradlew.bat assembleDebug`
-- Install on a running device/emulator: `.\gradlew.bat installDebug`
-- Android Lint (the only linter configured): `.\gradlew.bat lint` → report at `app/build/reports/lint-results-debug.html`
-- All JVM unit tests: `.\gradlew.bat testDebugUnitTest`
-- A single unit test class/method: `.\gradlew.bat testDebugUnitTest --tests "uno.lux.sample.ExampleUnitTest.addition_isCorrect"`
-- Instrumented tests (needs a connected device/emulator): `.\gradlew.bat connectedDebugAndroidTest`
-- A single instrumented test: `.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=uno.lux.sample.ExampleInstrumentedTest`
+The app has two product flavors in the `data` dimension: **`local`** (default, in-memory sample data) and **`network`** (live Retrofit backend at `http://10.0.2.2:3000/api/`). All commands below use `local`; swap in `network` to build or test the network-backed variant.
+
+- Build debug APK: `.\gradlew.bat assembleLocalDebug`
+- Install on a running device/emulator: `.\gradlew.bat installLocalDebug`
+- Android Lint (the only linter configured): `.\gradlew.bat lintLocalDebug` → report at `app/build/reports/lint-results-localDebug.html`
+- All JVM unit tests: `.\gradlew.bat testLocalDebugUnitTest`
+- A single unit test class/method: `.\gradlew.bat testLocalDebugUnitTest --tests "uno.lux.sample.ExampleUnitTest.addition_isCorrect"`
+- Instrumented tests (needs a connected device/emulator): `.\gradlew.bat connectedLocalDebugAndroidTest`
+- A single instrumented test: `.\gradlew.bat connectedLocalDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=uno.lux.sample.ExampleInstrumentedTest`
 
 ## Toolchain / build setup
 

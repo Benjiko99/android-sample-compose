@@ -24,6 +24,12 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "data"
+    productFlavors {
+        create("local") { dimension = "data" }
+        create("network") { dimension = "data" }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
