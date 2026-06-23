@@ -29,6 +29,10 @@ class NetworkCommentRepository(
         val state = commentStates.putIfAbsent(postId, fresh) ?: run {
             runCatching {
                 fresh.value = withContext(Dispatchers.IO) { api.getComments(postId).data.map { it.toDomain() } }
+            }.onFailure {
+                // Remove the (empty) entry so the next collector retries rather than being
+                // permanently stuck with an empty thread.
+                commentStates.remove(postId, fresh)
             }
             fresh
         }

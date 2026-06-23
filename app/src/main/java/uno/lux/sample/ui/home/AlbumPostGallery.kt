@@ -34,9 +34,8 @@ import uno.lux.sample.ui.components.MosaicGradients
 /**
  * An album post's media: its [Album.images] laid out in a horizontally scrolling row, each photo
  * loaded with Coil. Tapping an image calls [onOpenImage] with its index (for the fullscreen
- * viewer). A count badge ([Album.itemCount] with an image icon) is pinned to the bottom-end
- * corner of the row, always visible regardless of scroll position. While a photo loads (or if it
- * fails) the deterministic Mosaic gradient shows through behind it.
+ * viewer). Each photo carries a position badge ("2 / 3") with an image icon in its top-end corner.
+ * While a photo loads (or if it fails) the deterministic Mosaic gradient shows through behind it.
  */
 @Composable
 internal fun AlbumPostGallery(
