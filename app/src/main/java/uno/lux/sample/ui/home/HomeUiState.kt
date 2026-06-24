@@ -6,6 +6,7 @@ package uno.lux.sample.ui.home
  */
 sealed interface HomeUiState {
     data object Loading : HomeUiState
+    data object Error : HomeUiState
 
     /** [endReached] is true when the backend has no more posts beyond [posts]. */
     data class Feed(

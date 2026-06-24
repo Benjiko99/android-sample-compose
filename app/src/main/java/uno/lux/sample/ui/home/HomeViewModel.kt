@@ -3,6 +3,7 @@ package uno.lux.sample.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,18 +32,30 @@ class HomeViewModel @Inject constructor(
     private val userRepository: UserRepository,
 ) : ViewModel(), HomeActions {
 
+    private val _loadError = MutableStateFlow(false)
+
+    private data class FeedSnapshot(val cards: List<PostCardData>, val endReached: Boolean)
+
     val uiState: StateFlow<HomeUiState> = combine(
-        feedRepository.postIds,
-        feedRepository.hasMore,
-        postRepository.entities,
-        userRepository.users,
-    ) { postIds, hasMore, entities, users ->
-        val cards = postIds.mapNotNull { id ->
-            val post = entities[id] ?: return@mapNotNull null
-            val author = users[post.authorId] ?: return@mapNotNull null
-            PostCardData(post = post, author = author)
-        }
-        HomeUiState.Feed(posts = cards, endReached = !hasMore)
+        combine(
+            feedRepository.postIds,
+            feedRepository.hasMore,
+            postRepository.entities,
+            userRepository.users,
+        ) { postIds, hasMore, entities, users ->
+            FeedSnapshot(
+                cards = postIds.mapNotNull { id ->
+                    val post = entities[id] ?: return@mapNotNull null
+                    val author = users[post.authorId] ?: return@mapNotNull null
+                    PostCardData(post = post, author = author)
+                },
+                endReached = !hasMore,
+            )
+        },
+        _loadError,
+    ) { snapshot, loadError ->
+        if (loadError && snapshot.cards.isEmpty()) HomeUiState.Error
+        else HomeUiState.Feed(posts = snapshot.cards, endReached = snapshot.endReached)
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -56,17 +69,41 @@ class HomeViewModel @Inject constructor(
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    override fun loadMore() = launchIfIdle(::loadMoreJob) { feedRepository.loadMore() }
+    override fun loadMore() = launchIfIdle(::loadMoreJob) {
+        try {
+            feedRepository.loadMore()
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+        }
+    }
 
     private suspend fun load() {
-        feedRepository.refresh()
+        _loadError.value = false
+        try {
+            feedRepository.refresh()
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            _loadError.value = true
+        }
     }
 
     override fun onToggleLike(postId: PostId) {
-        viewModelScope.launch { postRepository.toggleLike(postId) }
+        viewModelScope.launch {
+            try {
+                postRepository.toggleLike(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 
     override fun onToggleBookmark(postId: PostId) {
-        viewModelScope.launch { postRepository.toggleBookmark(postId) }
+        viewModelScope.launch {
+            try {
+                postRepository.toggleBookmark(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 }

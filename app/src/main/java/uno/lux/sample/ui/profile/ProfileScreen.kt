@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -174,6 +175,11 @@ internal fun ProfileScreen(
         when (uiState) {
             ProfileUiState.Loading -> {
                 CenteredProgress()
+                if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
+            }
+
+            ProfileUiState.Error -> {
+                ProfileErrorState(onRetry = onRefresh)
                 if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
             }
 
@@ -856,6 +862,31 @@ private fun CenteredMessage(message: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+@Composable
+private fun ProfileErrorState(onRetry: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.profile_error),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            TextButton(onClick = onRetry) {
+                Text(stringResource(R.string.error_retry))
+            }
+        }
     }
 }
 

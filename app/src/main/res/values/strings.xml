@@ -11,6 +11,11 @@
     <!-- Feed -->
     <string name="feed_empty">No posts yet. Check back soon.</string>
     <string name="feed_caught_up">You’re all caught up</string>
+    <string name="feed_error">Couldn\’t load posts. Check your connection.</string>
+
+    <!-- Error -->
+    <string name="profile_error">Couldn\’t load this profile. Check your connection.</string>
+    <string name="error_retry">Try again</string>
 
     <!-- Placeholder destinations -->
     <string name="placeholder_body">Coming soon</string>

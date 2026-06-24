@@ -6,6 +6,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,30 +47,41 @@ class ProfileViewModel @AssistedInject constructor(
 
     private data class HasMoreState(val posts: Boolean, val albums: Boolean, val videos: Boolean)
 
+    private val _loadError = MutableStateFlow(false)
+
     val uiState: StateFlow<ProfileUiState> = combine(
-        userRepository.user(userId),
-        profileRepository.profile(userId),
-        combine(profileRepository.postIds(userId), postRepository.entities) { ids, entities ->
-            ids.mapNotNull { entities[it] }
-        },
         combine(
-            profileRepository.hasMorePosts(userId),
-            profileRepository.hasMoreAlbums(userId),
-            profileRepository.hasMoreVideos(userId),
-        ) { posts, albums, videos -> HasMoreState(posts, albums, videos) },
-    ) { user, profile, posts, hasMore ->
-        if (user == null) ProfileUiState.NotFound
-        else ProfileUiState.Loaded(
-            data = ProfileScreenData(
-                user = user,
-                profile = profile,
-                posts = posts,
-                postsEndReached = !hasMore.posts,
-                albumsEndReached = !hasMore.albums,
-                videosEndReached = !hasMore.videos,
-            ),
-            isCurrentUser = userId == currentUserId,
-        )
+            userRepository.user(userId),
+            profileRepository.profile(userId),
+            combine(profileRepository.postIds(userId), postRepository.entities) { ids, entities ->
+                ids.mapNotNull { entities[it] }
+            },
+            combine(
+                profileRepository.hasMorePosts(userId),
+                profileRepository.hasMoreAlbums(userId),
+                profileRepository.hasMoreVideos(userId),
+            ) { posts, albums, videos -> HasMoreState(posts, albums, videos) },
+        ) { user, profile, posts, hasMore ->
+            if (user == null) null
+            else ProfileUiState.Loaded(
+                data = ProfileScreenData(
+                    user = user,
+                    profile = profile,
+                    posts = posts,
+                    postsEndReached = !hasMore.posts,
+                    albumsEndReached = !hasMore.albums,
+                    videosEndReached = !hasMore.videos,
+                ),
+                isCurrentUser = userId == currentUserId,
+            )
+        },
+        _loadError,
+    ) { state, loadError ->
+        when {
+            state != null -> state
+            loadError -> ProfileUiState.Error
+            else -> ProfileUiState.NotFound
+        }
     }.stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -85,20 +97,60 @@ class ProfileViewModel @AssistedInject constructor(
 
     fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    private suspend fun load() = coroutineScope {
-        launch { userRepository.refresh(userId) }
-        launch { profileRepository.refresh(userId) }
+    private suspend fun load() {
+        _loadError.value = false
+        try {
+            coroutineScope {
+                launch { userRepository.refresh(userId) }
+                launch { profileRepository.refresh(userId) }
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            _loadError.value = true
+        }
     }
 
     override fun onToggleLike(postId: PostId) {
-        viewModelScope.launch { postRepository.toggleLike(postId) }
+        viewModelScope.launch {
+            try {
+                postRepository.toggleLike(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 
     override fun onToggleBookmark(postId: PostId) {
-        viewModelScope.launch { postRepository.toggleBookmark(postId) }
+        viewModelScope.launch {
+            try {
+                postRepository.toggleBookmark(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 
-    override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) { profileRepository.loadMorePosts(userId) }
-    override fun loadMoreAlbums() = launchIfIdle(::loadMoreAlbumsJob) { profileRepository.loadMoreAlbums(userId) }
-    override fun loadMoreVideos() = launchIfIdle(::loadMoreVideosJob) { profileRepository.loadMoreVideos(userId) }
+    override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
+        try {
+            profileRepository.loadMorePosts(userId)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+        }
+    }
+
+    override fun loadMoreAlbums() = launchIfIdle(::loadMoreAlbumsJob) {
+        try {
+            profileRepository.loadMoreAlbums(userId)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+        }
+    }
+
+    override fun loadMoreVideos() = launchIfIdle(::loadMoreVideosJob) {
+        try {
+            profileRepository.loadMoreVideos(userId)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+        }
+    }
 }

@@ -6,6 +6,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -64,30 +65,54 @@ class PostDetailViewModel @AssistedInject constructor(
 
     init {
         viewModelScope.launch {
-            _comments.value = commentRepository.loadComments(postId)
+            try {
+                _comments.value = commentRepository.loadComments(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
         }
     }
 
     fun onToggleLike() {
-        viewModelScope.launch { postRepository.toggleLike(postId) }
+        viewModelScope.launch {
+            try {
+                postRepository.toggleLike(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 
     fun onToggleBookmark() {
-        viewModelScope.launch { postRepository.toggleBookmark(postId) }
+        viewModelScope.launch {
+            try {
+                postRepository.toggleBookmark(postId)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 
     fun onToggleCommentLike(commentId: CommentId) {
         viewModelScope.launch {
             val comment = _comments.value.find { it.id == commentId } ?: return@launch
-            val updated = commentRepository.toggleLike(postId, comment)
-            _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
+            try {
+                val updated = commentRepository.toggleLike(postId, comment)
+                _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
         }
     }
 
     fun addComment(text: String) {
         viewModelScope.launch {
-            val comment = commentRepository.addComment(postId, text)
-            _comments.update { listOf(comment) + it }
+            try {
+                val comment = commentRepository.addComment(postId, text)
+                _comments.update { listOf(comment) + it }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
         }
     }
 }
