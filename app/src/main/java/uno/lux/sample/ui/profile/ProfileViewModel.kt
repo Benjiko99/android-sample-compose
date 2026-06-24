@@ -19,6 +19,7 @@ import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
 
@@ -43,6 +44,8 @@ class ProfileViewModel @AssistedInject constructor(
         fun create(userId: UserId): ProfileViewModel
     }
 
+    private data class HasMoreState(val posts: Boolean, val albums: Boolean, val videos: Boolean)
+
     val uiState: StateFlow<ProfileUiState> = combine(
         userRepository.user(userId),
         profileRepository.profile(userId),
@@ -53,18 +56,17 @@ class ProfileViewModel @AssistedInject constructor(
             profileRepository.hasMorePosts(userId),
             profileRepository.hasMoreAlbums(userId),
             profileRepository.hasMoreVideos(userId),
-        ) { a, b, c -> Triple(a, b, c) },
-    ) { user, profile, posts, pagination ->
-        val (postsHasMore, albumsHasMore, videosHasMore) = pagination
+        ) { posts, albums, videos -> HasMoreState(posts, albums, videos) },
+    ) { user, profile, posts, hasMore ->
         if (user == null) ProfileUiState.NotFound
         else ProfileUiState.Loaded(
             data = ProfileScreenData(
                 user = user,
                 profile = profile,
                 posts = posts,
-                postsEndReached = !postsHasMore,
-                albumsEndReached = !albumsHasMore,
-                videosEndReached = !videosHasMore,
+                postsEndReached = !hasMore.posts,
+                albumsEndReached = !hasMore.albums,
+                videosEndReached = !hasMore.videos,
             ),
             isCurrentUser = userId == currentUserId,
         )
@@ -96,18 +98,7 @@ class ProfileViewModel @AssistedInject constructor(
         viewModelScope.launch { postRepository.toggleBookmark(postId) }
     }
 
-    override fun loadMorePosts() {
-        if (loadMorePostsJob?.isActive == true) return
-        loadMorePostsJob = viewModelScope.launch { profileRepository.loadMorePosts(userId) }
-    }
-
-    override fun loadMoreAlbums() {
-        if (loadMoreAlbumsJob?.isActive == true) return
-        loadMoreAlbumsJob = viewModelScope.launch { profileRepository.loadMoreAlbums(userId) }
-    }
-
-    override fun loadMoreVideos() {
-        if (loadMoreVideosJob?.isActive == true) return
-        loadMoreVideosJob = viewModelScope.launch { profileRepository.loadMoreVideos(userId) }
-    }
+    override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) { profileRepository.loadMorePosts(userId) }
+    override fun loadMoreAlbums() = launchIfIdle(::loadMoreAlbumsJob) { profileRepository.loadMoreAlbums(userId) }
+    override fun loadMoreVideos() = launchIfIdle(::loadMoreVideosJob) { profileRepository.loadMoreVideos(userId) }
 }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
@@ -25,8 +24,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -44,6 +41,8 @@ import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
+import uno.lux.sample.ui.components.LoadMoreEffect
+import uno.lux.sample.ui.components.LoadingMoreFooter
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -204,8 +203,6 @@ private fun FeedList(
     // where they sit, so restarting the autoplay collector on every toggle is wasted work. A
     // change that actually matters (scroll, refresh) re-lays out the list and re-emits layoutInfo.
     val currentPosts by rememberUpdatedState(posts)
-    val currentEndReached by rememberUpdatedState(endReached)
-    val currentLoadMore by rememberUpdatedState(actions::loadMore)
 
     LaunchedEffect(listState, playback) {
         snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
@@ -215,15 +212,7 @@ private fun FeedList(
         }
     }
 
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val info = listState.layoutInfo
-            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: return@snapshotFlow false
-            !currentEndReached && lastVisible >= info.totalItemsCount - LOAD_MORE_PREFETCH
-        }.distinctUntilChanged()
-            .filter { it }
-            .collect { currentLoadMore() }
-    }
+    LoadMoreEffect(listState, endReached, actions::loadMore)
 
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         items(posts, key = { it.post.id }) { data ->
@@ -249,8 +238,6 @@ private fun FeedList(
     }
 }
 
-private const val LOAD_MORE_PREFETCH = 3
-
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -271,19 +258,6 @@ private fun EmptyState(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-/** Spinner shown as the last list item while the next page is being fetched. */
-@Composable
-private fun LoadingMoreFooter(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
     }
 }
 

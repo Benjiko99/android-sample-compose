@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 
@@ -34,23 +35,21 @@ class NetworkFeedRepository(
     private var nextCursor: String? = null
 
     override suspend fun refresh() = withContext(Dispatchers.IO) {
-        val response = api.getFeed(include = "author")
-        userRepository.ingest(response.included?.users.orEmpty())
-        val posts = response.data.map { it.toDomain() }
-        postRepository.ingest(posts)
-        nextCursor = response.page.nextCursor
-        _hasMore.value = response.page.hasMore
-        _postIds.value = posts.map { it.id }
+        _postIds.value = fetchPage(cursor = null).map { it.id }
     }
 
     override suspend fun loadMore() = withContext(Dispatchers.IO) {
         if (!_hasMore.value) return@withContext
-        val response = api.getFeed(cursor = nextCursor, include = "author")
+        _postIds.value += fetchPage(nextCursor).map { it.id }
+    }
+
+    private suspend fun fetchPage(cursor: String?): List<Post> {
+        val response = api.getFeed(cursor = cursor, include = "author")
         userRepository.ingest(response.included?.users.orEmpty())
         val posts = response.data.map { it.toDomain() }
         postRepository.ingest(posts)
         nextCursor = response.page.nextCursor
         _hasMore.value = response.page.hasMore
-        _postIds.value = _postIds.value + posts.map { it.id }
+        return posts
     }
 }

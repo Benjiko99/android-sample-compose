@@ -48,18 +48,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +84,8 @@ import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.LoadMoreEffect
+import uno.lux.sample.ui.components.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import uno.lux.sample.ui.home.PostCard
 import uno.lux.sample.ui.home.PostCardData
@@ -234,32 +231,19 @@ private fun ProfileContent(
         }
     }
 
-    // Resolve which load-more callback and endReached flag apply to the active tab. Using
-    // rememberUpdatedState means tab switches are picked up without restarting the effect.
-    val currentEndReached by rememberUpdatedState(
-        when (selectedTab) {
+    LoadMoreEffect(
+        listState = listState,
+        endReached = when (selectedTab) {
             ProfileTab.POSTS -> data.postsEndReached
             ProfileTab.ALBUMS -> data.albumsEndReached
             ProfileTab.VIDEOS -> data.videosEndReached
-        }
-    )
-    val currentLoadMore by rememberUpdatedState(
-        when (selectedTab) {
+        },
+        onLoadMore = when (selectedTab) {
             ProfileTab.POSTS -> actions::loadMorePosts
             ProfileTab.ALBUMS -> actions::loadMoreAlbums
             ProfileTab.VIDEOS -> actions::loadMoreVideos
-        }
+        },
     )
-
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val info = listState.layoutInfo
-            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: return@snapshotFlow false
-            !currentEndReached && lastVisible >= info.totalItemsCount - LOAD_MORE_PREFETCH
-        }.distinctUntilChanged()
-            .filter { it }
-            .collect { currentLoadMore() }
-    }
 
     Box(
         modifier = Modifier
@@ -523,8 +507,6 @@ private fun ProfileTabs(
 
 // endregion
 
-private const val LOAD_MORE_PREFETCH = 3
-
 // region Tab content
 
 private fun LazyListScope.postsTab(
@@ -554,7 +536,7 @@ private fun LazyListScope.postsTab(
         )
     }
     if (!screenData.postsEndReached) {
-        item(key = "posts-loading-more") { TabLoadingMoreFooter() }
+        item(key = "posts-loading-more") { LoadingMoreFooter() }
     }
 }
 
@@ -565,7 +547,7 @@ private fun LazyListScope.albumsTab(albums: List<Album>, endReached: Boolean) {
     }
     gridRows(albums, key = { it.id }) { album -> AlbumCell(album, Modifier.weight(1f)) }
     if (!endReached) {
-        item(key = "albums-loading-more") { TabLoadingMoreFooter() }
+        item(key = "albums-loading-more") { LoadingMoreFooter() }
     }
 }
 
@@ -586,7 +568,7 @@ private fun LazyListScope.videosTab(
         )
     }
     if (!endReached) {
-        item(key = "videos-loading-more") { TabLoadingMoreFooter() }
+        item(key = "videos-loading-more") { LoadingMoreFooter() }
     }
 }
 
@@ -738,18 +720,6 @@ private fun MediaBadge(
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
         )
-    }
-}
-
-@Composable
-private fun TabLoadingMoreFooter(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 20.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
     }
 }
 

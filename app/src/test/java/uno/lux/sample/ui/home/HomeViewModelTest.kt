@@ -90,7 +90,7 @@ class HomeViewModelTest {
 
     @Test
     fun `refresh raises isRefreshing until the feed repository finishes`() = runTest {
-        val feedRepository = FakeFeedRepository()
+        val feedRepository = FakeFeedRepository(suspendOnRefresh = true)
         val viewModel = HomeViewModel(feedRepository, InMemoryPostRepository(), InMemoryUserRepository())
 
         assertFalse(viewModel.isRefreshing.value)
@@ -102,7 +102,7 @@ class HomeViewModelTest {
 
     @Test
     fun `endReached is false when the feed repository reports hasMore`() = runTest {
-        val feedRepository = FakeFeedRepositoryWithHasMore(hasMore = true)
+        val feedRepository = FakeFeedRepository(initialHasMore = true)
         val viewModel = HomeViewModel(feedRepository, InMemoryPostRepository(), InMemoryUserRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -121,23 +121,16 @@ class HomeViewModelTest {
 //  but it's better to show off how we write network code, and it's also closer to what production
 //  code would look like, so we should just drop them, and host a server. InMemory repositories
 //  aren't even needed to back up tests, they use Fake repositories.
-private class FakeFeedRepositoryWithHasMore(hasMore: Boolean) : FeedRepository {
+private class FakeFeedRepository(
+    initialHasMore: Boolean = false,
+    private val suspendOnRefresh: Boolean = false,
+) : FeedRepository {
     override val postIds: StateFlow<List<String>> = MutableStateFlow(emptyList())
-    override val hasMore: StateFlow<Boolean> = MutableStateFlow(hasMore)
-    override suspend fun refresh() {}
-    override suspend fun loadMore() {}
-}
-
-/** A [FeedRepository] whose refresh suspends until [completeRefresh], to observe refresh state. */
-private class FakeFeedRepository : FeedRepository {
-    override val postIds: StateFlow<List<String>> = MutableStateFlow(emptyList())
-    override val hasMore: StateFlow<Boolean> = MutableStateFlow(false)
+    override val hasMore: StateFlow<Boolean> = MutableStateFlow(initialHasMore)
     private val refreshGate = CompletableDeferred<Unit>()
 
-    override suspend fun refresh() = refreshGate.await()
+    override suspend fun refresh() { if (suspendOnRefresh) refreshGate.await() }
     override suspend fun loadMore() {}
 
-    fun completeRefresh() {
-        refreshGate.complete(Unit)
-    }
+    fun completeRefresh() = refreshGate.complete(Unit)
 }

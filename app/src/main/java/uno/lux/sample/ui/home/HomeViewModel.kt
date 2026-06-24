@@ -13,6 +13,7 @@ import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
@@ -55,10 +56,7 @@ class HomeViewModel @Inject constructor(
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    override fun loadMore() {
-        if (loadMoreJob?.isActive == true) return
-        loadMoreJob = viewModelScope.launch { feedRepository.loadMore() }
-    }
+    override fun loadMore() = launchIfIdle(::loadMoreJob) { feedRepository.loadMore() }
 
     private suspend fun load() {
         feedRepository.refresh()

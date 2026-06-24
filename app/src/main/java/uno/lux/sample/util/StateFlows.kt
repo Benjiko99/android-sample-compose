@@ -3,12 +3,14 @@ package uno.lux.sample.util
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.reflect.KMutableProperty0
 
 /** Grace period the upstream stays active after the last subscriber leaves (e.g. a config change). */
 private const val SUBSCRIPTION_TIMEOUT_MILLIS = 5_000L
@@ -30,4 +32,15 @@ fun ViewModel.launchRefresh(refreshing: MutableStateFlow<Boolean>, block: suspen
         refreshing.value = true
         try { block() } finally { refreshing.value = false }
     }
+}
+
+/**
+ * Launches [block] in [viewModelScope], writing the resulting [Job] into [jobRef], but only if
+ * the previous job stored there is no longer active. Subsequent calls while the job is running
+ * are silently ignored, preventing duplicate in-flight requests (e.g. repeated load-more
+ * triggers before the first page completes).
+ */
+fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () -> Unit) {
+    if (jobRef.get()?.isActive == true) return
+    jobRef.set(viewModelScope.launch { block() })
 }
