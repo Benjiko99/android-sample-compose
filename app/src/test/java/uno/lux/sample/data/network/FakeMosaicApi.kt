@@ -26,6 +26,8 @@ private val stubAuthor = userDto("u1", "Ada")
 
 class FakeMosaicApi(
     private val feedResponse: FeedResponse = FeedResponse(data = emptyList(), page = emptyPage),
+    /** Overrides [feedResponse] for specific cursor values, allowing multi-page feed tests. */
+    private val feedResponseByCursor: Map<String?, FeedResponse> = emptyMap(),
     private val userById: Map<String, UserDto> = emptyMap(),
     private val profileStats: Map<String, ProfileStatsDto> = emptyMap(),
     private val userPosts: List<PostFeedItemDto> = emptyList(),
@@ -35,7 +37,7 @@ class FakeMosaicApi(
 ) : MosaicApi {
 
     override suspend fun getFeed(cursor: String?, limit: Int, include: String): FeedResponse =
-        feedResponse
+        feedResponseByCursor[cursor] ?: feedResponse
 
     override suspend fun getUser(id: String): UserResponse =
         UserResponse(userById[id] ?: error("FakeSampleApi: no user for id '$id'"))

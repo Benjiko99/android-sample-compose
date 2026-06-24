@@ -99,14 +99,43 @@ class HomeViewModelTest {
         feedRepository.completeRefresh()
         assertFalse(viewModel.isRefreshing.value)
     }
+
+    @Test
+    fun `endReached is false when the feed repository reports hasMore`() = runTest {
+        val feedRepository = FakeFeedRepositoryWithHasMore(hasMore = true)
+        val viewModel = HomeViewModel(feedRepository, InMemoryPostRepository(), InMemoryUserRepository())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        val feed = viewModel.uiState.value as HomeUiState.Feed
+        assertFalse(feed.endReached)
+    }
+}
+
+// TODO: Fake repositories would perhaps be better replaced with a FakeDataSource, like we discussed
+//  in another TODO comment, regarding using DataSources, so we don't duplicate the implementation
+//  of the whole repository.
+// TODO: We should perhaps get rid of InMemory implementations of repositories, what is their purpose?
+//  They're kinda nice in that this is a portfolio project, and it lets us not need a server,
+//  but it's better to show off how we write network code, and it's also closer to what production
+//  code would look like, so we should just drop them, and host a server. InMemory repositories
+//  aren't even needed to back up tests, they use Fake repositories.
+private class FakeFeedRepositoryWithHasMore(hasMore: Boolean) : FeedRepository {
+    override val postIds: StateFlow<List<String>> = MutableStateFlow(emptyList())
+    override val hasMore: StateFlow<Boolean> = MutableStateFlow(hasMore)
+    override suspend fun refresh() {}
+    override suspend fun loadMore() {}
 }
 
 /** A [FeedRepository] whose refresh suspends until [completeRefresh], to observe refresh state. */
 private class FakeFeedRepository : FeedRepository {
     override val postIds: StateFlow<List<String>> = MutableStateFlow(emptyList())
+    override val hasMore: StateFlow<Boolean> = MutableStateFlow(false)
     private val refreshGate = CompletableDeferred<Unit>()
 
     override suspend fun refresh() = refreshGate.await()
+    override suspend fun loadMore() {}
 
     fun completeRefresh() {
         refreshGate.complete(Unit)

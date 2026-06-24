@@ -13,6 +13,7 @@ import uno.lux.sample.data.post.PostRepository
  * Network-backed [FeedRepository]. On [refresh] it fetches the first page with
  * [include=author], ingests the sideloaded authors into [userRepository] and the post entities
  * into [postRepository], then replaces [postIds] with the ordered IDs from the response.
+ * [loadMore] appends subsequent pages using the cursor from the last response.
  *
  * Separating ID ownership (here) from entity ownership ([postRepository]) means the home feed
  * and a user's profile tab each maintain their own ordered ID list without sharing or
@@ -27,11 +28,29 @@ class NetworkFeedRepository(
     private val _postIds = MutableStateFlow<List<PostId>>(emptyList())
     override val postIds: StateFlow<List<PostId>> = _postIds.asStateFlow()
 
+    private val _hasMore = MutableStateFlow(false)
+    override val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
+
+    private var nextCursor: String? = null
+
     override suspend fun refresh() = withContext(Dispatchers.IO) {
         val response = api.getFeed(include = "author")
         userRepository.ingest(response.included?.users.orEmpty())
         val posts = response.data.map { it.toDomain() }
         postRepository.ingest(posts)
+        nextCursor = response.page.nextCursor
+        _hasMore.value = response.page.hasMore
         _postIds.value = posts.map { it.id }
+    }
+
+    override suspend fun loadMore() = withContext(Dispatchers.IO) {
+        if (!_hasMore.value) return@withContext
+        val response = api.getFeed(cursor = nextCursor, include = "author")
+        userRepository.ingest(response.included?.users.orEmpty())
+        val posts = response.data.map { it.toDomain() }
+        postRepository.ingest(posts)
+        nextCursor = response.page.nextCursor
+        _hasMore.value = response.page.hasMore
+        _postIds.value = _postIds.value + posts.map { it.id }
     }
 }

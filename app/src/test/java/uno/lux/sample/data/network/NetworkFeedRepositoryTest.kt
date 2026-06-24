@@ -3,8 +3,10 @@ package uno.lux.sample.data.network
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.response.FeedIncluded
 import uno.lux.sample.data.network.response.FeedResponse
 
@@ -81,5 +83,104 @@ class NetworkFeedRepositoryTest {
         repo.refresh()
 
         assertTrue(userRepo.users.first().isEmpty())
+    }
+
+    @Test
+    fun `hasMore is false before any refresh`() = runTest {
+        assertFalse(repository().hasMore.first())
+    }
+
+    @Test
+    fun `hasMore reflects the page flag after refresh`() = runTest {
+        val api = FakeMosaicApi(
+            feedResponse = FeedResponse(
+                data = listOf(feedItemDto("p1", "u1")),
+                page = CursorPageDto(nextCursor = "c2", hasMore = true),
+            ),
+        )
+        val repo = repository(api)
+
+        repo.refresh()
+
+        assertTrue(repo.hasMore.first())
+    }
+
+    @Test
+    fun `loadMore appends the next page of post IDs`() = runTest {
+        val page1 = FeedResponse(
+            data = listOf(feedItemDto("p1", "u1")),
+            page = CursorPageDto(nextCursor = "c2", hasMore = true),
+        )
+        val page2 = FeedResponse(
+            data = listOf(feedItemDto("p2", "u1")),
+            page = emptyPage,
+        )
+        val api = FakeMosaicApi(
+            feedResponse = page1,
+            feedResponseByCursor = mapOf("c2" to page2),
+        )
+        val repo = repository(api)
+        repo.refresh()
+
+        repo.loadMore()
+
+        assertEquals(listOf("p1", "p2"), repo.postIds.first())
+    }
+
+    @Test
+    fun `loadMore clears hasMore when the last page is fetched`() = runTest {
+        val page1 = FeedResponse(
+            data = listOf(feedItemDto("p1", "u1")),
+            page = CursorPageDto(nextCursor = "c2", hasMore = true),
+        )
+        val page2 = FeedResponse(
+            data = listOf(feedItemDto("p2", "u1")),
+            page = emptyPage,
+        )
+        val api = FakeMosaicApi(
+            feedResponse = page1,
+            feedResponseByCursor = mapOf("c2" to page2),
+        )
+        val repo = repository(api)
+        repo.refresh()
+
+        repo.loadMore()
+
+        assertFalse(repo.hasMore.first())
+    }
+
+    @Test
+    fun `loadMore is a no-op when hasMore is false`() = runTest {
+        val api = FakeMosaicApi(
+            feedResponse = FeedResponse(listOf(feedItemDto("p1", "u1")), page = emptyPage),
+        )
+        val repo = repository(api)
+        repo.refresh()
+
+        repo.loadMore()
+
+        assertEquals(listOf("p1"), repo.postIds.first())
+    }
+
+    @Test
+    fun `refresh resets the post list and cursor`() = runTest {
+        val page1 = FeedResponse(
+            data = listOf(feedItemDto("p1", "u1")),
+            page = CursorPageDto(nextCursor = "c2", hasMore = true),
+        )
+        val api = FakeMosaicApi(
+            feedResponse = page1,
+            feedResponseByCursor = mapOf(
+                "c2" to FeedResponse(listOf(feedItemDto("p2", "u1")), page = emptyPage),
+            ),
+        )
+        val repo = repository(api)
+        repo.refresh()
+        repo.loadMore()
+
+        repo.refresh()
+
+        assertEquals(listOf("p1"), repo.postIds.first())
+        assertTrue(repo.hasMore.first())
     }
 }

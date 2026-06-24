@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -47,13 +48,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -104,6 +110,9 @@ import uno.lux.sample.util.formatVideoDuration
 interface ProfileActions {
     fun onToggleLike(postId: PostId)
     fun onToggleBookmark(postId: PostId)
+    fun loadMorePosts()
+    fun loadMoreAlbums()
+    fun loadMoreVideos()
 }
 
 /**
@@ -225,6 +234,33 @@ private fun ProfileContent(
         }
     }
 
+    // Resolve which load-more callback and endReached flag apply to the active tab. Using
+    // rememberUpdatedState means tab switches are picked up without restarting the effect.
+    val currentEndReached by rememberUpdatedState(
+        when (selectedTab) {
+            ProfileTab.POSTS -> data.postsEndReached
+            ProfileTab.ALBUMS -> data.albumsEndReached
+            ProfileTab.VIDEOS -> data.videosEndReached
+        }
+    )
+    val currentLoadMore by rememberUpdatedState(
+        when (selectedTab) {
+            ProfileTab.POSTS -> actions::loadMorePosts
+            ProfileTab.ALBUMS -> actions::loadMoreAlbums
+            ProfileTab.VIDEOS -> actions::loadMoreVideos
+        }
+    )
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val info = listState.layoutInfo
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: return@snapshotFlow false
+            !currentEndReached && lastVisible >= info.totalItemsCount - LOAD_MORE_PREFETCH
+        }.distinctUntilChanged()
+            .filter { it }
+            .collect { currentLoadMore() }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -255,8 +291,8 @@ private fun ProfileContent(
                         onOpenPost = onOpenPost,
                     )
 
-                    ProfileTab.ALBUMS -> albumsTab(data.profile.albums)
-                    ProfileTab.VIDEOS -> videosTab(data.profile.videos, onOpenVideo)
+                    ProfileTab.ALBUMS -> albumsTab(data.profile.albums, data.albumsEndReached)
+                    ProfileTab.VIDEOS -> videosTab(data.profile.videos, data.videosEndReached, onOpenVideo)
                 }
                 item(key = "bottom-inset") {
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -487,6 +523,8 @@ private fun ProfileTabs(
 
 // endregion
 
+private const val LOAD_MORE_PREFETCH = 3
+
 // region Tab content
 
 private fun LazyListScope.postsTab(
@@ -515,18 +553,25 @@ private fun LazyListScope.postsTab(
             onOpenPost = { onOpenPost(post.id) },
         )
     }
+    if (!screenData.postsEndReached) {
+        item(key = "posts-loading-more") { TabLoadingMoreFooter() }
+    }
 }
 
-private fun LazyListScope.albumsTab(albums: List<Album>) {
+private fun LazyListScope.albumsTab(albums: List<Album>, endReached: Boolean) {
     if (albums.isEmpty()) {
         item(key = "albums-empty") { EmptyTab(stringResource(R.string.profile_empty_albums)) }
         return
     }
     gridRows(albums, key = { it.id }) { album -> AlbumCell(album, Modifier.weight(1f)) }
+    if (!endReached) {
+        item(key = "albums-loading-more") { TabLoadingMoreFooter() }
+    }
 }
 
 private fun LazyListScope.videosTab(
     videos: List<Video>,
+    endReached: Boolean,
     onOpenVideo: (Video) -> Unit,
 ) {
     if (videos.isEmpty()) {
@@ -539,6 +584,9 @@ private fun LazyListScope.videosTab(
             onClick = { onOpenVideo(video) },
             modifier = Modifier.weight(1f),
         )
+    }
+    if (!endReached) {
+        item(key = "videos-loading-more") { TabLoadingMoreFooter() }
     }
 }
 
@@ -690,6 +738,18 @@ private fun MediaBadge(
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
         )
+    }
+}
+
+@Composable
+private fun TabLoadingMoreFooter(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
     }
 }
 

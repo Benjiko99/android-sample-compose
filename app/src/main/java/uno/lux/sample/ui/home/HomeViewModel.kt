@@ -3,6 +3,7 @@ package uno.lux.sample.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +19,7 @@ import javax.inject.Inject
 
 /**
  * Holds feed state and translates user intent (likes, bookmarks) into repository mutations.
- * Combines [FeedRepository] (ordered post IDs), [PostRepository] (entity map), and
+ * Combines [FeedRepository] (ordered post IDs + pagination), [PostRepository] (entity map), and
  * [UserRepository] (author lookup) to produce [PostCardData] items ready for display. All three
  * are constructor dependencies so the ViewModel can be unit tested against fakes.
  */
@@ -31,26 +32,33 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = combine(
         feedRepository.postIds,
+        feedRepository.hasMore,
         postRepository.entities,
         userRepository.users,
-    ) { postIds, entities, users ->
+    ) { postIds, hasMore, entities, users ->
         val cards = postIds.mapNotNull { id ->
             val post = entities[id] ?: return@mapNotNull null
             val author = users[post.authorId] ?: return@mapNotNull null
             PostCardData(post = post, author = author)
         }
-        HomeUiState.Feed(posts = cards, endReached = true)
-        // TODO: Learn the difference between hot and cold flows; and StateFlow, SharedFlow.
+        HomeUiState.Feed(posts = cards, endReached = !hasMore)
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private var loadMoreJob: Job? = null
 
     init {
         viewModelScope.launch { load() }
     }
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
+
+    override fun loadMore() {
+        if (loadMoreJob?.isActive == true) return
+        loadMoreJob = viewModelScope.launch { feedRepository.loadMore() }
+    }
 
     private suspend fun load() {
         feedRepository.refresh()

@@ -6,6 +6,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,7 @@ import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
- * (metadata + ordered post IDs), and [PostRepository] (entity map) into a single
+ * (metadata + ordered post IDs + pagination), and [PostRepository] (entity map) into a single
  * [ProfileScreenData]. Mutations go directly through [PostRepository] so a like toggled here is
  * immediately visible on the home feed — the shared entity store propagates the update to all
  * observers. [userId] is a runtime arg wired through [Factory].
@@ -48,16 +49,33 @@ class ProfileViewModel @AssistedInject constructor(
         combine(profileRepository.postIds(userId), postRepository.entities) { ids, entities ->
             ids.mapNotNull { entities[it] }
         },
-    ) { user, profile, posts ->
+        combine(
+            profileRepository.hasMorePosts(userId),
+            profileRepository.hasMoreAlbums(userId),
+            profileRepository.hasMoreVideos(userId),
+        ) { a, b, c -> Triple(a, b, c) },
+    ) { user, profile, posts, pagination ->
+        val (postsHasMore, albumsHasMore, videosHasMore) = pagination
         if (user == null) ProfileUiState.NotFound
         else ProfileUiState.Loaded(
-            data = ProfileScreenData(user, profile, posts),
+            data = ProfileScreenData(
+                user = user,
+                profile = profile,
+                posts = posts,
+                postsEndReached = !postsHasMore,
+                albumsEndReached = !albumsHasMore,
+                videosEndReached = !videosHasMore,
+            ),
             isCurrentUser = userId == currentUserId,
         )
     }.stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private var loadMorePostsJob: Job? = null
+    private var loadMoreAlbumsJob: Job? = null
+    private var loadMoreVideosJob: Job? = null
 
     init {
         viewModelScope.launch { load() }
@@ -76,5 +94,20 @@ class ProfileViewModel @AssistedInject constructor(
 
     override fun onToggleBookmark(postId: PostId) {
         viewModelScope.launch { postRepository.toggleBookmark(postId) }
+    }
+
+    override fun loadMorePosts() {
+        if (loadMorePostsJob?.isActive == true) return
+        loadMorePostsJob = viewModelScope.launch { profileRepository.loadMorePosts(userId) }
+    }
+
+    override fun loadMoreAlbums() {
+        if (loadMoreAlbumsJob?.isActive == true) return
+        loadMoreAlbumsJob = viewModelScope.launch { profileRepository.loadMoreAlbums(userId) }
+    }
+
+    override fun loadMoreVideos() {
+        if (loadMoreVideosJob?.isActive == true) return
+        loadMoreVideosJob = viewModelScope.launch { profileRepository.loadMoreVideos(userId) }
     }
 }

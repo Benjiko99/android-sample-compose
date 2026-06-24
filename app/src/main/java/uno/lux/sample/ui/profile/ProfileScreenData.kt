@@ -9,4 +9,7 @@ data class ProfileScreenData(
     val user: User,
     val profile: Profile,
     val posts: List<Post>,
+    val postsEndReached: Boolean = true,
+    val albumsEndReached: Boolean = true,
+    val videosEndReached: Boolean = true,
 )
