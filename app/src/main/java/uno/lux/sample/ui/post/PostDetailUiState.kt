@@ -11,5 +11,6 @@ sealed interface PostDetailUiState {
         val post: Post,
         val author: User,
         val comments: List<Comment>,
+        val commentsLoadFailed: Boolean = false,
     ) : PostDetailUiState
 }

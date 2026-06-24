@@ -97,6 +97,10 @@ class ProfileViewModel @AssistedInject constructor(
 
     fun refresh() = launchRefresh(_isRefreshing) { load() }
 
+    fun retry() {
+        viewModelScope.launch { load() }
+    }
+
     private suspend fun load() {
         _loadError.value = false
         try {

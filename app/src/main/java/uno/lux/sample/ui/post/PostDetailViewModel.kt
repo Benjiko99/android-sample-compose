@@ -49,27 +49,37 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
+    private val _commentsLoadFailed = MutableStateFlow(false)
 
     val uiState: StateFlow<PostDetailUiState> = combine(
         postRepository.entities.map { it[postId] },
         _comments,
         userRepository.users,
-    ) { post, comments, users ->
+        _commentsLoadFailed,
+    ) { post, comments, users, commentsLoadFailed ->
         if (post == null) return@combine PostDetailUiState.NotFound
         val author = users[post.authorId] ?: return@combine PostDetailUiState.NotFound
-        PostDetailUiState.Loaded(post, author, comments)
+        PostDetailUiState.Loaded(post, author, comments, commentsLoadFailed)
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
     /** Nickname of the signed-in user, shown as the composer's avatar label. */
     val composerUserName: String = currentUser.nickname
 
     init {
-        viewModelScope.launch {
-            try {
-                _comments.value = commentRepository.loadComments(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+        viewModelScope.launch { loadComments() }
+    }
+
+    fun retryComments() {
+        viewModelScope.launch { loadComments() }
+    }
+
+    private suspend fun loadComments() {
+        _commentsLoadFailed.value = false
+        try {
+            _comments.value = commentRepository.loadComments(postId)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            _commentsLoadFailed.value = true
         }
     }
 

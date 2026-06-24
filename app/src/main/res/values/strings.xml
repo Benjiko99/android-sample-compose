@@ -15,7 +15,8 @@
 
     <!-- Error -->
     <string name="profile_error">Couldn\’t load this profile. Check your connection.</string>
-    <string name="error_retry">Try again</string>
+    <string name="post_detail_comments_error">Couldn\’t load comments. Check your connection.</string>
+    <string name="error_retry">Retry</string>
 
     <!-- Placeholder destinations -->
     <string name="placeholder_body">Coming soon</string>

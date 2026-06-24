@@ -43,6 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -66,6 +67,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -129,6 +131,7 @@ fun PostDetailScreen(
         onToggleBookmark = viewModel::onToggleBookmark,
         onToggleCommentLike = viewModel::onToggleCommentLike,
         onAddComment = viewModel::addComment,
+        onRetryComments = viewModel::retryComments,
         modifier = modifier,
     )
 }
@@ -151,6 +154,7 @@ internal fun PostDetailScreen(
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
+    onRetryComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loaded = (uiState as? PostDetailUiState.Loaded)
@@ -220,12 +224,14 @@ internal fun PostDetailScreen(
                 post = uiState.post,
                 author = uiState.author,
                 comments = uiState.comments,
+                commentsLoadFailed = uiState.commentsLoadFailed,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
                 onToggleLike = onToggleLike,
                 onToggleBookmark = onToggleBookmark,
                 onToggleCommentLike = onToggleCommentLike,
+                onRetryComments = onRetryComments,
                 modifier = Modifier.padding(contentPadding),
             )
         }
@@ -417,12 +423,14 @@ private fun PostDetailContent(
     post: Post,
     author: User,
     comments: List<Comment>,
+    commentsLoadFailed: Boolean,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
+    onRetryComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -443,19 +451,45 @@ private fun PostDetailContent(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
-        item {
-            CommentsHeader(count = comments.size)
-        }
-
-        items(comments, key = { it.id }) { comment ->
-            CommentRow(
-                comment = comment,
-                onLike = { onToggleCommentLike(comment.id) },
-                onOpenProfile = { onOpenProfile(comment.author.id) },
-            )
+        if (commentsLoadFailed) {
+            item(key = "comments_error") { CommentsError(onRetry = onRetryComments) }
+        } else {
+            item(key = "comments_header") { CommentsHeader(count = comments.size) }
+            items(comments, key = { it.id }) { comment ->
+                CommentRow(
+                    comment = comment,
+                    onLike = { onToggleCommentLike(comment.id) },
+                    onOpenProfile = { onOpenProfile(comment.author.id) },
+                )
+            }
         }
 
         item { Spacer(Modifier.height(8.dp)) }
+    }
+}
+
+@Composable
+private fun CommentsError(onRetry: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp, horizontal = 24.dp),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.post_detail_comments_error),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            TextButton(onClick = onRetry) {
+                Text(stringResource(R.string.error_retry))
+            }
+        }
     }
 }
 
@@ -876,6 +910,7 @@ private fun PostDetailLoadedPreview() {
             onToggleBookmark = {},
             onToggleCommentLike = {},
             onAddComment = {},
+            onRetryComments = {},
         )
     }
 }
@@ -895,6 +930,7 @@ private fun PostDetailLoadingPreview() {
             onToggleBookmark = {},
             onToggleCommentLike = {},
             onAddComment = {},
+            onRetryComments = {},
         )
     }
 }

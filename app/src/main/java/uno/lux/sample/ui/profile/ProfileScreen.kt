@@ -44,7 +44,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -85,6 +84,7 @@ import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.FullScreenError
 import uno.lux.sample.ui.components.LoadMoreEffect
 import uno.lux.sample.ui.components.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -140,6 +140,7 @@ fun ProfileScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
         onRefresh = viewModel::refresh,
+        onRetry = viewModel::retry,
         actions = viewModel,
         onOpenSettings = onOpenSettings,
         onOpenVideo = onOpenVideo,
@@ -159,6 +160,7 @@ internal fun ProfileScreen(
     uiState: ProfileUiState,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
+    onRetry: () -> Unit,
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -179,7 +181,10 @@ internal fun ProfileScreen(
             }
 
             ProfileUiState.Error -> {
-                ProfileErrorState(onRetry = onRefresh)
+                FullScreenError(
+                    message = stringResource(R.string.profile_error),
+                    onRetry = onRetry,
+                )
                 if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
             }
 
@@ -865,30 +870,6 @@ private fun CenteredMessage(message: String) {
     }
 }
 
-@Composable
-private fun ProfileErrorState(onRetry: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.profile_error),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            TextButton(onClick = onRetry) {
-                Text(stringResource(R.string.error_retry))
-            }
-        }
-    }
-}
 
 // endregion
 
@@ -922,6 +903,7 @@ private fun ProfileScreenPreview() {
             uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = true),
             isRefreshing = false,
             onRefresh = {},
+            onRetry = {},
             actions = createActionsProxy(),
             onOpenSettings = {},
             onOpenVideo = {},

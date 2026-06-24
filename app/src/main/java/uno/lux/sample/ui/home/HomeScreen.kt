@@ -1,9 +1,7 @@
 package uno.lux.sample.ui.home
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +15,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -44,6 +41,7 @@ import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
+import uno.lux.sample.ui.components.FullScreenError
 import uno.lux.sample.ui.components.LoadMoreEffect
 import uno.lux.sample.ui.components.LoadingMoreFooter
 import uno.lux.sample.ui.components.MosaicWordmark
@@ -62,6 +60,7 @@ import uno.lux.sample.util.createActionsProxy
 @Stable
 interface HomeActions {
     fun refresh()
+    fun retry()
     fun loadMore()
     fun onToggleLike(postId: PostId)
     fun onToggleBookmark(postId: PostId)
@@ -138,7 +137,10 @@ internal fun HomeScreen(
         ) {
             when (uiState) {
                 HomeUiState.Loading -> LoadingState()
-                HomeUiState.Error -> ErrorState(onRetry = actions::refresh)
+                HomeUiState.Error -> FullScreenError(
+                    message = stringResource(R.string.feed_error),
+                    onRetry = actions::retry,
+                )
                 is HomeUiState.Feed ->
                     if (uiState.posts.isEmpty()) {
                         EmptyState()
@@ -265,30 +267,6 @@ private fun EmptyState(modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun ErrorState(onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.feed_error),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            TextButton(onClick = onRetry) {
-                Text(stringResource(R.string.error_retry))
-            }
-        }
-    }
-}
 
 /** End-of-feed marker shown as the last list item once there are no more posts to load. */
 @Composable

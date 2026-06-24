@@ -69,6 +69,10 @@ class HomeViewModel @Inject constructor(
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
+    override fun retry() {
+        viewModelScope.launch { load() }
+    }
+
     override fun loadMore() = launchIfIdle(::loadMoreJob) {
         try {
             feedRepository.loadMore()
