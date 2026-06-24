@@ -1,10 +1,13 @@
 package uno.lux.sample.data.post
 
 import java.time.Instant
+import uno.lux.sample.data.user.UserId
+
+typealias PostId = String
 
 data class Post(
-    val id: String,
-    val authorId: String,
+    val id: PostId,
+    val authorId: UserId,
     val title: String,
     val body: String,
     val createdAt: Instant,

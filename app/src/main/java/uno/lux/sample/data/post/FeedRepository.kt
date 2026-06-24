@@ -14,7 +14,7 @@ import uno.lux.sample.data.SamplePosts
  * re-fetching. [refresh] re-fetches the first page and replaces the current ID list.
  */
 interface FeedRepository {
-    val postIds: StateFlow<List<String>>
+    val postIds: StateFlow<List<PostId>>
     suspend fun refresh()
 }
 
@@ -23,11 +23,11 @@ interface FeedRepository {
  * [refresh] only models the latency a real network call would incur.
  */
 class InMemoryFeedRepository(
-    initialPostIds: List<String> = SamplePosts.map { it.id },
+    initialPostIds: List<PostId> = SamplePosts.map { it.id },
 ) : FeedRepository {
 
     private val _postIds = MutableStateFlow(initialPostIds)
-    override val postIds: StateFlow<List<String>> = _postIds.asStateFlow()
+    override val postIds: StateFlow<List<PostId>> = _postIds.asStateFlow()
 
     override suspend fun refresh() {
         delay(REFRESH_DELAY_MILLIS)

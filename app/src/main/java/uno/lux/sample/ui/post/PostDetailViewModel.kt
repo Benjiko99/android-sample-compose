@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
@@ -37,12 +39,12 @@ class PostDetailViewModel @AssistedInject constructor(
     private val commentRepository: CommentRepository,
     private val userRepository: UserRepository,
     @CurrentUser private val currentUser: User,
-    @Assisted private val postId: String,
+    @Assisted private val postId: PostId,
 ) : ViewModel() {
 
     @AssistedFactory
     interface Factory {
-        fun create(postId: String): PostDetailViewModel
+        fun create(postId: PostId): PostDetailViewModel
     }
 
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
@@ -74,7 +76,7 @@ class PostDetailViewModel @AssistedInject constructor(
         viewModelScope.launch { postRepository.toggleBookmark(postId) }
     }
 
-    fun onToggleCommentLike(commentId: String) {
+    fun onToggleCommentLike(commentId: CommentId) {
         viewModelScope.launch {
             val comment = _comments.value.find { it.id == commentId } ?: return@launch
             val updated = commentRepository.toggleLike(postId, comment)

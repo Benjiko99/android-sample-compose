@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.util.launchRefresh
@@ -39,6 +40,7 @@ class HomeViewModel @Inject constructor(
             PostCardData(post = post, author = author)
         }
         HomeUiState.Feed(posts = cards, endReached = true)
+        // TODO: Learn the difference between hot and cold flows; and StateFlow, SharedFlow.
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -54,11 +56,11 @@ class HomeViewModel @Inject constructor(
         feedRepository.refresh()
     }
 
-    override fun onToggleLike(postId: String) {
+    override fun onToggleLike(postId: PostId) {
         viewModelScope.launch { postRepository.toggleLike(postId) }
     }
 
-    override fun onToggleBookmark(postId: String) {
+    override fun onToggleBookmark(postId: PostId) {
         viewModelScope.launch { postRepository.toggleBookmark(postId) }
     }
 }

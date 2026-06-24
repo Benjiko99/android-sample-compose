@@ -6,8 +6,10 @@ import uno.lux.sample.data.SampleAlbums
 import uno.lux.sample.data.SampleVideos
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.user.UserId
 
 /**
  * Source of truth for a user's profile metadata and the ordered IDs of their posts.
@@ -18,9 +20,9 @@ import uno.lux.sample.data.post.Video
  * Post mutations go directly through [PostRepository] — not through here.
  */
 interface ProfileRepository {
-    fun profile(userId: String): Flow<Profile>
-    fun postIds(userId: String): Flow<List<String>>
-    suspend fun refresh(userId: String)
+    fun profile(userId: UserId): Flow<Profile>
+    fun postIds(userId: UserId): Flow<List<PostId>>
+    suspend fun refresh(userId: UserId)
 }
 
 /**
@@ -30,11 +32,11 @@ interface ProfileRepository {
  */
 class InMemoryProfileRepository(
     private val postRepository: PostRepository = InMemoryPostRepository(),
-    private val albumsByUser: Map<String, List<Album>> = SampleAlbums,
-    private val videosByUser: Map<String, List<Video>> = SampleVideos,
+    private val albumsByUser: Map<UserId, List<Album>> = SampleAlbums,
+    private val videosByUser: Map<UserId, List<Video>> = SampleVideos,
 ) : ProfileRepository {
 
-    override fun profile(userId: String): Flow<Profile> =
+    override fun profile(userId: UserId): Flow<Profile> =
         postRepository.entities.map { entities ->
             val userAlbums = albumsByUser[userId].orEmpty()
             val userVideos = videosByUser[userId].orEmpty()
@@ -49,7 +51,7 @@ class InMemoryProfileRepository(
             )
         }
 
-    override fun postIds(userId: String): Flow<List<String>> =
+    override fun postIds(userId: UserId): Flow<List<PostId>> =
         postRepository.entities.map { entities ->
             entities.values
                 .filter { it.authorId == userId }
@@ -57,5 +59,5 @@ class InMemoryProfileRepository(
                 .map { it.id }
         }
 
-    override suspend fun refresh(userId: String) {}
+    override suspend fun refresh(userId: UserId) {}
 }

@@ -77,7 +77,9 @@ import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.SampleVideos
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.ui.components.Avatar
@@ -100,8 +102,8 @@ import uno.lux.sample.util.formatVideoDuration
  */
 @Stable
 interface ProfileActions {
-    fun onToggleLike(postId: String)
-    fun onToggleBookmark(postId: String)
+    fun onToggleLike(postId: PostId)
+    fun onToggleBookmark(postId: PostId)
 }
 
 /**
@@ -111,10 +113,10 @@ interface ProfileActions {
  */
 @Composable
 fun ProfileScreen(
-    userId: String,
+    userId: UserId,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenPost: (postId: String) -> Unit = {},
+    onOpenPost: (postId: PostId) -> Unit = {},
     onOpenAlbum: (Album, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
@@ -153,7 +155,7 @@ internal fun ProfileScreen(
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenPost: (postId: String) -> Unit = {},
+    onOpenPost: (postId: PostId) -> Unit = {},
     onOpenAlbum: (Album, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
@@ -202,7 +204,7 @@ private fun ProfileContent(
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
-    onOpenPost: (postId: String) -> Unit,
+    onOpenPost: (postId: PostId) -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -492,7 +494,7 @@ private fun LazyListScope.postsTab(
     actions: ProfileActions,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
-    onOpenPost: (postId: String) -> Unit,
+    onOpenPost: (postId: PostId) -> Unit,
 ) {
     val posts = screenData.posts
     val author = screenData.user

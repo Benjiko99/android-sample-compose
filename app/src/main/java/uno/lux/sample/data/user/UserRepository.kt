@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.user.User
 
 /**
  * Single source of truth for user identity.
@@ -18,9 +17,9 @@ import uno.lux.sample.data.user.User
  * The interface is the seam a real network-backed implementation slots into later.
  */
 interface UserRepository {
-    fun user(userId: String): Flow<User?>
-    val users: Flow<Map<String, User>>
-    suspend fun refresh(userId: String)
+    fun user(userId: UserId): Flow<User?>
+    val users: Flow<Map<UserId, User>>
+    suspend fun refresh(userId: UserId)
 }
 
 /**
@@ -33,9 +32,9 @@ class InMemoryUserRepository(
 
     private val cache = MutableStateFlow(allUsers.associateBy { it.id })
 
-    override val users: Flow<Map<String, User>> = cache.asStateFlow()
+    override val users: Flow<Map<UserId, User>> = cache.asStateFlow()
 
-    override fun user(userId: String): Flow<User?> = cache.map { it[userId] }
+    override fun user(userId: UserId): Flow<User?> = cache.map { it[userId] }
 
-    override suspend fun refresh(userId: String) {}
+    override suspend fun refresh(userId: UserId) {}
 }

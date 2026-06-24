@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.updateEntity
 
@@ -20,19 +21,19 @@ class NetworkPostRepository(
     private val api: MosaicApi,
 ) : PostRepository {
 
-    private val _entities = MutableStateFlow<Map<String, Post>>(emptyMap())
-    override val entities: StateFlow<Map<String, Post>> = _entities.asStateFlow()
+    private val _entities = MutableStateFlow<Map<PostId, Post>>(emptyMap())
+    override val entities: StateFlow<Map<PostId, Post>> = _entities.asStateFlow()
 
     override fun ingest(posts: List<Post>) {
         _entities.value += posts.associateBy { it.id }
     }
 
-    override suspend fun toggleLike(postId: String) = withContext(Dispatchers.IO) {
+    override suspend fun toggleLike(postId: PostId) = withContext(Dispatchers.IO) {
         val result = api.toggleLike(postId, EmptyBody()).data
         _entities.updateEntity(postId) { it.copy(isLiked = result.isLiked, likeCount = result.likeCount) }
     }
 
-    override suspend fun toggleBookmark(postId: String) = withContext(Dispatchers.IO) {
+    override suspend fun toggleBookmark(postId: PostId) = withContext(Dispatchers.IO) {
         val result = api.toggleBookmark(postId, EmptyBody()).data
         _entities.updateEntity(postId) { it.copy(isBookmarked = result.isBookmarked) }
     }

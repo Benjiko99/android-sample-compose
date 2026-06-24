@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 
 /**
@@ -23,8 +24,8 @@ class NetworkFeedRepository(
     private val userRepository: NetworkUserRepository,
 ) : FeedRepository {
 
-    private val _postIds = MutableStateFlow<List<String>>(emptyList())
-    override val postIds: StateFlow<List<String>> = _postIds.asStateFlow()
+    private val _postIds = MutableStateFlow<List<PostId>>(emptyList())
+    override val postIds: StateFlow<List<PostId>> = _postIds.asStateFlow()
 
     override suspend fun refresh() = withContext(Dispatchers.IO) {
         val response = api.getFeed(include = "author")

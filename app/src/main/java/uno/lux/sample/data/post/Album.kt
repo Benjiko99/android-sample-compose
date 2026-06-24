@@ -1,5 +1,7 @@
 package uno.lux.sample.data.post
 
+typealias AlbumId = String
+
 /**
  * An image album. On the profile grid the cover is a deterministic gradient stand-in keyed by
  * [id]; an album shown as a feed post instead renders its [images] (remote URLs) in a
@@ -7,7 +9,7 @@ package uno.lux.sample.data.post
  * of [images] actually attached for preview.
  */
 data class Album(
-    val id: String,
+    val id: AlbumId,
     val title: String,
     val itemCount: Int,
     val images: List<String> = emptyList(),

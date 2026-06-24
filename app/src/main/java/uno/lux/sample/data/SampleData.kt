@@ -3,10 +3,13 @@ package uno.lux.sample.data
 import java.time.Duration
 import java.time.Instant
 import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.AlbumId
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 
 /**
  * Stand-in content for the in-memory repository and Compose previews. Timestamps are
@@ -185,7 +188,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
 )
 
 /** Album stand-ins per user id, surfaced on the profile's Albums tab. */
-internal val SampleAlbums: Map<String, List<Album>> = mapOf(
+internal val SampleAlbums: Map<UserId, List<Album>> = mapOf(
     "u1" to listOf(
         Album(id = "a1", title = "Engine Sketches", itemCount = 24),
         Album(id = "a2", title = "Notation Studies", itemCount = 12),
@@ -213,9 +216,9 @@ internal val SampleAlbums: Map<String, List<Album>> = mapOf(
 )
 
 /** Sample comments seeded per post id; timestamps are anchored to first access. */
-internal val SampleComments: Map<String, List<Comment>> = buildSampleComments(Instant.now())
+internal val SampleComments: Map<PostId, List<Comment>> = buildSampleComments(Instant.now())
 
-private fun buildSampleComments(now: Instant): Map<String, List<Comment>> = mapOf(
+private fun buildSampleComments(now: Instant): Map<PostId, List<Comment>> = mapOf(
     // p1 "The engine weaves algebraic patterns" — post is 4m old
     "p1" to listOf(
         Comment("c1p1", SampleUsers[1], now.minus(Duration.ofMinutes(3)),
@@ -261,7 +264,7 @@ private fun buildSampleComments(now: Instant): Map<String, List<Comment>> = mapO
 )
 
 /** Video stand-ins per user id, surfaced on the profile's Videos tab. */
-internal val SampleVideos: Map<String, List<Video>> = mapOf(
+internal val SampleVideos: Map<UserId, List<Video>> = mapOf(
     "u1" to listOf(
         Video(id = "v1", title = "Weaving algebra on the Analytical Engine", durationSeconds = 222, viewCount = 41_200, videoUrl = SampleVideoUrl),
         Video(id = "v2", title = "Note G, explained", durationSeconds = 615, viewCount = 12_800, videoUrl = SampleVideoUrl),

@@ -7,25 +7,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.data.profile.ProfileRepository
+import uno.lux.sample.data.user.UserId
 
 class NetworkProfileRepository(
     private val api: MosaicApi,
     private val postRepository: PostRepository,
 ) : ProfileRepository {
 
-    private val _profiles = MutableStateFlow<Map<String, Profile>>(emptyMap())
-    private val _userPostIds = MutableStateFlow<Map<String, List<String>>>(emptyMap())
+    private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
+    private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
 
-    override fun profile(userId: String): Flow<Profile> =
+    override fun profile(userId: UserId): Flow<Profile> =
         _profiles.map { it[userId] ?: emptyProfile(userId) }
 
-    override fun postIds(userId: String): Flow<List<String>> =
+    override fun postIds(userId: UserId): Flow<List<PostId>> =
         _userPostIds.map { it[userId] ?: emptyList() }
 
-    override suspend fun refresh(userId: String) = withContext(Dispatchers.IO) {
+    override suspend fun refresh(userId: UserId) = withContext(Dispatchers.IO) {
         val statsDeferred = async { api.getProfileStats(userId).data }
         val postsDeferred = async { api.getUserPosts(userId).data }
         val albumPostsDeferred = async { api.getUserPosts(userId, type = "photo").data }
@@ -52,7 +54,7 @@ class NetworkProfileRepository(
         }
     }
 
-    private fun emptyProfile(userId: String) = Profile(
+    private fun emptyProfile(userId: UserId) = Profile(
         userId = userId,
         albums = emptyList(),
         videos = emptyList(),

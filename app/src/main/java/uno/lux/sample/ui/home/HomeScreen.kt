@@ -38,7 +38,9 @@ import uno.lux.sample.R
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -55,8 +57,8 @@ import uno.lux.sample.util.createActionsProxy
 @Stable
 interface HomeActions {
     fun refresh()
-    fun onToggleLike(postId: String)
-    fun onToggleBookmark(postId: String)
+    fun onToggleLike(postId: PostId)
+    fun onToggleBookmark(postId: PostId)
 }
 
 /**
@@ -66,10 +68,10 @@ interface HomeActions {
 @Composable
 fun HomeScreen(
     onOpenSettings: () -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
+    onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
-    onOpenPost: (postId: String) -> Unit,
+    onOpenPost: (postId: PostId) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -100,10 +102,10 @@ internal fun HomeScreen(
     isRefreshing: Boolean,
     actions: HomeActions,
     onOpenSettings: () -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
+    onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
-    onOpenPost: (postId: String) -> Unit,
+    onOpenPost: (postId: PostId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 
 /**
@@ -20,12 +21,12 @@ class NetworkUserRepository(
     private val api: MosaicApi,
 ) : UserRepository {
 
-    private val _cache = MutableStateFlow<Map<String, User>>(emptyMap())
-    override val users: Flow<Map<String, User>> = _cache.asStateFlow()
+    private val _cache = MutableStateFlow<Map<UserId, User>>(emptyMap())
+    override val users: Flow<Map<UserId, User>> = _cache.asStateFlow()
 
-    override fun user(userId: String): Flow<User?> = _cache.map { it[userId] }
+    override fun user(userId: UserId): Flow<User?> = _cache.map { it[userId] }
 
-    override suspend fun refresh(userId: String) = withContext(Dispatchers.IO) {
+    override suspend fun refresh(userId: UserId) = withContext(Dispatchers.IO) {
         val dto = api.getUser(userId)
         _cache.update { it + (userId to dto.data.toDomain()) }
     }

@@ -1,5 +1,7 @@
 package uno.lux.sample.data.user
 
+typealias UserId = String
+
 /**
  * A platform user.
  *
@@ -7,7 +9,7 @@ package uno.lux.sample.data.user
  * fields carry defaults so a post author can be constructed without full profile detail.
  */
 data class User(
-    val id: String,
+    val id: UserId,
     val nickname: String,
     val handle: String,
     val age: Int? = null,

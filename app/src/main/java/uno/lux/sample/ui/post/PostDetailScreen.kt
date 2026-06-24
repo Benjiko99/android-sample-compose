@@ -81,9 +81,12 @@ import uno.lux.sample.data.SampleComments
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
@@ -103,9 +106,9 @@ import uno.lux.sample.util.relativeTime
  */
 @Composable
 fun PostDetailScreen(
-    postId: String,
+    postId: PostId,
     onBack: () -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
+    onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -141,12 +144,12 @@ internal fun PostDetailScreen(
     uiState: PostDetailUiState,
     composerUserName: String,
     onBack: () -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
+    onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
-    onToggleCommentLike: (commentId: String) -> Unit,
+    onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -414,12 +417,12 @@ private fun PostDetailContent(
     post: Post,
     author: User,
     comments: List<Comment>,
-    onOpenProfile: (userId: String) -> Unit,
+    onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
-    onToggleCommentLike: (commentId: String) -> Unit,
+    onToggleCommentLike: (commentId: CommentId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()

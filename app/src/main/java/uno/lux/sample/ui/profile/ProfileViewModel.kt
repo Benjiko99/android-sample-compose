@@ -12,8 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.ProfileRepository
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
 import uno.lux.sample.util.launchRefresh
@@ -31,13 +33,13 @@ class ProfileViewModel @AssistedInject constructor(
     private val profileRepository: ProfileRepository,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
-    @CurrentUserId private val currentUserId: String,
-    @Assisted private val userId: String,
+    @CurrentUserId private val currentUserId: UserId,
+    @Assisted private val userId: UserId,
 ) : ViewModel(), ProfileActions {
 
     @AssistedFactory
     interface Factory {
-        fun create(userId: String): ProfileViewModel
+        fun create(userId: UserId): ProfileViewModel
     }
 
     val uiState: StateFlow<ProfileUiState> = combine(
@@ -68,11 +70,11 @@ class ProfileViewModel @AssistedInject constructor(
         launch { profileRepository.refresh(userId) }
     }
 
-    override fun onToggleLike(postId: String) {
+    override fun onToggleLike(postId: PostId) {
         viewModelScope.launch { postRepository.toggleLike(postId) }
     }
 
-    override fun onToggleBookmark(postId: String) {
+    override fun onToggleBookmark(postId: PostId) {
         viewModelScope.launch { postRepository.toggleBookmark(postId) }
     }
 }
