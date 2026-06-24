@@ -5,8 +5,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.data.network.dto.FeedIncluded
-import uno.lux.sample.data.network.dto.FeedResponse
+import uno.lux.sample.data.network.response.FeedIncluded
+import uno.lux.sample.data.network.response.FeedResponse
 
 class NetworkFeedRepositoryTest {
 

@@ -6,15 +6,15 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
-import uno.lux.sample.data.network.dto.BookmarkToggleResponse
-import uno.lux.sample.data.network.dto.CommentListResponse
-import uno.lux.sample.data.network.dto.CommentResponse
 import uno.lux.sample.data.network.dto.EmptyBody
-import uno.lux.sample.data.network.dto.FeedResponse
-import uno.lux.sample.data.network.dto.LikeToggleResponse
-import uno.lux.sample.data.network.dto.ProfileStatsResponse
-import uno.lux.sample.data.network.dto.UserPostsResponse
-import uno.lux.sample.data.network.dto.UserResponse
+import uno.lux.sample.data.network.response.BookmarkToggleResponse
+import uno.lux.sample.data.network.response.CommentListResponse
+import uno.lux.sample.data.network.response.CommentResponse
+import uno.lux.sample.data.network.response.FeedResponse
+import uno.lux.sample.data.network.response.LikeToggleResponse
+import uno.lux.sample.data.network.response.ProfileStatsResponse
+import uno.lux.sample.data.network.response.UserPostsResponse
+import uno.lux.sample.data.network.response.UserResponse
 
 interface MosaicApi {
 
@@ -49,7 +49,7 @@ interface MosaicApi {
     @POST("posts/{id}/like")
     suspend fun toggleLike(
         @Path("id") postId: String,
-        @Body body: EmptyBody,
+        @Body body: EmptyBody, // TODO: Why do we use EmptyBody in many API calls? We should drop the body.
     ): LikeToggleResponse
 
     @POST("posts/{id}/bookmark")
