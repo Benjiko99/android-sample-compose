@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
+import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.user.User
 import java.time.Instant
@@ -55,7 +55,7 @@ class NetworkCommentRepositoryTest {
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
         val api = FakeMosaicApi(
-            likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 3),
+            likeResult = LikeToggleDto(isLiked = true, likeCount = 3),
         )
         val repository = NetworkCommentRepository(api)
 
@@ -81,7 +81,7 @@ class NetworkCommentRepositoryTest {
     fun `toggleLike on different comments are independent`() = runTest {
         val other = stubComment.copy(id = "c2", isLiked = false)
         val api = FakeMosaicApi(
-            likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 1),
+            likeResult = LikeToggleDto(isLiked = true, likeCount = 1),
         )
         val repository = NetworkCommentRepository(api)
 

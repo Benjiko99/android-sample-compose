@@ -3,13 +3,13 @@ package uno.lux.sample.data.network.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CommentNetworkDto(
+data class CommentDto(
     val id: String,
     val text: String,
     val createdAt: String,
     val likeCount: Int,
     val isLiked: Boolean,
-    val author: UserNetworkDto,
+    val author: UserDto,
 )
 
 @Serializable

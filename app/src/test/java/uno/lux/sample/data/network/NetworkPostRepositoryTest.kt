@@ -6,8 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.data.network.dto.BookmarkToggleNetworkDto
-import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
+import uno.lux.sample.data.network.dto.BookmarkToggleDto
+import uno.lux.sample.data.network.dto.LikeToggleDto
 
 class NetworkPostRepositoryTest {
 
@@ -44,7 +44,7 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
-        val api = FakeMosaicApi(likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 6))
+        val api = FakeMosaicApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 6))
         val repo = repository(api)
         repo.ingest(listOf(feedItemDto("p1", "u1", isLiked = false, likeCount = 5).toDomain()))
 
@@ -57,7 +57,7 @@ class NetworkPostRepositoryTest {
 
     @Test
     fun `toggleBookmark updates isBookmarked from the server response`() = runTest {
-        val api = FakeMosaicApi(bookmarkResult = BookmarkToggleNetworkDto(isBookmarked = true))
+        val api = FakeMosaicApi(bookmarkResult = BookmarkToggleDto(isBookmarked = true))
         val repo = repository(api)
         repo.ingest(listOf(feedItemDto("p1", "u1", isBookmarked = false).toDomain()))
 

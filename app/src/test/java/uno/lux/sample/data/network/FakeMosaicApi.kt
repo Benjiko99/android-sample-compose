@@ -1,16 +1,16 @@
 package uno.lux.sample.data.network
 
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
-import uno.lux.sample.data.network.dto.AlbumNetworkDto
-import uno.lux.sample.data.network.dto.BookmarkToggleNetworkDto
-import uno.lux.sample.data.network.dto.CommentNetworkDto
+import uno.lux.sample.data.network.dto.AlbumDto
+import uno.lux.sample.data.network.dto.BookmarkToggleDto
+import uno.lux.sample.data.network.dto.CommentDto
 import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.EmptyBody
-import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
-import uno.lux.sample.data.network.dto.PostFeedItemNetworkDto
-import uno.lux.sample.data.network.dto.ProfileStatsNetworkDto
-import uno.lux.sample.data.network.dto.UserNetworkDto
-import uno.lux.sample.data.network.dto.VideoNetworkDto
+import uno.lux.sample.data.network.dto.LikeToggleDto
+import uno.lux.sample.data.network.dto.PostFeedItemDto
+import uno.lux.sample.data.network.dto.ProfileStatsDto
+import uno.lux.sample.data.network.dto.UserDto
+import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
@@ -26,12 +26,12 @@ private val stubAuthor = userDto("u1", "Ada")
 
 class FakeMosaicApi(
     private val feedResponse: FeedResponse = FeedResponse(data = emptyList(), page = emptyPage),
-    private val userById: Map<String, UserNetworkDto> = emptyMap(),
-    private val profileStats: Map<String, ProfileStatsNetworkDto> = emptyMap(),
-    private val userPosts: List<PostFeedItemNetworkDto> = emptyList(),
-    private val comments: List<CommentNetworkDto> = emptyList(),
-    val likeResult: LikeToggleNetworkDto = LikeToggleNetworkDto(isLiked = true, likeCount = 1),
-    val bookmarkResult: BookmarkToggleNetworkDto = BookmarkToggleNetworkDto(isBookmarked = true),
+    private val userById: Map<String, UserDto> = emptyMap(),
+    private val profileStats: Map<String, ProfileStatsDto> = emptyMap(),
+    private val userPosts: List<PostFeedItemDto> = emptyList(),
+    private val comments: List<CommentDto> = emptyList(),
+    val likeResult: LikeToggleDto = LikeToggleDto(isLiked = true, likeCount = 1),
+    val bookmarkResult: BookmarkToggleDto = BookmarkToggleDto(isBookmarked = true),
 ) : MosaicApi {
 
     override suspend fun getFeed(cursor: String?, limit: Int, include: String): FeedResponse =
@@ -41,7 +41,7 @@ class FakeMosaicApi(
         UserResponse(userById[id] ?: error("FakeSampleApi: no user for id '$id'"))
 
     override suspend fun getProfileStats(id: String): ProfileStatsResponse =
-        ProfileStatsResponse(profileStats[id] ?: ProfileStatsNetworkDto(0, 0, 0))
+        ProfileStatsResponse(profileStats[id] ?: ProfileStatsDto(0, 0, 0))
 
     override suspend fun getUserPosts(
         id: String,
@@ -64,7 +64,7 @@ class FakeMosaicApi(
 
     override suspend fun addComment(postId: String, body: AddCommentRequestDto): CommentResponse =
         CommentResponse(
-            CommentNetworkDto(
+            CommentDto(
                 id = "c-new",
                 text = body.text,
                 createdAt = "2025-01-01T00:00:00.000Z",
@@ -81,7 +81,7 @@ class FakeMosaicApi(
     ): LikeToggleResponse = LikeToggleResponse(likeResult)
 }
 
-private fun PostFeedItemNetworkDto.matchesType(type: String): Boolean = when (type) {
+private fun PostFeedItemDto.matchesType(type: String): Boolean = when (type) {
     "photo" -> album != null
     "video" -> video != null
     "text" -> album == null && video == null
@@ -94,9 +94,9 @@ fun feedItemDto(
     isLiked: Boolean = false,
     isBookmarked: Boolean = false,
     likeCount: Int = 0,
-    album: AlbumNetworkDto? = null,
-    video: VideoNetworkDto? = null,
-) = PostFeedItemNetworkDto(
+    album: AlbumDto? = null,
+    video: VideoDto? = null,
+) = PostFeedItemDto(
     id = id,
     title = "Title $id",
     body = "Body $id",
@@ -110,7 +110,7 @@ fun feedItemDto(
     video = video,
 )
 
-fun userDto(id: String, nickname: String) = UserNetworkDto(
+fun userDto(id: String, nickname: String) = UserDto(
     id = id,
     nickname = nickname,
     handle = "@$id",
@@ -127,7 +127,7 @@ fun commentDto(
     text: String,
     isLiked: Boolean = false,
     likeCount: Int = 0,
-) = CommentNetworkDto(
+) = CommentDto(
     id = id,
     text = text,
     createdAt = "2025-01-01T00:00:00.000Z",

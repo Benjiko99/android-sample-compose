@@ -3,7 +3,7 @@ package uno.lux.sample.data.network.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserNetworkDto(
+data class UserDto(
     val id: String,
     val nickname: String,
     val handle: String,

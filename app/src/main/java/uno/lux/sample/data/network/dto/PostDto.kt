@@ -3,7 +3,7 @@ package uno.lux.sample.data.network.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PostFeedItemNetworkDto(
+data class PostFeedItemDto(
     val id: String,
     val title: String,
     val body: String,
@@ -13,12 +13,12 @@ data class PostFeedItemNetworkDto(
     val commentCount: Int,
     val isLiked: Boolean,
     val isBookmarked: Boolean,
-    val album: AlbumNetworkDto? = null,
-    val video: VideoNetworkDto? = null,
+    val album: AlbumDto? = null,
+    val video: VideoDto? = null,
 )
 
 @Serializable
-data class AlbumNetworkDto(
+data class AlbumDto(
     val id: String,
     val title: String,
     val itemCount: Int,
@@ -26,7 +26,7 @@ data class AlbumNetworkDto(
 )
 
 @Serializable
-data class VideoNetworkDto(
+data class VideoDto(
     val id: String,
     val title: String,
     val durationSeconds: Int,

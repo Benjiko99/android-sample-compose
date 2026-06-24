@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import uno.lux.sample.data.network.dto.UserNetworkDto
+import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 
@@ -31,7 +31,7 @@ class NetworkUserRepository(
     }
 
     /** Merges [users] from a feed sideload into the cache without evicting existing entries. */
-    fun ingest(users: List<UserNetworkDto>) {
+    fun ingest(users: List<UserDto>) {
         if (users.isEmpty()) return
         _cache.update { current -> current + users.associate { it.id to it.toDomain() } }
     }
