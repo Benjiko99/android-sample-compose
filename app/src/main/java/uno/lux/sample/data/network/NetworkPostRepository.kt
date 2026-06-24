@@ -1,43 +1,39 @@
 package uno.lux.sample.data.network
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.post.updatePost
+import uno.lux.sample.data.post.updateEntity
 
 /**
- * Network-backed [PostRepository] for the home feed. On [refresh] it fetches the first page
- * with `include=author` and pushes the sideloaded authors into [userRepository] so they are
- * immediately available to [HomeViewModel]'s combine — a single API round-trip populates both
- * the post list and the user cache.
+ * Network-backed [PostRepository]. Acts as a normalized entity store: [ingest] is called by
+ * [NetworkFeedRepository] and [NetworkProfileRepository] after their respective fetches, while
+ * [toggleLike] and [toggleBookmark] send the mutation to the server and apply the confirmed
+ * result — keeping the entity map authoritative.
  */
 class NetworkPostRepository(
     private val api: MosaicApi,
-    private val userRepository: NetworkUserRepository,
 ) : PostRepository {
 
-    private val _posts = MutableStateFlow<List<Post>>(emptyList())
-    override val posts: Flow<List<Post>> = _posts.asStateFlow()
+    private val _entities = MutableStateFlow<Map<String, Post>>(emptyMap())
+    override val entities: StateFlow<Map<String, Post>> = _entities.asStateFlow()
 
-    override suspend fun refresh() = withContext(Dispatchers.IO) {
-        val response = api.getFeed(include = "author")
-        userRepository.ingest(response.included?.users.orEmpty())
-        _posts.value = response.data.map { it.toDomain() }
+    override fun ingest(posts: List<Post>) {
+        _entities.value += posts.associateBy { it.id }
     }
 
     override suspend fun toggleLike(postId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleLike(postId, EmptyBody()).data
-        _posts.update { it.updatePost(postId) { post -> post.copy(isLiked = result.isLiked, likeCount = result.likeCount) } }
+        _entities.updateEntity(postId) { it.copy(isLiked = result.isLiked, likeCount = result.likeCount) }
     }
 
     override suspend fun toggleBookmark(postId: String) = withContext(Dispatchers.IO) {
         val result = api.toggleBookmark(postId, EmptyBody()).data
-        _posts.update { it.updatePost(postId) { post -> post.copy(isBookmarked = result.isBookmarked) } }
+        _entities.updateEntity(postId) { it.copy(isBookmarked = result.isBookmarked) }
     }
 }

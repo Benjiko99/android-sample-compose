@@ -494,7 +494,7 @@ private fun LazyListScope.postsTab(
     onOpenAlbum: (Album, Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
 ) {
-    val posts = screenData.profile.posts
+    val posts = screenData.posts
     val author = screenData.user
 
     if (posts.isEmpty()) {
@@ -841,13 +841,13 @@ private fun sampleProfileData(): ProfileScreenData {
         user = user,
         profile = Profile(
             userId = user.id,
-            posts = posts,
             albums = albums,
             videos = videos,
             postsCount = posts.size,
             albumsCount = albums.size,
             videosCount = videos.size,
         ),
+        posts = posts,
     )
 }
 

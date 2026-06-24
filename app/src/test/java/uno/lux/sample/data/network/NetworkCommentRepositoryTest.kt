@@ -1,20 +1,32 @@
 package uno.lux.sample.data.network
 
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
+import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.user.User
+import java.time.Instant
 
 class NetworkCommentRepositoryTest {
 
+    private val stubComment = Comment(
+        id = "c1",
+        author = User(id = "u1", nickname = "Ada", handle = "@ada"),
+        createdAt = Instant.EPOCH,
+        text = "Hello",
+        likeCount = 2,
+        isLiked = false,
+    )
+
     @Test
-    fun `comments loads from the API on first collection`() = runTest {
+    fun `loadComments fetches from the API`() = runTest {
         val api = FakeMosaicApi(comments = listOf(commentDto("c1", "Hello")))
         val repository = NetworkCommentRepository(api)
 
-        val loaded = repository.comments("p1").first()
+        val loaded = repository.loadComments("p1")
 
         assertEquals(1, loaded.size)
         assertEquals("c1", loaded.single().id)
@@ -22,59 +34,59 @@ class NetworkCommentRepositoryTest {
     }
 
     @Test
-    fun `comments returns an empty list when the API returns none`() = runTest {
+    fun `loadComments returns empty list when the API returns none`() = runTest {
         val repository = NetworkCommentRepository(FakeMosaicApi(comments = emptyList()))
 
-        val loaded = repository.comments("p1").first()
+        val loaded = repository.loadComments("p1")
 
         assertTrue(loaded.isEmpty())
     }
 
     @Test
-    fun `addComment prepends the new comment to the list`() = runTest {
-        val api = FakeMosaicApi(comments = listOf(commentDto("c1", "First")))
-        val repository = NetworkCommentRepository(api)
-        repository.comments("p1").first() // trigger initial load
+    fun `addComment returns the server-created comment`() = runTest {
+        val repository = NetworkCommentRepository(FakeMosaicApi())
 
-        repository.addComment("p1", "Second")
+        val comment = repository.addComment("p1", "New thought")
 
-        val comments = repository.comments("p1").first()
-        assertEquals(2, comments.size)
-        assertEquals("c-new", comments.first().id)
-        assertEquals("c1", comments.last().id)
+        assertEquals("c-new", comment.id)
+        assertEquals("New thought", comment.text)
     }
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
         val api = FakeMosaicApi(
-            comments = listOf(commentDto("c1", "Hello", isLiked = false, likeCount = 2)),
-            likeResult = uno.lux.sample.data.network.dto.LikeToggleNetworkDto(
-                isLiked = true, likeCount = 3,
-            ),
+            likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 3),
         )
         val repository = NetworkCommentRepository(api)
-        repository.comments("p1").first() // trigger initial load
 
-        repository.toggleLike("p1", "c1")
+        val updated = repository.toggleLike("p1", stubComment)
 
-        val comment = repository.comments("p1").first().single()
-        assertTrue(comment.isLiked)
-        assertEquals(3, comment.likeCount)
+        assertTrue(updated.isLiked)
+        assertEquals(3, updated.likeCount)
     }
 
     @Test
-    fun `toggleLike only affects the targeted comment`() = runTest {
+    fun `toggleLike preserves all other fields on the comment`() = runTest {
+        val repository = NetworkCommentRepository(FakeMosaicApi())
+
+        val updated = repository.toggleLike("p1", stubComment)
+
+        assertEquals(stubComment.id, updated.id)
+        assertEquals(stubComment.text, updated.text)
+        assertEquals(stubComment.author, updated.author)
+        assertEquals(stubComment.createdAt, updated.createdAt)
+    }
+
+    @Test
+    fun `toggleLike on different comments are independent`() = runTest {
+        val other = stubComment.copy(id = "c2", isLiked = false)
         val api = FakeMosaicApi(
-            comments = listOf(
-                commentDto("c1", "First"),
-                commentDto("c2", "Second"),
-            ),
+            likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 1),
         )
         val repository = NetworkCommentRepository(api)
-        repository.comments("p1").first()
 
-        repository.toggleLike("p1", "c1")
+        repository.toggleLike("p1", stubComment)
 
-        assertFalse(repository.comments("p1").first().single { it.id == "c2" }.isLiked)
+        assertFalse(other.isLiked)
     }
 }

@@ -10,13 +10,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.InMemoryProfileRepository
 import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.user.User
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,16 +37,20 @@ class ProfileViewModelTest {
         commentCount = 2,
     )
 
-    private fun viewModel(userId: String = "u1", currentUserId: String = "u1") = ProfileViewModel(
-        profileRepository = InMemoryProfileRepository(
-            postRepository = InMemoryPostRepository(listOf(post)),
-            albumsByUser = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8))),
-            videosByUser = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4"))),
-        ),
-        userRepository = InMemoryUserRepository(listOf(ada, grace)),
-        currentUserId = currentUserId,
-        userId = userId,
-    )
+    private fun viewModel(userId: String = "u1", currentUserId: String = "u1"): ProfileViewModel {
+        val postRepository = InMemoryPostRepository(listOf(post))
+        return ProfileViewModel(
+            profileRepository = InMemoryProfileRepository(
+                postRepository = postRepository,
+                albumsByUser = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8))),
+                videosByUser = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4"))),
+            ),
+            postRepository = postRepository,
+            userRepository = InMemoryUserRepository(listOf(ada, grace)),
+            currentUserId = currentUserId,
+            userId = userId,
+        )
+    }
 
     @Test
     fun `uiState is Loading until something collects it`() {
@@ -62,7 +66,7 @@ class ProfileViewModelTest {
 
         val loaded = viewModel.uiState.value as ProfileUiState.Loaded
         assertEquals(ada, loaded.data.user)
-        assertEquals(listOf(post), loaded.data.profile.posts)
+        assertEquals(listOf(post), loaded.data.posts)
         assertEquals(1, loaded.data.profile.albumsCount)
         assertEquals(1, loaded.data.profile.videosCount)
     }
@@ -98,7 +102,7 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `onToggleLike likes the post through the repository`() = runTest {
+    fun `onToggleLike likes the post through the shared entity store`() = runTest {
         val viewModel = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -106,13 +110,13 @@ class ProfileViewModelTest {
 
         viewModel.onToggleLike("p1")
 
-        val liked = (viewModel.uiState.value as ProfileUiState.Loaded).data.profile.posts.single()
+        val liked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
         assertTrue(liked.isLiked)
         assertEquals(11, liked.likeCount)
     }
 
     @Test
-    fun `onToggleBookmark bookmarks the post through the repository`() = runTest {
+    fun `onToggleBookmark bookmarks the post through the shared entity store`() = runTest {
         val viewModel = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -120,7 +124,7 @@ class ProfileViewModelTest {
 
         viewModel.onToggleBookmark("p1")
 
-        val bookmarked = (viewModel.uiState.value as ProfileUiState.Loaded).data.profile.posts.single()
+        val bookmarked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
         assertTrue(bookmarked.isBookmarked)
     }
 }

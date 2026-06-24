@@ -6,120 +6,75 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.data.network.dto.FeedIncluded
-import uno.lux.sample.data.network.dto.FeedResponse
-import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
 import uno.lux.sample.data.network.dto.BookmarkToggleNetworkDto
+import uno.lux.sample.data.network.dto.LikeToggleNetworkDto
 
 class NetworkPostRepositoryTest {
 
-    private fun repository(
-        api: FakeMosaicApi = FakeMosaicApi(),
-        userRepo: NetworkUserRepository = NetworkUserRepository(FakeMosaicApi()),
-    ) = NetworkPostRepository(api, userRepo)
+    private fun repository(api: FakeMosaicApi = FakeMosaicApi()) = NetworkPostRepository(api)
 
     @Test
-    fun `posts starts empty before any refresh`() = runTest {
-        assertTrue(repository().posts.first().isEmpty())
+    fun `entities starts empty`() = runTest {
+        assertTrue(repository().entities.first().isEmpty())
     }
 
     @Test
-    fun `refresh loads posts from the feed API`() = runTest {
-        val api = FakeMosaicApi(
-            feedResponse = FeedResponse(listOf(feedItemDto("p1", "u1")), page = emptyPage),
-        )
-        val repo = repository(api)
+    fun `ingest adds posts to the entity map`() = runTest {
+        val repo = repository()
+        val post = feedItemDto("p1", "u1").toDomain()
 
-        repo.refresh()
+        repo.ingest(listOf(post))
 
-        val posts = repo.posts.first()
-        assertEquals(1, posts.size)
-        assertEquals("p1", posts.single().id)
+        assertEquals(post, repo.entities.first()["p1"])
     }
 
     @Test
-    fun `refresh ingests sideloaded authors into the user cache`() = runTest {
-        val api = FakeMosaicApi(
-            feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1")),
-                included = FeedIncluded(users = listOf(userDto("u1", "Ada"))),
-                page = emptyPage,
-            ),
-        )
-        val userRepo = NetworkUserRepository(FakeMosaicApi())
-        val repo = repository(api, userRepo)
+    fun `ingest merges without evicting existing entries`() = runTest {
+        val repo = repository()
+        val p1 = feedItemDto("p1", "u1").toDomain()
+        val p2 = feedItemDto("p2", "u1").toDomain()
+        repo.ingest(listOf(p1))
 
-        repo.refresh()
+        repo.ingest(listOf(p2))
 
-        assertEquals("Ada", userRepo.user("u1").first()?.nickname)
-    }
-
-    @Test
-    fun `refresh without sideload leaves the user cache empty`() = runTest {
-        val api = FakeMosaicApi(
-            feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1")),
-                included = null,
-                page = emptyPage,
-            ),
-        )
-        val userRepo = NetworkUserRepository(FakeMosaicApi())
-        val repo = repository(api, userRepo)
-
-        repo.refresh()
-
-        assertTrue(userRepo.users.first().isEmpty())
+        val entities = repo.entities.first()
+        assertEquals(p1, entities["p1"])
+        assertEquals(p2, entities["p2"])
     }
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
-        val api = FakeMosaicApi(
-            feedResponse = FeedResponse(
-                listOf(feedItemDto("p1", "u1", isLiked = false, likeCount = 5)),
-                page = emptyPage,
-            ),
-            likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 6),
-        )
+        val api = FakeMosaicApi(likeResult = LikeToggleNetworkDto(isLiked = true, likeCount = 6))
         val repo = repository(api)
-        repo.refresh()
+        repo.ingest(listOf(feedItemDto("p1", "u1", isLiked = false, likeCount = 5).toDomain()))
 
         repo.toggleLike("p1")
 
-        val post = repo.posts.first().single()
+        val post = repo.entities.first()["p1"]!!
         assertTrue(post.isLiked)
         assertEquals(6, post.likeCount)
     }
 
     @Test
     fun `toggleBookmark updates isBookmarked from the server response`() = runTest {
-        val api = FakeMosaicApi(
-            feedResponse = FeedResponse(
-                listOf(feedItemDto("p1", "u1", isBookmarked = false)),
-                page = emptyPage,
-            ),
-            bookmarkResult = BookmarkToggleNetworkDto(isBookmarked = true),
-        )
+        val api = FakeMosaicApi(bookmarkResult = BookmarkToggleNetworkDto(isBookmarked = true))
         val repo = repository(api)
-        repo.refresh()
+        repo.ingest(listOf(feedItemDto("p1", "u1", isBookmarked = false).toDomain()))
 
         repo.toggleBookmark("p1")
 
-        assertTrue(repo.posts.first().single().isBookmarked)
+        assertTrue(repo.entities.first()["p1"]!!.isBookmarked)
     }
 
     @Test
     fun `a toggle only affects the targeted post`() = runTest {
-        val api = FakeMosaicApi(
-            feedResponse = FeedResponse(
-                listOf(feedItemDto("p1", "u1"), feedItemDto("p2", "u1")),
-                page = emptyPage,
-            ),
-        )
-        val repo = repository(api)
-        repo.refresh()
+        val repo = repository()
+        val p1 = feedItemDto("p1", "u1").toDomain()
+        val p2 = feedItemDto("p2", "u1").toDomain()
+        repo.ingest(listOf(p1, p2))
 
         repo.toggleLike("p1")
 
-        assertFalse(repo.posts.first().single { it.id == "p2" }.isLiked)
+        assertFalse(repo.entities.first()["p2"]!!.isLiked)
     }
 }

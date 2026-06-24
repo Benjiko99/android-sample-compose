@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.util.launchRefresh
@@ -16,21 +17,24 @@ import javax.inject.Inject
 
 /**
  * Holds feed state and translates user intent (likes, bookmarks) into repository mutations.
- * Combines [PostRepository] and [UserRepository] to resolve each post's author, producing
- * [PostCardData] items ready for display. Both repositories are constructor dependencies so
- * the ViewModel can be unit tested against fakes.
+ * Combines [FeedRepository] (ordered post IDs), [PostRepository] (entity map), and
+ * [UserRepository] (author lookup) to produce [PostCardData] items ready for display. All three
+ * are constructor dependencies so the ViewModel can be unit tested against fakes.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val feedRepository: FeedRepository,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
 ) : ViewModel(), HomeActions {
 
     val uiState: StateFlow<HomeUiState> = combine(
-        postRepository.posts,
+        feedRepository.postIds,
+        postRepository.entities,
         userRepository.users,
-    ) { posts, users ->
-        val cards = posts.mapNotNull { post ->
+    ) { postIds, entities, users ->
+        val cards = postIds.mapNotNull { id ->
+            val post = entities[id] ?: return@mapNotNull null
             val author = users[post.authorId] ?: return@mapNotNull null
             PostCardData(post = post, author = author)
         }
@@ -47,7 +51,7 @@ class HomeViewModel @Inject constructor(
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
     private suspend fun load() {
-        postRepository.refresh()
+        feedRepository.refresh()
     }
 
     override fun onToggleLike(postId: String) {

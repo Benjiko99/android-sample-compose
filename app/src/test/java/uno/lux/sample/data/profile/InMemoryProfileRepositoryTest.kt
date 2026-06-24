@@ -13,7 +13,7 @@ import java.time.Instant
 
 class InMemoryProfileRepositoryTest {
 
-    private val adaPost = post(id = "p1", authorId = "u1", likeCount = 10)
+    private val adaPost = post(id = "p1", authorId = "u1")
     private val gracePost = post(id = "p2", authorId = "u2")
 
     private val albums = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8)))
@@ -26,20 +26,18 @@ class InMemoryProfileRepositoryTest {
     )
 
     @Test
-    fun `profile exposes the user id, their posts, albums and videos`() = runTest {
+    fun `profile exposes the user id, albums and videos`() = runTest {
         val profile = repository().profile("u1").first()
 
         assertEquals("u1", profile.userId)
-        assertEquals(listOf(adaPost), profile.posts)
         assertEquals(albums.getValue("u1"), profile.albums)
         assertEquals(videos.getValue("u1"), profile.videos)
     }
 
     @Test
-    fun `profile posts are limited to that author`() = runTest {
+    fun `postsCount reflects the number of posts by that user`() = runTest {
         val profile = repository().profile("u2").first()
 
-        assertEquals(listOf(gracePost), profile.posts)
         assertEquals(1, profile.postsCount)
     }
 
@@ -56,42 +54,57 @@ class InMemoryProfileRepositoryTest {
         val profile = repository().profile("nobody").first()
 
         assertEquals("nobody", profile.userId)
-        assertTrue(profile.posts.isEmpty())
+        assertEquals(0, profile.postsCount)
         assertTrue(profile.albums.isEmpty())
         assertTrue(profile.videos.isEmpty())
     }
 
     @Test
-    fun `toggleLike is reflected in the streamed profile`() = runTest {
-        val repository = repository()
+    fun `postIds returns the ids of posts authored by that user`() = runTest {
+        val ids = repository().postIds("u1").first()
 
-        repository.toggleLike("p1")
-
-        val liked = repository.profile("u1").first().posts.single()
-        assertTrue(liked.isLiked)
-        assertEquals(11, liked.likeCount)
+        assertEquals(listOf("p1"), ids)
     }
 
     @Test
-    fun `toggleBookmark is reflected in the streamed profile`() = runTest {
-        val repository = repository()
+    fun `postIds excludes posts by other users`() = runTest {
+        val ids = repository().postIds("u2").first()
 
-        repository.toggleBookmark("p1")
+        assertEquals(listOf("p2"), ids)
+    }
 
-        assertTrue(repository.profile("u1").first().posts.single().isBookmarked)
+    @Test
+    fun `postIds returns empty list for unknown user`() = runTest {
+        val ids = repository().postIds("nobody").first()
+
+        assertTrue(ids.isEmpty())
+    }
+
+    @Test
+    fun `postIds updates when the entity store changes`() = runTest {
+        val postRepository = InMemoryPostRepository(listOf(adaPost))
+        val profileRepository = InMemoryProfileRepository(postRepository)
+
+        val before = profileRepository.postIds("u1").first()
+        assertEquals(listOf("p1"), before)
+
+        postRepository.ingest(listOf(post(id = "p3", authorId = "u1")))
+
+        val after = profileRepository.postIds("u1").first()
+        assertEquals(2, after.size)
+        assertTrue(after.contains("p3"))
     }
 }
 
 private fun post(
     id: String,
     authorId: String,
-    likeCount: Int = 0,
 ) = Post(
     id = id,
     authorId = authorId,
     title = "Title $id",
     body = "Body $id",
     createdAt = Instant.EPOCH,
-    likeCount = likeCount,
+    likeCount = 0,
     commentCount = 0,
 )

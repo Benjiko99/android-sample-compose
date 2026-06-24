@@ -13,7 +13,9 @@ import dagger.hilt.components.SingletonComponent
 import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.InMemoryCommentRepository
+import uno.lux.sample.data.post.InMemoryFeedRepository
 import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.InMemoryProfileRepository
@@ -32,6 +34,10 @@ object DataModule {
     @Provides
     @Singleton
     fun providePostRepository(): PostRepository = InMemoryPostRepository()
+
+    @Provides
+    @Singleton
+    fun provideFeedRepository(): FeedRepository = InMemoryFeedRepository()
 
     @Provides
     @Singleton

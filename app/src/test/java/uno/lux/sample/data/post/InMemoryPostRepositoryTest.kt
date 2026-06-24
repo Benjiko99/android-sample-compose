@@ -15,12 +15,32 @@ class InMemoryPostRepositoryTest {
     private val bookmarked = post(id = "bookmarked", isBookmarked = true)
 
     @Test
+    fun `ingest adds posts to the entity map`() = runTest {
+        val repository = InMemoryPostRepository(emptyList())
+
+        repository.ingest(listOf(unliked))
+
+        assertEquals(unliked, repository.entities.first()["unliked"])
+    }
+
+    @Test
+    fun `ingest merges without evicting existing entries`() = runTest {
+        val repository = InMemoryPostRepository(listOf(liked))
+
+        repository.ingest(listOf(unliked))
+
+        val entities = repository.entities.first()
+        assertEquals(liked, entities["liked"])
+        assertEquals(unliked, entities["unliked"])
+    }
+
+    @Test
     fun `toggleLike likes an unliked post and increments the count`() = runTest {
         val repository = InMemoryPostRepository(listOf(unliked))
 
         repository.toggleLike("unliked")
 
-        val result = repository.posts.first().single()
+        val result = repository.entities.first()["unliked"]!!
         assertTrue(result.isLiked)
         assertEquals(5, result.likeCount)
     }
@@ -31,7 +51,7 @@ class InMemoryPostRepositoryTest {
 
         repository.toggleLike("liked")
 
-        val result = repository.posts.first().single()
+        val result = repository.entities.first()["liked"]!!
         assertFalse(result.isLiked)
         assertEquals(9, result.likeCount)
     }
@@ -42,7 +62,7 @@ class InMemoryPostRepositoryTest {
 
         repository.toggleBookmark("bookmarked")
 
-        assertFalse(repository.posts.first().single().isBookmarked)
+        assertFalse(repository.entities.first()["bookmarked"]!!.isBookmarked)
     }
 
     @Test
@@ -51,26 +71,17 @@ class InMemoryPostRepositoryTest {
 
         repository.toggleLike("unliked")
 
-        val untouched = repository.posts.first().single { it.id == "liked" }
+        val untouched = repository.entities.first()["liked"]!!
         assertEquals(liked, untouched)
     }
 
     @Test
-    fun `toggling an unknown id leaves the feed unchanged`() = runTest {
+    fun `toggling an unknown id leaves the entities unchanged`() = runTest {
         val repository = InMemoryPostRepository(listOf(unliked))
 
         repository.toggleLike("missing")
 
-        assertEquals(listOf(unliked), repository.posts.first())
-    }
-
-    @Test
-    fun `refresh leaves the existing feed in place`() = runTest {
-        val repository = InMemoryPostRepository(listOf(unliked, liked))
-
-        repository.refresh()
-
-        assertEquals(listOf(unliked, liked), repository.posts.first())
+        assertEquals(mapOf("unliked" to unliked), repository.entities.first())
     }
 }
 

@@ -1,7 +1,6 @@
 package uno.lux.sample.ui.post
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -11,12 +10,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.InMemoryCommentRepository
 import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.user.User
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -94,7 +93,7 @@ class PostDetailViewModelTest {
     // ── like / bookmark ───────────────────────────────────────────────────────
 
     @Test
-    fun `onToggleLike likes the post through the repository`() = runTest {
+    fun `onToggleLike likes the post through the shared entity store`() = runTest {
         val vm = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
@@ -106,7 +105,7 @@ class PostDetailViewModelTest {
     }
 
     @Test
-    fun `onToggleBookmark bookmarks the post through the repository`() = runTest {
+    fun `onToggleBookmark bookmarks the post through the shared entity store`() = runTest {
         val vm = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
@@ -161,11 +160,9 @@ class PostDetailViewModelTest {
     }
 
     @Test
-    fun `comments for the post are isolated from other posts`() = runTest {
-        val otherPost = post.copy(id = "p2")
+    fun `comment state is scoped to this post's id`() = runTest {
         val vm = viewModel(
-            posts = listOf(post, otherPost),
-            comments = mapOf("p1" to listOf(seedComment), "p2" to emptyList()),
+            comments = mapOf("p1" to listOf(seedComment)),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 

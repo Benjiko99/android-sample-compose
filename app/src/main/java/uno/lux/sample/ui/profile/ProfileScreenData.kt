@@ -1,10 +1,12 @@
 package uno.lux.sample.ui.profile
 
-import uno.lux.sample.data.user.User
+import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.profile.Profile
+import uno.lux.sample.data.user.User
 
-/** ViewModel-level aggregate for the profile screen: the resolved user and their content. */
+/** ViewModel-level aggregate for the profile screen: the resolved user, their profile metadata, and their posts. */
 data class ProfileScreenData(
     val user: User,
     val profile: Profile,
+    val posts: List<Post>,
 )

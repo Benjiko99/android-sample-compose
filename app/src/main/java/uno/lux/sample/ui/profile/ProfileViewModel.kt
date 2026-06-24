@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
@@ -19,15 +20,16 @@ import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
- * Holds the profile state for one [userId] and translates like / bookmark intent into
- * repository mutations. Combines [UserRepository] and [ProfileRepository] into a single
- * [ProfileScreenData]; a null user emits [ProfileUiState.NotFound]. [refresh] re-fetches
- * from both repositories in parallel. Both are constructor dependencies so the ViewModel can
- * be unit tested against fakes; [userId] is a runtime arg wired through [Factory].
+ * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
+ * (metadata + ordered post IDs), and [PostRepository] (entity map) into a single
+ * [ProfileScreenData]. Mutations go directly through [PostRepository] so a like toggled here is
+ * immediately visible on the home feed — the shared entity store propagates the update to all
+ * observers. [userId] is a runtime arg wired through [Factory].
  */
 @HiltViewModel(assistedFactory = ProfileViewModel.Factory::class)
 class ProfileViewModel @AssistedInject constructor(
     private val profileRepository: ProfileRepository,
+    private val postRepository: PostRepository,
     private val userRepository: UserRepository,
     @CurrentUserId private val currentUserId: String,
     @Assisted private val userId: String,
@@ -41,10 +43,13 @@ class ProfileViewModel @AssistedInject constructor(
     val uiState: StateFlow<ProfileUiState> = combine(
         userRepository.user(userId),
         profileRepository.profile(userId),
-    ) { user, profile ->
+        combine(profileRepository.postIds(userId), postRepository.entities) { ids, entities ->
+            ids.mapNotNull { entities[it] }
+        },
+    ) { user, profile, posts ->
         if (user == null) ProfileUiState.NotFound
         else ProfileUiState.Loaded(
-            data = ProfileScreenData(user, profile),
+            data = ProfileScreenData(user, profile, posts),
             isCurrentUser = userId == currentUserId,
         )
     }.stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
@@ -64,10 +69,10 @@ class ProfileViewModel @AssistedInject constructor(
     }
 
     override fun onToggleLike(postId: String) {
-        viewModelScope.launch { profileRepository.toggleLike(postId) }
+        viewModelScope.launch { postRepository.toggleLike(postId) }
     }
 
     override fun onToggleBookmark(postId: String) {
-        viewModelScope.launch { profileRepository.toggleBookmark(postId) }
+        viewModelScope.launch { postRepository.toggleBookmark(postId) }
     }
 }

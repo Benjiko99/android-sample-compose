@@ -2,8 +2,8 @@ package uno.lux.sample.ui.home
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -13,11 +13,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
-import uno.lux.sample.data.user.User
+import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.InMemoryFeedRepository
 import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.user.User
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,6 +39,7 @@ class HomeViewModelTest {
     )
 
     private fun viewModel() = HomeViewModel(
+        feedRepository = InMemoryFeedRepository(listOf(post.id)),
         postRepository = InMemoryPostRepository(listOf(post)),
         userRepository = InMemoryUserRepository(listOf(author)),
     )
@@ -48,7 +50,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `uiState exposes the repository feed once collected`() = runTest {
+    fun `uiState exposes the feed once collected`() = runTest {
         val viewModel = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -87,21 +89,21 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `refresh raises isRefreshing until the repository finishes`() = runTest {
-        val repository = FakePostRepository()
-        val viewModel = HomeViewModel(repository, InMemoryUserRepository())
+    fun `refresh raises isRefreshing until the feed repository finishes`() = runTest {
+        val feedRepository = FakeFeedRepository()
+        val viewModel = HomeViewModel(feedRepository, InMemoryPostRepository(), InMemoryUserRepository())
 
         assertFalse(viewModel.isRefreshing.value)
         viewModel.refresh()
         assertTrue(viewModel.isRefreshing.value)
-        repository.completeRefresh()
+        feedRepository.completeRefresh()
         assertFalse(viewModel.isRefreshing.value)
     }
 }
 
-/** A [PostRepository] whose refresh suspends until [completeRefresh], to observe refresh state. */
-private class FakePostRepository : PostRepository {
-    override val posts: Flow<List<Post>> = MutableStateFlow<List<Post>>(emptyList())
+/** A [FeedRepository] whose refresh suspends until [completeRefresh], to observe refresh state. */
+private class FakeFeedRepository : FeedRepository {
+    override val postIds: StateFlow<List<String>> = MutableStateFlow(emptyList())
     private val refreshGate = CompletableDeferred<Unit>()
 
     override suspend fun refresh() = refreshGate.await()
@@ -109,7 +111,4 @@ private class FakePostRepository : PostRepository {
     fun completeRefresh() {
         refreshGate.complete(Unit)
     }
-
-    override suspend fun toggleLike(postId: String) = Unit
-    override suspend fun toggleBookmark(postId: String) = Unit
 }

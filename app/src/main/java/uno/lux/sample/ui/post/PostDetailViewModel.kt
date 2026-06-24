@@ -6,21 +6,27 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.user.User
+import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUser
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
- * Holds the state for a single post's detail view, combining the live post from
- * [PostRepository], the resolved author from [UserRepository], and the comment thread from
- * [CommentRepository]. Like, bookmark, and comment-like intent are translated into repository
- * mutations; new comments are prepended.
+ * Holds the state for a single post's detail view. The post itself comes from the shared
+ * [PostRepository] entity store so likes toggled here propagate to the feed and profile screens.
+ * Comments are owned by this ViewModel: they are loaded once on creation and updated in-place by
+ * [addComment] and [onToggleCommentLike], then discarded when the ViewModel is cleared. This
+ * avoids the cross-post keying and memory-retention problems that a shared comment store would
+ * introduce.
  *
  * [postId] is a runtime argument wired through [Factory] / assisted injection so every opened
  * post gets its own ViewModel, scoped to its back-stack entry.
@@ -39,20 +45,26 @@ class PostDetailViewModel @AssistedInject constructor(
         fun create(postId: String): PostDetailViewModel
     }
 
+    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
+
     val uiState: StateFlow<PostDetailUiState> = combine(
-        postRepository.posts,
-        commentRepository.comments(postId),
+        postRepository.entities.map { it[postId] },
+        _comments,
         userRepository.users,
-    ) { posts, comments, users ->
-        val post = posts.find { it.id == postId }
-            ?: return@combine PostDetailUiState.NotFound
-        val author = users[post.authorId]
-            ?: return@combine PostDetailUiState.NotFound
+    ) { post, comments, users ->
+        if (post == null) return@combine PostDetailUiState.NotFound
+        val author = users[post.authorId] ?: return@combine PostDetailUiState.NotFound
         PostDetailUiState.Loaded(post, author, comments)
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
     /** Nickname of the signed-in user, shown as the composer's avatar label. */
     val composerUserName: String = currentUser.nickname
+
+    init {
+        viewModelScope.launch {
+            _comments.value = commentRepository.loadComments(postId)
+        }
+    }
 
     fun onToggleLike() {
         viewModelScope.launch { postRepository.toggleLike(postId) }
@@ -63,10 +75,17 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     fun onToggleCommentLike(commentId: String) {
-        viewModelScope.launch { commentRepository.toggleLike(postId, commentId) }
+        viewModelScope.launch {
+            val comment = _comments.value.find { it.id == commentId } ?: return@launch
+            val updated = commentRepository.toggleLike(postId, comment)
+            _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
+        }
     }
 
     fun addComment(text: String) {
-        viewModelScope.launch { commentRepository.addComment(postId, text) }
+        viewModelScope.launch {
+            val comment = commentRepository.addComment(postId, text)
+            _comments.update { listOf(comment) + it }
+        }
     }
 }

@@ -14,10 +14,12 @@ import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.network.MosaicApi
 import uno.lux.sample.data.network.NetworkCommentRepository
+import uno.lux.sample.data.network.NetworkFeedRepository
 import uno.lux.sample.data.network.NetworkPostRepository
 import uno.lux.sample.data.network.NetworkProfileRepository
 import uno.lux.sample.data.network.NetworkUserRepository
 import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.settings.DataStoreSettingsRepository
@@ -27,9 +29,9 @@ import uno.lux.sample.data.user.UserRepository
 import javax.inject.Singleton
 
 /**
- * [NetworkUserRepository] is provided twice — once as its concrete type (so
- * [NetworkPostRepository] can call [NetworkUserRepository.ingest] for feed sideloads) and once
- * as the [UserRepository] binding consumed by ViewModels.
+ * [NetworkUserRepository] and [NetworkPostRepository] are each provided twice — once as their
+ * concrete type (so [NetworkFeedRepository] can call [NetworkUserRepository.ingest] and
+ * [PostRepository.ingest] directly) and once as their interface binding consumed by ViewModels.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -46,15 +48,27 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun providePostRepository(
-        api: MosaicApi,
-        userRepository: NetworkUserRepository,
-    ): PostRepository = NetworkPostRepository(api, userRepository)
+    fun provideNetworkPostRepository(api: MosaicApi): NetworkPostRepository =
+        NetworkPostRepository(api)
 
     @Provides
     @Singleton
-    fun provideProfileRepository(api: MosaicApi): ProfileRepository =
-        NetworkProfileRepository(api)
+    fun providePostRepository(impl: NetworkPostRepository): PostRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideFeedRepository(
+        api: MosaicApi,
+        postRepository: PostRepository,
+        userRepository: NetworkUserRepository,
+    ): FeedRepository = NetworkFeedRepository(api, postRepository, userRepository)
+
+    @Provides
+    @Singleton
+    fun provideProfileRepository(
+        api: MosaicApi,
+        postRepository: PostRepository,
+    ): ProfileRepository = NetworkProfileRepository(api, postRepository)
 
     @Provides
     @Singleton

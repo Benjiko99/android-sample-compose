@@ -1,41 +1,34 @@
 package uno.lux.sample.data.post
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
 import java.time.Instant
 import uno.lux.sample.data.SampleComments
 import uno.lux.sample.data.user.User
 
 /**
- * Single source of truth for post comments.
+ * Stateless data source for post comments.
  *
- * Consumers observe [comments] reactively and express intent through the mutating functions.
- * The interface is the seam a real network-backed implementation slots into later.
+ * All three operations return values; the caller ([PostDetailViewModel]) owns the comment list
+ * state and applies the returned value. This keeps comments scoped to the screen that needs them
+ * and lets the ViewModel be cleared — along with the comment data — the moment the user pops the
+ * post detail screen.
  */
 interface CommentRepository {
-    fun comments(postId: String): Flow<List<Comment>>
-    suspend fun addComment(postId: String, text: String)
-    suspend fun toggleLike(postId: String, commentId: String)
+    suspend fun loadComments(postId: String): List<Comment>
+    suspend fun addComment(postId: String, text: String): Comment
+    suspend fun toggleLike(postId: String, comment: Comment): Comment
 }
 
-/**
- * In-memory [CommentRepository] seeded with [SampleComments]. New comments prepend to the list
- * so they appear at the top — matches the "freshest first" ordering in the detail screen.
- */
+/** In-memory [CommentRepository] seeded from [SampleComments]. */
 class InMemoryCommentRepository(
     private val currentUser: User,
-    initial: Map<String, List<Comment>> = SampleComments,
+    private val initial: Map<String, List<Comment>> = SampleComments,
 ) : CommentRepository {
 
-    private val state = MutableStateFlow(initial)
+    override suspend fun loadComments(postId: String): List<Comment> =
+        initial[postId].orEmpty()
 
-    override fun comments(postId: String): Flow<List<Comment>> =
-        state.map { it[postId] ?: emptyList() }
-
-    override suspend fun addComment(postId: String, text: String) {
-        val comment = Comment(
+    override suspend fun addComment(postId: String, text: String): Comment =
+        Comment(
             id = "local-${System.nanoTime()}",
             author = currentUser,
             createdAt = Instant.now(),
@@ -43,21 +36,8 @@ class InMemoryCommentRepository(
             likeCount = 0,
         )
 
-        state.update { map ->
-            map + (postId to (listOf(comment) + (map[postId] ?: emptyList())))
-        }
-    }
-
-    override suspend fun toggleLike(postId: String, commentId: String) {
-        state.update { map ->
-            val comments = map[postId] ?: return@update map
-            map + (postId to comments.map { c ->
-                if (c.id != commentId) c
-                else c.copy(
-                    isLiked = !c.isLiked,
-                    likeCount = c.likeCount + if (c.isLiked) -1 else 1,
-                )
-            })
-        }
+    override suspend fun toggleLike(postId: String, comment: Comment): Comment {
+        val liked = !comment.isLiked
+        return comment.copy(isLiked = liked, likeCount = comment.likeCount + if (liked) 1 else -1)
     }
 }

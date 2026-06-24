@@ -1,71 +1,59 @@
 package uno.lux.sample.data.post
 
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.SamplePosts
 
 /**
- * Single source of truth for feed posts.
+ * Normalized entity store for posts.
  *
- * Consumers observe [posts] reactively and express user intent through the toggle
- * functions; the repository owns every mutation so all observers stay consistent. The
- * interface is the seam a real network- or database-backed implementation — and the
- * dependency injection that would provide it — slots into later.
+ * All screens share one entity map so a like toggled in the feed is immediately visible on a
+ * profile and vice versa — without duplicating mutation logic. [ingest] merges posts fetched by
+ * any screen into the shared store; [toggleLike] and [toggleBookmark] mutate individual entries
+ * so every observer sees the update in the same emission.
+ *
+ * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
+ * [FeedRepository] or [ProfileRepository]; this store owns only the entity data.
  */
 interface PostRepository {
-    val posts: Flow<List<Post>>
+    val entities: StateFlow<Map<String, Post>>
 
-    /** Re-fetches the latest feed, suspending until the fetch completes. */
-    suspend fun refresh()
-
+    fun ingest(posts: List<Post>)
     suspend fun toggleLike(postId: String)
     suspend fun toggleBookmark(postId: String)
 }
 
 /**
- * In-memory [PostRepository] seeded with [SamplePosts]. State lives in a [MutableStateFlow]
- * so toggles emit a fresh, immutable list to every collector.
+ * In-memory [PostRepository] seeded with [SamplePosts]. All mutations preserve the identity of
+ * unchanged entries so Compose skips re-composing those rows.
  */
 class InMemoryPostRepository(
     initialPosts: List<Post> = SamplePosts,
 ) : PostRepository {
 
-    private val state = MutableStateFlow(initialPosts)
-    override val posts: Flow<List<Post>> = state.asStateFlow()
+    private val _entities = MutableStateFlow(initialPosts.associateBy { it.id })
+    override val entities: StateFlow<Map<String, Post>> = _entities.asStateFlow()
 
-    override suspend fun refresh() {
-        // The in-memory feed is already current; a network-backed implementation would
-        // fetch here and replace [state]. We model only the latency such a fetch incurs.
-        delay(REFRESH_DELAY_MILLIS)
+    override fun ingest(posts: List<Post>) {
+        _entities.update { current -> current + posts.associateBy { it.id } }
     }
 
-    override suspend fun toggleLike(postId: String) = state.updatePost(postId) { post ->
+    override suspend fun toggleLike(postId: String) = _entities.updateEntity(postId) { post ->
         val liked = !post.isLiked
-        post.copy(
-            isLiked = liked,
-            likeCount = post.likeCount + if (liked) 1 else -1,
-        )
+        post.copy(isLiked = liked, likeCount = post.likeCount + if (liked) 1 else -1)
     }
 
-    override suspend fun toggleBookmark(postId: String) = state.updatePost(postId) { post ->
+    override suspend fun toggleBookmark(postId: String) = _entities.updateEntity(postId) { post ->
         post.copy(isBookmarked = !post.isBookmarked)
-    }
-
-    private companion object {
-        const val REFRESH_DELAY_MILLIS = 800L
     }
 }
 
-/** Replaces the single post matching [postId], leaving the rest of the list untouched. */
-internal inline fun List<Post>.updatePost(
+internal inline fun MutableStateFlow<Map<String, Post>>.updateEntity(
     postId: String,
     transform: (Post) -> Post,
-): List<Post> = map { post -> if (post.id == postId) transform(post) else post }
-
-private inline fun MutableStateFlow<List<Post>>.updatePost(
-    postId: String,
-    transform: (Post) -> Post,
-) = update { it.updatePost(postId, transform) }
+) = update { entities ->
+    val post = entities[postId] ?: return@update entities
+    entities + (postId to transform(post))
+}
