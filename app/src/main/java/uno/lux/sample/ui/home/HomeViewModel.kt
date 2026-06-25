@@ -18,7 +18,6 @@ import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
-import uno.lux.sample.util.toAppError
 import javax.inject.Inject
 
 /**
@@ -73,7 +72,7 @@ class HomeViewModel @Inject constructor(
     private suspend fun load() {
         _loadError.value = null
 
-        ignoreErrors(onError = { e -> _loadError.value = e.toAppError() }) { feedRepository.refresh() }
+        ignoreErrors(_loadError) { feedRepository.refresh() }
     }
 
     override fun onToggleLike(postId: PostId) {

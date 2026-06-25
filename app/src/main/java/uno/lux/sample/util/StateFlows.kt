@@ -59,3 +59,11 @@ suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () ->
         onError(e)
     }
 }
+
+/**
+ * Runs [block], writing any non-[CancellationException] into [errorSink] as an [AppError].
+ * Convenience overload for the common ViewModel pattern of storing a typed error alongside
+ * a reactive combine chain.
+ */
+suspend fun ignoreErrors(errorSink: MutableStateFlow<AppError?>, block: suspend () -> Unit) =
+    ignoreErrors(onError = { e -> errorSink.value = e.toAppError() }, block = block)

@@ -23,7 +23,6 @@ import uno.lux.sample.di.CurrentUser
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.stateInWhileSubscribed
-import uno.lux.sample.util.toAppError
 
 /**
  * Holds the state for a single post's detail view. The post itself comes from the shared
@@ -78,7 +77,7 @@ class PostDetailViewModel @AssistedInject constructor(
     private suspend fun loadComments() {
         _commentsError.value = null
 
-        ignoreErrors(onError = { e -> _commentsError.value = e.toAppError() }) {
+        ignoreErrors(_commentsError) {
             _comments.value = commentRepository.loadComments(postId)
         }
     }

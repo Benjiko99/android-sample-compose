@@ -24,7 +24,6 @@ import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
-import uno.lux.sample.util.toAppError
 
 /**
  * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
@@ -105,7 +104,7 @@ class ProfileViewModel @AssistedInject constructor(
     private suspend fun load() {
         _loadError.value = null
 
-        ignoreErrors(onError = { e -> _loadError.value = e.toAppError() }) {
+        ignoreErrors(_loadError) {
             coroutineScope {
                 launch { userRepository.refresh(userId) }
                 launch { profileRepository.refresh(userId) }
