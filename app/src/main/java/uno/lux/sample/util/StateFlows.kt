@@ -2,6 +2,7 @@ package uno.lux.sample.util
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -43,4 +44,18 @@ fun ViewModel.launchRefresh(refreshing: MutableStateFlow<Boolean>, block: suspen
 fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () -> Unit) {
     if (jobRef.get()?.isActive == true) return
     jobRef.set(viewModelScope.launch { block() })
+}
+
+/**
+ * Runs [block], discarding any non-[CancellationException] thrown. Calls [onError] before
+ * discarding so callers can update error state without repeating the rethrow boilerplate.
+ */
+suspend fun ignoreErrors(onError: () -> Unit = {}, block: suspend () -> Unit) {
+    try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        onError()
+    }
 }

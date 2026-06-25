@@ -6,7 +6,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -21,6 +20,7 @@ import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUser
+import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
@@ -66,7 +66,7 @@ class PostDetailViewModel @AssistedInject constructor(
     val composerUserName: String = currentUser.nickname
 
     init {
-        viewModelScope.launch { loadComments() }
+        retryComments()
     }
 
     fun retryComments() {
@@ -75,53 +75,39 @@ class PostDetailViewModel @AssistedInject constructor(
 
     private suspend fun loadComments() {
         _commentsLoadFailed.value = false
-        try {
+
+        ignoreErrors(onError = { _commentsLoadFailed.value = true }) {
             _comments.value = commentRepository.loadComments(postId)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            _commentsLoadFailed.value = true
         }
     }
 
     fun onToggleLike() {
         viewModelScope.launch {
-            try {
-                postRepository.toggleLike(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            ignoreErrors { postRepository.toggleLike(postId) }
         }
     }
 
     fun onToggleBookmark() {
         viewModelScope.launch {
-            try {
-                postRepository.toggleBookmark(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            ignoreErrors { postRepository.toggleBookmark(postId) }
         }
     }
 
     fun onToggleCommentLike(commentId: CommentId) {
         viewModelScope.launch {
             val comment = _comments.value.find { it.id == commentId } ?: return@launch
-            try {
+            ignoreErrors {
                 val updated = commentRepository.toggleLike(postId, comment)
                 _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
             }
         }
     }
 
     fun addComment(text: String) {
         viewModelScope.launch {
-            try {
+            ignoreErrors {
                 val comment = commentRepository.addComment(postId, text)
                 _comments.update { listOf(comment) + it }
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
             }
         }
     }

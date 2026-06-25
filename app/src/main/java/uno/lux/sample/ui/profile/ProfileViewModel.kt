@@ -6,7 +6,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +19,7 @@ import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
@@ -87,74 +87,51 @@ class ProfileViewModel @AssistedInject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private var loadJob: Job? = null
     private var loadMorePostsJob: Job? = null
     private var loadMoreAlbumsJob: Job? = null
     private var loadMoreVideosJob: Job? = null
 
     init {
-        viewModelScope.launch { load() }
+        retry()
     }
 
     fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    fun retry() {
-        viewModelScope.launch { load() }
-    }
+    fun retry() = launchIfIdle(::loadJob) { load() }
 
     private suspend fun load() {
         _loadError.value = false
-        try {
+
+        ignoreErrors(onError = { _loadError.value = true }) {
             coroutineScope {
                 launch { userRepository.refresh(userId) }
                 launch { profileRepository.refresh(userId) }
             }
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            _loadError.value = true
         }
     }
 
     override fun onToggleLike(postId: PostId) {
         viewModelScope.launch {
-            try {
-                postRepository.toggleLike(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            ignoreErrors { postRepository.toggleLike(postId) }
         }
     }
 
     override fun onToggleBookmark(postId: PostId) {
         viewModelScope.launch {
-            try {
-                postRepository.toggleBookmark(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            ignoreErrors { postRepository.toggleBookmark(postId) }
         }
     }
 
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
-        try {
-            profileRepository.loadMorePosts(userId)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-        }
+        ignoreErrors { profileRepository.loadMorePosts(userId) }
     }
 
     override fun loadMoreAlbums() = launchIfIdle(::loadMoreAlbumsJob) {
-        try {
-            profileRepository.loadMoreAlbums(userId)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-        }
+        ignoreErrors { profileRepository.loadMoreAlbums(userId) }
     }
 
     override fun loadMoreVideos() = launchIfIdle(::loadMoreVideosJob) {
-        try {
-            profileRepository.loadMoreVideos(userId)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-        }
+        ignoreErrors { profileRepository.loadMoreVideos(userId) }
     }
 }

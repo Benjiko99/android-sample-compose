@@ -3,7 +3,6 @@ package uno.lux.sample.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +13,7 @@ import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
@@ -34,80 +34,55 @@ class HomeViewModel @Inject constructor(
 
     private val _loadError = MutableStateFlow(false)
 
-    private data class FeedSnapshot(val cards: List<PostCardData>, val endReached: Boolean)
-
     val uiState: StateFlow<HomeUiState> = combine(
-        combine(
-            feedRepository.postIds,
-            feedRepository.hasMore,
-            postRepository.entities,
-            userRepository.users,
-        ) { postIds, hasMore, entities, users ->
-            FeedSnapshot(
-                cards = postIds.mapNotNull { id ->
-                    val post = entities[id] ?: return@mapNotNull null
-                    val author = users[post.authorId] ?: return@mapNotNull null
-                    PostCardData(post = post, author = author)
-                },
-                endReached = !hasMore,
-            )
-        },
+        feedRepository.postIds,
+        feedRepository.hasMore,
+        postRepository.entities,
+        userRepository.users,
         _loadError,
-    ) { snapshot, loadError ->
-        if (loadError && snapshot.cards.isEmpty()) HomeUiState.Error
-        else HomeUiState.Feed(posts = snapshot.cards, endReached = snapshot.endReached)
+    ) { postIds, hasMore, entities, users, loadError ->
+        val cards = postIds.mapNotNull { id ->
+            val post = entities[id] ?: return@mapNotNull null
+            val author = users[post.authorId] ?: return@mapNotNull null
+            PostCardData(post = post, author = author)
+        }
+        if (loadError && cards.isEmpty()) HomeUiState.Error
+        else HomeUiState.Feed(posts = cards, endReached = !hasMore)
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private var loadJob: Job? = null
     private var loadMoreJob: Job? = null
 
     init {
-        viewModelScope.launch { load() }
+        retry()
     }
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    override fun retry() {
-        viewModelScope.launch { load() }
-    }
+    override fun retry() = launchIfIdle(::loadJob) { load() }
 
     override fun loadMore() = launchIfIdle(::loadMoreJob) {
-        try {
-            feedRepository.loadMore()
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-        }
+        ignoreErrors { feedRepository.loadMore() }
     }
 
     private suspend fun load() {
         _loadError.value = false
-        try {
-            feedRepository.refresh()
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            _loadError.value = true
-        }
+
+        ignoreErrors(onError = { _loadError.value = true }) { feedRepository.refresh() }
     }
 
     override fun onToggleLike(postId: PostId) {
         viewModelScope.launch {
-            try {
-                postRepository.toggleLike(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            ignoreErrors { postRepository.toggleLike(postId) }
         }
     }
 
     override fun onToggleBookmark(postId: PostId) {
         viewModelScope.launch {
-            try {
-                postRepository.toggleBookmark(postId)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-            }
+            ignoreErrors { postRepository.toggleBookmark(postId) }
         }
     }
 }
