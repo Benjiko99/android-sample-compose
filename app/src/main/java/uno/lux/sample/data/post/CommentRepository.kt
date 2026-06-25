@@ -1,9 +1,5 @@
 package uno.lux.sample.data.post
 
-import java.time.Instant
-import uno.lux.sample.data.SampleComments
-import uno.lux.sample.data.user.User
-
 /**
  * Stateless data source for post comments.
  *
@@ -11,33 +7,14 @@ import uno.lux.sample.data.user.User
  * state and applies the returned value. This keeps comments scoped to the screen that needs them
  * and lets the ViewModel be cleared — along with the comment data — the moment the user pops the
  * post detail screen.
+ *
+ * Where the data comes from — in-memory sample data vs. a live network call — is decided by
+ * [CommentDataSource].
  */
-interface CommentRepository {
-    suspend fun loadComments(postId: PostId): List<Comment>
-    suspend fun addComment(postId: PostId, text: String): Comment
-    suspend fun toggleLike(postId: PostId, comment: Comment): Comment
-}
-
-/** In-memory [CommentRepository] seeded from [SampleComments]. */
-class InMemoryCommentRepository(
-    private val currentUser: User,
-    private val initial: Map<PostId, List<Comment>> = SampleComments,
-) : CommentRepository {
-
-    override suspend fun loadComments(postId: PostId): List<Comment> =
-        initial[postId].orEmpty()
-
-    override suspend fun addComment(postId: PostId, text: String): Comment =
-        Comment(
-            id = "local-${System.nanoTime()}",
-            author = currentUser,
-            createdAt = Instant.now(),
-            text = text,
-            likeCount = 0,
-        )
-
-    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment {
-        val liked = !comment.isLiked
-        return comment.copy(isLiked = liked, likeCount = comment.likeCount + if (liked) 1 else -1)
-    }
+class CommentRepository(
+    private val dataSource: CommentDataSource,
+) {
+    suspend fun loadComments(postId: PostId) = dataSource.loadComments(postId)
+    suspend fun addComment(postId: PostId, text: String) = dataSource.addComment(postId, text)
+    suspend fun toggleLike(postId: PostId, comment: Comment) = dataSource.toggleLike(postId, comment)
 }

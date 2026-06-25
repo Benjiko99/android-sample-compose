@@ -8,10 +8,9 @@ import org.junit.Test
 import uno.lux.sample.data.user.User
 import java.time.Instant
 
-class InMemoryCommentRepositoryTest {
+class CommentRepositoryTest {
 
     private val author = User(id = "u1", nickname = "Ada", handle = "@ada")
-    private val commenter = User(id = "u2", nickname = "Bab", handle = "@bab")
 
     private fun comment(
         id: String,
@@ -20,7 +19,7 @@ class InMemoryCommentRepositoryTest {
         isLiked: Boolean = false,
     ) = Comment(
         id = id,
-        author = commenter,
+        author = author,
         createdAt = Instant.EPOCH,
         text = text,
         likeCount = likeCount,
@@ -29,7 +28,7 @@ class InMemoryCommentRepositoryTest {
 
     @Test
     fun `loadComments returns empty list for unknown post`() = runTest {
-        val repository = InMemoryCommentRepository(author, initial = emptyMap())
+        val repository = CommentRepository(FakeCommentDataSource(author))
 
         val comments = repository.loadComments("no-such-post")
 
@@ -39,7 +38,7 @@ class InMemoryCommentRepositoryTest {
     @Test
     fun `loadComments returns the seeded list for a known post`() = runTest {
         val c = comment("c1")
-        val repository = InMemoryCommentRepository(author, initial = mapOf("p1" to listOf(c)))
+        val repository = CommentRepository(FakeCommentDataSource(author, initial = mapOf("p1" to listOf(c))))
 
         val comments = repository.loadComments("p1")
 
@@ -48,7 +47,7 @@ class InMemoryCommentRepositoryTest {
 
     @Test
     fun `addComment returns a new comment authored by the current user`() = runTest {
-        val repository = InMemoryCommentRepository(author, initial = emptyMap())
+        val repository = CommentRepository(FakeCommentDataSource(author))
 
         val added = repository.addComment("p1", "New thought")
 
@@ -61,7 +60,7 @@ class InMemoryCommentRepositoryTest {
     @Test
     fun `toggleLike likes an unliked comment and increments the count`() = runTest {
         val unliked = comment("c1", likeCount = 3, isLiked = false)
-        val repository = InMemoryCommentRepository(author, initial = emptyMap())
+        val repository = CommentRepository(FakeCommentDataSource(author))
 
         val result = repository.toggleLike("p1", unliked)
 
@@ -72,24 +71,32 @@ class InMemoryCommentRepositoryTest {
     @Test
     fun `toggleLike unlikes a liked comment and decrements the count`() = runTest {
         val liked = comment("c1", likeCount = 7, isLiked = true)
-        val repository = InMemoryCommentRepository(author, initial = emptyMap())
+        val repository = CommentRepository(FakeCommentDataSource(author))
 
         val result = repository.toggleLike("p1", liked)
 
         assertFalse(result.isLiked)
         assertEquals(6, result.likeCount)
     }
+}
 
-    @Test
-    fun `toggleLike preserves all other comment fields`() = runTest {
-        val original = comment("c1", text = "Hello", likeCount = 2, isLiked = false)
-        val repository = InMemoryCommentRepository(author, initial = emptyMap())
+private class FakeCommentDataSource(
+    private val currentUser: User,
+    private val initial: Map<PostId, List<Comment>> = emptyMap(),
+) : CommentDataSource {
 
-        val result = repository.toggleLike("p1", original)
+    override suspend fun loadComments(postId: PostId) = initial[postId].orEmpty()
 
-        assertEquals(original.id, result.id)
-        assertEquals(original.text, result.text)
-        assertEquals(original.author, result.author)
-        assertEquals(original.createdAt, result.createdAt)
+    override suspend fun addComment(postId: PostId, text: String) = Comment(
+        id = "local-new",
+        author = currentUser,
+        createdAt = Instant.EPOCH,
+        text = text,
+        likeCount = 0,
+    )
+
+    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment {
+        val liked = !comment.isLiked
+        return comment.copy(isLiked = liked, likeCount = comment.likeCount + if (liked) 1 else -1)
     }
 }

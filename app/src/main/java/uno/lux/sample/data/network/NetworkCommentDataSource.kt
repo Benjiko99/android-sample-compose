@@ -5,17 +5,12 @@ import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.Comment
-import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.CommentDataSource
 import uno.lux.sample.data.post.PostId
 
-/**
- * Network-backed [CommentRepository]. All operations are stateless: the caller owns the comment
- * list and applies the returned value. [loadComments] fetches the thread; [addComment] and
- * [toggleLike] call the API and return the server-confirmed result for the caller to apply.
- */
-class NetworkCommentRepository(
+class NetworkCommentDataSource(
     private val api: MosaicApi,
-) : CommentRepository {
+) : CommentDataSource {
 
     override suspend fun loadComments(postId: PostId): List<Comment> = withContext(Dispatchers.IO) {
         api.getComments(postId).data.map { it.toDomain() }

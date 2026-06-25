@@ -11,12 +11,19 @@ import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
 import uno.lux.sample.data.post.Album
-import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.PostDataSource
+import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
-import uno.lux.sample.data.profile.InMemoryProfileRepository
-import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.profile.AlbumsPage
+import uno.lux.sample.data.profile.PostsPage
+import uno.lux.sample.data.profile.ProfileDataSource
+import uno.lux.sample.data.profile.ProfileRefreshData
+import uno.lux.sample.data.profile.ProfileRepository
+import uno.lux.sample.data.profile.VideosPage
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserDataSource
+import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,15 +45,36 @@ class ProfileViewModelTest {
     )
 
     private fun viewModel(userId: String = "u1", currentUserId: String = "u1"): ProfileViewModel {
-        val postRepository = InMemoryPostRepository(listOf(post))
-        return ProfileViewModel(
-            profileRepository = InMemoryProfileRepository(
-                postRepository = postRepository,
-                albumsByUser = mapOf("u1" to listOf(Album(id = "a1", title = "Sketches", itemCount = 8))),
-                videosByUser = mapOf("u1" to listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4"))),
+        val postRepo = PostRepository(FakePostDataSource())
+        val userRepo = UserRepository(
+            FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
+        )
+        val profileRepo = ProfileRepository(
+            FakeProfileDataSource(
+                mapOf(
+                    "u1" to ProfileRefreshData(
+                        postsCount = 1, albumsCount = 1, videosCount = 1,
+                        posts = listOf(post),
+                        postCursor = null, postHasMore = false,
+                        albums = listOf(Album(id = "a1", title = "Sketches", itemCount = 8)),
+                        albumCursor = null, albumHasMore = false,
+                        videos = listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4")),
+                        videoCursor = null, videoHasMore = false,
+                    ),
+                    "u2" to ProfileRefreshData(
+                        postsCount = 0, albumsCount = 0, videosCount = 0,
+                        posts = emptyList(), postCursor = null, postHasMore = false,
+                        albums = emptyList(), albumCursor = null, albumHasMore = false,
+                        videos = emptyList(), videoCursor = null, videoHasMore = false,
+                    ),
+                ),
             ),
-            postRepository = postRepository,
-            userRepository = InMemoryUserRepository(listOf(ada, grace)),
+            postRepo,
+        )
+        return ProfileViewModel(
+            profileRepository = profileRepo,
+            postRepository = postRepo,
+            userRepository = userRepo,
             currentUserId = currentUserId,
             userId = userId,
         )
@@ -127,4 +155,32 @@ class ProfileViewModelTest {
         val bookmarked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
         assertTrue(bookmarked.isBookmarked)
     }
+}
+
+private class FakePostDataSource : PostDataSource {
+    override suspend fun toggleLike(post: Post) =
+        post.copy(isLiked = !post.isLiked, likeCount = post.likeCount + if (!post.isLiked) 1 else -1)
+
+    override suspend fun toggleBookmark(post: Post) =
+        post.copy(isBookmarked = !post.isBookmarked)
+}
+
+private class FakeUserDataSource(private val users: Map<String, User> = emptyMap()) : UserDataSource {
+    override suspend fun fetch(userId: String): User? = users[userId]
+}
+
+private class FakeProfileDataSource(
+    private val data: Map<String, ProfileRefreshData> = emptyMap(),
+) : ProfileDataSource {
+    private val empty = ProfileRefreshData(
+        postsCount = 0, albumsCount = 0, videosCount = 0,
+        posts = emptyList(), postCursor = null, postHasMore = false,
+        albums = emptyList(), albumCursor = null, albumHasMore = false,
+        videos = emptyList(), videoCursor = null, videoHasMore = false,
+    )
+
+    override suspend fun refresh(userId: String) = data[userId] ?: empty
+    override suspend fun loadMorePosts(userId: String, cursor: String?) = PostsPage(emptyList(), null, false)
+    override suspend fun loadMoreAlbums(userId: String, cursor: String?) = AlbumsPage(emptyList(), null, false)
+    override suspend fun loadMoreVideos(userId: String, cursor: String?) = VideosPage(emptyList(), null, false)
 }

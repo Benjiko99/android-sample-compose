@@ -1,15 +1,11 @@
 package uno.lux.sample.data.profile
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
-import uno.lux.sample.data.SampleAlbums
-import uno.lux.sample.data.SampleVideos
-import uno.lux.sample.data.post.Album
-import uno.lux.sample.data.post.InMemoryPostRepository
+import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
 
 /**
@@ -22,60 +18,106 @@ import uno.lux.sample.data.user.UserId
  *
  * [hasMorePosts], [hasMoreAlbums], [hasMoreVideos] signal whether another page exists for each
  * tab. The corresponding [loadMore*] methods append the next page into the flows above.
+ *
+ * Where the data comes from — in-memory sample data vs. a live network call — is decided by
+ * [ProfileDataSource].
  */
-interface ProfileRepository {
-    fun profile(userId: UserId): Flow<Profile>
-    fun postIds(userId: UserId): Flow<List<PostId>>
-    fun hasMorePosts(userId: UserId): Flow<Boolean>
-    fun hasMoreAlbums(userId: UserId): Flow<Boolean>
-    fun hasMoreVideos(userId: UserId): Flow<Boolean>
-    suspend fun refresh(userId: UserId)
-    suspend fun loadMorePosts(userId: UserId)
-    suspend fun loadMoreAlbums(userId: UserId)
-    suspend fun loadMoreVideos(userId: UserId)
-}
+class ProfileRepository(
+    private val dataSource: ProfileDataSource,
+    private val postRepository: PostRepository,
+) {
+    private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
+    private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
 
-/**
- * In-memory [ProfileRepository]. Post IDs are derived reactively from the shared entity store so
- * a like toggle on the home feed is immediately reflected on the profile tab — no extra wiring
- * needed. Albums and videos come from static sample maps. There is only one page of sample data
- * so all [hasMore*] flows are always false and [loadMore*] methods are no-ops.
- */
-class InMemoryProfileRepository(
-    private val postRepository: PostRepository = InMemoryPostRepository(),
-    private val albumsByUser: Map<UserId, List<Album>> = SampleAlbums,
-    private val videosByUser: Map<UserId, List<Video>> = SampleVideos,
-) : ProfileRepository {
+    private data class PageState(val cursor: String?, val hasMore: Boolean)
 
-    override fun profile(userId: UserId): Flow<Profile> =
-        postRepository.entities.map { entities ->
-            val userAlbums = albumsByUser[userId].orEmpty()
-            val userVideos = videosByUser[userId].orEmpty()
+    private val _postPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
+    private val _albumPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
+    private val _videoPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
-            Profile(
+    fun profile(userId: UserId): Flow<Profile> =
+        _profiles.map { it[userId] ?: emptyProfile(userId) }
+
+    fun postIds(userId: UserId): Flow<List<PostId>> =
+        _userPostIds.map { it[userId] ?: emptyList() }
+
+    fun hasMorePosts(userId: UserId): Flow<Boolean> =
+        _postPage.map { it[userId]?.hasMore ?: false }
+
+    fun hasMoreAlbums(userId: UserId): Flow<Boolean> =
+        _albumPage.map { it[userId]?.hasMore ?: false }
+
+    fun hasMoreVideos(userId: UserId): Flow<Boolean> =
+        _videoPage.map { it[userId]?.hasMore ?: false }
+
+    suspend fun refresh(userId: UserId) {
+        val data = dataSource.refresh(userId)
+
+        postRepository.ingest(data.posts)
+
+        _postPage.update { it + (userId to PageState(data.postCursor, data.postHasMore)) }
+        _albumPage.update { it + (userId to PageState(data.albumCursor, data.albumHasMore)) }
+        _videoPage.update { it + (userId to PageState(data.videoCursor, data.videoHasMore)) }
+
+        _userPostIds.update { it + (userId to data.posts.map { p -> p.id }) }
+        _profiles.update {
+            it + (userId to Profile(
                 userId = userId,
-                albums = userAlbums,
-                videos = userVideos,
-                postsCount = entities.values.count { it.authorId == userId },
-                albumsCount = userAlbums.size,
-                videosCount = userVideos.size,
-            )
+                albums = data.albums,
+                videos = data.videos,
+                postsCount = data.postsCount,
+                albumsCount = data.albumsCount,
+                videosCount = data.videosCount,
+            ))
         }
+    }
 
-    override fun postIds(userId: UserId): Flow<List<PostId>> =
-        postRepository.entities.map { entities ->
-            entities.values
-                .filter { it.authorId == userId }
-                .sortedByDescending { it.createdAt }
-                .map { it.id }
+    suspend fun loadMorePosts(userId: UserId) {
+        val page = _postPage.value[userId] ?: return
+        if (!page.hasMore) return
+
+        val result = dataSource.loadMorePosts(userId, page.cursor)
+        postRepository.ingest(result.posts)
+
+        _postPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
+        _userPostIds.update { map ->
+            val existing = map[userId] ?: emptyList()
+            map + (userId to existing + result.posts.map { it.id })
         }
+    }
 
-    override fun hasMorePosts(userId: UserId): Flow<Boolean> = flowOf(false)
-    override fun hasMoreAlbums(userId: UserId): Flow<Boolean> = flowOf(false)
-    override fun hasMoreVideos(userId: UserId): Flow<Boolean> = flowOf(false)
+    suspend fun loadMoreAlbums(userId: UserId) {
+        val page = _albumPage.value[userId] ?: return
+        if (!page.hasMore) return
 
-    override suspend fun refresh(userId: UserId) {}
-    override suspend fun loadMorePosts(userId: UserId) {}
-    override suspend fun loadMoreAlbums(userId: UserId) {}
-    override suspend fun loadMoreVideos(userId: UserId) {}
+        val result = dataSource.loadMoreAlbums(userId, page.cursor)
+
+        _albumPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
+        _profiles.update { map ->
+            val existing = map[userId] ?: return@update map
+            map + (userId to existing.copy(albums = existing.albums + result.albums))
+        }
+    }
+
+    suspend fun loadMoreVideos(userId: UserId) {
+        val page = _videoPage.value[userId] ?: return
+        if (!page.hasMore) return
+
+        val result = dataSource.loadMoreVideos(userId, page.cursor)
+
+        _videoPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
+        _profiles.update { map ->
+            val existing = map[userId] ?: return@update map
+            map + (userId to existing.copy(videos = existing.videos + result.videos))
+        }
+    }
+
+    private fun emptyProfile(userId: UserId) = Profile(
+        userId = userId,
+        albums = emptyList(),
+        videos = emptyList(),
+        postsCount = 0,
+        albumsCount = 0,
+        videosCount = 0,
+    )
 }

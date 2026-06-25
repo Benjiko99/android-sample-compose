@@ -11,11 +11,15 @@ import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
 import uno.lux.sample.data.post.Comment
-import uno.lux.sample.data.post.InMemoryCommentRepository
-import uno.lux.sample.data.post.InMemoryPostRepository
+import uno.lux.sample.data.post.CommentDataSource
+import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.post.PostDataSource
+import uno.lux.sample.data.post.PostId
+import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserDataSource
+import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,13 +53,19 @@ class PostDetailViewModelTest {
         postId: String = "p1",
         posts: List<Post> = listOf(post),
         comments: Map<String, List<Comment>> = mapOf("p1" to listOf(seedComment)),
-    ) = PostDetailViewModel(
-        postRepository = InMemoryPostRepository(posts),
-        commentRepository = InMemoryCommentRepository(currentUser, comments),
-        userRepository = InMemoryUserRepository(listOf(currentUser, otherUser)),
-        currentUser = currentUser,
-        postId = postId,
-    )
+    ): PostDetailViewModel {
+        val postRepo = PostRepository(FakePostDataSource())
+        postRepo.ingest(posts)
+        val userRepo = UserRepository(FakeUserDataSource())
+        userRepo.ingest(listOf(currentUser, otherUser))
+        return PostDetailViewModel(
+            postRepository = postRepo,
+            commentRepository = CommentRepository(FakeCommentDataSource(currentUser, comments)),
+            userRepository = userRepo,
+            currentUser = currentUser,
+            postId = postId,
+        )
+    }
 
     // ── uiState ───────────────────────────────────────────────────────────────
 
@@ -170,5 +180,38 @@ class PostDetailViewModelTest {
 
         val state = vm.uiState.value as PostDetailUiState.Loaded
         assertEquals(2, state.comments.size)
+    }
+}
+
+private class FakePostDataSource : PostDataSource {
+    override suspend fun toggleLike(post: Post) =
+        post.copy(isLiked = !post.isLiked, likeCount = post.likeCount + if (!post.isLiked) 1 else -1)
+
+    override suspend fun toggleBookmark(post: Post) =
+        post.copy(isBookmarked = !post.isBookmarked)
+}
+
+private class FakeUserDataSource : UserDataSource {
+    override suspend fun fetch(userId: String): User? = null
+}
+
+private class FakeCommentDataSource(
+    private val currentUser: User,
+    private val initial: Map<PostId, List<Comment>> = emptyMap(),
+) : CommentDataSource {
+
+    override suspend fun loadComments(postId: PostId) = initial[postId].orEmpty()
+
+    override suspend fun addComment(postId: PostId, text: String) = Comment(
+        id = "local-new",
+        author = currentUser,
+        createdAt = Instant.EPOCH,
+        text = text,
+        likeCount = 0,
+    )
+
+    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment {
+        val liked = !comment.isLiked
+        return comment.copy(isLiked = liked, likeCount = comment.likeCount + if (liked) 1 else -1)
     }
 }

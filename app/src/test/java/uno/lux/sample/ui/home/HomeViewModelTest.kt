@@ -2,8 +2,6 @@ package uno.lux.sample.ui.home
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -13,12 +11,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.MainDispatcherRule
+import uno.lux.sample.data.post.FeedDataSource
+import uno.lux.sample.data.post.FeedPage
 import uno.lux.sample.data.post.FeedRepository
-import uno.lux.sample.data.post.InMemoryFeedRepository
-import uno.lux.sample.data.post.InMemoryPostRepository
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.user.InMemoryUserRepository
+import uno.lux.sample.data.post.PostDataSource
+import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserDataSource
+import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,11 +39,14 @@ class HomeViewModelTest {
         commentCount = 2,
     )
 
-    private fun viewModel() = HomeViewModel(
-        feedRepository = InMemoryFeedRepository(listOf(post.id)),
-        postRepository = InMemoryPostRepository(listOf(post)),
-        userRepository = InMemoryUserRepository(listOf(author)),
-    )
+    private fun viewModel(
+        feedDataSource: FeedDataSource = FakeFeedDataSource(FeedPage(listOf(post), listOf(author), null, false)),
+    ): HomeViewModel {
+        val postRepo = PostRepository(FakePostDataSource())
+        val userRepo = UserRepository(FakeUserDataSource())
+        val feedRepo = FeedRepository(feedDataSource, postRepo, userRepo)
+        return HomeViewModel(feedRepo, postRepo, userRepo)
+    }
 
     @Test
     fun `uiState is Loading until something collects it`() {
@@ -89,21 +93,22 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `refresh raises isRefreshing until the feed repository finishes`() = runTest {
-        val feedRepository = FakeFeedRepository(suspendOnRefresh = true)
-        val viewModel = HomeViewModel(feedRepository, InMemoryPostRepository(), InMemoryUserRepository())
+    fun `refresh raises isRefreshing until the feed data source finishes`() = runTest {
+        val dataSource = SuspendingFeedDataSource()
+        val viewModel = viewModel(feedDataSource = dataSource)
 
         assertFalse(viewModel.isRefreshing.value)
         viewModel.refresh()
         assertTrue(viewModel.isRefreshing.value)
-        feedRepository.completeRefresh()
+        dataSource.complete()
         assertFalse(viewModel.isRefreshing.value)
     }
 
     @Test
-    fun `endReached is false when the feed repository reports hasMore`() = runTest {
-        val feedRepository = FakeFeedRepository(initialHasMore = true)
-        val viewModel = HomeViewModel(feedRepository, InMemoryPostRepository(), InMemoryUserRepository())
+    fun `endReached is false when the feed reports hasMore`() = runTest {
+        val viewModel = viewModel(
+            feedDataSource = FakeFeedDataSource(FeedPage(emptyList(), emptyList(), "cursor", true)),
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
         }
@@ -113,24 +118,27 @@ class HomeViewModelTest {
     }
 }
 
-// TODO: Fake repositories would perhaps be better replaced with a FakeDataSource, like we discussed
-//  in another TODO comment, regarding using DataSources, so we don't duplicate the implementation
-//  of the whole repository.
-// TODO: We should perhaps get rid of InMemory implementations of repositories, what is their purpose?
-//  They're kinda nice in that this is a portfolio project, and it lets us not need a server,
-//  but it's better to show off how we write network code, and it's also closer to what production
-//  code would look like, so we should just drop them, and host a server. InMemory repositories
-//  aren't even needed to back up tests, they use Fake repositories.
-private class FakeFeedRepository(
-    initialHasMore: Boolean = false,
-    private val suspendOnRefresh: Boolean = false,
-) : FeedRepository {
-    override val postIds: StateFlow<List<String>> = MutableStateFlow(emptyList())
-    override val hasMore: StateFlow<Boolean> = MutableStateFlow(initialHasMore)
-    private val refreshGate = CompletableDeferred<Unit>()
+private class FakeFeedDataSource(private val page: FeedPage) : FeedDataSource {
+    override suspend fun fetch(cursor: String?) = page
+}
 
-    override suspend fun refresh() { if (suspendOnRefresh) refreshGate.await() }
-    override suspend fun loadMore() {}
+private class SuspendingFeedDataSource : FeedDataSource {
+    private val gate = CompletableDeferred<Unit>()
+    override suspend fun fetch(cursor: String?): FeedPage {
+        gate.await()
+        return FeedPage(emptyList(), emptyList(), null, false)
+    }
+    fun complete() = gate.complete(Unit)
+}
 
-    fun completeRefresh() = refreshGate.complete(Unit)
+private class FakePostDataSource : PostDataSource {
+    override suspend fun toggleLike(post: Post) =
+        post.copy(isLiked = !post.isLiked, likeCount = post.likeCount + if (!post.isLiked) 1 else -1)
+
+    override suspend fun toggleBookmark(post: Post) =
+        post.copy(isBookmarked = !post.isBookmarked)
+}
+
+private class FakeUserDataSource : UserDataSource {
+    override suspend fun fetch(userId: String): User? = null
 }

@@ -13,67 +13,74 @@ import dagger.hilt.components.SingletonComponent
 import uno.lux.sample.data.LoggedInUserId
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.network.MosaicApi
-import uno.lux.sample.data.network.NetworkCommentRepository
-import uno.lux.sample.data.network.NetworkFeedRepository
-import uno.lux.sample.data.network.NetworkPostRepository
-import uno.lux.sample.data.network.NetworkProfileRepository
-import uno.lux.sample.data.network.NetworkUserRepository
+import uno.lux.sample.data.network.NetworkCommentDataSource
+import uno.lux.sample.data.network.NetworkFeedDataSource
+import uno.lux.sample.data.network.NetworkPostDataSource
+import uno.lux.sample.data.network.NetworkProfileDataSource
+import uno.lux.sample.data.network.NetworkUserDataSource
+import uno.lux.sample.data.post.CommentDataSource
 import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.FeedDataSource
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.profile.ProfileDataSource
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.settings.DataStoreSettingsRepository
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserDataSource
 import uno.lux.sample.data.user.UserRepository
 import javax.inject.Singleton
 
-/**
- * [NetworkUserRepository] and [NetworkPostRepository] are each provided twice — once as their
- * concrete type (so [NetworkFeedRepository] can call [NetworkUserRepository.ingest] and
- * [PostRepository.ingest] directly) and once as their interface binding consumed by ViewModels.
- */
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
 
     @Provides
-    @Singleton
-    fun provideNetworkUserRepository(api: MosaicApi): NetworkUserRepository =
-        NetworkUserRepository(api)
+    fun providePostDataSource(api: MosaicApi): PostDataSource = NetworkPostDataSource(api)
 
     @Provides
     @Singleton
-    fun provideUserRepository(impl: NetworkUserRepository): UserRepository = impl
+    fun providePostRepository(dataSource: PostDataSource): PostRepository =
+        PostRepository(dataSource)
+
+    @Provides
+    fun provideFeedDataSource(api: MosaicApi): FeedDataSource = NetworkFeedDataSource(api)
+
+    @Provides
+    fun provideUserDataSource(api: MosaicApi): UserDataSource = NetworkUserDataSource(api)
 
     @Provides
     @Singleton
-    fun provideNetworkPostRepository(api: MosaicApi): NetworkPostRepository =
-        NetworkPostRepository(api)
-
-    @Provides
-    @Singleton
-    fun providePostRepository(impl: NetworkPostRepository): PostRepository = impl
+    fun provideUserRepository(dataSource: UserDataSource): UserRepository =
+        UserRepository(dataSource)
 
     @Provides
     @Singleton
     fun provideFeedRepository(
-        api: MosaicApi,
+        dataSource: FeedDataSource,
         postRepository: PostRepository,
-        userRepository: NetworkUserRepository,
-    ): FeedRepository = NetworkFeedRepository(api, postRepository, userRepository)
+        userRepository: UserRepository,
+    ): FeedRepository = FeedRepository(dataSource, postRepository, userRepository)
+
+    @Provides
+    fun provideProfileDataSource(api: MosaicApi): ProfileDataSource = NetworkProfileDataSource(api)
 
     @Provides
     @Singleton
     fun provideProfileRepository(
-        api: MosaicApi,
+        dataSource: ProfileDataSource,
         postRepository: PostRepository,
-    ): ProfileRepository = NetworkProfileRepository(api, postRepository)
+    ): ProfileRepository = ProfileRepository(dataSource, postRepository)
+
+    @Provides
+    fun provideCommentDataSource(api: MosaicApi): CommentDataSource = NetworkCommentDataSource(api)
 
     @Provides
     @Singleton
-    fun provideCommentRepository(api: MosaicApi): CommentRepository =
-        NetworkCommentRepository(api)
+    fun provideCommentRepository(dataSource: CommentDataSource): CommentRepository =
+        CommentRepository(dataSource)
 
     @Provides
     @Singleton
