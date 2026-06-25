@@ -3,6 +3,7 @@ package uno.lux.sample.ui.format
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import uno.lux.sample.R
+import uno.lux.sample.util.AppError
 import uno.lux.sample.util.CompactCount
 import uno.lux.sample.util.RelativeTime
 
@@ -23,3 +24,13 @@ fun CompactCount.asText(): String = when (this) {
     is CompactCount.Thousands -> stringResource(R.string.count_thousands, text)
     is CompactCount.Millions -> stringResource(R.string.count_millions, text)
 }
+
+/** Maps an [AppError] to its localized user-facing message. */
+@Composable
+fun AppError.asText(): String = stringResource(
+    when (this) {
+        AppError.NoConnection -> R.string.error_no_connection
+        AppError.Timeout -> R.string.error_timeout
+        AppError.Unknown -> R.string.error_unknown
+    }
+)

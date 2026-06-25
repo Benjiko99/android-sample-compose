@@ -43,6 +43,7 @@ import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.FullScreenError
 import uno.lux.sample.ui.components.LoadMoreEffect
+import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.components.LoadingMoreFooter
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
@@ -137,8 +138,8 @@ internal fun HomeScreen(
         ) {
             when (uiState) {
                 HomeUiState.Loading -> LoadingState()
-                HomeUiState.Error -> FullScreenError(
-                    message = stringResource(R.string.feed_error),
+                is HomeUiState.Error -> FullScreenError(
+                    message = uiState.error.asText(),
                     onRetry = actions::retry,
                 )
                 is HomeUiState.Feed ->

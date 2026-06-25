@@ -20,8 +20,10 @@ import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUser
+import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.util.toAppError
 
 /**
  * Holds the state for a single post's detail view. The post itself comes from the shared
@@ -49,17 +51,17 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-    private val _commentsLoadFailed = MutableStateFlow(false)
+    private val _commentsError = MutableStateFlow<AppError?>(null)
 
     val uiState: StateFlow<PostDetailUiState> = combine(
         postRepository.entities.map { it[postId] },
         _comments,
         userRepository.users,
-        _commentsLoadFailed,
-    ) { post, comments, users, commentsLoadFailed ->
+        _commentsError,
+    ) { post, comments, users, commentsError ->
         if (post == null) return@combine PostDetailUiState.NotFound
         val author = users[post.authorId] ?: return@combine PostDetailUiState.NotFound
-        PostDetailUiState.Loaded(post, author, comments, commentsLoadFailed)
+        PostDetailUiState.Loaded(post, author, comments, commentsError)
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
     /** Nickname of the signed-in user, shown as the composer's avatar label. */
@@ -74,9 +76,9 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     private suspend fun loadComments() {
-        _commentsLoadFailed.value = false
+        _commentsError.value = null
 
-        ignoreErrors(onError = { _commentsLoadFailed.value = true }) {
+        ignoreErrors(onError = { e -> _commentsError.value = e.toAppError() }) {
             _comments.value = commentRepository.loadComments(postId)
         }
     }

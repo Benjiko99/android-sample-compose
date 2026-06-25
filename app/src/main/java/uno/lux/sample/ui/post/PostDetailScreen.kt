@@ -92,6 +92,7 @@ import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.format.asText
+import uno.lux.sample.util.AppError
 import uno.lux.sample.ui.home.AlbumPostGallery
 import uno.lux.sample.ui.home.ReportPostDialog
 import uno.lux.sample.ui.theme.LocalMosaicColors
@@ -224,7 +225,7 @@ internal fun PostDetailScreen(
                 post = uiState.post,
                 author = uiState.author,
                 comments = uiState.comments,
-                commentsLoadFailed = uiState.commentsLoadFailed,
+                commentsError = uiState.commentsError,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
@@ -423,7 +424,7 @@ private fun PostDetailContent(
     post: Post,
     author: User,
     comments: List<Comment>,
-    commentsLoadFailed: Boolean,
+    commentsError: AppError?,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, Int) -> Unit,
@@ -451,8 +452,8 @@ private fun PostDetailContent(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
-        if (commentsLoadFailed) {
-            item(key = "comments_error") { CommentsError(onRetry = onRetryComments) }
+        if (commentsError != null) {
+            item(key = "comments_error") { CommentsError(error = commentsError, onRetry = onRetryComments) }
         } else {
             item(key = "comments_header") { CommentsHeader(count = comments.size) }
             items(comments, key = { it.id }) { comment ->
@@ -469,7 +470,7 @@ private fun PostDetailContent(
 }
 
 @Composable
-private fun CommentsError(onRetry: () -> Unit) {
+private fun CommentsError(error: AppError, onRetry: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -481,7 +482,7 @@ private fun CommentsError(onRetry: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = stringResource(R.string.post_detail_comments_error),
+                text = error.asText(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

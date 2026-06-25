@@ -1,12 +1,14 @@
 package uno.lux.sample.ui.home
 
+import uno.lux.sample.util.AppError
+
 /**
  * Exhaustive state for the feed screen, rendered by a stateless `HomeScreen`. Modeled as
  * a sealed interface so the `when` over it is checked at compile time.
  */
 sealed interface HomeUiState {
     data object Loading : HomeUiState
-    data object Error : HomeUiState
+    data class Error(val error: AppError) : HomeUiState
 
     /** [endReached] is true when the backend has no more posts beyond [posts]. */
     data class Feed(

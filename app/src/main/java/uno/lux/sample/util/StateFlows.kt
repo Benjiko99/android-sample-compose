@@ -50,12 +50,12 @@ fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () ->
  * Runs [block], discarding any non-[CancellationException] thrown. Calls [onError] before
  * discarding so callers can update error state without repeating the rethrow boilerplate.
  */
-suspend fun ignoreErrors(onError: () -> Unit = {}, block: suspend () -> Unit) {
+suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () -> Unit) {
     try {
         block()
     } catch (e: CancellationException) {
         throw e
-    } catch (_: Exception) {
-        onError()
+    } catch (e: Exception) {
+        onError(e)
     }
 }

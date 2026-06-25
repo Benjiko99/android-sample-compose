@@ -180,9 +180,9 @@ internal fun ProfileScreen(
                 if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
             }
 
-            ProfileUiState.Error -> {
+            is ProfileUiState.Error -> {
                 FullScreenError(
-                    message = stringResource(R.string.profile_error),
+                    message = uiState.error.asText(),
                     onRetry = onRetry,
                 )
                 if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))

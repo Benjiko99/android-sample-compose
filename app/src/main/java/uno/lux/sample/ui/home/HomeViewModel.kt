@@ -13,10 +13,12 @@ import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.util.toAppError
 import javax.inject.Inject
 
 /**
@@ -32,7 +34,7 @@ class HomeViewModel @Inject constructor(
     private val userRepository: UserRepository,
 ) : ViewModel(), HomeActions {
 
-    private val _loadError = MutableStateFlow(false)
+    private val _loadError = MutableStateFlow<AppError?>(null)
 
     val uiState: StateFlow<HomeUiState> = combine(
         feedRepository.postIds,
@@ -46,7 +48,7 @@ class HomeViewModel @Inject constructor(
             val author = users[post.authorId] ?: return@mapNotNull null
             PostCardData(post = post, author = author)
         }
-        if (loadError && cards.isEmpty()) HomeUiState.Error
+        if (loadError != null && cards.isEmpty()) HomeUiState.Error(loadError)
         else HomeUiState.Feed(posts = cards, endReached = !hasMore)
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
@@ -69,9 +71,9 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun load() {
-        _loadError.value = false
+        _loadError.value = null
 
-        ignoreErrors(onError = { _loadError.value = true }) { feedRepository.refresh() }
+        ignoreErrors(onError = { e -> _loadError.value = e.toAppError() }) { feedRepository.refresh() }
     }
 
     override fun onToggleLike(postId: PostId) {

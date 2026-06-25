@@ -19,10 +19,12 @@ import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.launchRefresh
 import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.util.toAppError
 
 /**
  * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
@@ -47,7 +49,7 @@ class ProfileViewModel @AssistedInject constructor(
 
     private data class HasMoreState(val posts: Boolean, val albums: Boolean, val videos: Boolean)
 
-    private val _loadError = MutableStateFlow(false)
+    private val _loadError = MutableStateFlow<AppError?>(null)
 
     val uiState: StateFlow<ProfileUiState> = combine(
         combine(
@@ -79,7 +81,7 @@ class ProfileViewModel @AssistedInject constructor(
     ) { state, loadError ->
         when {
             state != null -> state
-            loadError -> ProfileUiState.Error
+            loadError != null -> ProfileUiState.Error(loadError)
             else -> ProfileUiState.NotFound
         }
     }.stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
@@ -101,9 +103,9 @@ class ProfileViewModel @AssistedInject constructor(
     fun retry() = launchIfIdle(::loadJob) { load() }
 
     private suspend fun load() {
-        _loadError.value = false
+        _loadError.value = null
 
-        ignoreErrors(onError = { _loadError.value = true }) {
+        ignoreErrors(onError = { e -> _loadError.value = e.toAppError() }) {
             coroutineScope {
                 launch { userRepository.refresh(userId) }
                 launch { profileRepository.refresh(userId) }
