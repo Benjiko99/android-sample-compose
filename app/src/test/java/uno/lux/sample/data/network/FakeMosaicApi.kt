@@ -9,6 +9,7 @@ import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.ProfileStatsDto
+import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
@@ -110,6 +111,12 @@ fun feedItemDto(
     isBookmarked = isBookmarked,
     album = album,
     video = video,
+)
+
+fun minimalUserDto(id: String, nickname: String) = MinimalUserDto(
+    id = id,
+    handle = "@$id",
+    nickname = nickname,
 )
 
 fun userDto(id: String, nickname: String) = UserDto(

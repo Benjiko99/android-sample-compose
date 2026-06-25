@@ -56,7 +56,7 @@ class NetworkFeedRepositoryTest {
         val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
-                included = FeedIncluded(users = listOf(userDto("u1", "Ada"))),
+                included = FeedIncluded(users = listOf(minimalUserDto("u1", "Ada"))),
                 page = emptyPage,
             ),
         )

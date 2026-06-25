@@ -23,7 +23,7 @@ class NetworkUserRepositoryTest {
 
     @Test
     fun `ingest populates the user cache`() = runTest {
-        repository.ingest(listOf(userDto("u1", "Ada"), userDto("u2", "Grace")))
+        repository.ingest(listOf(minimalUserDto("u1", "Ada"), minimalUserDto("u2", "Grace")))
 
         val cache = repository.users.first()
         assertEquals("Ada", cache["u1"]?.nickname)
@@ -32,16 +32,16 @@ class NetworkUserRepositoryTest {
 
     @Test
     fun `ingest merges with existing entries, keeping both`() = runTest {
-        repository.ingest(listOf(userDto("u1", "Ada")))
-        repository.ingest(listOf(userDto("u2", "Grace")))
+        repository.ingest(listOf(minimalUserDto("u1", "Ada")))
+        repository.ingest(listOf(minimalUserDto("u2", "Grace")))
 
         assertEquals(2, repository.users.first().size)
     }
 
     @Test
     fun `ingest overwrites an existing entry when the same id arrives`() = runTest {
-        repository.ingest(listOf(userDto("u1", "Ada")))
-        repository.ingest(listOf(userDto("u1", "Ada Lovelace")))
+        repository.ingest(listOf(minimalUserDto("u1", "Ada")))
+        repository.ingest(listOf(minimalUserDto("u1", "Ada Lovelace")))
 
         assertEquals("Ada Lovelace", repository.users.first()["u1"]?.nickname)
     }
@@ -60,7 +60,7 @@ class NetworkUserRepositoryTest {
     fun `user flow emits the user after a subsequent ingest`() = runTest {
         assertNull(repository.user("u1").first())
 
-        repository.ingest(listOf(userDto("u1", "Ada")))
+        repository.ingest(listOf(minimalUserDto("u1", "Ada")))
 
         assertEquals("Ada", repository.user("u1").first()?.nickname)
     }

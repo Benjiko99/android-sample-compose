@@ -3,6 +3,7 @@ package uno.lux.sample.data.network
 import java.time.Instant
 import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.CommentDto
+import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
@@ -43,6 +44,12 @@ internal fun VideoDto.toDomain() = Video(
     videoUrl = videoUrl,
 )
 
+internal fun MinimalUserDto.toDomain() = User(
+    id = id,
+    nickname = nickname,
+    handle = handle,
+)
+
 internal fun UserDto.toDomain() = User(
     id = id,
     nickname = nickname,
@@ -51,8 +58,8 @@ internal fun UserDto.toDomain() = User(
     gender = gender,
     location = location,
     bio = bio,
-    followerCount = followerCount ?: 0,
-    followingCount = followingCount ?: 0,
+    followerCount = followerCount,
+    followingCount = followingCount,
 )
 
 internal fun CommentDto.toDomain() = Comment(
