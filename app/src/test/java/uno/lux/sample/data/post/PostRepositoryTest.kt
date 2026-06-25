@@ -45,8 +45,7 @@ class PostRepositoryTest {
 
     @Test
     fun `toggleLike applies the data source result to the entity map`() = runTest {
-        val likedResult = unliked.copy(isLiked = true, likeCount = 5)
-        val repo = repository(FakePostDataSource(likeResult = likedResult))
+        val repo = repository()
         repo.ingest(listOf(unliked))
 
         repo.toggleLike("unliked")
@@ -58,8 +57,7 @@ class PostRepositoryTest {
 
     @Test
     fun `toggleBookmark applies the data source result to the entity map`() = runTest {
-        val unbookmarkedResult = bookmarked.copy(isBookmarked = false)
-        val repo = repository(FakePostDataSource(bookmarkResult = unbookmarkedResult))
+        val repo = repository()
         repo.ingest(listOf(bookmarked))
 
         repo.toggleBookmark("bookmarked")
@@ -105,13 +103,3 @@ private fun post(
     isBookmarked = isBookmarked,
 )
 
-private class FakePostDataSource(
-    private val likeResult: Post? = null,
-    private val bookmarkResult: Post? = null,
-) : PostDataSource {
-    override suspend fun toggleLike(post: Post) =
-        likeResult ?: post.copy(isLiked = !post.isLiked)
-
-    override suspend fun toggleBookmark(post: Post) =
-        bookmarkResult ?: post.copy(isBookmarked = !post.isBookmarked)
-}

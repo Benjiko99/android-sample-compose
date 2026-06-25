@@ -38,7 +38,7 @@ class CommentRepositoryTest {
     @Test
     fun `loadComments returns the seeded list for a known post`() = runTest {
         val c = comment("c1")
-        val repository = CommentRepository(FakeCommentDataSource(author, initial = mapOf("p1" to listOf(c))))
+        val repository = CommentRepository(FakeCommentDataSource(author, comments = mapOf("p1" to listOf(c))))
 
         val comments = repository.loadComments("p1")
 
@@ -80,23 +80,3 @@ class CommentRepositoryTest {
     }
 }
 
-private class FakeCommentDataSource(
-    private val currentUser: User,
-    private val initial: Map<PostId, List<Comment>> = emptyMap(),
-) : CommentDataSource {
-
-    override suspend fun loadComments(postId: PostId) = initial[postId].orEmpty()
-
-    override suspend fun addComment(postId: PostId, text: String) = Comment(
-        id = "local-new",
-        author = currentUser,
-        createdAt = Instant.EPOCH,
-        text = text,
-        likeCount = 0,
-    )
-
-    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment {
-        val liked = !comment.isLiked
-        return comment.copy(isLiked = liked, likeCount = comment.likeCount + if (liked) 1 else -1)
-    }
-}

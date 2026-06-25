@@ -5,16 +5,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Test
 import uno.lux.sample.data.settings.InMemorySettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainViewModelTest {
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+class MainViewModelTest : ViewModelTest() {
 
     @Test
     fun `themeMode defaults to SYSTEM until something collects it`() {

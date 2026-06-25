@@ -7,26 +7,22 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
-import uno.lux.sample.MainDispatcherRule
+import uno.lux.sample.ViewModelTest
 import uno.lux.sample.data.post.Comment
-import uno.lux.sample.data.post.CommentDataSource
+import uno.lux.sample.data.post.FakeCommentDataSource
+import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
-import uno.lux.sample.data.user.UserDataSource
 import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PostDetailViewModelTest {
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+class PostDetailViewModelTest : ViewModelTest() {
 
     private val currentUser = User(id = "me", nickname = "Me", handle = "@me")
     private val otherUser = User(id = "u2", nickname = "Other", handle = "@other")
@@ -183,35 +179,3 @@ class PostDetailViewModelTest {
     }
 }
 
-private class FakePostDataSource : PostDataSource {
-    override suspend fun toggleLike(post: Post) =
-        post.copy(isLiked = !post.isLiked, likeCount = post.likeCount + if (!post.isLiked) 1 else -1)
-
-    override suspend fun toggleBookmark(post: Post) =
-        post.copy(isBookmarked = !post.isBookmarked)
-}
-
-private class FakeUserDataSource : UserDataSource {
-    override suspend fun fetch(userId: String): User? = null
-}
-
-private class FakeCommentDataSource(
-    private val currentUser: User,
-    private val initial: Map<PostId, List<Comment>> = emptyMap(),
-) : CommentDataSource {
-
-    override suspend fun loadComments(postId: PostId) = initial[postId].orEmpty()
-
-    override suspend fun addComment(postId: PostId, text: String) = Comment(
-        id = "local-new",
-        author = currentUser,
-        createdAt = Instant.EPOCH,
-        text = text,
-        likeCount = 0,
-    )
-
-    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment {
-        val liked = !comment.isLiked
-        return comment.copy(isLiked = liked, likeCount = comment.likeCount + if (liked) 1 else -1)
-    }
-}

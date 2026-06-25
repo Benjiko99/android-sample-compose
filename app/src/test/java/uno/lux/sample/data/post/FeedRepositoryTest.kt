@@ -6,14 +6,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
-import uno.lux.sample.data.user.UserDataSource
 import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 class FeedRepositoryTest {
 
-    private fun postRepo() = PostRepository(NoOpPostDataSource())
+    private fun postRepo() = PostRepository(FakePostDataSource())
     private fun userRepo() = UserRepository(FakeUserDataSource())
 
     private fun feedRepo(
@@ -168,18 +168,3 @@ private fun post(id: String) = Post(
 
 private fun user(id: String, nickname: String) = User(id = id, nickname = nickname, handle = "@$id")
 
-private class FakeFeedDataSource(
-    private val pages: List<FeedPage> = emptyList(),
-) : FeedDataSource {
-    private var callCount = 0
-    override suspend fun fetch(cursor: String?) = pages.getOrElse(callCount++) { FeedPage(emptyList(), emptyList(), null, false) }
-}
-
-private class NoOpPostDataSource : PostDataSource {
-    override suspend fun toggleLike(post: Post) = post
-    override suspend fun toggleBookmark(post: Post) = post
-}
-
-private class FakeUserDataSource : UserDataSource {
-    override suspend fun fetch(userId: String): User? = User(id = userId, nickname = userId, handle = "@$userId")
-}

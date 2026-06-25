@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.post.PostDataSource
+import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
 import java.time.Instant
@@ -189,32 +189,3 @@ private fun post(id: String, authorId: String) = Post(
     commentCount = 0,
 )
 
-private class FakePostDataSource : PostDataSource {
-    override suspend fun toggleLike(post: Post) = post
-    override suspend fun toggleBookmark(post: Post) = post
-}
-
-private class FakeProfileDataSource(
-    private val refreshData: Map<String, ProfileRefreshData> = emptyMap(),
-    private val morePosts: Map<String, PostsPage> = emptyMap(),
-    private val moreAlbums: Map<String, AlbumsPage> = emptyMap(),
-    private val moreVideos: Map<String, VideosPage> = emptyMap(),
-) : ProfileDataSource {
-
-    override suspend fun refresh(userId: String) =
-        refreshData[userId] ?: ProfileRefreshData(
-            postsCount = 0, albumsCount = 0, videosCount = 0,
-            posts = emptyList(), postCursor = null, postHasMore = false,
-            albums = emptyList(), albumCursor = null, albumHasMore = false,
-            videos = emptyList(), videoCursor = null, videoHasMore = false,
-        )
-
-    override suspend fun loadMorePosts(userId: String, cursor: String?) =
-        morePosts[userId] ?: PostsPage(emptyList(), null, false)
-
-    override suspend fun loadMoreAlbums(userId: String, cursor: String?) =
-        moreAlbums[userId] ?: AlbumsPage(emptyList(), null, false)
-
-    override suspend fun loadMoreVideos(userId: String, cursor: String?) =
-        moreVideos[userId] ?: VideosPage(emptyList(), null, false)
-}

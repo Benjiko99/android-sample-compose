@@ -10,7 +10,7 @@ import org.junit.Test
 class UserRepositoryTest {
 
     private fun repository(vararg fetchResults: User = emptyArray()) =
-        UserRepository(FakeUserDataSource(*fetchResults))
+        UserRepository(FakeUserDataSource(fetchResults.associateBy { it.id }))
 
     @Test
     fun `users starts empty`() = runTest {
@@ -72,7 +72,3 @@ class UserRepositoryTest {
 
 private fun user(id: String, nickname: String) = User(id = id, nickname = nickname, handle = "@$id")
 
-private class FakeUserDataSource(private vararg val results: User) : UserDataSource {
-    private val byId = results.associateBy { it.id }
-    override suspend fun fetch(userId: UserId): User? = byId[userId]
-}

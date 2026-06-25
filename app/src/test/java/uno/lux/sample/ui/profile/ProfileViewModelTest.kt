@@ -7,30 +7,26 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
-import uno.lux.sample.MainDispatcherRule
+import uno.lux.sample.ViewModelTest
 import uno.lux.sample.data.post.Album
+import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.AlbumsPage
+import uno.lux.sample.data.profile.FakeProfileDataSource
 import uno.lux.sample.data.profile.PostsPage
-import uno.lux.sample.data.profile.ProfileDataSource
 import uno.lux.sample.data.profile.ProfileRefreshData
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.profile.VideosPage
+import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
-import uno.lux.sample.data.user.UserDataSource
 import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ProfileViewModelTest {
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+class ProfileViewModelTest : ViewModelTest() {
 
     private val ada = User(id = "u1", nickname = "Ada", handle = "@ada")
     private val grace = User(id = "u2", nickname = "Grace", handle = "@grace")
@@ -51,7 +47,7 @@ class ProfileViewModelTest {
         )
         val profileRepo = ProfileRepository(
             FakeProfileDataSource(
-                mapOf(
+                refreshData = mapOf(
                     "u1" to ProfileRefreshData(
                         postsCount = 1, albumsCount = 1, videosCount = 1,
                         posts = listOf(post),
@@ -157,30 +153,3 @@ class ProfileViewModelTest {
     }
 }
 
-private class FakePostDataSource : PostDataSource {
-    override suspend fun toggleLike(post: Post) =
-        post.copy(isLiked = !post.isLiked, likeCount = post.likeCount + if (!post.isLiked) 1 else -1)
-
-    override suspend fun toggleBookmark(post: Post) =
-        post.copy(isBookmarked = !post.isBookmarked)
-}
-
-private class FakeUserDataSource(private val users: Map<String, User> = emptyMap()) : UserDataSource {
-    override suspend fun fetch(userId: String): User? = users[userId]
-}
-
-private class FakeProfileDataSource(
-    private val data: Map<String, ProfileRefreshData> = emptyMap(),
-) : ProfileDataSource {
-    private val empty = ProfileRefreshData(
-        postsCount = 0, albumsCount = 0, videosCount = 0,
-        posts = emptyList(), postCursor = null, postHasMore = false,
-        albums = emptyList(), albumCursor = null, albumHasMore = false,
-        videos = emptyList(), videoCursor = null, videoHasMore = false,
-    )
-
-    override suspend fun refresh(userId: String) = data[userId] ?: empty
-    override suspend fun loadMorePosts(userId: String, cursor: String?) = PostsPage(emptyList(), null, false)
-    override suspend fun loadMoreAlbums(userId: String, cursor: String?) = AlbumsPage(emptyList(), null, false)
-    override suspend fun loadMoreVideos(userId: String, cursor: String?) = VideosPage(emptyList(), null, false)
-}

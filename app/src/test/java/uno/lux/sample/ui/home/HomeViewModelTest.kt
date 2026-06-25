@@ -8,25 +8,22 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
-import uno.lux.sample.MainDispatcherRule
+import uno.lux.sample.ViewModelTest
+import uno.lux.sample.data.post.FakeFeedDataSource
 import uno.lux.sample.data.post.FeedDataSource
 import uno.lux.sample.data.post.FeedPage
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
-import uno.lux.sample.data.user.UserDataSource
 import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HomeViewModelTest {
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+class HomeViewModelTest : ViewModelTest() {
 
     private val author = User(id = "u1", nickname = "Ada", handle = "@ada")
     private val post = Post(
@@ -40,7 +37,7 @@ class HomeViewModelTest {
     )
 
     private fun viewModel(
-        feedDataSource: FeedDataSource = FakeFeedDataSource(FeedPage(listOf(post), listOf(author), null, false)),
+        feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
     ): HomeViewModel {
         val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(FakeUserDataSource())
@@ -107,7 +104,7 @@ class HomeViewModelTest {
     @Test
     fun `endReached is false when the feed reports hasMore`() = runTest {
         val viewModel = viewModel(
-            feedDataSource = FakeFeedDataSource(FeedPage(emptyList(), emptyList(), "cursor", true)),
+            feedDataSource = FakeFeedDataSource(listOf(FeedPage(emptyList(), emptyList(), "cursor", true))),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -116,10 +113,6 @@ class HomeViewModelTest {
         val feed = viewModel.uiState.value as HomeUiState.Feed
         assertFalse(feed.endReached)
     }
-}
-
-private class FakeFeedDataSource(private val page: FeedPage) : FeedDataSource {
-    override suspend fun fetch(cursor: String?) = page
 }
 
 private class SuspendingFeedDataSource : FeedDataSource {
@@ -131,14 +124,3 @@ private class SuspendingFeedDataSource : FeedDataSource {
     fun complete() = gate.complete(Unit)
 }
 
-private class FakePostDataSource : PostDataSource {
-    override suspend fun toggleLike(post: Post) =
-        post.copy(isLiked = !post.isLiked, likeCount = post.likeCount + if (!post.isLiked) 1 else -1)
-
-    override suspend fun toggleBookmark(post: Post) =
-        post.copy(isBookmarked = !post.isBookmarked)
-}
-
-private class FakeUserDataSource : UserDataSource {
-    override suspend fun fetch(userId: String): User? = null
-}
