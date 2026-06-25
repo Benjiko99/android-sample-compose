@@ -51,8 +51,8 @@ internal fun UserDto.toDomain() = User(
     gender = gender,
     location = location,
     bio = bio,
-    followerCount = followerCount,
-    followingCount = followingCount,
+    followerCount = followerCount ?: 0,
+    followingCount = followingCount ?: 0,
 )
 
 internal fun CommentDto.toDomain() = Comment(
