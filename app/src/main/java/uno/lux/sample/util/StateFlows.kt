@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import kotlin.reflect.KMutableProperty0
 
 /** Grace period the upstream stays active after the last subscriber leaves (e.g. a config change). */
@@ -66,4 +67,10 @@ suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () ->
  * a reactive combine chain.
  */
 suspend fun ignoreErrors(errorSink: MutableStateFlow<AppError?>, block: suspend () -> Unit) =
-    ignoreErrors(onError = { e -> errorSink.value = e.toAppError() }, block = block)
+    ignoreErrors(
+        onError = { e ->
+            Timber.w(e)
+            errorSink.value = e.toAppError()
+        },
+        block = block,
+    )
