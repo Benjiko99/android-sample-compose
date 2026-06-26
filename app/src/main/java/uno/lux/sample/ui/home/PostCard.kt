@@ -98,7 +98,7 @@ internal fun PostCard(
             onToggleBookmark = onToggleBookmark,
             onOpenProfile = onOpenProfile,
         )
-        PostBody(title = post.title, body = post.body)
+        PostBody(title = post.title, body = post.body, onOpenPost = onOpenPost)
         if (post.album != null) {
             Spacer(Modifier.height(12.dp))
             AlbumPostGallery(
@@ -367,11 +367,13 @@ private fun SheetRow(
 private fun PostBody(
     title: String,
     body: String,
+    onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .debouncedClickable(onClick = onOpenPost)
             .padding(horizontal = 16.dp),
     ) {
         Text(
