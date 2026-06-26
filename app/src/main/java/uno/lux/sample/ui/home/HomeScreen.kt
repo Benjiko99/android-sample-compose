@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -257,6 +259,7 @@ private fun EmptyState(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -279,7 +282,7 @@ private fun CaughtUpFooter(modifier: Modifier = Modifier) {
         textAlign = TextAlign.Center,
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 14.dp, bottom = 8.dp),
+            .padding(vertical = 16.dp),
     )
 }
 
