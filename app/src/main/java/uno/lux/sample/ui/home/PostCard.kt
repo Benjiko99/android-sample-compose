@@ -80,7 +80,7 @@ internal fun PostCard(
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

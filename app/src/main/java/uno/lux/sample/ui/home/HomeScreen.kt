@@ -76,7 +76,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -110,7 +110,7 @@ internal fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -200,7 +200,7 @@ private fun FeedList(
     actions: HomeActions,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -247,7 +247,7 @@ private fun FeedList(
 
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }

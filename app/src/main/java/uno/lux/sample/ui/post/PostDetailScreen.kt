@@ -43,7 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -113,7 +113,7 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostDetailViewModel = hiltViewModel<PostDetailViewModel, PostDetailViewModel.Factory>(
         creationCallback = { factory -> factory.create(postId) },
@@ -150,7 +150,7 @@ internal fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
@@ -427,7 +427,7 @@ private fun PostDetailContent(
     commentsError: AppError?,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
@@ -487,7 +487,7 @@ private fun CommentsError(error: AppError, onRetry: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            TextButton(onClick = onRetry) {
+            Button(onClick = onRetry) {
                 Text(stringResource(R.string.error_retry))
             }
         }
@@ -502,7 +502,7 @@ private fun DetailPostCard(
     author: User,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onScrollToComments: () -> Unit,

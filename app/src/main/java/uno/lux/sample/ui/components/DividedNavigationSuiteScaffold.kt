@@ -76,8 +76,8 @@ private fun Modifier.topDivider(color: Color): Modifier = drawWithContent {
 
     drawLine(
         color = color,
-        start = Offset(0f, thickness / 2f),
-        end = Offset(size.width, thickness / 2f),
+        start = Offset(x = 0f, y = thickness / 2f),
+        end = Offset(x = size.width, y = thickness / 2f),
         strokeWidth = thickness,
     )
 }

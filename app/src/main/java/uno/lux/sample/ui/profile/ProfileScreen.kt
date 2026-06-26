@@ -124,7 +124,7 @@ fun ProfileScreen(
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenPost: (postId: PostId) -> Unit = {},
-    onOpenAlbum: (Album, Int) -> Unit = { _, _ -> },
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
@@ -165,7 +165,7 @@ internal fun ProfileScreen(
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenPost: (postId: PostId) -> Unit = {},
-    onOpenAlbum: (Album, Int) -> Unit = { _, _ -> },
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
@@ -220,7 +220,7 @@ private fun ProfileContent(
     actions: ProfileActions,
     onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
     onBack: (() -> Unit)?,
 ) {
@@ -524,7 +524,7 @@ private fun LazyListScope.postsTab(
     screenData: ProfileScreenData,
     actions: ProfileActions,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
 ) {
     val posts = screenData.posts

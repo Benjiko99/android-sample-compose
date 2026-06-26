@@ -182,7 +182,7 @@ private fun HomeNavShell(
     onOpenSettings: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, Int) -> Unit,
+    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
@@ -218,7 +218,7 @@ private fun HomeNavShell(
             targetState = currentDestination,
             transitionSpec = {
                 (fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
-                    scaleIn(tween(durationMillis = 210, delayMillis = 90), initialScale = 0.94f)) togetherWith
+                    scaleIn(animationSpec = tween(durationMillis = 210, delayMillis = 90), initialScale = 0.94f)) togetherWith
                     fadeOut(tween(durationMillis = 90))
             },
             modifier = Modifier.fillMaxSize(),

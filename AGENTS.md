@@ -101,6 +101,28 @@ private fun OverflowMenu(...) {
 }
 ```
 
+**Break function parameters onto separate lines when there are three or more.** Two parameters fit comfortably inline; three or more get one per line with a trailing comma on the last.
+
+```kotlin
+// 2 params — inline is fine
+fun FeedTopBar(elevated: Boolean, onOpenSettings: () -> Unit)
+
+// 3+ params — one per line
+fun HomeScreen(
+    uiState: HomeUiState,
+    isRefreshing: Boolean,
+    actions: HomeActions,
+    onOpenSettings: () -> Unit,
+)
+```
+
+**Use named arguments at call sites when the value doesn't self-document its role.** A single-argument call is almost always clear; a multi-argument call where some values are bare literals, same-typed, or opaque without context should use names. Two specific cases that always warrant names:
+
+- *Lambda type parameters* — when a function type has a non-obvious parameter, name it at the type declaration so every call site is self-explanatory without back-tracking to the definition. E.g. `(Album, initialIndex: Int) -> Unit`, not `(Album, Int) -> Unit`.
+- *Coordinate and geometry constructors* — `Offset`, `Size`, and similar value types take `x`/`y` or `width`/`height` that are easy to transpose; always name them: `Offset(x = 0f, y = thickness / 2f)`.
+
+Exception: enum constructor entries (`HOME(R.string.nav_home, R.drawable.ic_home)`) — Kotlin does not allow named arguments for enum constructors, so positional is the only option.
+
 ## Localization
 
 All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Exception: strings that contain no actual words — only numbers, punctuation, or symbols (e.g. `"${page} / $total"`) — are fine as plain Kotlin interpolation; there is nothing for a translator to change. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum; `PlaceholderScreen` takes a `@StringRes` title.
