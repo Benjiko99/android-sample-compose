@@ -5,6 +5,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -26,6 +27,7 @@ import java.time.Instant
 class HomeViewModelTest : ViewModelTest() {
 
     private val author = User(id = "u1", nickname = "Ada", handle = "@ada")
+    private val author2 = User(id = "u2", nickname = "Bob", handle = "@bob")
     private val post = Post(
         id = "p1",
         authorId = "u1",
@@ -34,6 +36,15 @@ class HomeViewModelTest : ViewModelTest() {
         createdAt = Instant.EPOCH,
         likeCount = 10,
         commentCount = 2,
+    )
+    private val post2 = Post(
+        id = "p2",
+        authorId = "u2",
+        title = "Title 2",
+        body = "Body 2",
+        createdAt = Instant.EPOCH,
+        likeCount = 5,
+        commentCount = 0,
     )
 
     private fun viewModel(
@@ -140,6 +151,24 @@ class HomeViewModelTest : ViewModelTest() {
         assertTrue(viewModel.isRefreshing.value)
         dataSource.complete()
         assertFalse(viewModel.isRefreshing.value)
+    }
+
+    @Test
+    fun `PostCardData instance is preserved for unchanged posts on a like toggle`() = runTest {
+        val viewModel = viewModel(
+            feedDataSource = FakeFeedDataSource(
+                listOf(FeedPage(listOf(post, post2), listOf(author, author2), null, false)),
+            ),
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        val cardBefore = (viewModel.uiState.value as HomeUiState.Feed).posts[1]
+
+        viewModel.onToggleLike(post.id)
+
+        val cardAfter = (viewModel.uiState.value as HomeUiState.Feed).posts[1]
+        assertSame(cardBefore, cardAfter)
     }
 
     @Test

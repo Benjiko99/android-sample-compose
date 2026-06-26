@@ -1,6 +1,6 @@
 package uno.lux.sample.ui.home
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,11 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -176,10 +178,12 @@ private fun FeedTopBar(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val shadowElevation by animateDpAsState(
-        targetValue = if (elevated) TopBarElevation else 0.dp,
-        label = "topBarElevation",
-    )
+    val elevationPx = with(LocalDensity.current) { TopBarElevation.toPx() }
+    val shadowElevation = remember { Animatable(0f) }
+
+    LaunchedEffect(elevated, elevationPx) {
+        shadowElevation.animateTo(if (elevated) elevationPx else 0f)
+    }
 
     TopAppBar(
         title = { MosaicWordmark() },
@@ -187,7 +191,7 @@ private fun FeedTopBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        modifier = modifier.shadow(shadowElevation),
+        modifier = modifier.graphicsLayer { this.shadowElevation = shadowElevation.value },
     )
 }
 
@@ -302,11 +306,13 @@ private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardDa
         return maxOf(0, visibleBottom - visibleTop).toFloat() / size
     }
 
-    return layoutInfo.visibleItemsInfo
+    val (winner, fraction) = layoutInfo.visibleItemsInfo
         .filter { it.index < posts.size && posts[it.index].post.video != null }
-        .maxByOrNull { visibleFraction(it.offset, it.size) }
-        ?.takeIf { visibleFraction(it.offset, it.size) >= 0.5f }
-        ?.let { posts[it.index].post.video }
+        .map { it to visibleFraction(it.offset, it.size) }
+        .maxByOrNull { (_, f) -> f }
+        ?: return null
+
+    return posts[winner.index].post.video.takeIf { fraction >= 0.5f }
 }
 
 @Preview(showBackground = true)

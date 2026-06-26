@@ -41,6 +41,10 @@ class HomeViewModel @Inject constructor(
 
     private val _loadError = MutableStateFlow<AppError?>(null)
 
+    // Preserves PostCardData instances across emissions so Compose strong-skipping can use
+    // reference equality to skip PostCard recomposition for posts that didn't change.
+    private var cardCache = emptyMap<PostId, PostCardData>()
+
     val uiState: StateFlow<HomeUiState> = combine(
         feedRepository.feedState,
         postRepository.entities,
@@ -54,8 +58,11 @@ class HomeViewModel @Inject constructor(
                 val cards = feedState.postIds.mapNotNull { id ->
                     val post = entities[id] ?: return@mapNotNull null
                     val author = users[post.authorId] ?: return@mapNotNull null
-                    PostCardData(post = post, author = author)
+                    val cached = cardCache[id]
+                    if (cached != null && cached.post === post && cached.author === author) cached
+                    else PostCardData(post = post, author = author)
                 }
+                cardCache = cards.associateBy { it.post.id }
                 HomeUiState.Feed(posts = cards, endReached = !feedState.hasMore)
             }
         }

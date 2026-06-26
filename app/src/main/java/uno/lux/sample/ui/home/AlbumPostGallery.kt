@@ -43,49 +43,47 @@ internal fun AlbumPostGallery(
     onOpenImage: (imageIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth()) {
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            itemsIndexed(album.images) { index, url ->
-                Box(
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        itemsIndexed(album.images) { index, url ->
+            Box(
+                modifier = Modifier
+                    .width(240.dp)
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MosaicGradients.mediaBrush("${album.id}-$index"))
+                    .debouncedClickable { onOpenImage(index) },
+            ) {
+                AsyncImage(
+                    model = url,
+                    contentDescription = album.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                Row(
                     modifier = Modifier
-                        .width(240.dp)
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MosaicGradients.mediaBrush("${album.id}-$index"))
-                        .debouncedClickable { onOpenImage(index) },
+                        .align(Alignment.TopEnd)
+                        .padding(end = 4.dp, top = 4.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.42f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    AsyncImage(
-                        model = url,
-                        contentDescription = album.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
+                    Icon(
+                        painter = painterResource(R.drawable.ic_image),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(13.dp),
                     )
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(end = 4.dp, top = 4.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black.copy(alpha = 0.42f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_image),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(13.dp),
-                        )
-                        Text(
-                            text = "${index + 1}/${album.itemCount}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
-                        )
-                    }
+                    Text(
+                        text = "${index + 1}/${album.itemCount}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                    )
                 }
             }
         }
