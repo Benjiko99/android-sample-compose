@@ -13,10 +13,10 @@ import uno.lux.sample.data.settings.ThemeMode
 class MainViewModelTest : ViewModelTest() {
 
     @Test
-    fun `themeMode defaults to SYSTEM until something collects it`() {
+    fun `themeMode is null until the flow is collected`() {
         val viewModel = MainViewModel(InMemorySettingsRepository(ThemeMode.DARK), currentUserId = "u1")
 
-        assertEquals(ThemeMode.SYSTEM, viewModel.themeMode.value)
+        assertEquals(null, viewModel.themeMode.value)
     }
 
     @Test

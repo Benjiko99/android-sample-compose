@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Sample" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Mosaic" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Pre-launch theme: satisfies installSplashScreen() and swaps back to Theme.Mosaic. -->
+    <style name="Theme.Mosaic.Starting" parent="Theme.SplashScreen">
+        <item name="postSplashScreenTheme">@style/Theme.Mosaic</item>
+    </style>
 </resources>

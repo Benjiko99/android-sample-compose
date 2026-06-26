@@ -22,6 +22,6 @@ class MainViewModel @Inject constructor(
     @CurrentUserId val currentUserId: String,
 ) : ViewModel() {
 
-    val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
-        .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
+    val themeMode: StateFlow<ThemeMode?> = settingsRepository.themeMode
+        .stateInWhileSubscribed(viewModelScope, initialValue = null)
 }

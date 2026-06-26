@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import uno.lux.sample.ui.SampleApp
@@ -24,10 +25,13 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+        splashScreen.setKeepOnScreenCondition { viewModel.themeMode.value == null }
         setContent {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-            val darkTheme = themeMode.isDark(isSystemInDarkTheme())
+            val resolvedMode = themeMode ?: return@setContent
+            val darkTheme = resolvedMode.isDark(isSystemInDarkTheme())
 
             // Re-apply edge-to-edge styling whenever the resolved theme flips, so the system
             // bar icons keep the right contrast against the app background.
