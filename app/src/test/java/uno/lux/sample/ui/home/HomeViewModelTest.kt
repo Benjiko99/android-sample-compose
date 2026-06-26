@@ -90,6 +90,47 @@ class HomeViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `uiState stays Loading while the initial load is active`() = runTest {
+        val dataSource = SuspendingFeedDataSource()
+        val viewModel = viewModel(feedDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+
+        dataSource.complete()
+
+        assertTrue(viewModel.uiState.value is HomeUiState.Feed)
+    }
+
+    @Test
+    fun `uiState shows Error when the initial load fails`() = runTest {
+        val viewModel = viewModel(feedDataSource = FailingFeedDataSource())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertTrue(viewModel.uiState.value is HomeUiState.Error)
+    }
+
+    @Test
+    fun `retry shows Loading while reloading after the feed was already loaded`() = runTest {
+        val dataSource = SucceedOnceThenSuspendFeedDataSource(
+            firstPage = FeedPage(listOf(post), listOf(author), null, false),
+        )
+        val viewModel = viewModel(feedDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        assertTrue(viewModel.uiState.value is HomeUiState.Feed)
+
+        viewModel.retry()
+
+        assertEquals(HomeUiState.Loading, viewModel.uiState.value)
+    }
+
+    @Test
     fun `refresh raises isRefreshing until the feed data source finishes`() = runTest {
         val dataSource = SuspendingFeedDataSource()
         val viewModel = viewModel(feedDataSource = dataSource)
@@ -113,6 +154,26 @@ class HomeViewModelTest : ViewModelTest() {
         val feed = viewModel.uiState.value as HomeUiState.Feed
         assertFalse(feed.endReached)
     }
+}
+
+private class SucceedOnceThenSuspendFeedDataSource(
+    private val firstPage: FeedPage,
+) : FeedDataSource {
+    private val gate = CompletableDeferred<Unit>()
+    private var firstFetch = true
+
+    override suspend fun fetch(cursor: String?): FeedPage {
+        if (firstFetch) {
+            firstFetch = false
+            return firstPage
+        }
+        gate.await()
+        return FeedPage(emptyList(), emptyList(), null, false)
+    }
+}
+
+private class FailingFeedDataSource : FeedDataSource {
+    override suspend fun fetch(cursor: String?): FeedPage = throw RuntimeException("network error")
 }
 
 private class SuspendingFeedDataSource : FeedDataSource {

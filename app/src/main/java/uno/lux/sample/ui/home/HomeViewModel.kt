@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.post.FeedState
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserRepository
@@ -22,9 +23,14 @@ import javax.inject.Inject
 
 /**
  * Holds feed state and translates user intent (likes, bookmarks) into repository mutations.
- * Combines [FeedRepository] (ordered post IDs + pagination), [PostRepository] (entity map), and
+ * Combines [FeedRepository] (feed state + pagination), [PostRepository] (entity map), and
  * [UserRepository] (author lookup) to produce [PostCardData] items ready for display. All three
  * are constructor dependencies so the ViewModel can be unit tested against fakes.
+ *
+ * [FeedState.NotLoaded] is the initial state of [FeedRepository.feedState]; the combine maps it
+ * to [HomeUiState.Loading] until [FeedRepository.refresh] completes and emits [FeedState.Loaded].
+ * Because entities and users are ingested before that emission, the Loading → Feed transition is
+ * atomic: there is no intermediate state where the flag flips but the data has not yet arrived.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -36,19 +42,23 @@ class HomeViewModel @Inject constructor(
     private val _loadError = MutableStateFlow<AppError?>(null)
 
     val uiState: StateFlow<HomeUiState> = combine(
-        feedRepository.postIds,
-        feedRepository.hasMore,
+        feedRepository.feedState,
         postRepository.entities,
         userRepository.users,
         _loadError,
-    ) { postIds, hasMore, entities, users, loadError ->
-        val cards = postIds.mapNotNull { id ->
-            val post = entities[id] ?: return@mapNotNull null
-            val author = users[post.authorId] ?: return@mapNotNull null
-            PostCardData(post = post, author = author)
+    ) { feedState, entities, users, loadError ->
+        if (loadError != null) return@combine HomeUiState.Error(loadError)
+        when (feedState) {
+            FeedState.NotLoaded -> HomeUiState.Loading
+            is FeedState.Loaded -> {
+                val cards = feedState.postIds.mapNotNull { id ->
+                    val post = entities[id] ?: return@mapNotNull null
+                    val author = users[post.authorId] ?: return@mapNotNull null
+                    PostCardData(post = post, author = author)
+                }
+                HomeUiState.Feed(posts = cards, endReached = !feedState.hasMore)
+            }
         }
-        if (loadError != null && cards.isEmpty()) HomeUiState.Error(loadError)
-        else HomeUiState.Feed(posts = cards, endReached = !hasMore)
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -63,7 +73,11 @@ class HomeViewModel @Inject constructor(
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    override fun retry() = launchIfIdle(::loadJob) { load() }
+    override fun retry() {
+        if (loadJob?.isActive == true) return
+        feedRepository.reset()
+        loadJob = viewModelScope.launch { load() }
+    }
 
     override fun loadMore() = launchIfIdle(::loadMoreJob) {
         ignoreErrors { feedRepository.loadMore() }

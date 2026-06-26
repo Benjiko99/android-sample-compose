@@ -23,17 +23,22 @@ class FeedRepositoryTest {
     ) = FeedRepository(dataSource, postRepo, userRepo)
 
     @Test
-    fun `postIds starts empty before any refresh`() = runTest {
-        assertTrue(feedRepo().postIds.first().isEmpty())
+    fun `feedState is NotLoaded before any refresh`() = runTest {
+        assertEquals(FeedState.NotLoaded, feedRepo().feedState.first())
     }
 
     @Test
-    fun `hasMore is false before any refresh`() = runTest {
-        assertFalse(feedRepo().hasMore.first())
+    fun `reset returns feedState to NotLoaded after a successful refresh`() = runTest {
+        val repo = feedRepo(FakeFeedDataSource(listOf(FeedPage(listOf(post("p1")), emptyList(), null, false))))
+        repo.refresh()
+
+        repo.reset()
+
+        assertEquals(FeedState.NotLoaded, repo.feedState.first())
     }
 
     @Test
-    fun `refresh populates postIds in feed order`() = runTest {
+    fun `refresh transitions feedState to Loaded with feed-ordered post IDs`() = runTest {
         val dataSource = FakeFeedDataSource(
             pages = listOf(FeedPage(listOf(post("p1"), post("p2")), emptyList(), null, false)),
         )
@@ -41,7 +46,8 @@ class FeedRepositoryTest {
 
         repo.refresh()
 
-        assertEquals(listOf("p1", "p2"), repo.postIds.first())
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertEquals(listOf("p1", "p2"), loaded.postIds)
     }
 
     @Test
@@ -92,7 +98,8 @@ class FeedRepositoryTest {
 
         repo.refresh()
 
-        assertTrue(repo.hasMore.first())
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertTrue(loaded.hasMore)
     }
 
     @Test
@@ -108,7 +115,8 @@ class FeedRepositoryTest {
 
         repo.loadMore()
 
-        assertEquals(listOf("p1", "p2"), repo.postIds.first())
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertEquals(listOf("p1", "p2"), loaded.postIds)
     }
 
     @Test
@@ -124,7 +132,8 @@ class FeedRepositoryTest {
 
         repo.loadMore()
 
-        assertFalse(repo.hasMore.first())
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertFalse(loaded.hasMore)
     }
 
     @Test
@@ -137,7 +146,8 @@ class FeedRepositoryTest {
 
         repo.loadMore()
 
-        assertEquals(listOf("p1"), repo.postIds.first())
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertEquals(listOf("p1"), loaded.postIds)
     }
 
     @Test
@@ -151,8 +161,9 @@ class FeedRepositoryTest {
 
         repo.refresh()
 
-        assertEquals(listOf("p1"), repo.postIds.first())
-        assertTrue(repo.hasMore.first())
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertEquals(listOf("p1"), loaded.postIds)
+        assertTrue(loaded.hasMore)
     }
 }
 
@@ -167,4 +178,3 @@ private fun post(id: String) = Post(
 )
 
 private fun user(id: String, nickname: String) = User(id = id, nickname = nickname, handle = "@$id")
-
