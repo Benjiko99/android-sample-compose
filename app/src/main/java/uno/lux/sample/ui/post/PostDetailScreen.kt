@@ -301,6 +301,7 @@ private fun PostDetailMoreSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val clipLabel = stringResource(R.string.post_link_clip_label)
     val dismiss: () -> Unit = {
         scope.launch { sheetState.hide() }
             .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
@@ -361,10 +362,7 @@ private fun PostDetailMoreSheet(
             onClick = {
                 val clipboard = context.getSystemService<ClipboardManager>()!!
                 clipboard.setPrimaryClip(
-                    ClipData.newPlainText(
-                        context.getString(R.string.post_link_clip_label),
-                        postLink(post.id),
-                    ),
+                    ClipData.newPlainText(clipLabel, postLink(post.id)),
                 )
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                     Toast.makeText(context, R.string.post_link_copied, Toast.LENGTH_SHORT).show()
