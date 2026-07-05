@@ -125,7 +125,6 @@ fun SampleApp(currentUserId: String) {
                 entry<Screen.Profile> { profile ->
                     ProfileScreen(
                         userId = profile.userId,
-                        onOpenSettings = openSettings,
                         onOpenVideo = openVideo,
                         onOpenPost = openPost,
                         onOpenAlbum = openAlbum,
@@ -237,7 +236,6 @@ private fun HomeNavShell(
                 // onBack stays null); tapping another author still pushes Screen.Profile.
                 AppDestinations.PROFILE -> ProfileScreen(
                     userId = currentUserId,
-                    onOpenSettings = onOpenSettings,
                     onOpenVideo = onOpenVideo,
                     onOpenPost = onOpenPost,
                     onOpenAlbum = onOpenAlbum,

@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -58,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -121,11 +121,10 @@ interface ProfileActions {
 @Composable
 fun ProfileScreen(
     userId: UserId,
-    onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
+    modifier: Modifier = Modifier,
     onOpenPost: (postId: PostId) -> Unit = {},
     onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
-    modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
     // ProfileViewModel, created for that entry's userId and cleared when the page pops.
@@ -142,12 +141,11 @@ fun ProfileScreen(
         onRefresh = viewModel::refresh,
         onRetry = viewModel::retry,
         actions = viewModel,
-        onOpenSettings = onOpenSettings,
         onOpenVideo = onOpenVideo,
+        modifier = modifier,
         onOpenPost = onOpenPost,
         onOpenAlbum = onOpenAlbum,
         onBack = onBack,
-        modifier = modifier,
     )
 }
 
@@ -162,11 +160,10 @@ internal fun ProfileScreen(
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     actions: ProfileActions,
-    onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
+    modifier: Modifier = Modifier,
     onOpenPost: (postId: PostId) -> Unit = {},
     onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
-    modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
     Box(
@@ -200,7 +197,6 @@ internal fun ProfileScreen(
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
                 actions = actions,
-                onOpenSettings = onOpenSettings,
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
                 onOpenPost = onOpenPost,
@@ -218,7 +214,6 @@ private fun ProfileContent(
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     actions: ProfileActions,
-    onOpenSettings: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
@@ -287,7 +282,11 @@ private fun ProfileContent(
                     )
 
                     ProfileTab.ALBUMS -> albumsTab(data.profile.albums, data.albumsEndReached)
-                    ProfileTab.VIDEOS -> videosTab(data.profile.videos, data.videosEndReached, onOpenVideo)
+                    ProfileTab.VIDEOS -> videosTab(
+                        data.profile.videos,
+                        data.videosEndReached,
+                        onOpenVideo
+                    )
                 }
                 item(key = "bottom-inset") {
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -296,8 +295,8 @@ private fun ProfileContent(
         }
         ProfileTopBar(
             scrollBehavior = scrollBehavior,
+            userName = data.user.nickname,
             onBack = onBack,
-            onOpenSettings = onOpenSettings,
         )
     }
 }
@@ -781,8 +780,8 @@ private fun PlainBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun ProfileTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
+    userName: String,
     onBack: (() -> Unit)?,
-    onOpenSettings: () -> Unit,
 ) {
     val scrolled by remember {
         derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f }
@@ -790,7 +789,16 @@ private fun ProfileTopBar(
     val progress by animateFloatAsState(if (scrolled) 1f else 0f, label = "appBarProgress")
 
     TopAppBar(
-        title = {},
+        modifier = Modifier.shadow(elevation = 4.dp * progress),
+        title = {
+            Text(
+                text = userName,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = progress),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
         navigationIcon = {
             if (onBack != null) {
                 ScrimIconButton(
@@ -801,14 +809,7 @@ private fun ProfileTopBar(
                 )
             }
         },
-        actions = {
-            ScrimIconButton(
-                iconRes = R.drawable.ic_settings,
-                contentDescription = stringResource(R.string.nav_settings),
-                progress = progress,
-                onClick = onOpenSettings,
-            )
-        },
+        actions = {},
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
             scrolledContainerColor = MaterialTheme.colorScheme.surface,
@@ -905,10 +906,8 @@ private fun ProfileScreenPreview() {
             onRefresh = {},
             onRetry = {},
             actions = createActionsProxy(),
-            onOpenSettings = {},
             onOpenVideo = {},
-            onBack = {},
-        )
+        ) {}
     }
 }
 
