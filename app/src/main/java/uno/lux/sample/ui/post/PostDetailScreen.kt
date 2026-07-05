@@ -794,11 +794,6 @@ private fun CommentRow(
                     style = MaterialTheme.typography.labelMedium,
                     color = LocalMosaicColors.current.textTertiary,
                 )
-                Text(
-                    text = stringResource(R.string.comment_action_reply),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = LocalMosaicColors.current.textTertiary,
-                )
             }
         }
 

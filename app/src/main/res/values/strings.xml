@@ -65,7 +65,6 @@
     <!-- Comment actions -->
     <string name="comment_action_like">Like comment</string>
     <string name="comment_action_unlike">Unlike comment</string>
-    <string name="comment_action_reply">Reply</string>
     <!-- %1$d = like count on a comment -->
     <string name="comment_like_count">%1$d likes</string>
 
