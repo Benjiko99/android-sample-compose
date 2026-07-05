@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,8 +31,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -53,7 +56,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -182,7 +184,11 @@ internal fun PostDetailScreen(
                 },
                 actions = {
                     if (post != null && author != null) {
-                        PostDetailMoreButton(post = post, author = author, onToggleBookmark = onToggleBookmark)
+                        PostDetailMoreButton(
+                            post = post,
+                            author = author,
+                            onToggleBookmark = onToggleBookmark
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -295,7 +301,8 @@ private fun PostDetailMoreSheet(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val dismiss: () -> Unit = {
-        scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
+        scope.launch { sheetState.hide() }
+            .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -396,8 +403,10 @@ private fun MoreSheetRow(
     modifier: Modifier = Modifier,
     danger: Boolean = false,
 ) {
-    val contentColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    val iconColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor =
+        if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    val iconColor =
+        if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
         modifier = modifier
@@ -453,7 +462,12 @@ private fun PostDetailContent(
         }
 
         if (commentsError != null) {
-            item(key = "comments_error") { CommentsError(error = commentsError, onRetry = onRetryComments) }
+            item(key = "comments_error") {
+                CommentsError(
+                    error = commentsError,
+                    onRetry = onRetryComments
+                )
+            }
         } else {
             item(key = "comments_header") { CommentsHeader(count = comments.size) }
             items(comments, key = { it.id }) { comment ->
@@ -769,7 +783,12 @@ private fun CommentRow(
             // Inline "name  body" — author bold, text regular — as one reflowing block.
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)) {
+                    withStyle(
+                        SpanStyle(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
                         append(comment.author.nickname)
                     }
                     append("  ")
@@ -824,12 +843,12 @@ private fun CommentComposer(
     onSend: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var text by rememberSaveable { mutableStateOf("") }
+    val textState = rememberTextFieldState()
     val send = {
-        val trimmed = text.trim()
+        val trimmed = textState.text.toString().trim()
         if (trimmed.isNotEmpty()) {
             onSend(trimmed)
-            text = ""
+            textState.clearText()
         }
     }
 
@@ -844,10 +863,9 @@ private fun CommentComposer(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Avatar(name = userNickname, size = 32.dp)
+            Avatar(name = userNickname, size = 36.dp)
             OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
+                state = textState,
                 placeholder = {
                     Text(
                         text = stringResource(R.string.post_detail_comment_hint),
@@ -855,17 +873,23 @@ private fun CommentComposer(
                     )
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { send() }),
-                shape = RoundedCornerShape(100.dp),
-                singleLine = true,
+                onKeyboardAction = { send() },
+                shape = RoundedCornerShape(12.dp),
+                lineLimits = TextFieldLineLimits.SingleLine,
                 textStyle = MaterialTheme.typography.bodyMedium,
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.background,
                     focusedContainerColor = MaterialTheme.colorScheme.background,
                 ),
-                modifier = Modifier.weight(1f),
+                contentPadding = OutlinedTextFieldDefaults.contentPadding(
+                    top = 8.dp,
+                    bottom = 8.dp,
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 42.dp),
             )
-            val hasText = text.isNotBlank()
+            val hasText = textState.text.isNotBlank()
             val sendTint by animateColorAsState(
                 targetValue = if (hasText) MaterialTheme.colorScheme.primary else muted,
                 label = "sendTint",
@@ -876,7 +900,7 @@ private fun CommentComposer(
                     painter = painterResource(R.drawable.ic_send),
                     contentDescription = stringResource(R.string.post_detail_send_comment),
                     tint = sendTint,
-                    modifier = Modifier.size(22.dp),
+                    modifier = Modifier.size(28.dp),
                 )
             }
         }
