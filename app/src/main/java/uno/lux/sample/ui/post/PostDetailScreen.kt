@@ -314,7 +314,7 @@ private fun PostDetailMoreSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Avatar(name = author.nickname, size = 38.dp)
+            Avatar(name = author.nickname, size = 38.dp, imageUrl = author.avatarUrl)
             Column(Modifier.weight(1f)) {
                 Text(
                     text = author.nickname,
@@ -576,7 +576,7 @@ private fun DetailPostHeader(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(name = author.nickname, size = 42.dp)
+            Avatar(name = author.nickname, size = 42.dp, imageUrl = author.avatarUrl)
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -777,7 +777,7 @@ private fun CommentRow(
                 .clip(CircleShape)
                 .debouncedClickable(onClick = onOpenProfile),
         ) {
-            Avatar(name = comment.author.nickname, size = 36.dp)
+            Avatar(name = comment.author.nickname, size = 36.dp, imageUrl = comment.author.avatarUrl)
         }
 
         Column(Modifier.weight(1f)) {

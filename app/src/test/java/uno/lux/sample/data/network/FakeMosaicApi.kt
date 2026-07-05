@@ -10,6 +10,7 @@ import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.ProfileStatsDto
 import uno.lux.sample.data.network.dto.MinimalUserDto
+import uno.lux.sample.data.network.dto.UpdateUserRequestDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
@@ -42,6 +43,19 @@ class FakeMosaicApi(
 
     override suspend fun getUser(id: String): UserResponse =
         UserResponse(userById[id] ?: error("FakeSampleApi: no user for id '$id'"))
+
+    override suspend fun updateUser(id: String, body: UpdateUserRequestDto): UserResponse {
+        val base = userById[id] ?: error("FakeSampleApi: no user for id '$id'")
+        return UserResponse(
+            base.copy(
+                nickname = body.nickname,
+                age = body.age,
+                gender = body.gender,
+                bio = body.bio,
+                avatarUrl = body.avatarUrl,
+            )
+        )
+    }
 
     override suspend fun getProfileStats(id: String): ProfileStatsResponse =
         ProfileStatsResponse(profileStats[id] ?: ProfileStatsDto(0, 0, 0))

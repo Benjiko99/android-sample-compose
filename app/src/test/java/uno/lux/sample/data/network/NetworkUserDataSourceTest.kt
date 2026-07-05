@@ -2,7 +2,9 @@ package uno.lux.sample.data.network
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
+import uno.lux.sample.data.user.ProfileUpdate
 
 class NetworkUserDataSourceTest {
 
@@ -25,6 +27,7 @@ class NetworkUserDataSourceTest {
             gender = "Woman",
             location = "London",
             bio = "Mathematician",
+            avatarUrl = "https://example.com/ada.jpg",
             followerCount = 500,
             followingCount = 10,
         )
@@ -38,7 +41,31 @@ class NetworkUserDataSourceTest {
         assertEquals("Woman", user.gender)
         assertEquals("London", user.location)
         assertEquals("Mathematician", user.bio)
+        assertEquals("https://example.com/ada.jpg", user.avatarUrl)
         assertEquals(500, user.followerCount)
         assertEquals(10, user.followingCount)
+    }
+
+    @Test
+    fun `update maps the request and returns the updated user`() = runTest {
+        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada")))
+        val dataSource = NetworkUserDataSource(api)
+
+        val user = dataSource.update(
+            "u1",
+            ProfileUpdate(
+                nickname = "Ada King",
+                age = 37,
+                gender = "Woman",
+                bio = null,
+                avatarUrl = "content://media/picker/1",
+            ),
+        )
+
+        assertEquals("Ada King", user.nickname)
+        assertEquals(37, user.age)
+        assertEquals("Woman", user.gender)
+        assertNull(user.bio)
+        assertEquals("content://media/picker/1", user.avatarUrl)
     }
 }

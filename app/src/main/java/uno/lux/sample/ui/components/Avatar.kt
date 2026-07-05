@@ -10,22 +10,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import uno.lux.sample.ui.theme.Manrope
 import uno.lux.sample.util.initials
 
 /**
- * A circular gradient avatar with the user's initials, keyed deterministically by [name] —
- * no image-loading dependency.
+ * A circular avatar. With no [imageUrl] it renders the user's initials on a gradient keyed
+ * deterministically by [name]; a non-null [imageUrl] loads the profile photo over that layer,
+ * so the initials double as the loading / error fallback.
  */
 @Composable
 fun Avatar(
     name: String,
     modifier: Modifier = Modifier,
     size: Dp = 42.dp,
+    imageUrl: String? = null,
 ) {
     Box(
         modifier = modifier
@@ -41,5 +45,14 @@ fun Avatar(
             fontWeight = FontWeight.Bold,
             fontSize = (size.value * 0.36f).sp,
         )
+
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
     }
 }

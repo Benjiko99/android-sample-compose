@@ -2,11 +2,13 @@ package uno.lux.sample.data.network
 
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
+import uno.lux.sample.data.network.dto.UpdateUserRequestDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
@@ -27,6 +29,12 @@ interface MosaicApi {
 
     @GET("users/{id}")
     suspend fun getUser(@Path("id") id: String): UserResponse
+
+    @PATCH("users/{id}")
+    suspend fun updateUser(
+        @Path("id") id: String,
+        @Body body: UpdateUserRequestDto,
+    ): UserResponse
 
     @GET("users/{id}/profile")
     suspend fun getProfileStats(@Path("id") id: String): ProfileStatsResponse

@@ -43,6 +43,7 @@ import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.album.AlbumViewerScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
+import uno.lux.sample.ui.editprofile.EditProfileScreen
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.ui.post.PostDetailScreen
@@ -72,6 +73,7 @@ fun SampleApp(currentUserId: String) {
         if (backStack.lastOrNull() != screen) backStack.add(screen)
     }
     val openSettings = { pushUnique(Screen.Settings) }
+    val openEditProfile = { pushUnique(Screen.EditProfile) }
     val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
     val openPost = { postId: String -> pushUnique(Screen.PostDetail(postId)) }
     val openVideo = { video: Video ->
@@ -116,6 +118,7 @@ fun SampleApp(currentUserId: String) {
                     HomeNavShell(
                         currentUserId = currentUserId,
                         onOpenSettings = openSettings,
+                        onOpenEditProfile = openEditProfile,
                         onOpenProfile = openProfile,
                         onOpenVideo = openVideo,
                         onOpenAlbum = openAlbum,
@@ -128,11 +131,15 @@ fun SampleApp(currentUserId: String) {
                         onOpenVideo = openVideo,
                         onOpenPost = openPost,
                         onOpenAlbum = openAlbum,
+                        onEditProfile = openEditProfile,
                         onBack = goBack,
                     )
                 }
                 entry<Screen.Settings> {
                     SettingsScreen(onBack = goBack)
+                }
+                entry<Screen.EditProfile> {
+                    EditProfileScreen(onBack = goBack)
                 }
                 entry<Screen.FullscreenVideo> { video ->
                     FullscreenVideoScreen(
@@ -179,6 +186,7 @@ fun SampleApp(currentUserId: String) {
 private fun HomeNavShell(
     currentUserId: String,
     onOpenSettings: () -> Unit,
+    onOpenEditProfile: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, initialIndex: Int) -> Unit,
@@ -239,6 +247,7 @@ private fun HomeNavShell(
                     onOpenVideo = onOpenVideo,
                     onOpenPost = onOpenPost,
                     onOpenAlbum = onOpenAlbum,
+                    onEditProfile = onOpenEditProfile,
                 )
 
                 AppDestinations.FAVORITES ->

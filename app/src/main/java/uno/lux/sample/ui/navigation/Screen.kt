@@ -30,6 +30,13 @@ sealed interface Screen : NavKey {
     data object Settings : Screen
 
     /**
+     * The signed-in user's profile editor, opened from their own profile's Edit button.
+     * Always edits the current user, so it carries no arguments.
+     */
+    @Serializable
+    data object EditProfile : Screen
+
+    /**
      * The full-screen video page. Opened by a profile-grid video (which it loads itself) or by
      * an inline post player's fullscreen control (whose running player it reuses). [videoId]
      * keys the shared player so the inline → full-screen hand-off keeps the same instance.

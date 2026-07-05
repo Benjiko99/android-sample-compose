@@ -81,6 +81,16 @@
 
     <!-- Profile -->
     <string name="profile_edit">Edit profile</string>
+    <!-- Edit profile -->
+    <string name="edit_profile_save">Save</string>
+    <string name="edit_profile_change_avatar">Change profile photo</string>
+    <string name="edit_profile_name_label">Name</string>
+    <string name="edit_profile_age_label">Age</string>
+    <string name="edit_profile_age_error">Enter an age between 13 and 120</string>
+    <string name="edit_profile_gender_label">Gender</string>
+    <string name="edit_profile_bio_label">Bio</string>
+    <string name="gender_man">Man</string>
+    <string name="gender_woman">Woman</string>
     <string name="profile_stat_followers">Followers</string>
     <string name="profile_stat_following">Following</string>
     <string name="profile_tab_posts">Posts</string>

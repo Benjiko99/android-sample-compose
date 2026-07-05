@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.update
  * screens (the feed, a profile's posts tab) to resolve author names without a per-row lookup.
  * [ingest] merges a batch of users (e.g. sideloaded from the feed response) into the cache.
  * [refresh] forces a re-fetch of a single entry from the backing source, replacing the cache.
+ * [updateProfile] persists edited profile fields and replaces the cached entry with the
+ * result, so every observing screen sees the change immediately.
  *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [UserDataSource].
@@ -33,6 +35,11 @@ class UserRepository(
 
     suspend fun refresh(userId: UserId) {
         val user = dataSource.fetch(userId) ?: return
+        _cache.update { it + (userId to user) }
+    }
+
+    suspend fun updateProfile(userId: UserId, profileUpdate: ProfileUpdate) {
+        val user = dataSource.update(userId, profileUpdate)
         _cache.update { it + (userId to user) }
     }
 }

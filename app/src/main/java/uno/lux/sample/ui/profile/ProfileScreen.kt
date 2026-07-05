@@ -125,6 +125,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     onOpenPost: (postId: PostId) -> Unit = {},
     onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
+    onEditProfile: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
     // ProfileViewModel, created for that entry's userId and cleared when the page pops.
@@ -145,6 +146,7 @@ fun ProfileScreen(
         modifier = modifier,
         onOpenPost = onOpenPost,
         onOpenAlbum = onOpenAlbum,
+        onEditProfile = onEditProfile,
         onBack = onBack,
     )
 }
@@ -164,6 +166,7 @@ internal fun ProfileScreen(
     modifier: Modifier = Modifier,
     onOpenPost: (postId: PostId) -> Unit = {},
     onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
+    onEditProfile: () -> Unit = {},
     onBack: (() -> Unit)? = null,
 ) {
     Box(
@@ -200,6 +203,7 @@ internal fun ProfileScreen(
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
                 onOpenPost = onOpenPost,
+                onEditProfile = onEditProfile,
                 onBack = onBack,
             )
         }
@@ -217,6 +221,7 @@ private fun ProfileContent(
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (Album, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
+    onEditProfile: () -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -263,7 +268,11 @@ private fun ProfileContent(
         ) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 item(key = "header") {
-                    ProfileHeader(user = data.user, isCurrentUser = isCurrentUser)
+                    ProfileHeader(
+                        user = data.user,
+                        isCurrentUser = isCurrentUser,
+                        onEditProfile = onEditProfile,
+                    )
                 }
                 stickyHeader(key = "tabs") {
                     ProfileTabs(
@@ -313,6 +322,7 @@ private val ProfileBarHeight = 64.dp // Material small TopAppBar content height 
 private fun ProfileHeader(
     user: User,
     isCurrentUser: Boolean,
+    onEditProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -334,10 +344,10 @@ private fun ProfileHeader(
             // Shown only on the signed-in user's own profile.
             if (isCurrentUser) {
                 FilledTonalButton(
-                    onClick = { /* Edit is a later iteration. */ },
+                    onClick = onEditProfile.rememberDebounced(),
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 6.dp),
+                        .padding(end = 16.dp),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_edit),
@@ -350,6 +360,7 @@ private fun ProfileHeader(
             }
             AvatarRing(
                 name = user.nickname,
+                avatarUrl = user.avatarUrl,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp)
@@ -389,6 +400,7 @@ private fun ProfileHeader(
 @Composable
 private fun AvatarRing(
     name: String,
+    avatarUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -398,7 +410,7 @@ private fun AvatarRing(
             .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center,
     ) {
-        Avatar(name = name, size = AvatarSize)
+        Avatar(name = name, size = AvatarSize, imageUrl = avatarUrl)
     }
 }
 

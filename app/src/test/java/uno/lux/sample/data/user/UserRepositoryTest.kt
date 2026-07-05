@@ -60,6 +60,29 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun `updateProfile persists the update and replaces the cached entry`() = runTest {
+        val repo = repository(user("u1", "Ada"))
+        repo.refresh("u1")
+
+        repo.updateProfile("u1", profileUpdate(nickname = "Ada King", bio = "Countess"))
+
+        val updated = repo.user("u1").first()!!
+        assertEquals("Ada King", updated.nickname)
+        assertEquals("Countess", updated.bio)
+    }
+
+    @Test
+    fun `updateProfile sends the update to the data source`() = runTest {
+        val dataSource = FakeUserDataSource(mapOf("u1" to user("u1", "Ada")))
+        val repo = UserRepository(dataSource)
+
+        val update = profileUpdate(nickname = "Ada King", avatarUrl = "content://avatar/1")
+        repo.updateProfile("u1", update)
+
+        assertEquals("u1" to update, dataSource.lastUpdate)
+    }
+
+    @Test
     fun `user flow emits the user after a subsequent ingest`() = runTest {
         val repo = repository()
         assertNull(repo.user("u1").first())
@@ -71,4 +94,18 @@ class UserRepositoryTest {
 }
 
 private fun user(id: String, nickname: String) = User(id = id, nickname = nickname, handle = "@$id")
+
+private fun profileUpdate(
+    nickname: String,
+    age: Int? = null,
+    gender: String? = null,
+    bio: String? = null,
+    avatarUrl: String? = null,
+) = ProfileUpdate(
+    nickname = nickname,
+    age = age,
+    gender = gender,
+    bio = bio,
+    avatarUrl = avatarUrl,
+)
 
