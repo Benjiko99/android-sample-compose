@@ -1,19 +1,26 @@
 package uno.lux.sample.ui.home
 
-import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.data.post.ReportReason
+import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.MosaicTheme
 
 /**
@@ -37,6 +45,7 @@ import uno.lux.sample.ui.theme.MosaicTheme
  * until a reason is picked. The transient selection is owned here, so the host deals only with
  * the submit / dismiss outcomes.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ReportPostDialog(
     onDismiss: () -> Unit,
@@ -44,51 +53,79 @@ internal fun ReportPostDialog(
     modifier: Modifier = Modifier,
 ) {
     var selectedReason by remember { mutableStateOf<ReportReason?>(null) }
-    var details by remember { mutableStateOf("") }
+    val detailsState = rememberTextFieldState()
 
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
-        title = { Text(stringResource(R.string.report_dialog_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(
-                    text = stringResource(R.string.report_dialog_prompt),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                ReportReason.entries.forEach { reason ->
-                    ReasonRow(
-                        label = stringResource(reason.labelRes()),
-                        selected = reason == selectedReason,
-                        onSelect = { selectedReason = reason },
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = details,
-                    onValueChange = { details = it },
-                    label = { Text(stringResource(R.string.report_details_hint)) },
-                    minLines = 2,
-                    modifier = Modifier.fillMaxWidth(),
+    ) {
+        DialogSurface {
+            ReportPostDialogContent(
+                selectedReason = selectedReason,
+                detailsState = detailsState,
+                onSelectReason = { selectedReason = it },
+                onDismiss = onDismiss,
+                onSubmit = {
+                    onSubmit(selectedReason!!, detailsState.text.toString().trim())
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReportPostDialogContent(
+    selectedReason: ReportReason?,
+    detailsState: TextFieldState,
+    onSelectReason: (ReportReason) -> Unit,
+    onDismiss: () -> Unit,
+    onSubmit: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(24.dp)) {
+        Text(
+            text = stringResource(R.string.report_dialog_title),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Spacer(Modifier.height(16.dp))
+        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Text(
+                text = stringResource(R.string.report_dialog_prompt),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            ReportReason.entries.forEach { reason ->
+                ReasonRow(
+                    label = reason.asText(),
+                    selected = reason == selectedReason,
+                    onSelect = { onSelectReason(reason) },
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-        },
-        confirmButton = {
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                state = detailsState,
+                label = { Text(stringResource(R.string.report_details_hint)) },
+                lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 2),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.report_cancel))
+            }
             TextButton(
-                onClick = { selectedReason?.let { onSubmit(it, details.trim()) } },
+                onClick = onSubmit,
                 enabled = selectedReason != null,
             ) {
                 Text(stringResource(R.string.report_send))
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.report_cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 /** One selectable reason; the whole row is the radio target so the tap area isn't just the dot. */
@@ -111,21 +148,30 @@ private fun ReasonRow(
     }
 }
 
-/** The localized label for each [ReportReason] — kept in the UI so the domain enum stays Android-free. */
-@StringRes
-private fun ReportReason.labelRes(): Int = when (this) {
-    ReportReason.SPAM -> R.string.report_reason_spam
-    ReportReason.HARASSMENT -> R.string.report_reason_harassment
-    ReportReason.HATE_SPEECH -> R.string.report_reason_hate_speech
-    ReportReason.MISINFORMATION -> R.string.report_reason_misinformation
-    ReportReason.VIOLENCE -> R.string.report_reason_violence
-    ReportReason.OTHER -> R.string.report_reason_other
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DialogSurface(content: @Composable () -> Unit) {
+    Surface(
+        shape = AlertDialogDefaults.shape,
+        color = AlertDialogDefaults.containerColor,
+        tonalElevation = AlertDialogDefaults.TonalElevation,
+        content = content,
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun ReportPostDialogPreview() {
     MosaicTheme {
-        ReportPostDialog(onDismiss = {}, onSubmit = { _, _ -> })
+        DialogSurface {
+            ReportPostDialogContent(
+                selectedReason = null,
+                detailsState = rememberTextFieldState(),
+                onSelectReason = {},
+                onDismiss = {},
+                onSubmit = {},
+            )
+        }
     }
 }

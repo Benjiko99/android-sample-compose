@@ -3,6 +3,7 @@ package uno.lux.sample.ui.format
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import uno.lux.sample.R
+import uno.lux.sample.data.post.ReportReason
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.CompactCount
 import uno.lux.sample.util.RelativeTime
@@ -32,5 +33,18 @@ fun AppError.asText(): String = stringResource(
         AppError.NoConnection -> R.string.error_no_connection
         AppError.Timeout -> R.string.error_timeout
         AppError.Unknown -> R.string.error_unknown
+    }
+)
+
+/** Maps a [ReportReason] to its localized display label. */
+@Composable
+fun ReportReason.asText(): String = stringResource(
+    when (this) {
+        ReportReason.SPAM -> R.string.report_reason_spam
+        ReportReason.HARASSMENT -> R.string.report_reason_harassment
+        ReportReason.HATE_SPEECH -> R.string.report_reason_hate_speech
+        ReportReason.MISINFORMATION -> R.string.report_reason_misinformation
+        ReportReason.VIOLENCE -> R.string.report_reason_violence
+        ReportReason.OTHER -> R.string.report_reason_other
     }
 )

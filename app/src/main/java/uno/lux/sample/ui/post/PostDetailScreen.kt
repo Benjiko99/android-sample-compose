@@ -52,6 +52,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -889,7 +890,7 @@ private fun CommentComposer(
                     .weight(1f)
                     .heightIn(min = 42.dp),
             )
-            val hasText = textState.text.isNotBlank()
+            val hasText by remember { derivedStateOf { textState.text.isNotBlank() } }
             val sendTint by animateColorAsState(
                 targetValue = if (hasText) MaterialTheme.colorScheme.primary else muted,
                 label = "sendTint",
