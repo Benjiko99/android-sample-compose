@@ -36,18 +36,39 @@ class EditProfileViewModel @Inject constructor(
 ) : ViewModel(), EditProfileActions {
 
     private val _form = MutableStateFlow<EditProfileForm?>(null)
+    private val _initialForm = MutableStateFlow<EditProfileForm?>(null)
     private val _loadError = MutableStateFlow<AppError?>(null)
     private val _isSaving = MutableStateFlow(false)
+    private val _showDiscardConfirmation = MutableStateFlow(false)
     private val _saveError = MutableStateFlow<AppError?>(null)
+
+    private val isDirty: Boolean
+        get() {
+            val form = _form.value ?: return false
+            val initial = _initialForm.value ?: return false
+            return form != initial
+        }
 
     val uiState: StateFlow<EditProfileUiState> = combine(
         _form,
         _loadError,
         _isSaving,
+        _showDiscardConfirmation,
         _saveError,
-    ) { form, loadError, isSaving, saveError ->
+    ) { args ->
+        val form = args[0] as EditProfileForm?
+        val loadError = args[1] as AppError?
+        val isSaving = args[2] as Boolean
+        val showDiscardConfirmation = args[3] as Boolean
+        val saveError = args[4] as AppError?
+
         when {
-            form != null -> EditProfileUiState.Editing(form, isSaving, saveError)
+            form != null -> EditProfileUiState.Editing(
+                form = form,
+                isSaving = isSaving,
+                showDiscardConfirmation = showDiscardConfirmation,
+                saveError = saveError
+            )
             loadError != null -> EditProfileUiState.Error(loadError)
             else -> EditProfileUiState.Loading
         }
@@ -75,7 +96,9 @@ class EditProfileViewModel @Inject constructor(
                 "Signed-in user '$userId' not found"
             }
 
-            _form.value = EditProfileForm.from(user)
+            val form = EditProfileForm.from(user)
+            _form.value = form
+            _initialForm.value = form
         }
     }
 
@@ -112,7 +135,22 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
-    override fun goBack() = navigator.goBack()
+    override fun goBack() {
+        if (isDirty) {
+            _showDiscardConfirmation.value = true
+        } else {
+            navigator.goBack()
+        }
+    }
+
+    override fun dismissDiscardConfirmation() {
+        _showDiscardConfirmation.value = false
+    }
+
+    override fun confirmDiscard() {
+        _showDiscardConfirmation.value = false
+        navigator.goBack()
+    }
 
     private fun updateForm(transform: (EditProfileForm) -> EditProfileForm) {
         _form.update { form -> form?.let(transform) }

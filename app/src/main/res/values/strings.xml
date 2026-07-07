@@ -114,4 +114,10 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
+
+    <!-- Discard confirmation dialog -->
+    <string name="discard_confirmation_title">Discard changes?</string>
+    <string name="discard_confirmation_message">You have unsaved changes. Are you sure you want to discard them?</string>
+    <string name="discard_confirmation_confirm">Discard</string>
+    <string name="discard_confirmation_dismiss">Keep editing</string>
 </resources>

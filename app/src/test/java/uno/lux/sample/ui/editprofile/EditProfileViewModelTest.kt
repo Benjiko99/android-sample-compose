@@ -232,14 +232,51 @@ class EditProfileViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `goBack pops the editor without saving`() = runTest {
-        val (viewModel, _, dataSource) = fixture()
+    fun `goBack shows discard confirmation when dirty`() = runTest {
+        val (viewModel, _, _) = fixture()
         collecting(viewModel)
 
         viewModel.onNicknameChange("Ada King")
         viewModel.goBack()
 
-        assertNull(dataSource.lastUpdate)
+        val editing = viewModel.uiState.value as EditProfileUiState.Editing
+        assertTrue(editing.showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell, Screen.EditProfile), backStack)
+    }
+
+    @Test
+    fun `confirmDiscard pops the editor`() = runTest {
+        val (viewModel, _, _) = fixture()
+        collecting(viewModel)
+
+        viewModel.onNicknameChange("Ada King")
+        viewModel.goBack()
+        viewModel.confirmDiscard()
+
+        assertFalse((viewModel.uiState.value as EditProfileUiState.Editing).showDiscardConfirmation)
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `dismissDiscardConfirmation hides the dialog`() = runTest {
+        val (viewModel, _, _) = fixture()
+        collecting(viewModel)
+
+        viewModel.onNicknameChange("Ada King")
+        viewModel.goBack()
+        viewModel.dismissDiscardConfirmation()
+
+        assertFalse((viewModel.uiState.value as EditProfileUiState.Editing).showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell, Screen.EditProfile), backStack)
+    }
+
+    @Test
+    fun `goBack pops immediately when clean`() = runTest {
+        val (viewModel, _, _) = fixture()
+        collecting(viewModel)
+
+        viewModel.goBack()
+
         assertEquals(listOf<NavKey>(Screen.Shell), backStack)
     }
 }

@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.editprofile
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.DiscardChangesDialog
 import uno.lux.sample.ui.components.FullScreenError
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.format.asText
@@ -83,6 +84,8 @@ interface EditProfileActions {
     fun save()
     fun retry()
     fun goBack()
+    fun dismissDiscardConfirmation()
+    fun confirmDiscard()
 }
 
 /**
@@ -95,12 +98,17 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val pickAvatar = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         // The picker's session-scoped read grant is enough — the image bytes are read and
         // uploaded on save, so no persistable permission is needed.
         if (uri != null) viewModel.onAvatarChange(uri.toString())
+    }
+
+    BackHandler {
+        viewModel.goBack()
     }
 
     EditProfileScreen(
@@ -113,6 +121,15 @@ fun EditProfileScreen(
         },
         modifier = modifier,
     )
+
+    if (uiState is EditProfileUiState.Editing &&
+        (uiState as EditProfileUiState.Editing).showDiscardConfirmation
+    ) {
+        DiscardChangesDialog(
+            onConfirm = viewModel::confirmDiscard,
+            onDismiss = viewModel::dismissDiscardConfirmation,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -363,6 +380,7 @@ private fun EditProfileScreenPreview() {
             uiState = EditProfileUiState.Editing(
                 form = EditProfileForm.from(SampleUsers.first()),
                 isSaving = false,
+                showDiscardConfirmation = false,
                 saveError = null,
             ),
             actions = createActionsProxy(),
