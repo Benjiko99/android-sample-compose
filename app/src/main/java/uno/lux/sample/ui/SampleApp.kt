@@ -67,22 +67,25 @@ import uno.lux.sample.ui.video.findActivity
 @Composable
 fun SampleApp(currentUserId: String) {
     val backStack = rememberNavBackStack(Screen.Shell)
-    // Push a page unless it's already on top — guards against re-adding the current page (e.g. a
-    // double-tap on the gear while its push animation still runs), which would stack a duplicate.
-    fun pushUnique(screen: Screen) {
-        if (backStack.lastOrNull() != screen) backStack.add(screen)
+    fun push(screen: Screen) {
+        backStack.add(screen)
     }
+    // Push a page unless it's already on top — guards against re-adding the current page
+    fun pushUnique(screen: Screen) {
+        if (backStack.lastOrNull() != screen) push(screen)
+    }
+
+    val goBack: () -> Unit = { backStack.removeLastOrNull() }
     val openSettings = { pushUnique(Screen.Settings) }
     val openEditProfile = { pushUnique(Screen.EditProfile) }
-    val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
-    val openPost = { postId: String -> pushUnique(Screen.PostDetail(postId)) }
+    val openProfile = { userId: String -> push(Screen.Profile(userId)) }
+    val openPost = { postId: String -> push(Screen.PostDetail(postId)) }
     val openVideoPlayer = { video: Video ->
-        pushUnique(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
+        push(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
     }
     val openAlbumViewer = { imageUrls: List<String>, initialIndex: Int ->
-        pushUnique(Screen.AlbumViewer(imageUrls, initialIndex))
+        push(Screen.AlbumViewer(imageUrls, initialIndex))
     }
-    val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
     // The shared player lives in an activity-scoped ViewModel so it survives the push to full
     // screen and configuration changes, and is released when the activity finishes. Provided to
