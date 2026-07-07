@@ -1,6 +1,5 @@
 package uno.lux.sample.ui.editprofile
 
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -89,21 +87,12 @@ fun EditProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val pickAvatar = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        if (uri != null) {
-            // The picker's read grant is temporary; persist it so the avatar stays loadable
-            // after a restart. Some pickers refuse — the URI still works until reboot.
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            }
-            viewModel.onAvatarChange(uri.toString())
-        }
+        // The picker's session-scoped read grant is enough — the image bytes are read and
+        // uploaded on save, so no persistable permission is needed.
+        if (uri != null) viewModel.onAvatarChange(uri.toString())
     }
 
     LaunchedEffect(isSaved) {
@@ -231,7 +220,7 @@ private fun EditProfileContent(
     ) {
         AvatarPicker(
             name = form.nickname,
-            avatarUrl = form.avatarUrl,
+            avatarUrl = form.displayAvatar,
             onClick = onPickAvatar,
         )
 

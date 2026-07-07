@@ -22,7 +22,12 @@ internal class FakeUserDataSource(
             age = update.age,
             gender = update.gender,
             bio = update.bio,
-            avatarUrl = update.avatarUrl,
+            // A new avatar upload yields a fresh hosted URL; no upload leaves it unchanged.
+            avatarUrl = if (update.avatar != null) UPLOADED_AVATAR_URL else base.avatarUrl,
         )
+    }
+
+    companion object {
+        const val UPLOADED_AVATAR_URL = "https://cdn.test/avatars/uploaded.png"
     }
 }

@@ -76,10 +76,30 @@ class UserRepositoryTest {
         val dataSource = FakeUserDataSource(mapOf("u1" to user("u1", "Ada")))
         val repo = UserRepository(dataSource)
 
-        val update = profileUpdate(nickname = "Ada King", avatarUrl = "content://avatar/1")
+        val update = profileUpdate(
+            nickname = "Ada King",
+            avatar = AvatarUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
+        )
         repo.updateProfile("u1", update)
 
         assertEquals("u1" to update, dataSource.lastUpdate)
+    }
+
+    @Test
+    fun `updateProfile reflects the uploaded avatar url in the cache`() = runTest {
+        val dataSource = FakeUserDataSource(mapOf("u1" to user("u1", "Ada")))
+        val repo = UserRepository(dataSource)
+        repo.refresh("u1")
+
+        repo.updateProfile(
+            "u1",
+            profileUpdate(
+                nickname = "Ada",
+                avatar = AvatarUpload(byteArrayOf(9), "image/png", "avatar.png"),
+            ),
+        )
+
+        assertEquals(FakeUserDataSource.UPLOADED_AVATAR_URL, repo.user("u1").first()?.avatarUrl)
     }
 
     @Test
@@ -100,12 +120,12 @@ private fun profileUpdate(
     age: Int? = null,
     gender: String? = null,
     bio: String? = null,
-    avatarUrl: String? = null,
+    avatar: AvatarUpload? = null,
 ) = ProfileUpdate(
     nickname = nickname,
     age = age,
     gender = gender,
     bio = bio,
-    avatarUrl = avatarUrl,
+    avatar = avatar,
 )
 

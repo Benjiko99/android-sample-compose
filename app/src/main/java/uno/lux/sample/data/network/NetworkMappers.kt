@@ -5,14 +5,12 @@ import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.CommentDto
 import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
-import uno.lux.sample.data.network.dto.UpdateUserRequestDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.Video
-import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 
 // TODO: Should we be doing manual conversion of dto's to domain objects, or let some libraryf
@@ -66,14 +64,6 @@ internal fun UserDto.toDomain() = User(
     followingCount = followingCount,
 )
 
-internal fun ProfileUpdate.toDto() = UpdateUserRequestDto(
-    nickname = nickname,
-    age = age,
-    gender = gender,
-    bio = bio,
-    avatarUrl = avatarUrl,
-)
-
 internal fun CommentDto.toDomain() = Comment(
     id = id,
     author = author.toDomain(),
@@ -82,3 +72,6 @@ internal fun CommentDto.toDomain() = Comment(
     likeCount = likeCount,
     isLiked = isLiked,
 )
+
+// Note: ProfileUpdate is sent as a multipart request (see NetworkUserDataSource), not a JSON
+// body, so there is no ProfileUpdate → DTO mapper here.

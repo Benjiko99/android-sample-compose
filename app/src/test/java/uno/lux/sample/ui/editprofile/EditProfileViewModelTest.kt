@@ -12,6 +12,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
+import uno.lux.sample.data.user.AvatarUpload
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
@@ -30,15 +31,41 @@ class EditProfileViewModelTest : ViewModelTest() {
         bio = "Mathematician & writer.",
     )
 
+    /** Records the URI it was asked to read and returns a fixed upload payload. */
+    private class FakeAvatarImageLoader(
+        val result: AvatarUpload = AvatarUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
+    ) : AvatarImageLoader {
+        var lastUri: String? = null
+            private set
+
+        override suspend fun read(uri: String): AvatarUpload {
+            lastUri = uri
+            return result
+        }
+    }
+
+    private data class Fixture(
+        val viewModel: EditProfileViewModel,
+        val repository: UserRepository,
+        val dataSource: FakeUserDataSource,
+        val avatarLoader: FakeAvatarImageLoader,
+    )
+
     private fun fixture(
         cached: Boolean = true,
         failUpdates: Boolean = false,
-    ): Triple<EditProfileViewModel, UserRepository, FakeUserDataSource> {
+    ): Fixture {
         val dataSource = FakeUserDataSource(mapOf("u1" to ada), failUpdates = failUpdates)
         val repository = UserRepository(dataSource)
         if (cached) repository.ingest(listOf(ada))
+        val avatarLoader = FakeAvatarImageLoader()
 
-        return Triple(EditProfileViewModel(repository, "u1"), repository, dataSource)
+        return Fixture(
+            EditProfileViewModel(repository, avatarLoader, "u1"),
+            repository,
+            dataSource,
+            avatarLoader,
+        )
     }
 
     private fun TestScope.collecting(viewModel: EditProfileViewModel) {
@@ -87,7 +114,9 @@ class EditProfileViewModelTest : ViewModelTest() {
         assertEquals("37", form.age)
         assertEquals(GenderOption.MAN, form.gender)
         assertEquals("Countess of Lovelace", form.bio)
-        assertEquals("content://media/picker/1", form.avatarUrl)
+        // A picked image previews via displayAvatar without overwriting the stored URL.
+        assertEquals("content://media/picker/1", form.pickedAvatarUri)
+        assertEquals("content://media/picker/1", form.displayAvatar)
     }
 
     @Test
@@ -132,12 +161,36 @@ class EditProfileViewModelTest : ViewModelTest() {
                 age = 37,
                 gender = "Woman",
                 bio = null,
-                avatarUrl = null,
+                avatar = null,
             ),
             dataSource.lastUpdate,
         )
         assertEquals("Ada King", repository.user("u1").first()?.nickname)
         assertTrue(viewModel.isSaved.value)
+    }
+
+    @Test
+    fun `save reads the picked avatar and uploads it`() = runTest {
+        val (viewModel, _, dataSource, avatarLoader) = fixture()
+        collecting(viewModel)
+
+        viewModel.onAvatarChange("content://media/picker/42")
+        viewModel.save()
+
+        assertEquals("content://media/picker/42", avatarLoader.lastUri)
+        assertEquals(avatarLoader.result, dataSource.lastUpdate?.second?.avatar)
+        assertTrue(viewModel.isSaved.value)
+    }
+
+    @Test
+    fun `save without a picked avatar sends no upload`() = runTest {
+        val (viewModel, _, dataSource, avatarLoader) = fixture()
+        collecting(viewModel)
+
+        viewModel.save()
+
+        assertNull(avatarLoader.lastUri)
+        assertNull(dataSource.lastUpdate?.second?.avatar)
     }
 
     @Test

@@ -2,6 +2,7 @@ package uno.lux.sample.ui.editprofile
 
 import androidx.annotation.StringRes
 import uno.lux.sample.R
+import uno.lux.sample.data.user.AvatarUpload
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 import uno.lux.sample.util.AppError
@@ -29,7 +30,9 @@ val EditProfileAgeRange = 13..120
 
 /**
  * The editable form fields, seeded once from the loaded [User]. [age] stays the raw digit
- * string the user typed; it only becomes an [Int] in [toProfileUpdate].
+ * string the user typed; it only becomes an [Int] in [toProfileUpdate]. [avatarUrl] is the
+ * current server avatar; [pickedAvatarUri] is a newly chosen local image (a `content://` URI)
+ * not yet uploaded — [displayAvatar] prefers it for the live preview.
  */
 data class EditProfileForm(
     val nickname: String,
@@ -37,7 +40,11 @@ data class EditProfileForm(
     val gender: GenderOption?,
     val bio: String,
     val avatarUrl: String?,
+    val pickedAvatarUri: String? = null,
 ) {
+    val displayAvatar: String?
+        get() = pickedAvatarUri ?: avatarUrl
+
     val isAgeValid: Boolean
         get() {
             if (age.isEmpty()) return true
@@ -49,12 +56,13 @@ data class EditProfileForm(
     val canSave: Boolean
         get() = nickname.isNotBlank() && isAgeValid
 
-    fun toProfileUpdate() = ProfileUpdate(
+    /** [avatar] is the uploaded bytes of [pickedAvatarUri], resolved by the ViewModel on save. */
+    fun toProfileUpdate(avatar: AvatarUpload?) = ProfileUpdate(
         nickname = nickname.trim(),
         age = age.toIntOrNull(),
         gender = gender?.storedValue,
         bio = bio.trim().ifEmpty { null },
-        avatarUrl = avatarUrl,
+        avatar = avatar,
     )
 
     companion object {

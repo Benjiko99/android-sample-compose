@@ -31,6 +31,8 @@ import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserDataSource
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.editprofile.AndroidAvatarImageLoader
+import uno.lux.sample.ui.editprofile.AvatarImageLoader
 import javax.inject.Singleton
 
 @Module
@@ -91,6 +93,10 @@ object DataModule {
     @Singleton
     fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("settings") }
+
+    @Provides
+    fun provideAvatarImageLoader(@ApplicationContext context: Context): AvatarImageLoader =
+        AndroidAvatarImageLoader(context)
 
     @Provides
     @CurrentUserId

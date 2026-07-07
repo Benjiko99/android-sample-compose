@@ -29,6 +29,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val avatarImageLoader: AvatarImageLoader,
     @CurrentUserId private val userId: UserId,
 ) : ViewModel(), EditProfileActions {
 
@@ -91,7 +92,7 @@ class EditProfileViewModel @Inject constructor(
 
     override fun onBioChange(value: String) = updateForm { it.copy(bio = value) }
 
-    override fun onAvatarChange(uri: String) = updateForm { it.copy(avatarUrl = uri) }
+    override fun onAvatarChange(uri: String) = updateForm { it.copy(pickedAvatarUri = uri) }
 
     override fun save() {
         val form = _form.value ?: return
@@ -102,7 +103,10 @@ class EditProfileViewModel @Inject constructor(
             _isSaving.value = true
             try {
                 ignoreErrors(_saveError) {
-                    userRepository.updateProfile(userId, form.toProfileUpdate())
+                    // Read the picked image into upload bytes only if one was chosen; otherwise
+                    // the current avatar is left untouched.
+                    val avatar = form.pickedAvatarUri?.let { avatarImageLoader.read(it) }
+                    userRepository.updateProfile(userId, form.toProfileUpdate(avatar))
                     _isSaved.value = true
                 }
             } finally {
