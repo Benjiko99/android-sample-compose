@@ -14,4 +14,5 @@ data class UserDto(
     val avatarUrl: String? = null,
     val followerCount: Int,
     val followingCount: Int,
+    val isFollowing: Boolean,
 )

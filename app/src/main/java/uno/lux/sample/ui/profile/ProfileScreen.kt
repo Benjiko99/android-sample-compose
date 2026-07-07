@@ -34,6 +34,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -109,6 +110,7 @@ import uno.lux.sample.util.formatVideoDuration
 interface ProfileActions {
     fun onToggleLike(postId: PostId)
     fun onToggleBookmark(postId: PostId)
+    fun onToggleFollow()
     fun loadMorePosts()
     fun loadMoreAlbums()
     fun loadMoreVideos()
@@ -261,6 +263,7 @@ private fun ProfileContent(
                         user = data.user,
                         isCurrentUser = isCurrentUser,
                         onEditProfile = actions::openEditProfile,
+                        onToggleFollow = actions::onToggleFollow,
                         onOpenAvatar = actions::openAvatar,
                     )
                 }
@@ -306,6 +309,7 @@ private fun ProfileHeader(
     user: User,
     isCurrentUser: Boolean,
     onEditProfile: () -> Unit,
+    onToggleFollow: () -> Unit,
     onOpenAvatar: (avatarUrl: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -324,14 +328,15 @@ private fun ProfileHeader(
                     .height(CoverHeight)
                     .background(MosaicGradients.mediaBrush(user.id)),
             )
-            // Edit profile, bottom-right across from the avatar (settings live in the app bar).
-            // Shown only on the signed-in user's own profile.
+            // Primary action, bottom-right across from the avatar (settings live in the app
+            // bar): Edit profile on your own profile, Follow/Unfollow on anyone else's.
+            val actionModifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp)
             if (isCurrentUser) {
                 FilledTonalButton(
                     onClick = onEditProfile.rememberDebounced(),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp),
+                    modifier = actionModifier,
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_edit),
@@ -341,6 +346,12 @@ private fun ProfileHeader(
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.profile_edit))
                 }
+            } else {
+                FollowButton(
+                    isFollowing = user.isFollowing,
+                    onToggleFollow = onToggleFollow,
+                    modifier = actionModifier,
+                )
             }
             AvatarRing(
                 name = user.nickname,
@@ -398,6 +409,30 @@ private fun AvatarRing(
         contentAlignment = Alignment.Center,
     ) {
         Avatar(name = name, size = AvatarSize, imageUrl = avatarUrl)
+    }
+}
+
+/**
+ * Follow / Unfollow toggle for another user's profile. Filled while not yet following (the
+ * inviting primary action), tonal once following (a calmer "you're following" affordance) —
+ * both solid so the label stays legible over the cover gradient.
+ */
+@Composable
+private fun FollowButton(
+    isFollowing: Boolean,
+    onToggleFollow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val onClick = onToggleFollow.rememberDebounced()
+
+    if (isFollowing) {
+        FilledTonalButton(onClick = onClick, modifier = modifier) {
+            Text(stringResource(R.string.profile_following))
+        }
+    } else {
+        Button(onClick = onClick, modifier = modifier) {
+            Text(stringResource(R.string.profile_follow))
+        }
     }
 }
 
@@ -898,6 +933,20 @@ private fun ProfileScreenPreview() {
     MosaicTheme {
         ProfileScreen(
             uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = true),
+            isRefreshing = false,
+            onRefresh = {},
+            onRetry = {},
+            actions = createActionsProxy(),
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Another user (Follow)")
+@Composable
+private fun ProfileScreenOtherUserPreview() {
+    MosaicTheme {
+        ProfileScreen(
+            uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = false),
             isRefreshing = false,
             onRefresh = {},
             onRetry = {},

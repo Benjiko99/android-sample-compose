@@ -21,4 +21,5 @@ data class User(
     val avatarUrl: String? = null,
     val followerCount: Int = 0,
     val followingCount: Int = 0,
+    val isFollowing: Boolean = false,
 )

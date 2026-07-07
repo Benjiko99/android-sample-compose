@@ -41,6 +41,20 @@ class NetworkFeedDataSourceTest {
     }
 
     @Test
+    fun `fetch maps the isFollowing flag on sideloaded authors`() = runTest {
+        val api = FakeMosaicApi(
+            feedResponse = FeedResponse(
+                data = listOf(feedItemDto("p1", "u1")),
+                included = FeedIncluded(users = listOf(minimalUserDto("u1", "Ada", isFollowing = true))),
+                page = emptyPage,
+            ),
+        )
+        val result = NetworkFeedDataSource(api).fetch(cursor = null)
+
+        assertTrue(result.users.single().isFollowing)
+    }
+
+    @Test
     fun `fetch returns empty users when sideload is absent`() = runTest {
         val api = FakeMosaicApi(
             feedResponse = FeedResponse(

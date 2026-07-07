@@ -103,6 +103,40 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun `toggleFollow flips the cached follow state and follower count`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(User(id = "u1", nickname = "Ada", handle = "@ada", followerCount = 10)))
+
+        repo.toggleFollow("u1")
+
+        val followed = repo.user("u1").first()!!
+        assertTrue(followed.isFollowing)
+        assertEquals(11, followed.followerCount)
+    }
+
+    @Test
+    fun `toggleFollow sends the toggle to the data source`() = runTest {
+        val dataSource = FakeUserDataSource(mapOf("u1" to user("u1", "Ada")))
+        val repo = UserRepository(dataSource)
+        repo.ingest(listOf(user("u1", "Ada")))
+
+        repo.toggleFollow("u1")
+
+        assertEquals("u1", dataSource.lastFollowToggle)
+    }
+
+    @Test
+    fun `toggleFollow is a no-op for an uncached user`() = runTest {
+        val dataSource = FakeUserDataSource(mapOf("u1" to user("u1", "Ada")))
+        val repo = UserRepository(dataSource)
+
+        repo.toggleFollow("u1")
+
+        assertNull(dataSource.lastFollowToggle)
+        assertNull(repo.user("u1").first())
+    }
+
+    @Test
     fun `user flow emits the user after a subsequent ingest`() = runTest {
         val repo = repository()
         assertNull(repo.user("u1").first())

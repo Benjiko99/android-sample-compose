@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.update
  * [refresh] forces a re-fetch of a single entry from the backing source, replacing the cache.
  * [updateProfile] persists edited profile fields and replaces the cached entry with the
  * result, so every observing screen sees the change immediately.
+ * [toggleFollow] flips whether the current user follows the given user and replaces the cached
+ * entry with the server's result (new follow state + follower count), so the change propagates
+ * to every screen showing that user — the profile, the feed author header, and so on.
  *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [UserDataSource].
@@ -41,5 +44,11 @@ class UserRepository(
     suspend fun updateProfile(userId: UserId, profileUpdate: ProfileUpdate) {
         val user = dataSource.update(userId, profileUpdate)
         _cache.update { it + (userId to user) }
+    }
+
+    suspend fun toggleFollow(userId: UserId) {
+        val user = _cache.value[userId] ?: return
+        val updated = dataSource.toggleFollow(user)
+        _cache.update { it + (userId to updated) }
     }
 }

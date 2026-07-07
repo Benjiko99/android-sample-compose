@@ -200,5 +200,19 @@ class ProfileViewModelTest : ViewModelTest() {
         val bookmarked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
         assertTrue(bookmarked.isBookmarked)
     }
+
+    @Test
+    fun `onToggleFollow follows the viewed user and updates the follower count`() = runTest {
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onToggleFollow()
+
+        val user = (viewModel.uiState.value as ProfileUiState.Loaded).data.user
+        assertTrue(user.isFollowing)
+        assertEquals(1, user.followerCount)
+    }
 }
 

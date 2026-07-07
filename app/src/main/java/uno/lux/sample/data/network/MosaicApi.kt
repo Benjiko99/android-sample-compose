@@ -16,6 +16,7 @@ import uno.lux.sample.data.network.response.BookmarkToggleResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedResponse
+import uno.lux.sample.data.network.response.FollowToggleResponse
 import uno.lux.sample.data.network.response.LikeToggleResponse
 import uno.lux.sample.data.network.response.ProfileStatsResponse
 import uno.lux.sample.data.network.response.UserPostsResponse
@@ -46,6 +47,13 @@ interface MosaicApi {
         @Part("bio") bio: RequestBody,
         @Part avatar: MultipartBody.Part?,
     ): UserResponse
+
+    // Toggles whether the current user (the X-User-Id header) follows [id]. The server derives
+    // both sides from the header and path, so — unlike the older toggle endpoints that still
+    // carry an EmptyBody (see the TODO on toggleLike) — this one deliberately sends no body.
+    // 403 if [id] is the current user, 404 if [id] is unknown.
+    @POST("users/{id}/follow")
+    suspend fun toggleFollow(@Path("id") id: String): FollowToggleResponse
 
     @GET("users/{id}/profile")
     suspend fun getProfileStats(@Path("id") id: String): ProfileStatsResponse

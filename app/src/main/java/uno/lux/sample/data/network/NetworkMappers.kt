@@ -49,6 +49,7 @@ internal fun MinimalUserDto.toDomain() = User(
     nickname = nickname,
     handle = handle,
     avatarUrl = avatarUrl,
+    isFollowing = isFollowing,
 )
 
 internal fun UserDto.toDomain() = User(
@@ -62,6 +63,7 @@ internal fun UserDto.toDomain() = User(
     avatarUrl = avatarUrl,
     followerCount = followerCount,
     followingCount = followingCount,
+    isFollowing = isFollowing,
 )
 
 internal fun CommentDto.toDomain() = Comment(

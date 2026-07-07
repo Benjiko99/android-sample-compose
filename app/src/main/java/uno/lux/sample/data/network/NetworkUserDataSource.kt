@@ -40,6 +40,11 @@ class NetworkUserDataSource(
             ).data.toDomain()
         }
 
+    override suspend fun toggleFollow(user: User): User = withContext(Dispatchers.IO) {
+        val result = api.toggleFollow(user.id).data
+        user.copy(isFollowing = result.isFollowing, followerCount = result.followerCount)
+    }
+
     private fun textPart(value: String) = value.toRequestBody(PLAIN_TEXT)
 
     private companion object {

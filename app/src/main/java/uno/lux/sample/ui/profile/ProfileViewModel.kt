@@ -129,6 +129,12 @@ class ProfileViewModel @AssistedInject constructor(
         }
     }
 
+    override fun onToggleFollow() {
+        viewModelScope.launch {
+            ignoreErrors { userRepository.toggleFollow(userId) }
+        }
+    }
+
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
         ignoreErrors { profileRepository.loadMorePosts(userId) }
     }

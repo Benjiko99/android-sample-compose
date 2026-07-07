@@ -6,6 +6,7 @@ import uno.lux.sample.data.network.dto.BookmarkToggleDto
 import uno.lux.sample.data.network.dto.CommentDto
 import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.EmptyBody
+import uno.lux.sample.data.network.dto.FollowToggleDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import okhttp3.MultipartBody
@@ -19,6 +20,7 @@ import uno.lux.sample.data.network.response.BookmarkToggleResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedResponse
+import uno.lux.sample.data.network.response.FollowToggleResponse
 import uno.lux.sample.data.network.response.LikeToggleResponse
 import uno.lux.sample.data.network.response.ProfileStatsResponse
 import uno.lux.sample.data.network.response.UserPostsResponse
@@ -41,7 +43,12 @@ class FakeMosaicApi(
     private val comments: List<CommentDto> = emptyList(),
     val likeResult: LikeToggleDto = LikeToggleDto(isLiked = true, likeCount = 1),
     val bookmarkResult: BookmarkToggleDto = BookmarkToggleDto(isBookmarked = true),
+    val followResult: FollowToggleDto = FollowToggleDto(isFollowing = true, followerCount = 1),
 ) : MosaicApi {
+
+    /** The id passed to the most recent [toggleFollow] call, for test assertions. */
+    var lastFollowId: String? = null
+        private set
 
     override suspend fun getFeed(cursor: String?, limit: Int, include: String): FeedResponse =
         feedResponseByCursor[cursor] ?: feedResponse
@@ -78,6 +85,11 @@ class FakeMosaicApi(
         private set
 
     private fun RequestBody.asString(): String = Buffer().also { writeTo(it) }.readUtf8()
+
+    override suspend fun toggleFollow(id: String): FollowToggleResponse {
+        lastFollowId = id
+        return FollowToggleResponse(followResult)
+    }
 
     override suspend fun getProfileStats(id: String): ProfileStatsResponse =
         ProfileStatsResponse(profileStats[id] ?: ProfileStatsDto(0, 0, 0))
@@ -149,13 +161,14 @@ fun feedItemDto(
     video = video,
 )
 
-fun minimalUserDto(id: String, nickname: String) = MinimalUserDto(
+fun minimalUserDto(id: String, nickname: String, isFollowing: Boolean = false) = MinimalUserDto(
     id = id,
     handle = "@$id",
     nickname = nickname,
+    isFollowing = isFollowing,
 )
 
-fun userDto(id: String, nickname: String) = UserDto(
+fun userDto(id: String, nickname: String, isFollowing: Boolean = false) = UserDto(
     id = id,
     nickname = nickname,
     handle = "@$id",
@@ -165,6 +178,7 @@ fun userDto(id: String, nickname: String) = UserDto(
     bio = null,
     followerCount = 0,
     followingCount = 0,
+    isFollowing = isFollowing,
 )
 
 fun commentDto(

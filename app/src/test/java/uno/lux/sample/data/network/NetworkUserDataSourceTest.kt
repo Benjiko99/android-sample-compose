@@ -4,9 +4,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.network.dto.FollowToggleDto
 import uno.lux.sample.data.user.AvatarUpload
 import uno.lux.sample.data.user.ProfileUpdate
+import uno.lux.sample.data.user.User
 
 class NetworkUserDataSourceTest {
 
@@ -46,6 +49,14 @@ class NetworkUserDataSourceTest {
         assertEquals("https://example.com/ada.jpg", user.avatarUrl)
         assertEquals(500, user.followerCount)
         assertEquals(10, user.followingCount)
+    }
+
+    @Test
+    fun `fetch maps the isFollowing flag`() = runTest {
+        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada", isFollowing = true)))
+        val dataSource = NetworkUserDataSource(api)
+
+        assertTrue(dataSource.fetch("u1")!!.isFollowing)
     }
 
     @Test
@@ -93,5 +104,30 @@ class NetworkUserDataSourceTest {
 
         assertNotNull("an avatar file part is sent", api.lastAvatarPart)
         assertEquals(UPLOADED_AVATAR_URL, user.avatarUrl)
+    }
+
+    @Test
+    fun `toggleFollow posts to the user's follow endpoint`() = runTest {
+        val api = FakeMosaicApi()
+        val dataSource = NetworkUserDataSource(api)
+
+        dataSource.toggleFollow(User(id = "u2", nickname = "Grace", handle = "@grace"))
+
+        assertEquals("u2", api.lastFollowId)
+    }
+
+    @Test
+    fun `toggleFollow applies the server's follow state and follower count`() = runTest {
+        val api = FakeMosaicApi(
+            followResult = FollowToggleDto(isFollowing = true, followerCount = 128401),
+        )
+        val dataSource = NetworkUserDataSource(api)
+
+        val updated = dataSource.toggleFollow(
+            User(id = "u2", nickname = "Grace", handle = "@grace", followerCount = 128400),
+        )
+
+        assertTrue(updated.isFollowing)
+        assertEquals(128401, updated.followerCount)
     }
 }

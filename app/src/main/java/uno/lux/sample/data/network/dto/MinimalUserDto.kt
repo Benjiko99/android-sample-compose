@@ -8,4 +8,5 @@ data class MinimalUserDto(
     val handle: String,
     val nickname: String,
     val avatarUrl: String? = null,
+    val isFollowing: Boolean,
 )
