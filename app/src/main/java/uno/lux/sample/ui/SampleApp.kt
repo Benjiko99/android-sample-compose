@@ -66,9 +66,9 @@ import uno.lux.sample.ui.video.findActivity
  * Navigation itself is driven by the ViewModels: the composition keeps owning the back stack
  * (that's what keeps it saveable across configuration changes and process death) but attaches
  * it to the injected [navigator], and each screen's ViewModel pushes and pops through that
- * seam instead of the host threading navigation lambdas down to every screen. Only ViewModel-
- * less leaf screens (the fullscreen viewers, the placeholder tab) still take a lambda, wired
- * here to the same [navigator].
+ * seam instead of the host threading navigation lambdas down to every screen. Every entry —
+ * the fullscreen viewers and the placeholder tab included — reaches the stack through its own
+ * ViewModel, so this shell wires no navigation lambdas at all; it only builds the [Screen] keys.
  */
 @Composable
 fun SampleApp(currentUserId: String, navigator: Navigator) {
@@ -110,10 +110,7 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
             modifier = Modifier.fillMaxSize(),
             entryProvider = entryProvider {
                 entry<Screen.Shell> {
-                    HomeNavShell(
-                        currentUserId = currentUserId,
-                        onOpenSettings = { navigator.goTo(Screen.Settings) },
-                    )
+                    HomeNavShell(currentUserId = currentUserId)
                 }
                 entry<Screen.Profile> { profile ->
                     ProfileScreen(userId = profile.userId, showBackButton = true)
@@ -129,7 +126,6 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
                         videoId = video.videoId,
                         url = video.url,
                         title = video.title,
-                        onBack = navigator::goBack,
                     )
                 }
                 entry<Screen.PostDetail> { detail ->
@@ -139,7 +135,6 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
                     AlbumViewerScreen(
                         imageUrls = key.images,
                         initialIndex = key.initialIndex,
-                        onBack = navigator::goBack,
                     )
                 }
             },
@@ -155,7 +150,7 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
  * never grows the back stack), so the content cross-fades (fade-through) rather than sliding.
  */
 @Composable
-private fun HomeNavShell(currentUserId: String, onOpenSettings: () -> Unit) {
+private fun HomeNavShell(currentUserId: String) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val navItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -203,10 +198,7 @@ private fun HomeNavShell(currentUserId: String, onOpenSettings: () -> Unit) {
                 AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
 
                 AppDestinations.FAVORITES ->
-                    PlaceholderScreen(
-                        titleRes = destination.labelRes,
-                        onOpenSettings = onOpenSettings,
-                    )
+                    PlaceholderScreen(titleRes = destination.labelRes)
             }
         }
     }

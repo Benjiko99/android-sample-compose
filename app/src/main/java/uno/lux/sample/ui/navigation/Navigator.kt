@@ -32,11 +32,25 @@ class Navigator {
 
     /**
      * Pushes [screen] on top of the back stack. Deliberately allows a screen equal to the current
-     * top (e.g. the same profile opened from itself); accidental double-pushes are prevented at
-     * the source, where every navigation control debounces its clicks.
+     * top (e.g. the same profile opened from a post on that profile); the click debounce every
+     * navigation control carries only guards against an accidental fast double-tap, not this
+     * intentional re-open. Screens that must never stack on themselves use [goToSingleTop].
      */
     fun goTo(screen: Screen) {
         backStack?.add(screen)
+    }
+
+    /**
+     * Pushes [screen] unless it already sits on top of the back stack — the "single top" launch
+     * behaviour. Used for pages that are semantically unique wherever they're reached (Settings,
+     * the profile editor): re-invoking the affordance while the page is showing is a no-op rather
+     * than a second copy on the stack. This is a real guarantee independent of tap timing, which
+     * is why it can't be left to the debounce.
+     */
+    fun goToSingleTop(screen: Screen) {
+        val backStack = backStack ?: return
+
+        if (backStack.lastOrNull() != screen) backStack.add(screen)
     }
 
     /** Pops the top entry off the back stack. */

@@ -30,6 +30,39 @@ class NavigatorTest {
     }
 
     @Test
+    fun `goToSingleTop pushes when the screen is not on top`() {
+        navigator.attach(backStack)
+
+        navigator.goToSingleTop(Screen.Settings)
+
+        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack)
+    }
+
+    @Test
+    fun `goToSingleTop is a no-op when the screen already sits on top`() {
+        backStack.add(Screen.Settings)
+        navigator.attach(backStack)
+
+        navigator.goToSingleTop(Screen.Settings)
+
+        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack)
+    }
+
+    @Test
+    fun `goToSingleTop pushes when the same screen is buried but not on top`() {
+        backStack.add(Screen.Settings)
+        backStack.add(Screen.Profile("u1"))
+        navigator.attach(backStack)
+
+        navigator.goToSingleTop(Screen.Settings)
+
+        assertEquals(
+            listOf(Screen.Shell, Screen.Settings, Screen.Profile("u1"), Screen.Settings),
+            backStack,
+        )
+    }
+
+    @Test
     fun `goBack pops the top entry`() {
         backStack.add(Screen.Settings)
         navigator.attach(backStack)

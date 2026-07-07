@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.ui.components.rememberDebounced
@@ -52,13 +53,33 @@ import uno.lux.sample.ui.video.findActivity
 import kotlin.math.min
 
 /**
- * Full-screen album viewer: a black-background [HorizontalPager] that opens at [initialIndex]
- * and lets the user swipe between [album]'s images. Each page supports pinch-to-zoom — while
- * zoomed in, single-finger pan moves the image and the pager scroll is suppressed; at scale 1
- * single-finger swipes pass through to the pager as normal.
+ * Stateful entry point: binds the [AlbumViewerViewModel] (its sole job is routing back through
+ * the `Navigator`) and forwards to the stateless overload below.
  */
 @Composable
 fun AlbumViewerScreen(
+    imageUrls: List<String>,
+    initialIndex: Int,
+    modifier: Modifier = Modifier,
+    viewModel: AlbumViewerViewModel = hiltViewModel(),
+) {
+    AlbumViewerScreen(
+        imageUrls = imageUrls,
+        initialIndex = initialIndex,
+        onBack = viewModel::goBack,
+        modifier = modifier,
+    )
+}
+
+/**
+ * Full-screen album viewer: a black-background [HorizontalPager] that opens at [initialIndex]
+ * and lets the user swipe between [imageUrls]'s images. Each page supports pinch-to-zoom — while
+ * zoomed in, single-finger pan moves the image and the pager scroll is suppressed; at scale 1
+ * single-finger swipes pass through to the pager as normal. Holding no ViewModel makes it
+ * directly previewable and testable.
+ */
+@Composable
+internal fun AlbumViewerScreen(
     imageUrls: List<String>,
     initialIndex: Int,
     onBack: () -> Unit,

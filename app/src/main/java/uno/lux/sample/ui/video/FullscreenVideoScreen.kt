@@ -26,10 +26,32 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import uno.lux.sample.R
 import uno.lux.sample.ui.components.rememberDebounced
+
+/**
+ * Stateful entry point: binds the [FullscreenVideoViewModel] (its sole job is routing back
+ * through the `Navigator`) and forwards to the stateless overload below.
+ */
+@Composable
+fun FullscreenVideoScreen(
+    videoId: String,
+    url: String,
+    title: String,
+    modifier: Modifier = Modifier,
+    viewModel: FullscreenVideoViewModel = hiltViewModel(),
+) {
+    FullscreenVideoScreen(
+        videoId = videoId,
+        url = url,
+        title = title,
+        onBack = viewModel::goBack,
+        modifier = modifier,
+    )
+}
 
 /**
  * The full-screen video page, pushed over the rest of the app. It does not own a player: it
@@ -37,11 +59,11 @@ import uno.lux.sample.ui.components.rememberDebounced
  * playing from the same position. [openFullscreen] either adopts the running inline player or, if
  * this page is the entry point (a profile thumbnail), loads the video fresh; the matching teardown
  * runs in [exitFullscreen] when the page is really popped. The system bars hide for an immersive
- * stage and are restored on the way out.
+ * stage and are restored on the way out. Holding no ViewModel makes it directly previewable.
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun FullscreenVideoScreen(
+internal fun FullscreenVideoScreen(
     videoId: String,
     url: String,
     title: String,

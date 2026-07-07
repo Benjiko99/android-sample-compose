@@ -143,7 +143,7 @@ class ProfileViewModel @AssistedInject constructor(
 
     override fun goBack() = navigator.goBack()
 
-    override fun openEditProfile() = navigator.goTo(Screen.EditProfile)
+    override fun openEditProfile() = navigator.goToSingleTop(Screen.EditProfile)
 
     override fun openPost(postId: PostId) = navigator.goTo(Screen.PostDetail(postId))
 

@@ -115,7 +115,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    override fun openSettings() = navigator.goTo(Screen.Settings)
+    override fun openSettings() = navigator.goToSingleTop(Screen.Settings)
 
     override fun openProfile(userId: UserId) = navigator.goTo(Screen.Profile(userId))
 

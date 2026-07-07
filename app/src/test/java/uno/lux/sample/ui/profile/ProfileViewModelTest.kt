@@ -99,6 +99,16 @@ class ProfileViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `openEditProfile does not stack a second editor`() {
+        val viewModel = viewModel()
+
+        viewModel.openEditProfile()
+        viewModel.openEditProfile()
+
+        assertEquals(listOf(Screen.Shell, Screen.Profile("u1"), Screen.EditProfile), backStack)
+    }
+
+    @Test
     fun `openPost pushes the post's detail page`() {
         viewModel().openPost("p1")
 

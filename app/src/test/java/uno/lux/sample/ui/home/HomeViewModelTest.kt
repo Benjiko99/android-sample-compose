@@ -187,6 +187,16 @@ class HomeViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `openSettings does not stack a second settings page`() {
+        val viewModel = viewModel()
+
+        viewModel.openSettings()
+        viewModel.openSettings()
+
+        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack)
+    }
+
+    @Test
     fun `openProfile pushes the author's profile page`() {
         viewModel().openProfile("u1")
 
