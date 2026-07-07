@@ -316,10 +316,10 @@ private fun HomeFeedPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun HomeLoadingPreview() {
+private fun HomeEmptyPreview() {
     MosaicTheme {
         HomeScreen(
-            uiState = HomeUiState.Loading,
+            uiState = HomeUiState.Feed(posts = emptyList(), endReached = true),
             isRefreshing = false,
             actions = createActionsProxy(),
         )
