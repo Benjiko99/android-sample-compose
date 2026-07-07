@@ -7,17 +7,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
+import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**
  * Exposes the current [themeMode] and applies the user's selection through the
- * [SettingsRepository]. The repository is a constructor dependency so the ViewModel can be
- * unit tested against a fake; in production Hilt injects the app-wide singleton.
+ * [SettingsRepository]; the up button pops the page through the injected [Navigator]. Both are
+ * constructor dependencies so the ViewModel can be unit tested against a fake repository and a
+ * navigator attached to a plain list.
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val navigator: Navigator,
 ) : ViewModel(), SettingsActions {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
@@ -26,4 +29,6 @@ class SettingsViewModel @Inject constructor(
     override fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     }
+
+    override fun goBack() = navigator.goBack()
 }

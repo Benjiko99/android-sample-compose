@@ -34,14 +34,15 @@ import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
 
 /**
- * The settings screen's one ViewModel-backed intent, as a [Stable] seam the stateless
+ * The settings screen's ViewModel-backed intents — picking a theme and navigating back (which
+ * the ViewModel forwards to the injected `Navigator`) — as a [Stable] seam the stateless
  * [SettingsScreen] depends on. [SettingsViewModel] implements it, so the binder passes the
- * ViewModel directly and a preview passes a no-op [createActionsProxy]. Back navigation is the
- * host's concern, so it stays a separate lambda.
+ * ViewModel directly and a preview passes a no-op [createActionsProxy].
  */
 @Stable
 interface SettingsActions {
     fun setThemeMode(mode: ThemeMode)
+    fun goBack()
 }
 
 /**
@@ -50,7 +51,6 @@ interface SettingsActions {
  */
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -59,7 +59,6 @@ fun SettingsScreen(
     SettingsScreen(
         themeMode = themeMode,
         actions = viewModel,
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -69,7 +68,6 @@ fun SettingsScreen(
 internal fun SettingsScreen(
     themeMode: ThemeMode,
     actions: SettingsActions,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -78,7 +76,7 @@ internal fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_settings)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack.rememberDebounced()) {
+                    IconButton(onClick = actions::goBack.rememberDebounced()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.navigate_back),
@@ -156,7 +154,6 @@ private fun SettingsScreenPreview() {
         SettingsScreen(
             themeMode = ThemeMode.SYSTEM,
             actions = createActionsProxy(),
-            onBack = {},
         )
     }
 }

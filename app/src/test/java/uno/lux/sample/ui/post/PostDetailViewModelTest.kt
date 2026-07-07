@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.post
 
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -19,6 +20,8 @@ import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,6 +48,10 @@ class PostDetailViewModelTest : ViewModelTest() {
         likeCount = 2,
     )
 
+    // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
+    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.PostDetail("p1"))
+    private val navigator = Navigator().apply { attach(backStack) }
+
     private fun viewModel(
         postId: String = "p1",
         posts: List<Post> = listOf(post),
@@ -58,9 +65,35 @@ class PostDetailViewModelTest : ViewModelTest() {
             postRepository = postRepo,
             commentRepository = CommentRepository(FakeCommentDataSource(currentUser, comments)),
             userRepository = userRepo,
+            navigator = navigator,
             currentUser = currentUser,
             postId = postId,
         )
+    }
+
+    // ── navigation ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `goBack pops the detail page`() {
+        viewModel().goBack()
+
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `openProfile pushes the author's profile page`() {
+        viewModel().openProfile("u2")
+
+        assertEquals(Screen.Profile("u2"), backStack.last())
+    }
+
+    @Test
+    fun `openAlbum pushes the album viewer at the tapped image`() {
+        val images = listOf("https://example.test/1.jpg")
+
+        viewModel().openAlbum(images, initialIndex = 0)
+
+        assertEquals(Screen.AlbumViewer(images, initialIndex = 0), backStack.last())
     }
 
     // ── uiState ───────────────────────────────────────────────────────────────

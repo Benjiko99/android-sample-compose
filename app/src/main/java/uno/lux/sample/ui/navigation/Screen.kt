@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import uno.lux.sample.data.post.AlbumId
 import uno.lux.sample.data.post.PostId
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.post.VideoId
 import uno.lux.sample.data.user.UserId
 
@@ -42,7 +43,9 @@ sealed interface Screen : NavKey {
      * keys the shared player so the inline → full-screen hand-off keeps the same instance.
      */
     @Serializable
-    data class FullscreenVideo(val videoId: VideoId, val url: String, val title: String) : Screen
+    data class FullscreenVideo(val videoId: VideoId, val url: String, val title: String) : Screen {
+        constructor(video: Video) : this(video.id, video.videoUrl, video.title)
+    }
 
     /** A post's detail page: full content, media, and the comment thread. */
     @Serializable

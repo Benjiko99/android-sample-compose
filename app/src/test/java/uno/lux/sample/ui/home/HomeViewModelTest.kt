@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.home
 
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -18,9 +19,12 @@ import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,13 +51,17 @@ class HomeViewModelTest : ViewModelTest() {
         commentCount = 0,
     )
 
+    // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
+    private val backStack = mutableListOf<NavKey>(Screen.Shell)
+    private val navigator = Navigator().apply { attach(backStack) }
+
     private fun viewModel(
         feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
     ): HomeViewModel {
         val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(FakeUserDataSource())
         val feedRepo = FeedRepository(feedDataSource, postRepo, userRepo)
-        return HomeViewModel(feedRepo, postRepo, userRepo)
+        return HomeViewModel(feedRepo, postRepo, userRepo, navigator)
     }
 
     @Test
@@ -169,6 +177,54 @@ class HomeViewModelTest : ViewModelTest() {
 
         val cardAfter = (viewModel.uiState.value as HomeUiState.Feed).posts[1]
         assertSame(cardBefore, cardAfter)
+    }
+
+    @Test
+    fun `openSettings pushes the settings page`() {
+        viewModel().openSettings()
+
+        assertEquals(Screen.Settings, backStack.last())
+    }
+
+    @Test
+    fun `openProfile pushes the author's profile page`() {
+        viewModel().openProfile("u1")
+
+        assertEquals(Screen.Profile("u1"), backStack.last())
+    }
+
+    @Test
+    fun `openPost pushes the post's detail page`() {
+        viewModel().openPost("p1")
+
+        assertEquals(Screen.PostDetail("p1"), backStack.last())
+    }
+
+    @Test
+    fun `openVideo pushes the fullscreen player for that video`() {
+        val video = Video(
+            id = "v1",
+            title = "Talk",
+            durationSeconds = 95,
+            viewCount = 40,
+            videoUrl = "https://example.test/v1.mp4",
+        )
+
+        viewModel().openVideo(video)
+
+        assertEquals(
+            Screen.FullscreenVideo("v1", "https://example.test/v1.mp4", "Talk"),
+            backStack.last(),
+        )
+    }
+
+    @Test
+    fun `openAlbum pushes the album viewer at the tapped image`() {
+        val images = listOf("https://example.test/1.jpg", "https://example.test/2.jpg")
+
+        viewModel().openAlbum(images, initialIndex = 1)
+
+        assertEquals(Screen.AlbumViewer(images, initialIndex = 1), backStack.last())
     }
 
     @Test

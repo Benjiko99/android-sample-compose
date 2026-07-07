@@ -41,7 +41,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
@@ -58,9 +57,10 @@ import uno.lux.sample.util.createActionsProxy
 
 /**
  * The feed's ViewModel-backed intents, as one [Stable] seam the stateless [HomeScreen] depends
- * on. [HomeViewModel] implements it, so the binder passes the ViewModel directly and a preview
- * passes a no-op [createActionsProxy]. Navigation (opening settings or a profile) is the host's
- * concern, so it stays a separate lambda rather than living here.
+ * on — repository mutations (likes, bookmarks) and navigation (opening a post, profile, viewer
+ * or settings) alike, since the ViewModel forwards the latter to the injected `Navigator`.
+ * [HomeViewModel] implements it, so the binder passes the ViewModel directly and a preview
+ * passes a no-op [createActionsProxy].
  */
 @Stable
 interface HomeActions {
@@ -69,6 +69,11 @@ interface HomeActions {
     fun loadMore()
     fun onToggleLike(postId: PostId)
     fun onToggleBookmark(postId: PostId)
+    fun openSettings()
+    fun openProfile(userId: UserId)
+    fun openPost(postId: PostId)
+    fun openVideo(video: Video)
+    fun openAlbum(imageUrls: List<String>, initialIndex: Int)
 }
 
 /**
@@ -77,11 +82,6 @@ interface HomeActions {
  */
 @Composable
 fun HomeScreen(
-    onOpenSettings: () -> Unit,
-    onOpenProfile: (userId: UserId) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onOpenPost: (postId: PostId) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -92,11 +92,6 @@ fun HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
         actions = viewModel,
-        onOpenSettings = onOpenSettings,
-        onOpenProfile = onOpenProfile,
-        onOpenVideo = onOpenVideo,
-        onOpenAlbum = onOpenAlbum,
-        onOpenPost = onOpenPost,
         modifier = modifier,
     )
 }
@@ -111,11 +106,6 @@ internal fun HomeScreen(
     uiState: HomeUiState,
     isRefreshing: Boolean,
     actions: HomeActions,
-    onOpenSettings: () -> Unit,
-    onOpenProfile: (userId: UserId) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onOpenPost: (postId: PostId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -129,7 +119,7 @@ internal fun HomeScreen(
         topBar = {
             FeedTopBar(
                 elevated = elevated,
-                onOpenSettings = onOpenSettings,
+                onOpenSettings = actions::openSettings,
             )
         },
     ) { contentPadding ->
@@ -155,10 +145,6 @@ internal fun HomeScreen(
                             endReached = uiState.endReached,
                             listState = listState,
                             actions = actions,
-                            onOpenProfile = onOpenProfile,
-                            onOpenVideo = onOpenVideo,
-                            onOpenAlbum = onOpenAlbum,
-                            onOpenPost = onOpenPost,
                         )
                     }
             }
@@ -204,10 +190,6 @@ private fun FeedList(
     endReached: Boolean,
     listState: LazyListState,
     actions: HomeActions,
-    onOpenProfile: (userId: String) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onOpenPost: (postId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val playback = LocalVideoPlayback.current
@@ -233,10 +215,10 @@ private fun FeedList(
                 data = data,
                 onToggleLike = { actions.onToggleLike(data.post.id) },
                 onToggleBookmark = { actions.onToggleBookmark(data.post.id) },
-                onOpenProfile = { onOpenProfile(data.author.id) },
-                onOpenVideo = onOpenVideo,
-                onOpenAlbum = onOpenAlbum,
-                onOpenPost = { onOpenPost(data.post.id) },
+                onOpenProfile = { actions.openProfile(data.author.id) },
+                onOpenVideo = actions::openVideo,
+                onOpenAlbum = actions::openAlbum,
+                onOpenPost = { actions.openPost(data.post.id) },
             )
         }
         if (endReached) {
@@ -328,11 +310,6 @@ private fun HomeFeedPreview() {
             uiState = HomeUiState.Feed(feed, endReached = true),
             isRefreshing = false,
             actions = createActionsProxy(),
-            onOpenSettings = {},
-            onOpenProfile = {},
-            onOpenVideo = {},
-            onOpenAlbum = { _, _ -> },
-            onOpenPost = {},
         )
     }
 }
@@ -345,11 +322,6 @@ private fun HomeLoadingPreview() {
             uiState = HomeUiState.Loading,
             isRefreshing = false,
             actions = createActionsProxy(),
-            onOpenSettings = {},
-            onOpenProfile = {},
-            onOpenVideo = {},
-            onOpenAlbum = { _, _ -> },
-            onOpenPost = {},
         )
     }
 }

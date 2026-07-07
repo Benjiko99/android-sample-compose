@@ -6,13 +6,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
@@ -24,12 +24,14 @@ import javax.inject.Inject
  * cached user as a **one-time snapshot** — deliberately not kept in sync afterwards, so a
  * concurrent cache refresh can't clobber in-progress edits. Saving goes back through the
  * repository, which replaces the cached entry, making the change instantly visible on every
- * screen observing the user.
+ * screen observing the user; once the save lands, the editor pops itself off the back stack
+ * through the injected [Navigator] (a failed save stays put and surfaces its error).
  */
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val avatarImageLoader: AvatarImageLoader,
+    private val navigator: Navigator,
     @CurrentUserId private val userId: UserId,
 ) : ViewModel(), EditProfileActions {
 
@@ -37,11 +39,6 @@ class EditProfileViewModel @Inject constructor(
     private val _loadError = MutableStateFlow<AppError?>(null)
     private val _isSaving = MutableStateFlow(false)
     private val _saveError = MutableStateFlow<AppError?>(null)
-
-    private val _isSaved = MutableStateFlow(false)
-
-    /** Flips to true after a successful save; the binder navigates back in response. */
-    val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
 
     val uiState: StateFlow<EditProfileUiState> = combine(
         _form,
@@ -107,13 +104,15 @@ class EditProfileViewModel @Inject constructor(
                     // the current avatar is left untouched.
                     val avatar = form.pickedAvatarUri?.let { avatarImageLoader.read(it) }
                     userRepository.updateProfile(userId, form.toProfileUpdate(avatar))
-                    _isSaved.value = true
+                    navigator.goBack()
                 }
             } finally {
                 _isSaving.value = false
             }
         }
     }
+
+    override fun goBack() = navigator.goBack()
 
     private fun updateForm(transform: (EditProfileForm) -> EditProfileForm) {
         _form.update { form -> form?.let(transform) }

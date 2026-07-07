@@ -13,7 +13,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import uno.lux.sample.ui.SampleApp
+import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.theme.MosaicTheme
+import javax.inject.Inject
 
 // Scrims drawn behind the gesture navigation bar, per the AndroidX edge-to-edge guidance.
 private val LightScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
@@ -23,6 +25,10 @@ private val DarkScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+
+    /** The retained navigator ViewModels navigate through; [SampleApp] attaches its back stack. */
+    @Inject
+    lateinit var navigator: Navigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -47,7 +53,7 @@ class MainActivity : ComponentActivity() {
             }
 
             MosaicTheme(darkTheme = darkTheme) {
-                SampleApp(currentUserId = viewModel.currentUserId)
+                SampleApp(currentUserId = viewModel.currentUserId, navigator = navigator)
             }
         }
     }

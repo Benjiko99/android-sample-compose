@@ -1,0 +1,71 @@
+package uno.lux.sample.ui.navigation
+
+import androidx.navigation3.runtime.NavKey
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class NavigatorTest {
+
+    private val navigator = Navigator()
+    private val backStack = mutableListOf<NavKey>(Screen.Shell)
+
+    @Test
+    fun `goTo pushes onto the attached back stack`() {
+        navigator.attach(backStack)
+
+        navigator.goTo(Screen.Profile("u1"))
+        navigator.goTo(Screen.Settings)
+
+        assertEquals(listOf(Screen.Shell, Screen.Profile("u1"), Screen.Settings), backStack)
+    }
+
+    @Test
+    fun `goTo allows pushing a screen equal to the current top`() {
+        navigator.attach(backStack)
+
+        navigator.goTo(Screen.Profile("u1"))
+        navigator.goTo(Screen.Profile("u1"))
+
+        assertEquals(listOf(Screen.Shell, Screen.Profile("u1"), Screen.Profile("u1")), backStack)
+    }
+
+    @Test
+    fun `goBack pops the top entry`() {
+        backStack.add(Screen.Settings)
+        navigator.attach(backStack)
+
+        navigator.goBack()
+
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `navigation is dropped while no back stack is attached`() {
+        navigator.goTo(Screen.Settings)
+        navigator.goBack()
+
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `navigation is dropped after the attached stack detaches`() {
+        navigator.attach(backStack)
+        navigator.detach(backStack)
+
+        navigator.goTo(Screen.Settings)
+
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `detaching a stale stack keeps the current one attached`() {
+        val staleStack = mutableListOf<NavKey>(Screen.Shell)
+        navigator.attach(staleStack)
+        navigator.attach(backStack)
+
+        navigator.detach(staleStack)
+        navigator.goTo(Screen.Settings)
+
+        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack)
+    }
+}

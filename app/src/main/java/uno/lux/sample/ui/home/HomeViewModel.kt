@@ -13,7 +13,11 @@ import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.FeedState
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
@@ -22,10 +26,12 @@ import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**
- * Holds feed state and translates user intent (likes, bookmarks) into repository mutations.
- * Combines [FeedRepository] (feed state + pagination), [PostRepository] (entity map), and
- * [UserRepository] (author lookup) to produce [PostCardData] items ready for display. All three
- * are constructor dependencies so the ViewModel can be unit tested against fakes.
+ * Holds feed state and translates user intent — likes and bookmarks into repository mutations,
+ * opening a post/profile/viewer into pushes on the injected [Navigator]. Combines
+ * [FeedRepository] (feed state + pagination), [PostRepository] (entity map), and
+ * [UserRepository] (author lookup) to produce [PostCardData] items ready for display. All
+ * collaborators are constructor dependencies so the ViewModel can be unit tested against fakes
+ * (the navigator against a plain attached list).
  *
  * [FeedState.NotLoaded] is the initial state of [FeedRepository.feedState]; the combine maps it
  * to [HomeUiState.Loading] until [FeedRepository.refresh] completes and emits [FeedState.Loaded].
@@ -37,6 +43,7 @@ class HomeViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
+    private val navigator: Navigator,
 ) : ViewModel(), HomeActions {
 
     private val _loadError = MutableStateFlow<AppError?>(null)
@@ -107,4 +114,15 @@ class HomeViewModel @Inject constructor(
             ignoreErrors { postRepository.toggleBookmark(postId) }
         }
     }
+
+    override fun openSettings() = navigator.goTo(Screen.Settings)
+
+    override fun openProfile(userId: UserId) = navigator.goTo(Screen.Profile(userId))
+
+    override fun openPost(postId: PostId) = navigator.goTo(Screen.PostDetail(postId))
+
+    override fun openVideo(video: Video) = navigator.goTo(Screen.FullscreenVideo(video))
+
+    override fun openAlbum(imageUrls: List<String>, initialIndex: Int) =
+        navigator.goTo(Screen.AlbumViewer(imageUrls, initialIndex))
 }

@@ -99,10 +99,11 @@ import uno.lux.sample.util.createActionsProxy
 import uno.lux.sample.util.formatVideoDuration
 
 /**
- * The profile's ViewModel-backed intents — liking / bookmarking the viewed user's posts — as one
- * [Stable] seam the stateless [ProfileScreen] depends on. [ProfileViewModel] implements it, so the
- * binder passes the ViewModel directly and a preview passes a no-op [createActionsProxy].
- * Navigation (settings, back) is the host's concern, so it stays a separate lambda.
+ * The profile's ViewModel-backed intents — liking / bookmarking the viewed user's posts, plus
+ * navigation (opening a post, viewer or the editor, going back), which the ViewModel forwards
+ * to the injected `Navigator` — as one [Stable] seam the stateless [ProfileScreen] depends on.
+ * [ProfileViewModel] implements it, so the binder passes the ViewModel directly and a preview
+ * passes a no-op [createActionsProxy].
  */
 @Stable
 interface ProfileActions {
@@ -111,23 +112,24 @@ interface ProfileActions {
     fun loadMorePosts()
     fun loadMoreAlbums()
     fun loadMoreVideos()
+    fun goBack()
+    fun openEditProfile()
+    fun openPost(postId: PostId)
+    fun openVideo(video: Video)
+    fun openAlbum(imageUrls: List<String>, initialIndex: Int)
+    fun openAvatar(avatarUrl: String)
 }
 
 /**
  * Stateful entry point: binds a [ProfileViewModel] for [userId] and forwards state and intent
- * to the stateless overload below. [onBack] is null when the profile is shown as a root tab
- * (no up-affordance); non-null when it was pushed over the feed.
+ * to the stateless overload below. [showBackButton] is false when the profile is shown as a
+ * root tab (no up-affordance); true when it was pushed over the feed.
  */
 @Composable
 fun ProfileScreen(
     userId: UserId,
-    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
-    onOpenPost: (postId: PostId) -> Unit = {},
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit = { _, _ -> },
-    onEditProfile: () -> Unit = {},
-    onOpenAvatar: (avatarUrl: String) -> Unit = {},
-    onBack: (() -> Unit)? = null,
+    showBackButton: Boolean = false,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
     // ProfileViewModel, created for that entry's userId and cleared when the page pops.
     viewModel: ProfileViewModel = hiltViewModel<ProfileViewModel, ProfileViewModel.Factory>(
@@ -143,19 +145,16 @@ fun ProfileScreen(
         onRefresh = viewModel::refresh,
         onRetry = viewModel::retry,
         actions = viewModel,
-        onOpenVideo = onOpenVideo,
         modifier = modifier,
-        onOpenPost = onOpenPost,
-        onOpenAlbum = onOpenAlbum,
-        onEditProfile = onEditProfile,
-        onOpenAvatar = onOpenAvatar,
-        onBack = onBack,
+        onBack = if (showBackButton) viewModel::goBack else null,
     )
 }
 
 /**
  * Stateless profile screen — renders [uiState] and reports interactions through [actions].
- * Holding no ViewModel makes it directly previewable and testable.
+ * Holding no ViewModel makes it directly previewable and testable. [onBack] carries the one
+ * piece of navigation the interface can't: whether this instance shows an up-affordance at all
+ * (null on the root tab).
  */
 @Composable
 internal fun ProfileScreen(
@@ -164,12 +163,7 @@ internal fun ProfileScreen(
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     actions: ProfileActions,
-    onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
-    onOpenPost: (postId: PostId) -> Unit = {},
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit = { _, _ -> },
-    onEditProfile: () -> Unit = {},
-    onOpenAvatar: (avatarUrl: String) -> Unit = {},
     onBack: (() -> Unit)? = null,
 ) {
     Box(
@@ -203,11 +197,6 @@ internal fun ProfileScreen(
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
                 actions = actions,
-                onOpenVideo = onOpenVideo,
-                onOpenAlbum = onOpenAlbum,
-                onOpenPost = onOpenPost,
-                onEditProfile = onEditProfile,
-                onOpenAvatar = onOpenAvatar,
                 onBack = onBack,
             )
         }
@@ -222,11 +211,6 @@ private fun ProfileContent(
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     actions: ProfileActions,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onOpenPost: (postId: PostId) -> Unit,
-    onEditProfile: () -> Unit,
-    onOpenAvatar: (avatarUrl: String) -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -276,8 +260,8 @@ private fun ProfileContent(
                     ProfileHeader(
                         user = data.user,
                         isCurrentUser = isCurrentUser,
-                        onEditProfile = onEditProfile,
-                        onOpenAvatar = onOpenAvatar,
+                        onEditProfile = actions::openEditProfile,
+                        onOpenAvatar = actions::openAvatar,
                     )
                 }
                 stickyHeader(key = "tabs") {
@@ -288,19 +272,12 @@ private fun ProfileContent(
                     )
                 }
                 when (selectedTab) {
-                    ProfileTab.POSTS -> postsTab(
-                        screenData = data,
-                        actions = actions,
-                        onOpenVideo = onOpenVideo,
-                        onOpenAlbum = onOpenAlbum,
-                        onOpenPost = onOpenPost,
-                    )
-
+                    ProfileTab.POSTS -> postsTab(screenData = data, actions = actions)
                     ProfileTab.ALBUMS -> albumsTab(data.profile.albums, data.albumsEndReached)
                     ProfileTab.VIDEOS -> videosTab(
                         data.profile.videos,
                         data.videosEndReached,
-                        onOpenVideo
+                        actions::openVideo,
                     )
                 }
                 item(key = "bottom-inset") {
@@ -544,9 +521,6 @@ private fun ProfileTabs(
 private fun LazyListScope.postsTab(
     screenData: ProfileScreenData,
     actions: ProfileActions,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onOpenPost: (postId: PostId) -> Unit,
 ) {
     val posts = screenData.posts
     val author = screenData.user
@@ -562,9 +536,9 @@ private fun LazyListScope.postsTab(
             onToggleBookmark = { actions.onToggleBookmark(post.id) },
             // Already on this author's profile — tapping the header again is a no-op.
             onOpenProfile = {},
-            onOpenVideo = onOpenVideo,
-            onOpenAlbum = onOpenAlbum,
-            onOpenPost = { onOpenPost(post.id) },
+            onOpenVideo = actions::openVideo,
+            onOpenAlbum = actions::openAlbum,
+            onOpenPost = { actions.openPost(post.id) },
         )
     }
     if (!screenData.postsEndReached) {
@@ -928,8 +902,7 @@ private fun ProfileScreenPreview() {
             onRefresh = {},
             onRetry = {},
             actions = createActionsProxy(),
-            onOpenVideo = {},
-        ) {}
+        )
     }
 }
 

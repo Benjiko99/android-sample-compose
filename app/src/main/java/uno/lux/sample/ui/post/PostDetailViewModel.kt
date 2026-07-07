@@ -17,9 +17,13 @@ import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUser
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.stateInWhileSubscribed
@@ -32,14 +36,16 @@ import uno.lux.sample.util.stateInWhileSubscribed
  * avoids the cross-post keying and memory-retention problems that a shared comment store would
  * introduce.
  *
- * [postId] is a runtime argument wired through [Factory] / assisted injection so every opened
- * post gets its own ViewModel, scoped to its back-stack entry.
+ * Navigation intents (going back, opening the author or a media viewer) are pushes and pops on
+ * the injected [Navigator]. [postId] is a runtime argument wired through [Factory] / assisted
+ * injection so every opened post gets its own ViewModel, scoped to its back-stack entry.
  */
 @HiltViewModel(assistedFactory = PostDetailViewModel.Factory::class)
 class PostDetailViewModel @AssistedInject constructor(
     private val postRepository: PostRepository,
     private val commentRepository: CommentRepository,
     private val userRepository: UserRepository,
+    private val navigator: Navigator,
     @CurrentUser private val currentUser: User,
     @Assisted private val postId: PostId,
 ) : ViewModel() {
@@ -112,4 +118,13 @@ class PostDetailViewModel @AssistedInject constructor(
             }
         }
     }
+
+    fun goBack() = navigator.goBack()
+
+    fun openProfile(userId: UserId) = navigator.goTo(Screen.Profile(userId))
+
+    fun openVideo(video: Video) = navigator.goTo(Screen.FullscreenVideo(video))
+
+    fun openAlbum(imageUrls: List<String>, initialIndex: Int) =
+        navigator.goTo(Screen.AlbumViewer(imageUrls, initialIndex))
 }

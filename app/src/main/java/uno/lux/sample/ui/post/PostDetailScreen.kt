@@ -87,7 +87,6 @@ import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
-import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.Post
@@ -113,10 +112,6 @@ import uno.lux.sample.util.relativeTime
 @Composable
 fun PostDetailScreen(
     postId: PostId,
-    onBack: () -> Unit,
-    onOpenProfile: (userId: UserId) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostDetailViewModel = hiltViewModel<PostDetailViewModel, PostDetailViewModel.Factory>(
         creationCallback = { factory -> factory.create(postId) },
@@ -127,10 +122,10 @@ fun PostDetailScreen(
     PostDetailScreen(
         uiState = uiState,
         composerUserName = viewModel.composerUserName,
-        onBack = onBack,
-        onOpenProfile = onOpenProfile,
-        onOpenVideo = onOpenVideo,
-        onOpenAlbum = onOpenAlbum,
+        onBack = viewModel::goBack,
+        onOpenProfile = viewModel::openProfile,
+        onOpenVideo = viewModel::openVideo,
+        onOpenAlbum = viewModel::openAlbum,
         onToggleLike = viewModel::onToggleLike,
         onToggleBookmark = viewModel::onToggleBookmark,
         onToggleCommentLike = viewModel::onToggleCommentLike,

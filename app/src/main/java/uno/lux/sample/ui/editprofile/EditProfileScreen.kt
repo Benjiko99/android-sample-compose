@@ -59,9 +59,11 @@ import uno.lux.sample.util.createActionsProxy
 
 /**
  * The editor's ViewModel-backed intents as one [Stable] seam the stateless
- * [EditProfileScreen] depends on. [EditProfileViewModel] implements it, so the binder passes
- * the ViewModel directly and a preview passes a no-op [createActionsProxy]. Navigation (back)
- * and the photo picker launch stay separate lambdas — both are the host/platform's concern.
+ * [EditProfileScreen] depends on — including navigating back, which the ViewModel forwards to
+ * the injected `Navigator` (and triggers itself once a save lands). [EditProfileViewModel]
+ * implements it, so the binder passes the ViewModel directly and a preview passes a no-op
+ * [createActionsProxy]. Only the photo picker launch stays a separate lambda — an
+ * Activity-result API is the platform's concern.
  */
 @Stable
 interface EditProfileActions {
@@ -72,31 +74,25 @@ interface EditProfileActions {
     fun onAvatarChange(uri: String)
     fun save()
     fun retry()
+    fun goBack()
 }
 
 /**
- * Stateful entry point: binds the [EditProfileViewModel], owns the photo-picker launcher
- * (an Activity-result API, so it can't live in the ViewModel), and navigates back once a
- * save lands.
+ * Stateful entry point: binds the [EditProfileViewModel] and owns the photo-picker launcher
+ * (an Activity-result API, so it can't live in the ViewModel).
  */
 @Composable
 fun EditProfileScreen(
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EditProfileViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isSaved by viewModel.isSaved.collectAsStateWithLifecycle()
     val pickAvatar = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         // The picker's session-scoped read grant is enough — the image bytes are read and
         // uploaded on save, so no persistable permission is needed.
         if (uri != null) viewModel.onAvatarChange(uri.toString())
-    }
-
-    LaunchedEffect(isSaved) {
-        if (isSaved) onBack()
     }
 
     EditProfileScreen(
@@ -107,7 +103,6 @@ fun EditProfileScreen(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
         },
-        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -118,7 +113,6 @@ internal fun EditProfileScreen(
     uiState: EditProfileUiState,
     actions: EditProfileActions,
     onPickAvatar: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -135,7 +129,7 @@ internal fun EditProfileScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.profile_edit)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack.rememberDebounced()) {
+                    IconButton(onClick = actions::goBack.rememberDebounced()) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.navigate_back),
@@ -343,7 +337,6 @@ private fun EditProfileScreenPreview() {
             ),
             actions = createActionsProxy(),
             onPickAvatar = {},
-            onBack = {},
         )
     }
 }

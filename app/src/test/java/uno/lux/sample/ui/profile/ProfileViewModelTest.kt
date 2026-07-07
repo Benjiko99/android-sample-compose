@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.profile
 
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -23,6 +24,8 @@ import uno.lux.sample.data.profile.VideosPage
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,6 +42,10 @@ class ProfileViewModelTest : ViewModelTest() {
         likeCount = 10,
         commentCount = 2,
     )
+
+    // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
+    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.Profile("u1"))
+    private val navigator = Navigator().apply { attach(backStack) }
 
     private fun viewModel(userId: String = "u1", currentUserId: String = "u1"): ProfileViewModel {
         val postRepo = PostRepository(FakePostDataSource())
@@ -71,8 +78,40 @@ class ProfileViewModelTest : ViewModelTest() {
             profileRepository = profileRepo,
             postRepository = postRepo,
             userRepository = userRepo,
+            navigator = navigator,
             currentUserId = currentUserId,
             userId = userId,
+        )
+    }
+
+    @Test
+    fun `goBack pops the profile page`() {
+        viewModel().goBack()
+
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `openEditProfile pushes the profile editor`() {
+        viewModel().openEditProfile()
+
+        assertEquals(Screen.EditProfile, backStack.last())
+    }
+
+    @Test
+    fun `openPost pushes the post's detail page`() {
+        viewModel().openPost("p1")
+
+        assertEquals(Screen.PostDetail("p1"), backStack.last())
+    }
+
+    @Test
+    fun `openAvatar pushes a single-image album viewer`() {
+        viewModel().openAvatar("https://example.test/avatar.jpg")
+
+        assertEquals(
+            Screen.AlbumViewer(listOf("https://example.test/avatar.jpg"), initialIndex = 0),
+            backStack.last(),
         )
     }
 

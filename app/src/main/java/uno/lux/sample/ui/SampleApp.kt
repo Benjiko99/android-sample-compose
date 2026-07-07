@@ -39,12 +39,11 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
-import uno.lux.sample.data.post.Album
-import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.album.AlbumViewerScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.editprofile.EditProfileScreen
 import uno.lux.sample.ui.home.HomeScreen
+import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.ui.post.PostDetailScreen
 import uno.lux.sample.ui.profile.ProfileScreen
@@ -63,28 +62,21 @@ import uno.lux.sample.ui.video.findActivity
  * predictive back gesture included — while tab switches inside the shell stay a fade-through
  * between peers. The entry decorators give every page its own saveable-state and ViewModel
  * store, so a pushed page's ViewModel is created on push and cleared on pop.
+ *
+ * Navigation itself is driven by the ViewModels: the composition keeps owning the back stack
+ * (that's what keeps it saveable across configuration changes and process death) but attaches
+ * it to the injected [navigator], and each screen's ViewModel pushes and pops through that
+ * seam instead of the host threading navigation lambdas down to every screen. Only ViewModel-
+ * less leaf screens (the fullscreen viewers, the placeholder tab) still take a lambda, wired
+ * here to the same [navigator].
  */
 @Composable
-fun SampleApp(currentUserId: String) {
+fun SampleApp(currentUserId: String, navigator: Navigator) {
     val backStack = rememberNavBackStack(Screen.Shell)
-    fun push(screen: Screen) {
-        backStack.add(screen)
-    }
-    // Push a page unless it's already on top — guards against re-adding the current page
-    fun pushUnique(screen: Screen) {
-        if (backStack.lastOrNull() != screen) push(screen)
-    }
 
-    val goBack: () -> Unit = { backStack.removeLastOrNull() }
-    val openSettings = { pushUnique(Screen.Settings) }
-    val openEditProfile = { pushUnique(Screen.EditProfile) }
-    val openProfile = { userId: String -> push(Screen.Profile(userId)) }
-    val openPost = { postId: String -> push(Screen.PostDetail(postId)) }
-    val openVideoPlayer = { video: Video ->
-        push(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
-    }
-    val openAlbumViewer = { imageUrls: List<String>, initialIndex: Int ->
-        push(Screen.AlbumViewer(imageUrls, initialIndex))
+    DisposableEffect(navigator, backStack) {
+        navigator.attach(backStack)
+        onDispose { navigator.detach(backStack) }
     }
 
     // The shared player lives in an activity-scoped ViewModel so it survives the push to full
@@ -107,7 +99,7 @@ fun SampleApp(currentUserId: String) {
     CompositionLocalProvider(LocalVideoPlayback provides playback) {
         NavDisplay(
             backStack = backStack,
-            onBack = goBack,
+            onBack = navigator::goBack,
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator(),
@@ -120,53 +112,34 @@ fun SampleApp(currentUserId: String) {
                 entry<Screen.Shell> {
                     HomeNavShell(
                         currentUserId = currentUserId,
-                        onOpenSettings = openSettings,
-                        onOpenEditProfile = openEditProfile,
-                        onOpenProfile = openProfile,
-                        onOpenVideo = openVideoPlayer,
-                        onOpenAlbum = openAlbumViewer,
-                        onOpenPost = openPost,
+                        onOpenSettings = { navigator.goTo(Screen.Settings) },
                     )
                 }
                 entry<Screen.Profile> { profile ->
-                    ProfileScreen(
-                        userId = profile.userId,
-                        onOpenVideo = openVideoPlayer,
-                        onOpenPost = openPost,
-                        onOpenAlbum = openAlbumViewer,
-                        onEditProfile = openEditProfile,
-                        onOpenAvatar = { openAlbumViewer(listOf(it), 0) },
-                        onBack = goBack,
-                    )
+                    ProfileScreen(userId = profile.userId, showBackButton = true)
                 }
                 entry<Screen.Settings> {
-                    SettingsScreen(onBack = goBack)
+                    SettingsScreen()
                 }
                 entry<Screen.EditProfile> {
-                    EditProfileScreen(onBack = goBack)
+                    EditProfileScreen()
                 }
                 entry<Screen.FullscreenVideo> { video ->
                     FullscreenVideoScreen(
                         videoId = video.videoId,
                         url = video.url,
                         title = video.title,
-                        onBack = goBack,
+                        onBack = navigator::goBack,
                     )
                 }
                 entry<Screen.PostDetail> { detail ->
-                    PostDetailScreen(
-                        postId = detail.postId,
-                        onBack = goBack,
-                        onOpenProfile = openProfile,
-                        onOpenVideo = openVideoPlayer,
-                        onOpenAlbum = openAlbumViewer,
-                    )
+                    PostDetailScreen(postId = detail.postId)
                 }
                 entry<Screen.AlbumViewer> { key ->
                     AlbumViewerScreen(
                         imageUrls = key.images,
                         initialIndex = key.initialIndex,
-                        onBack = goBack,
+                        onBack = navigator::goBack,
                     )
                 }
             },
@@ -182,15 +155,7 @@ fun SampleApp(currentUserId: String) {
  * never grows the back stack), so the content cross-fades (fade-through) rather than sliding.
  */
 @Composable
-private fun HomeNavShell(
-    currentUserId: String,
-    onOpenSettings: () -> Unit,
-    onOpenEditProfile: () -> Unit,
-    onOpenProfile: (userId: String) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onOpenPost: (postId: String) -> Unit,
-) {
+private fun HomeNavShell(currentUserId: String, onOpenSettings: () -> Unit) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val navItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -231,24 +196,11 @@ private fun HomeNavShell(
             label = "tab",
         ) { destination ->
             when (destination) {
-                AppDestinations.HOME -> HomeScreen(
-                    onOpenSettings = onOpenSettings,
-                    onOpenProfile = onOpenProfile,
-                    onOpenVideo = onOpenVideo,
-                    onOpenAlbum = onOpenAlbum,
-                    onOpenPost = onOpenPost,
-                )
+                AppDestinations.HOME -> HomeScreen()
 
                 // The Profile tab is the signed-in user's own profile (no up-affordance, so
-                // onBack stays null); tapping another author still pushes Screen.Profile.
-                AppDestinations.PROFILE -> ProfileScreen(
-                    userId = currentUserId,
-                    onOpenVideo = onOpenVideo,
-                    onOpenPost = onOpenPost,
-                    onOpenAlbum = onOpenAlbum,
-                    onEditProfile = onOpenEditProfile,
-                    onOpenAvatar = { onOpenAlbum(listOf(it), 0) },
-                )
+                // showBackButton stays false); tapping another author still pushes Screen.Profile.
+                AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
 
                 AppDestinations.FAVORITES ->
                     PlaceholderScreen(

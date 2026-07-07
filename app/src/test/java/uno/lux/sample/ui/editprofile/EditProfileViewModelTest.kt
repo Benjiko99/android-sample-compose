@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.editprofile
 
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -17,6 +18,8 @@ import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -51,6 +54,10 @@ class EditProfileViewModelTest : ViewModelTest() {
         val avatarLoader: FakeAvatarImageLoader,
     )
 
+    // The editor sits on top of the profile that opened it; a successful save must pop it.
+    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.EditProfile)
+    private val navigator = Navigator().apply { attach(backStack) }
+
     private fun fixture(
         cached: Boolean = true,
         failUpdates: Boolean = false,
@@ -61,7 +68,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         val avatarLoader = FakeAvatarImageLoader()
 
         return Fixture(
-            EditProfileViewModel(repository, avatarLoader, "u1"),
+            EditProfileViewModel(repository, avatarLoader, navigator, "u1"),
             repository,
             dataSource,
             avatarLoader,
@@ -146,7 +153,7 @@ class EditProfileViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `save persists the edited profile and flags isSaved`() = runTest {
+    fun `save persists the edited profile and navigates back`() = runTest {
         val (viewModel, repository, dataSource) = fixture()
         collecting(viewModel)
 
@@ -166,7 +173,7 @@ class EditProfileViewModelTest : ViewModelTest() {
             dataSource.lastUpdate,
         )
         assertEquals("Ada King", repository.user("u1").first()?.nickname)
-        assertTrue(viewModel.isSaved.value)
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
     }
 
     @Test
@@ -179,7 +186,7 @@ class EditProfileViewModelTest : ViewModelTest() {
 
         assertEquals("content://media/picker/42", avatarLoader.lastUri)
         assertEquals(avatarLoader.result, dataSource.lastUpdate?.second?.avatar)
-        assertTrue(viewModel.isSaved.value)
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
     }
 
     @Test
@@ -208,7 +215,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         viewModel.save()
 
         assertNull(dataSource.lastUpdate)
-        assertFalse(viewModel.isSaved.value)
+        assertEquals(Screen.EditProfile, backStack.last())
     }
 
     @Test
@@ -221,6 +228,18 @@ class EditProfileViewModelTest : ViewModelTest() {
         val editing = viewModel.uiState.value as EditProfileUiState.Editing
         assertEquals(AppError.NoConnection, editing.saveError)
         assertFalse(editing.isSaving)
-        assertFalse(viewModel.isSaved.value)
+        assertEquals(Screen.EditProfile, backStack.last())
+    }
+
+    @Test
+    fun `goBack pops the editor without saving`() = runTest {
+        val (viewModel, _, dataSource) = fixture()
+        collecting(viewModel)
+
+        viewModel.onNicknameChange("Ada King")
+        viewModel.goBack()
+
+        assertNull(dataSource.lastUpdate)
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
     }
 }

@@ -15,10 +15,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
@@ -30,13 +33,15 @@ import uno.lux.sample.util.stateInWhileSubscribed
  * (metadata + ordered post IDs + pagination), and [PostRepository] (entity map) into a single
  * [ProfileScreenData]. Mutations go directly through [PostRepository] so a like toggled here is
  * immediately visible on the home feed — the shared entity store propagates the update to all
- * observers. [userId] is a runtime arg wired through [Factory].
+ * observers. Navigation intents (opening a post, viewer or the editor, going back) are pushes
+ * and pops on the injected [Navigator]. [userId] is a runtime arg wired through [Factory].
  */
 @HiltViewModel(assistedFactory = ProfileViewModel.Factory::class)
 class ProfileViewModel @AssistedInject constructor(
     private val profileRepository: ProfileRepository,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
+    private val navigator: Navigator,
     @CurrentUserId private val currentUserId: UserId,
     @Assisted private val userId: UserId,
 ) : ViewModel(), ProfileActions {
@@ -135,4 +140,18 @@ class ProfileViewModel @AssistedInject constructor(
     override fun loadMoreVideos() = launchIfIdle(::loadMoreVideosJob) {
         ignoreErrors { profileRepository.loadMoreVideos(userId) }
     }
+
+    override fun goBack() = navigator.goBack()
+
+    override fun openEditProfile() = navigator.goTo(Screen.EditProfile)
+
+    override fun openPost(postId: PostId) = navigator.goTo(Screen.PostDetail(postId))
+
+    override fun openVideo(video: Video) = navigator.goTo(Screen.FullscreenVideo(video))
+
+    override fun openAlbum(imageUrls: List<String>, initialIndex: Int) =
+        navigator.goTo(Screen.AlbumViewer(imageUrls, initialIndex))
+
+    override fun openAvatar(avatarUrl: String) =
+        navigator.goTo(Screen.AlbumViewer(listOf(avatarUrl), initialIndex = 0))
 }
