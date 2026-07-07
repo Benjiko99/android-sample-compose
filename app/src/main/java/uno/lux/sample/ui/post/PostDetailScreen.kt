@@ -116,7 +116,7 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostDetailViewModel = hiltViewModel<PostDetailViewModel, PostDetailViewModel.Factory>(
         creationCallback = { factory -> factory.create(postId) },
@@ -153,7 +153,7 @@ internal fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
@@ -435,7 +435,7 @@ private fun PostDetailContent(
     commentsError: AppError?,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
@@ -515,7 +515,7 @@ private fun DetailPostCard(
     author: User,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onScrollToComments: () -> Unit,
@@ -532,7 +532,7 @@ private fun DetailPostCard(
             Spacer(Modifier.height(12.dp))
             AlbumPostGallery(
                 album = post.album,
-                onOpenImage = { index -> onOpenAlbum(post.album, index) },
+                onOpenImage = { index -> onOpenAlbum(post.album.images, index) },
             )
         }
         if (post.video != null) {

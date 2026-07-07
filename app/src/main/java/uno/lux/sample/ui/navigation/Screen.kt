@@ -54,8 +54,6 @@ sealed interface Screen : NavKey {
      */
     @Serializable
     data class AlbumViewer(
-        val albumId: AlbumId,
-        val albumTitle: String,
         val images: List<String>,
         val initialIndex: Int,
     ) : Screen

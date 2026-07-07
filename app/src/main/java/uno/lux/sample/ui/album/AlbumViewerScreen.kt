@@ -59,12 +59,12 @@ import uno.lux.sample.ui.video.findActivity
  */
 @Composable
 fun AlbumViewerScreen(
-    album: Album,
+    imageUrls: List<String>,
     initialIndex: Int,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val pagerState = rememberPagerState(initialPage = initialIndex) { album.images.size }
+    val pagerState = rememberPagerState(initialPage = initialIndex) { imageUrls.size }
 
     ImmersiveSystemBars()
 
@@ -78,16 +78,15 @@ fun AlbumViewerScreen(
             modifier = Modifier.fillMaxSize(),
         ) { page ->
             ZoomableImage(
-                url = album.images[page],
-                contentDescription = album.title,
+                url = imageUrls[page],
                 modifier = Modifier.fillMaxSize(),
             )
         }
 
-        if (album.images.size > 1) {
+        if (imageUrls.size > 1) {
             PageIndicator(
                 pagerState = pagerState,
-                total = album.images.size,
+                total = imageUrls.size,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .safeDrawingPadding()
@@ -153,7 +152,6 @@ private fun PageIndicator(
 @Composable
 private fun ZoomableImage(
     url: String,
-    contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
@@ -190,7 +188,7 @@ private fun ZoomableImage(
     ) {
         AsyncImage(
             model = url,
-            contentDescription = contentDescription,
+            contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()

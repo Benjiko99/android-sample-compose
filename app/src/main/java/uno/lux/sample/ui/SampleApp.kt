@@ -76,11 +76,11 @@ fun SampleApp(currentUserId: String) {
     val openEditProfile = { pushUnique(Screen.EditProfile) }
     val openProfile = { userId: String -> pushUnique(Screen.Profile(userId)) }
     val openPost = { postId: String -> pushUnique(Screen.PostDetail(postId)) }
-    val openVideo = { video: Video ->
+    val openVideoPlayer = { video: Video ->
         pushUnique(Screen.FullscreenVideo(video.id, video.videoUrl, video.title))
     }
-    val openAlbum = { album: Album, initialIndex: Int ->
-        pushUnique(Screen.AlbumViewer(album.id, album.title, album.images, initialIndex))
+    val openAlbumViewer = { imageUrls: List<String>, initialIndex: Int ->
+        pushUnique(Screen.AlbumViewer(imageUrls, initialIndex))
     }
     val goBack: () -> Unit = { backStack.removeLastOrNull() }
 
@@ -120,18 +120,19 @@ fun SampleApp(currentUserId: String) {
                         onOpenSettings = openSettings,
                         onOpenEditProfile = openEditProfile,
                         onOpenProfile = openProfile,
-                        onOpenVideo = openVideo,
-                        onOpenAlbum = openAlbum,
+                        onOpenVideo = openVideoPlayer,
+                        onOpenAlbum = openAlbumViewer,
                         onOpenPost = openPost,
                     )
                 }
                 entry<Screen.Profile> { profile ->
                     ProfileScreen(
                         userId = profile.userId,
-                        onOpenVideo = openVideo,
+                        onOpenVideo = openVideoPlayer,
                         onOpenPost = openPost,
-                        onOpenAlbum = openAlbum,
+                        onOpenAlbum = openAlbumViewer,
                         onEditProfile = openEditProfile,
+                        onOpenAvatar = { openAlbumViewer(listOf(it), 0) },
                         onBack = goBack,
                     )
                 }
@@ -154,18 +155,13 @@ fun SampleApp(currentUserId: String) {
                         postId = detail.postId,
                         onBack = goBack,
                         onOpenProfile = openProfile,
-                        onOpenVideo = openVideo,
-                        onOpenAlbum = openAlbum,
+                        onOpenVideo = openVideoPlayer,
+                        onOpenAlbum = openAlbumViewer,
                     )
                 }
                 entry<Screen.AlbumViewer> { key ->
                     AlbumViewerScreen(
-                        album = Album(
-                            id = key.albumId,
-                            title = key.albumTitle,
-                            images = key.images,
-                            itemCount = key.images.size,
-                        ),
+                        imageUrls = key.images,
                         initialIndex = key.initialIndex,
                         onBack = goBack,
                     )
@@ -189,7 +185,7 @@ private fun HomeNavShell(
     onOpenEditProfile: () -> Unit,
     onOpenProfile: (userId: String) -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: (postId: String) -> Unit,
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
@@ -248,6 +244,7 @@ private fun HomeNavShell(
                     onOpenPost = onOpenPost,
                     onOpenAlbum = onOpenAlbum,
                     onEditProfile = onOpenEditProfile,
+                    onOpenAvatar = { onOpenAlbum(listOf(it), 0) },
                 )
 
                 AppDestinations.FAVORITES ->

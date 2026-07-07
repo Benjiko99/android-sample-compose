@@ -80,7 +80,7 @@ internal fun PostCard(
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -103,7 +103,7 @@ internal fun PostCard(
             Spacer(Modifier.height(12.dp))
             AlbumPostGallery(
                 album = post.album,
-                onOpenImage = { index -> onOpenAlbum(post.album, index) },
+                onOpenImage = { index -> onOpenAlbum(post.album.images, index) },
             )
         }
         if (post.video != null) {

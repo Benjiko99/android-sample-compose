@@ -124,8 +124,9 @@ fun ProfileScreen(
     onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
     onOpenPost: (postId: PostId) -> Unit = {},
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit = { _, _ -> },
     onEditProfile: () -> Unit = {},
+    onOpenAvatar: (avatarUrl: String) -> Unit = {},
     onBack: (() -> Unit)? = null,
     // The ViewModel store is per back-stack entry, so each opened profile page gets its own
     // ProfileViewModel, created for that entry's userId and cleared when the page pops.
@@ -147,6 +148,7 @@ fun ProfileScreen(
         onOpenPost = onOpenPost,
         onOpenAlbum = onOpenAlbum,
         onEditProfile = onEditProfile,
+        onOpenAvatar = onOpenAvatar,
         onBack = onBack,
     )
 }
@@ -165,8 +167,9 @@ internal fun ProfileScreen(
     onOpenVideo: (Video) -> Unit,
     modifier: Modifier = Modifier,
     onOpenPost: (postId: PostId) -> Unit = {},
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit = { _, _ -> },
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit = { _, _ -> },
     onEditProfile: () -> Unit = {},
+    onOpenAvatar: (avatarUrl: String) -> Unit = {},
     onBack: (() -> Unit)? = null,
 ) {
     Box(
@@ -204,6 +207,7 @@ internal fun ProfileScreen(
                 onOpenAlbum = onOpenAlbum,
                 onOpenPost = onOpenPost,
                 onEditProfile = onEditProfile,
+                onOpenAvatar = onOpenAvatar,
                 onBack = onBack,
             )
         }
@@ -219,9 +223,10 @@ private fun ProfileContent(
     onRefresh: () -> Unit,
     actions: ProfileActions,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
     onEditProfile: () -> Unit,
+    onOpenAvatar: (avatarUrl: String) -> Unit,
     onBack: (() -> Unit)?,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
@@ -229,7 +234,7 @@ private fun ProfileContent(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     // The cover bleeds to the very top, so we can't reserve the bar's height with content
-    // padding. Instead the sticky tab header grows a top inset as it nears the bar, derived
+    // padding. Instead, the sticky tab header grows a top inset as it nears the bar, derived
     // from the header item's own geometry — independent of the inset, so it can't oscillate.
     val density = LocalDensity.current
     val barBottomPx = WindowInsets.statusBars.getTop(density) +
@@ -272,6 +277,7 @@ private fun ProfileContent(
                         user = data.user,
                         isCurrentUser = isCurrentUser,
                         onEditProfile = onEditProfile,
+                        onOpenAvatar = onOpenAvatar,
                     )
                 }
                 stickyHeader(key = "tabs") {
@@ -323,6 +329,7 @@ private fun ProfileHeader(
     user: User,
     isCurrentUser: Boolean,
     onEditProfile: () -> Unit,
+    onOpenAvatar: (avatarUrl: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -364,7 +371,10 @@ private fun ProfileHeader(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp)
-                    .padding(top = CoverHeight - AvatarOverlap),
+                    .padding(top = CoverHeight - AvatarOverlap)
+                    .debouncedClickable(onClick = {
+                        if (user.avatarUrl != null) onOpenAvatar(user.avatarUrl)
+                    }),
             )
         }
 
@@ -535,7 +545,7 @@ private fun LazyListScope.postsTab(
     screenData: ProfileScreenData,
     actions: ProfileActions,
     onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (Album, initialIndex: Int) -> Unit,
+    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: (postId: PostId) -> Unit,
 ) {
     val posts = screenData.posts
