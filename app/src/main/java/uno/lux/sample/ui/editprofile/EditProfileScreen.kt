@@ -8,16 +8,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,6 +37,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -41,8 +46,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -123,11 +131,16 @@ internal fun EditProfileScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.profile_edit)) },
+                modifier = Modifier.shadow(4.dp),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
                 navigationIcon = {
                     IconButton(onClick = actions::goBack.rememberDebounced()) {
                         Icon(
@@ -161,7 +174,9 @@ internal fun EditProfileScreen(
             is EditProfileUiState.Error -> FullScreenError(
                 message = uiState.error.asText(),
                 onRetry = actions::retry,
-                modifier = Modifier.padding(contentPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
             )
 
             is EditProfileUiState.Editing -> EditProfileContent(
@@ -169,7 +184,10 @@ internal fun EditProfileScreen(
                 isSaving = uiState.isSaving,
                 actions = actions,
                 onPickAvatar = onPickAvatar,
-                modifier = Modifier.padding(contentPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding)
+                    .consumeWindowInsets(contentPadding),
             )
         }
     }
@@ -204,57 +222,70 @@ private fun EditProfileContent(
     onPickAvatar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    LazyColumn(
         modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .background(MaterialTheme.colorScheme.surface),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        AvatarPicker(
-            name = form.nickname,
-            avatarUrl = form.displayAvatar,
-            onClick = onPickAvatar,
-        )
+        item(key = "avatar") {
+            AvatarPicker(
+                name = form.nickname,
+                avatarUrl = form.displayAvatar,
+                onClick = onPickAvatar,
+            )
+        }
 
-        OutlinedTextField(
-            value = form.nickname,
-            onValueChange = actions::onNicknameChange,
-            label = { Text(stringResource(R.string.edit_profile_name_label)) },
-            singleLine = true,
-            enabled = !isSaving,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        item(key = "nickname") {
+            OutlinedTextField(
+                value = form.nickname,
+                onValueChange = actions::onNicknameChange,
+                label = { Text(stringResource(R.string.edit_profile_name_label)) },
+                singleLine = true,
+                enabled = !isSaving,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-        OutlinedTextField(
-            value = form.age,
-            onValueChange = actions::onAgeChange,
-            label = { Text(stringResource(R.string.edit_profile_age_label)) },
-            singleLine = true,
-            enabled = !isSaving,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = !form.isAgeValid,
-            supportingText = {
-                if (!form.isAgeValid) Text(stringResource(R.string.edit_profile_age_error))
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        item(key = "age") {
+            OutlinedTextField(
+                value = form.age,
+                onValueChange = actions::onAgeChange,
+                label = { Text(stringResource(R.string.edit_profile_age_label)) },
+                singleLine = true,
+                enabled = !isSaving,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Next
+                ),
+                isError = !form.isAgeValid,
+                supportingText = {
+                    if (!form.isAgeValid) Text(stringResource(R.string.edit_profile_age_error))
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-        GenderSelector(
-            selected = form.gender,
-            onSelected = actions::onGenderChange,
-            enabled = !isSaving,
-        )
+        item(key = "gender") {
+            GenderSelector(
+                selected = form.gender,
+                onSelected = actions::onGenderChange,
+                enabled = !isSaving,
+            )
+        }
 
-        OutlinedTextField(
-            value = form.bio,
-            onValueChange = actions::onBioChange,
-            label = { Text(stringResource(R.string.edit_profile_bio_label)) },
-            minLines = 4,
-            enabled = !isSaving,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        item(key = "bio") {
+            OutlinedTextField(
+                value = form.bio,
+                onValueChange = actions::onBioChange,
+                label = { Text(stringResource(R.string.edit_profile_bio_label)) },
+                minLines = 4,
+                enabled = !isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -265,11 +296,10 @@ private fun AvatarPicker(
     avatarUrl: String?,
     onClick: () -> Unit,
 ) {
-    Box {
+    Box(modifier = Modifier.clickable(onClick = onClick)) {
         Box(
             modifier = Modifier
-                .clip(CircleShape)
-                .clickable(onClick = onClick),
+                .clip(CircleShape),
         ) {
             Avatar(name = name, size = 96.dp, imageUrl = avatarUrl)
         }
