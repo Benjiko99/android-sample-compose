@@ -278,16 +278,6 @@ private fun PostOverflowSheet(
             label = stringResource(R.string.post_menu_copy_link),
             onClick = { copyPostLink(context, post); dismiss() },
         )
-        SheetRow(
-            iconRes = R.drawable.ic_visibility_off,
-            label = stringResource(R.string.post_menu_hide),
-            onClick = { context.toast(R.string.action_not_implemented); dismiss() },
-        )
-        SheetRow(
-            iconRes = R.drawable.ic_volume_off,
-            label = stringResource(R.string.post_menu_mute, author.handle),
-            onClick = { context.toast(R.string.action_not_implemented); dismiss() },
-        )
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(horizontal = 22.dp, vertical = 6.dp),

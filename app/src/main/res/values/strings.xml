@@ -26,8 +26,6 @@
     <string name="post_menu_unsave">Remove from saved</string>
     <string name="post_menu_share">Share</string>
     <string name="post_menu_copy_link">Copy link</string>
-    <string name="post_menu_hide">Hide this post</string>
-    <string name="post_menu_mute">Mute %1$s</string>
     <string name="post_menu_report">Report</string>
     <!-- Share / copy link -->
     <string name="post_share_chooser">Share post</string>

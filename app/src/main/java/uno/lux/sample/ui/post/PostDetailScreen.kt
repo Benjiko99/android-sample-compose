@@ -365,16 +365,6 @@ private fun PostDetailMoreSheet(
                 dismiss()
             },
         )
-        MoreSheetRow(
-            iconRes = R.drawable.ic_visibility_off,
-            label = stringResource(R.string.post_menu_hide),
-            onClick = { dismiss() },
-        )
-        MoreSheetRow(
-            iconRes = R.drawable.ic_volume_off,
-            label = stringResource(R.string.post_menu_mute, author.handle),
-            onClick = { dismiss() },
-        )
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(horizontal = 22.dp, vertical = 6.dp),
