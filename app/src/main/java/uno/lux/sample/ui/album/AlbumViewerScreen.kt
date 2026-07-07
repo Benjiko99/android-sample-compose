@@ -32,10 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -47,9 +47,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
-import uno.lux.sample.data.post.Album
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.video.findActivity
+import kotlin.math.min
 
 /**
  * Full-screen album viewer: a black-background [HorizontalPager] that opens at [initialIndex]
@@ -156,30 +156,54 @@ private fun ZoomableImage(
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var imageSize by remember { mutableStateOf(Size.Zero) }
 
     Box(
         modifier = modifier
             .clipToBounds()
             .pointerInput(Unit) {
                 awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var isZoomingOrPanning = scale > 1f
+                    if (isZoomingOrPanning) down.consume()
+
                     do {
                         val event = awaitPointerEvent()
                         val pressedCount = event.changes.count { it.pressed }
-                        if (pressedCount >= 2 || scale > 1f) {
-                            val zoom = event.calculateZoom()
-                            val pan = event.calculatePan()
-                            val centroid = event.calculateCentroid()
-                            val newScale = (scale * zoom).coerceIn(1f, 5f)
-                            val dz = newScale / scale
-                            // Anchor the zoom to the centroid so the point under the fingers
-                            // stays fixed. Centroid is in composable coordinates; graphicsLayer
-                            // pivots at the composable center, so adjust relative to that.
-                            val c = centroid - Offset(size.width / 2f, size.height / 2f)
-                            offset = offset * dz - c * (dz - 1f) + pan
-                            scale = newScale
-                            if (newScale <= 1f) offset = Offset.Zero
-                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        if (pressedCount >= 2) isZoomingOrPanning = true
+
+                        if (isZoomingOrPanning) {
+                            if (pressedCount > 0) {
+                                val zoom = event.calculateZoom()
+                                val pan = event.calculatePan()
+                                val centroid = event.calculateCentroid()
+                                val newScale = (scale * zoom).coerceIn(1f, 5f)
+                                val dz = newScale / scale
+
+                                val viewSize = Size(size.width.toFloat(), size.height.toFloat())
+                                val contentSize = if (imageSize.width > 0 && imageSize.height > 0) {
+                                    val s = min(viewSize.width / imageSize.width, viewSize.height / imageSize.height)
+                                    Size(imageSize.width * s, imageSize.height * s)
+                                } else {
+                                    viewSize
+                                }
+
+                                val maxX = (contentSize.width * newScale - viewSize.width).coerceAtLeast(0f) / 2f
+                                val maxY = (contentSize.height * newScale - viewSize.height).coerceAtLeast(0f) / 2f
+
+                                // Anchor the zoom to the centroid so the point under the fingers
+                                // stays fixed. Centroid is in composable coordinates; graphicsLayer
+                                // pivots at the composable center, so adjust relative to that.
+                                val c = centroid - Offset(size.width / 2f, size.height / 2f)
+                                val rawOffset = offset * dz - c * (dz - 1f) + pan
+                                offset = Offset(
+                                    x = rawOffset.x.coerceIn(-maxX, maxX),
+                                    y = rawOffset.y.coerceIn(-maxY, maxY)
+                                )
+                                scale = newScale
+                                if (newScale <= 1f) offset = Offset.Zero
+                            }
+                            event.changes.forEach { it.consume() }
                         }
                     } while (event.changes.any { it.pressed })
                 }
@@ -190,6 +214,7 @@ private fun ZoomableImage(
             model = url,
             contentDescription = null,
             contentScale = ContentScale.Fit,
+            onSuccess = { imageSize = it.painter.intrinsicSize },
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
