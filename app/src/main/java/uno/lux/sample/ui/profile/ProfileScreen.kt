@@ -295,7 +295,7 @@ private fun ProfileContent(
 
 // region Header
 
-private val CoverHeight = 150.dp
+private val CoverHeight = 160.dp
 private val AvatarRingSize = 96.dp
 private val AvatarSize = 88.dp
 private val AvatarOverlap = 44.dp // how far the avatar hangs below the cover
