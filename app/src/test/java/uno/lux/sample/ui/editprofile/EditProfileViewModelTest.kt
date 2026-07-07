@@ -183,14 +183,20 @@ class EditProfileViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `save without a picked avatar sends no upload`() = runTest {
+    fun `editing only other fields does not read or upload the avatar`() = runTest {
         val (viewModel, _, dataSource, avatarLoader) = fixture()
         collecting(viewModel)
 
+        // Change every field except the avatar, then save.
+        viewModel.onNicknameChange("Ada King")
+        viewModel.onAgeChange("37")
+        viewModel.onGenderChange(GenderOption.MAN)
+        viewModel.onBioChange("Countess of Lovelace")
         viewModel.save()
 
-        assertNull(avatarLoader.lastUri)
-        assertNull(dataSource.lastUpdate?.second?.avatar)
+        assertNull("the picked image is never read", avatarLoader.lastUri)
+        assertNull("no avatar is uploaded", dataSource.lastUpdate?.second?.avatar)
+        assertEquals("Ada King", dataSource.lastUpdate?.second?.nickname)
     }
 
     @Test
