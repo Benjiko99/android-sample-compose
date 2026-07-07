@@ -18,7 +18,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://mosaic.tree-among-shrubs.com/api/"
+    const val BASE_URL = "https://mosaic.tree-among-shrubs.com"
+    private const val API_URL = "${BASE_URL}/api/"
 
     @Provides
     @Singleton
@@ -46,7 +47,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit =
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(API_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json; charset=UTF-8".toMediaType()))
             .build()
