@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.home
 
+import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.util.AppError
 
 /**

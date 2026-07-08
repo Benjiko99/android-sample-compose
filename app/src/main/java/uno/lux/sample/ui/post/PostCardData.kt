@@ -1,4 +1,4 @@
-package uno.lux.sample.ui.home
+package uno.lux.sample.ui.post
 
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.post.Post

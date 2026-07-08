@@ -1,4 +1,4 @@
-package uno.lux.sample.ui.home
+package uno.lux.sample.ui.post
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -89,8 +89,8 @@ import uno.lux.sample.ui.components.FullScreenError
 import uno.lux.sample.ui.components.LoadMoreEffect
 import uno.lux.sample.ui.components.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import uno.lux.sample.ui.home.PostCard
-import uno.lux.sample.ui.home.PostCardData
+import uno.lux.sample.ui.post.PostCard
+import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors

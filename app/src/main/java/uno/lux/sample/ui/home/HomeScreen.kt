@@ -50,6 +50,8 @@ import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.components.LoadingMoreFooter
 import uno.lux.sample.ui.components.MosaicWordmark
 import uno.lux.sample.ui.components.SettingsAction
+import uno.lux.sample.ui.post.PostCard
+import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.ui.video.LocalVideoPlayback

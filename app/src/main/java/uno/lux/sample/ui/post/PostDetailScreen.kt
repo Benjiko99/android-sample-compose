@@ -1,17 +1,7 @@
 package uno.lux.sample.ui.post
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.os.Build
-import android.widget.Toast
-import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
-import uno.lux.sample.ui.components.debouncedClickable
-import uno.lux.sample.ui.components.rememberDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +15,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,35 +24,27 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.Button
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -71,13 +52,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.core.app.ShareCompat
-import androidx.core.content.getSystemService
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -85,23 +63,20 @@ import uno.lux.sample.R
 import uno.lux.sample.data.SampleComments
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.user.User
-import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.debouncedClickable
+import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.format.asText
-import uno.lux.sample.util.AppError
-import uno.lux.sample.ui.home.AlbumPostGallery
-import uno.lux.sample.ui.home.ReportPostDialog
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
-import uno.lux.sample.ui.video.VideoPostPlayer
-import uno.lux.sample.util.compactCount
-import uno.lux.sample.util.postLink
+import uno.lux.sample.util.AppError
 import uno.lux.sample.util.relativeTime
 
 /**
@@ -157,8 +132,6 @@ internal fun PostDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val loaded = (uiState as? PostDetailUiState.Loaded)
-    val post = loaded?.post
-    val author = loaded?.author
 
     Scaffold(
         modifier = modifier.imePadding(),
@@ -179,11 +152,11 @@ internal fun PostDetailScreen(
                     }
                 },
                 actions = {
-                    if (post != null && author != null) {
-                        PostDetailMoreButton(
-                            post = post,
-                            author = author,
-                            onToggleBookmark = onToggleBookmark
+                    if (loaded != null) {
+                        PostOverflowMenu(
+                            post = loaded.post,
+                            author = loaded.author,
+                            onToggleBookmark = onToggleBookmark,
                         )
                     }
                 },
@@ -193,7 +166,7 @@ internal fun PostDetailScreen(
             )
         },
         bottomBar = {
-            if (uiState is PostDetailUiState.Loaded) {
+            if (loaded != null) {
                 CommentComposer(
                     userNickname = composerUserName,
                     onSend = onAddComment,
@@ -238,175 +211,6 @@ internal fun PostDetailScreen(
                 modifier = Modifier.padding(contentPadding),
             )
         }
-    }
-}
-
-// ── Top-bar overflow ───────────────────────────────────────────────────────────
-
-@Composable
-private fun PostDetailMoreButton(
-    post: Post,
-    author: User,
-    onToggleBookmark: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    var showSheet by remember { mutableStateOf(false) }
-    var showReport by remember { mutableStateOf(false) }
-
-    IconButton(onClick = ({ showSheet = true }).rememberDebounced(), modifier = modifier) {
-        Icon(
-            painter = painterResource(R.drawable.ic_more_vert),
-            contentDescription = stringResource(R.string.post_more_options),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp),
-        )
-    }
-
-    if (showSheet) {
-        PostDetailMoreSheet(
-            post = post,
-            author = author,
-            onDismiss = { showSheet = false },
-            onToggleBookmark = onToggleBookmark,
-            onReport = { showReport = true },
-        )
-    }
-
-    if (showReport) {
-        ReportPostDialog(
-            onDismiss = { showReport = false },
-            onSubmit = { _, _ ->
-                Toast.makeText(context, R.string.report_sent, Toast.LENGTH_SHORT).show()
-                showReport = false
-            },
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PostDetailMoreSheet(
-    post: Post,
-    author: User,
-    onDismiss: () -> Unit,
-    onToggleBookmark: () -> Unit,
-    onReport: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val clipLabel = stringResource(R.string.post_link_clip_label)
-    val dismiss: () -> Unit = {
-        scope.launch { sheetState.hide() }
-            .invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
-    }
-
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 22.dp, top = 4.dp, end = 22.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Avatar(name = author.nickname, size = 38.dp, imageUrl = author.avatarUrl)
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = author.nickname,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = post.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = LocalMosaicColors.current.textTertiary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Spacer(Modifier.height(4.dp))
-
-        MoreSheetRow(
-            iconRes = R.drawable.ic_bookmark_border,
-            label = stringResource(
-                if (post.isBookmarked) R.string.post_menu_unsave else R.string.post_menu_save,
-            ),
-            onClick = { onToggleBookmark(); dismiss() },
-        )
-        MoreSheetRow(
-            iconRes = R.drawable.ic_share,
-            label = stringResource(R.string.post_menu_share),
-            onClick = {
-                ShareCompat.IntentBuilder(context)
-                    .setType("text/plain")
-                    .setSubject(post.title)
-                    .setText(postLink(post.id))
-                    .setChooserTitle(R.string.post_share_chooser)
-                    .startChooser()
-                dismiss()
-            },
-        )
-        MoreSheetRow(
-            iconRes = R.drawable.ic_link,
-            label = stringResource(R.string.post_menu_copy_link),
-            onClick = {
-                val clipboard = context.getSystemService<ClipboardManager>()!!
-                clipboard.setPrimaryClip(
-                    ClipData.newPlainText(clipLabel, postLink(post.id)),
-                )
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                    Toast.makeText(context, R.string.post_link_copied, Toast.LENGTH_SHORT).show()
-                }
-                dismiss()
-            },
-        )
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant,
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 6.dp),
-        )
-        MoreSheetRow(
-            iconRes = R.drawable.ic_flag,
-            label = stringResource(R.string.post_menu_report),
-            danger = true,
-            onClick = { onReport(); dismiss() },
-        )
-        Spacer(Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun MoreSheetRow(
-    iconRes: Int,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    danger: Boolean = false,
-) {
-    val contentColor =
-        if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    val iconColor =
-        if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .debouncedClickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            tint = iconColor,
-            modifier = Modifier.size(22.dp),
-        )
-        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = contentColor)
     }
 }
 
@@ -494,6 +298,12 @@ private fun CommentsError(error: AppError, onRetry: () -> Unit) {
 
 // ── Post card inside the detail ────────────────────────────────────────────────
 
+/**
+ * The post itself, rendered from the same blocks as the feed's [PostCard] — minus the affordances
+ * that only make sense in a list: the body isn't a tap target (this *is* the post), the overflow
+ * menu lives in the top bar, and the comment action scrolls to the thread below instead of
+ * navigating.
+ */
 @Composable
 private fun DetailPostCard(
     post: Post,
@@ -511,213 +321,16 @@ private fun DetailPostCard(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        DetailPostHeader(post = post, author = author, onOpenProfile = onOpenProfile)
-        DetailPostBody(title = post.title, body = post.body)
-        if (post.album != null) {
-            Spacer(Modifier.height(12.dp))
-            AlbumPostGallery(
-                album = post.album,
-                onOpenImage = { index -> onOpenAlbum(post.album.images, index) },
-            )
-        }
-        if (post.video != null) {
-            Spacer(Modifier.height(12.dp))
-            VideoPostPlayer(
-                video = post.video,
-                onOpenFullscreen = onOpenVideo,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-        }
-        DetailPostActions(
+        PostAuthorHeader(post = post, author = author, onOpenProfile = onOpenProfile)
+        PostBody(title = post.title, body = post.body)
+        PostMedia(post = post, onOpenVideo = onOpenVideo, onOpenAlbum = onOpenAlbum)
+        PostActions(
             post = post,
             onToggleLike = onToggleLike,
             onToggleBookmark = onToggleBookmark,
-            onScrollToComments = onScrollToComments,
+            onCommentClick = onScrollToComments,
         )
         Spacer(Modifier.height(4.dp))
-    }
-}
-
-@Composable
-private fun DetailPostHeader(
-    post: Post,
-    author: User,
-    onOpenProfile: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .debouncedClickable(onClick = onOpenProfile)
-                .padding(vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Avatar(name = author.nickname, size = 42.dp, imageUrl = author.avatarUrl)
-            Spacer(Modifier.width(11.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = author.nickname,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = "${author.handle} · ${relativeTime(post.createdAt).asText()}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = LocalMosaicColors.current.textTertiary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DetailPostBody(
-    title: String,
-    body: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun DetailPostActions(
-    post: Post,
-    onToggleLike: () -> Unit,
-    onToggleBookmark: () -> Unit,
-    onScrollToComments: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    val likeTint by animateColorAsState(
-        targetValue = if (post.isLiked) LocalMosaicColors.current.like else muted,
-        label = "likeTint",
-    )
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        DetailActionButton(
-            iconRes = if (post.isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border,
-            contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
-            label = compactCount(post.likeCount).asText(),
-            tint = likeTint,
-            onClick = onToggleLike,
-            iconModifier = Modifier.pop(post.isLiked),
-        )
-        Spacer(Modifier.width(2.dp))
-        DetailActionButton(
-            iconRes = R.drawable.ic_comment,
-            contentDescriptionRes = R.string.post_action_comment,
-            label = compactCount(post.commentCount).asText(),
-            tint = muted,
-            onClick = onScrollToComments,
-        )
-        Spacer(Modifier.weight(1f))
-        DetailActionButton(
-            iconRes = if (post.isBookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
-            contentDescriptionRes = if (post.isBookmarked) R.string.post_action_unbookmark else R.string.post_action_bookmark,
-            label = null,
-            tint = if (post.isBookmarked) MaterialTheme.colorScheme.primary else muted,
-            onClick = onToggleBookmark,
-            iconModifier = Modifier.pop(post.isBookmarked),
-        )
-    }
-}
-
-@Composable
-private fun DetailActionButton(
-    iconRes: Int,
-    @StringRes contentDescriptionRes: Int,
-    label: String?,
-    tint: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    iconModifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(100.dp))
-            .debouncedClickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = stringResource(contentDescriptionRes),
-            tint = tint,
-            modifier = Modifier
-                .size(23.dp)
-                .then(iconModifier),
-        )
-        if (label != null) {
-            Spacer(Modifier.width(7.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = tint,
-            )
-        }
-    }
-}
-
-private val PopEasing = CubicBezierEasing(0.2f, 1.3f, 0.5f, 1f)
-
-@Composable
-private fun Modifier.pop(active: Boolean): Modifier {
-    val scale = remember { Animatable(1f) }
-    var wasActive by remember { mutableStateOf(active) }
-
-    LaunchedEffect(active) {
-        if (active != wasActive) {
-            scale.snapTo(1f)
-            scale.animateTo(
-                targetValue = 1f,
-                animationSpec = keyframes {
-                    durationMillis = 400
-                    1f at 0 using PopEasing
-                    1.35f at 140 using PopEasing
-                    0.9f at 240 using PopEasing
-                    1f at 400
-                },
-            )
-        }
-        wasActive = active
-    }
-
-    return graphicsLayer {
-        scaleX = scale.value
-        scaleY = scale.value
     }
 }
 
@@ -828,6 +441,7 @@ private fun CommentComposer(
     modifier: Modifier = Modifier,
 ) {
     val textState = rememberTextFieldState()
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val send = {
         val trimmed = textState.text.toString().trim()
         if (trimmed.isNotEmpty()) {
@@ -890,8 +504,6 @@ private fun CommentComposer(
         }
     }
 }
-
-private val muted @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
 
 // ── Previews ───────────────────────────────────────────────────────────────────
 

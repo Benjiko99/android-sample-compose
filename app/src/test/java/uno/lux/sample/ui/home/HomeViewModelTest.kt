@@ -12,6 +12,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
+import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.data.post.FakeFeedDataSource
 import uno.lux.sample.data.post.FeedDataSource
 import uno.lux.sample.data.post.FeedPage

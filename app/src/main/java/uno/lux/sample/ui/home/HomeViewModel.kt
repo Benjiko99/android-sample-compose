@@ -17,6 +17,7 @@ import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
