@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Mosaic" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        AppCompat-derived because MainActivity is an AppCompatActivity: its delegate is what applies
+        the per-app language below Android 13. Cosmetically identical for a Compose-only window.
+    -->
+    <style name="Theme.Mosaic" parent="Theme.AppCompat.Light.NoActionBar" />
 
     <!-- Pre-launch theme: satisfies installSplashScreen() and swaps back to Theme.Mosaic. -->
     <style name="Theme.Mosaic.Starting" parent="Theme.SplashScreen">

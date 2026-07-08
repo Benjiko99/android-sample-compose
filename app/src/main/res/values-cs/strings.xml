@@ -1,0 +1,127 @@
+<resources>
+
+    <!-- Navigation destinations -->
+    <string name="nav_home">Domů</string>
+    <string name="nav_favorites">Oblíbené</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_settings">Nastavení</string>
+    <string name="navigate_back">Zpět</string>
+
+    <!-- Feed -->
+    <string name="feed_empty">Zatím žádné příspěvky. Podívejte se později.</string>
+    <string name="feed_caught_up">Vše máte přečteno</string>
+    <!-- Error -->
+    <string name="error_no_connection">Žádné připojení k internetu</string>
+    <string name="error_timeout">Vypršel časový limit připojení</string>
+    <string name="error_unknown">Něco se pokazilo</string>
+    <string name="error_retry">Zkusit znovu</string>
+
+    <!-- Placeholder destinations -->
+    <string name="placeholder_body">Již brzy</string>
+
+    <!-- Post -->
+    <string name="post_more_options">Další možnosti</string>
+    <string name="post_menu_save">Uložit příspěvek</string>
+    <string name="post_menu_unsave">Odebrat z uložených</string>
+    <string name="post_menu_share">Sdílet</string>
+    <string name="post_menu_copy_link">Kopírovat odkaz</string>
+    <string name="post_menu_report">Nahlásit</string>
+    <!-- Share / copy link -->
+    <string name="post_share_chooser">Sdílet příspěvek</string>
+    <string name="post_link_clip_label">Odkaz na příspěvek</string>
+    <string name="post_link_copied">Odkaz zkopírován</string>
+    <!-- Shown for sheet actions that aren't wired up yet -->
+    <string name="action_not_implemented">Akce zatím není k dispozici</string>
+    <!-- Report -->
+    <string name="report_dialog_title">Nahlásit příspěvek</string>
+    <string name="report_dialog_prompt">Proč tento příspěvek nahlašujete?</string>
+    <string name="report_reason_spam">Spam</string>
+    <string name="report_reason_harassment">Obtěžování nebo šikana</string>
+    <string name="report_reason_hate_speech">Nenávistné projevy</string>
+    <string name="report_reason_misinformation">Nepravdivé informace</string>
+    <string name="report_reason_violence">Násilí nebo nebezpečný obsah</string>
+    <string name="report_reason_other">Něco jiného</string>
+    <string name="report_details_hint">Přidat podrobnosti (nepovinné)</string>
+    <string name="report_send">Odeslat</string>
+    <string name="report_cancel">Zrušit</string>
+    <string name="report_sent">Hlášení bylo odesláno, děkujeme</string>
+    <string name="post_action_like">Lajknout</string>
+    <string name="post_action_unlike">Zrušit lajk</string>
+    <string name="post_action_comment">Komentovat</string>
+    <string name="post_action_bookmark">Přidat do záložek</string>
+    <string name="post_action_unbookmark">Odebrat ze záložek</string>
+
+    <!-- Post detail -->
+    <string name="post_detail_title">Příspěvek</string>
+    <string name="post_detail_not_found">Tento příspěvek se nepodařilo najít.</string>
+    <!-- %1$d = comment count -->
+    <plurals name="post_detail_comments_header">
+        <item quantity="one">%1$d komentář</item>
+        <item quantity="few">%1$d komentáře</item>
+        <item quantity="many">%1$d komentáře</item>
+        <item quantity="other">%1$d komentářů</item>
+    </plurals>
+    <string name="post_detail_comment_hint">Přidat komentář…</string>
+    <string name="post_detail_send_comment">Odeslat</string>
+
+    <!-- Comment actions -->
+    <string name="comment_action_like">Lajknout komentář</string>
+    <string name="comment_action_unlike">Zrušit lajk u komentáře</string>
+    <!-- %1$d = like count on a comment -->
+    <plurals name="comment_like_count">
+        <item quantity="one">%1$d lajk</item>
+        <item quantity="few">%1$d lajky</item>
+        <item quantity="many">%1$d lajku</item>
+        <item quantity="other">%1$d lajků</item>
+    </plurals>
+
+    <!-- Compact relative time -->
+    <string name="time_now">teď</string>
+    <string name="time_minutes">%1$dm</string>
+    <string name="time_hours">%1$dh</string>
+    <string name="time_days">%1$dd</string>
+    <!-- t = týden -->
+    <string name="time_weeks">%1$dt</string>
+
+    <!-- Compact engagement counts (Mosaic uses lowercase) -->
+    <string name="count_thousands">%1$s tis.</string>
+    <string name="count_millions">%1$s mil.</string>
+
+    <!-- Profile -->
+    <string name="profile_edit">Upravit profil</string>
+    <string name="profile_follow">Sledovat</string>
+    <string name="profile_following">Sledujete</string>
+    <!-- Edit profile -->
+    <string name="edit_profile_save">Uložit</string>
+    <string name="edit_profile_change_avatar">Změnit profilovou fotku</string>
+    <string name="edit_profile_name_label">Jméno</string>
+    <string name="edit_profile_age_label">Věk</string>
+    <string name="edit_profile_age_error">Zadejte věk mezi 13 a 120</string>
+    <string name="edit_profile_gender_label">Pohlaví</string>
+    <string name="edit_profile_bio_label">O mně</string>
+    <string name="gender_man">Muž</string>
+    <string name="gender_woman">Žena</string>
+    <string name="profile_stat_followers">Sledující</string>
+    <string name="profile_stat_following">Sledovaní</string>
+    <string name="profile_tab_posts">Příspěvky</string>
+
+    <!-- Video -->
+    <string name="video_play">Přehrát video</string>
+    <string name="profile_empty_posts">Zatím žádné příspěvky</string>
+    <string name="profile_not_found">Tento profil se nepodařilo najít.</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Vzhled</string>
+    <string name="theme_light">Světlý</string>
+    <string name="theme_dark">Tmavý</string>
+    <string name="theme_system">Systém</string>
+    <string name="settings_language">Jazyk</string>
+    <!-- Follows the device's language list. -->
+    <string name="language_system">Systém</string>
+
+    <!-- Discard confirmation dialog -->
+    <string name="discard_confirmation_title">Zahodit změny?</string>
+    <string name="discard_confirmation_message">Máte neuložené změny. Opravdu je chcete zahodit?</string>
+    <string name="discard_confirmation_confirm">Zahodit</string>
+    <string name="discard_confirmation_dismiss">Pokračovat v úpravách</string>
+</resources>

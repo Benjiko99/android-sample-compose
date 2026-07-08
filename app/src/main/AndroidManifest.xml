@@ -25,6 +25,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Opts into AppCompat storing the per-app language itself below Android 13, where there
+            is no framework LocaleManager to hold it. Never started — the service only carries the
+            flag. On Android 13+ AppCompat defers to the platform and ignores this.
+        -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
     </application>
 
 </manifest>

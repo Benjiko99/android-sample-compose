@@ -8,6 +8,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
+import uno.lux.sample.data.settings.AppLanguage
+import uno.lux.sample.data.settings.InMemoryAppLocaleRepository
 import uno.lux.sample.data.settings.InMemorySettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
 import uno.lux.sample.ui.navigation.Navigator
@@ -21,7 +23,8 @@ class SettingsViewModelTest : ViewModelTest() {
 
     private fun viewModel(
         repository: InMemorySettingsRepository = InMemorySettingsRepository(),
-    ) = SettingsViewModel(repository, navigator)
+        localeRepository: InMemoryAppLocaleRepository = InMemoryAppLocaleRepository(),
+    ) = SettingsViewModel(repository, localeRepository, navigator)
 
     @Test
     fun `themeMode reflects the repository`() = runTest {
@@ -43,6 +46,28 @@ class SettingsViewModelTest : ViewModelTest() {
         viewModel.setThemeMode(ThemeMode.LIGHT)
 
         assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
+    }
+
+    @Test
+    fun `language reflects the repository`() = runTest {
+        val viewModel = viewModel(localeRepository = InMemoryAppLocaleRepository(AppLanguage.CZECH))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.language.collect {}
+        }
+
+        assertEquals(AppLanguage.CZECH, viewModel.language.value)
+    }
+
+    @Test
+    fun `setLanguage updates the exposed language`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.language.collect {}
+        }
+
+        viewModel.setLanguage(AppLanguage.CZECH)
+
+        assertEquals(AppLanguage.CZECH, viewModel.language.value)
     }
 
     @Test

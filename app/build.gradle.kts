@@ -41,11 +41,19 @@ android {
         compose = true
         buildConfig = true
     }
+    androidResources {
+        // Derives res/xml/_generated_res_locale_config.xml from the values-* folders and points
+        // the manifest's android:localeConfig at it, which is what lists the app under the
+        // system's per-app language settings. The default locale comes from res/resources.properties.
+        generateLocaleConfig = true
+    }
 }
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
+    // For AppCompatDelegate.setApplicationLocales — the per-app language backport below Android 13.
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
     implementation(libs.androidx.compose.ui)

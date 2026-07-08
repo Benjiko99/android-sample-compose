@@ -1,11 +1,11 @@
 package uno.lux.sample
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -21,8 +21,13 @@ import javax.inject.Inject
 private val LightScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
 private val DarkScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
+/**
+ * The single Activity. It extends [AppCompatActivity] purely so AppCompat's delegate can apply the
+ * user's per-app language below Android 13 (see `AppCompatLocaleRepository`) — no AppCompat UI is
+ * used; the whole tree is still Compose.
+ */
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 

@@ -26,6 +26,8 @@ import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.ProfileDataSource
 import uno.lux.sample.data.profile.ProfileRepository
+import uno.lux.sample.data.settings.AppCompatLocaleRepository
+import uno.lux.sample.data.settings.AppLocaleRepository
 import uno.lux.sample.data.settings.DataStoreSettingsRepository
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.user.User
@@ -88,6 +90,10 @@ object DataModule {
     @Singleton
     fun provideSettingsRepository(dataStore: DataStore<Preferences>): SettingsRepository =
         DataStoreSettingsRepository(dataStore)
+
+    @Provides
+    @Singleton
+    fun provideAppLocaleRepository(): AppLocaleRepository = AppCompatLocaleRepository()
 
     @Provides
     @Singleton

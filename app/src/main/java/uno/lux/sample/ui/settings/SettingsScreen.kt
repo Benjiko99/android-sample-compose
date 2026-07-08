@@ -32,19 +32,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
+import uno.lux.sample.data.settings.AppLanguage
 import uno.lux.sample.data.settings.ThemeMode
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
 
 /**
- * The settings screen's ViewModel-backed intents — picking a theme and navigating back (which
- * the ViewModel forwards to the injected `Navigator`) — as a [Stable] seam the stateless
- * [SettingsScreen] depends on. [SettingsViewModel] implements it, so the binder passes the
- * ViewModel directly and a preview passes a no-op [createActionsProxy].
+ * The settings screen's ViewModel-backed intents — picking a theme, picking a language, and
+ * navigating back (which the ViewModel forwards to the injected `Navigator`) — as a [Stable] seam
+ * the stateless [SettingsScreen] depends on. [SettingsViewModel] implements it, so the binder passes
+ * the ViewModel directly and a preview passes a no-op [createActionsProxy].
  */
 @Stable
 interface SettingsActions {
     fun setThemeMode(mode: ThemeMode)
+    fun setLanguage(language: AppLanguage)
     fun goBack()
 }
 
@@ -58,9 +60,11 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val language by viewModel.language.collectAsStateWithLifecycle()
 
     SettingsScreen(
         themeMode = themeMode,
+        language = language,
         actions = viewModel,
         modifier = modifier,
     )
@@ -70,6 +74,7 @@ fun SettingsScreen(
 @Composable
 internal fun SettingsScreen(
     themeMode: ThemeMode,
+    language: AppLanguage,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
 ) {
@@ -102,9 +107,20 @@ internal fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             SettingsSection(title = stringResource(R.string.settings_appearance)) {
-                ThemeModeSelector(
+                SingleChoiceRow(
+                    options = ThemeMode.entries,
                     selected = themeMode,
                     onSelected = actions::setThemeMode,
+                    label = { stringResource(it.labelRes()) },
+                )
+            }
+
+            SettingsSection(title = stringResource(R.string.settings_language)) {
+                SingleChoiceRow(
+                    options = AppLanguage.entries,
+                    selected = language,
+                    onSelected = actions::setLanguage,
+                    label = { stringResource(it.labelRes()) },
                 )
             }
         }
@@ -126,23 +142,27 @@ private fun SettingsSection(
     }
 }
 
+/**
+ * A segmented row over [options], one selectable button each — the shared shape of every picker on
+ * this screen. Generic over the option type, so a picker only supplies its options and their labels.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ThemeModeSelector(
-    selected: ThemeMode,
-    onSelected: (ThemeMode) -> Unit,
+private fun <T> SingleChoiceRow(
+    options: List<T>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    label: @Composable (T) -> String,
     modifier: Modifier = Modifier,
 ) {
-    val modes = ThemeMode.entries
-
     SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
-        modes.forEachIndexed { index, mode ->
+        options.forEachIndexed { index, option ->
             SegmentedButton(
-                selected = mode == selected,
-                onClick = { onSelected(mode) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                selected = option == selected,
+                onClick = { onSelected(option) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
             ) {
-                Text(stringResource(mode.labelRes()))
+                Text(text = label(option), maxLines = 1)
             }
         }
     }
@@ -155,12 +175,20 @@ private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.SYSTEM -> R.string.theme_system
 }
 
+@StringRes
+private fun AppLanguage.labelRes(): Int = when (this) {
+    AppLanguage.SYSTEM -> R.string.language_system
+    AppLanguage.ENGLISH -> R.string.language_english
+    AppLanguage.CZECH -> R.string.language_czech
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun SettingsScreenPreview() {
     MosaicTheme {
         SettingsScreen(
             themeMode = ThemeMode.SYSTEM,
+            language = AppLanguage.SYSTEM,
             actions = createActionsProxy(),
         )
     }

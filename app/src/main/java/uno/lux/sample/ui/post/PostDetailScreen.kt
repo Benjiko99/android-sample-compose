@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -342,7 +343,7 @@ private fun CommentsHeader(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = stringResource(R.string.post_detail_comments_header, count),
+        text = pluralStringResource(R.plurals.post_detail_comments_header, count, count),
         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.04.em),
         color = LocalMosaicColors.current.textTertiary,
         modifier = modifier.padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 2.dp),
@@ -406,7 +407,11 @@ private fun CommentRow(
                     color = LocalMosaicColors.current.textTertiary,
                 )
                 Text(
-                    text = stringResource(R.string.comment_like_count, comment.likeCount),
+                    text = pluralStringResource(
+                        R.plurals.comment_like_count,
+                        comment.likeCount,
+                        comment.likeCount,
+                    ),
                     style = MaterialTheme.typography.labelMedium,
                     color = LocalMosaicColors.current.textTertiary,
                 )

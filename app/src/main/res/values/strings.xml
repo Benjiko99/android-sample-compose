@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Mosaic</string>
+    <string name="app_name" translatable="false">Mosaic</string>
 
     <!-- Navigation destinations -->
     <string name="nav_home">Home</string>
@@ -56,7 +56,10 @@
     <string name="post_detail_title">Post</string>
     <string name="post_detail_not_found">This post couldn\'t be found.</string>
     <!-- %1$d = comment count -->
-    <string name="post_detail_comments_header">%1$d comments</string>
+    <plurals name="post_detail_comments_header">
+        <item quantity="one">%1$d comment</item>
+        <item quantity="other">%1$d comments</item>
+    </plurals>
     <string name="post_detail_comment_hint">Add a comment…</string>
     <string name="post_detail_send_comment">Send</string>
 
@@ -64,7 +67,10 @@
     <string name="comment_action_like">Like comment</string>
     <string name="comment_action_unlike">Unlike comment</string>
     <!-- %1$d = like count on a comment -->
-    <string name="comment_like_count">%1$d likes</string>
+    <plurals name="comment_like_count">
+        <item quantity="one">%1$d like</item>
+        <item quantity="other">%1$d likes</item>
+    </plurals>
 
     <!-- Compact relative time -->
     <string name="time_now">now</string>
@@ -105,6 +111,12 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
+    <string name="settings_language">Language</string>
+    <!-- Follows the device's language list. -->
+    <string name="language_system">System</string>
+    <!-- Languages are named in their own language, so these read the same in every locale. -->
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_czech" translatable="false">Čeština</string>
 
     <!-- Discard confirmation dialog -->
     <string name="discard_confirmation_title">Discard changes?</string>
