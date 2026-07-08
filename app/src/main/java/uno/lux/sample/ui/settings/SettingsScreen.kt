@@ -177,7 +177,6 @@ private fun ThemeMode.labelRes(): Int = when (this) {
 
 @StringRes
 private fun AppLanguage.labelRes(): Int = when (this) {
-    AppLanguage.SYSTEM -> R.string.language_system
     AppLanguage.ENGLISH -> R.string.language_english
     AppLanguage.CZECH -> R.string.language_czech
 }
@@ -188,7 +187,7 @@ private fun SettingsScreenPreview() {
     MosaicTheme {
         SettingsScreen(
             themeMode = ThemeMode.SYSTEM,
-            language = AppLanguage.SYSTEM,
+            language = AppLanguage.ENGLISH,
             actions = createActionsProxy(),
         )
     }

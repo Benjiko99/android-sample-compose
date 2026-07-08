@@ -29,8 +29,8 @@ class SettingsViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
         .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
 
+    /** Already hot state on the repository — a language is always in effect — so it passes straight through. */
     val language: StateFlow<AppLanguage> = appLocaleRepository.language
-        .stateInWhileSubscribed(viewModelScope, AppLanguage.SYSTEM)
 
     override fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }

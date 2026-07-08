@@ -112,8 +112,6 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
     <string name="settings_language">Language</string>
-    <!-- Follows the device's language list. -->
-    <string name="language_system">System</string>
     <!-- Languages are named in their own language, so these read the same in every locale. -->
     <string name="language_english" translatable="false">English</string>
     <string name="language_czech" translatable="false">Čeština</string>

@@ -49,21 +49,15 @@ class SettingsViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `language reflects the repository`() = runTest {
+    fun `language reflects the repository`() {
         val viewModel = viewModel(localeRepository = InMemoryAppLocaleRepository(AppLanguage.CZECH))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.language.collect {}
-        }
 
         assertEquals(AppLanguage.CZECH, viewModel.language.value)
     }
 
     @Test
-    fun `setLanguage updates the exposed language`() = runTest {
+    fun `setLanguage updates the exposed language`() {
         val viewModel = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.language.collect {}
-        }
 
         viewModel.setLanguage(AppLanguage.CZECH)
 

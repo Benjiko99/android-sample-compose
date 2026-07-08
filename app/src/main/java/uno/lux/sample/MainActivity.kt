@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import uno.lux.sample.data.settings.AppLocaleRepository
 import uno.lux.sample.ui.SampleApp
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.theme.MosaicTheme
@@ -35,10 +36,22 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var navigator: Navigator
 
+    /**
+     * Injected here, not into a ViewModel, because the per-app language APIs it wraps only work
+     * once this Activity's AppCompat delegate has attached.
+     */
+    @Inject
+    lateinit var appLocaleRepository: AppLocaleRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // First launch only: adopt the device's language if we ship it, else English. Recreates
+        // this Activity once as the pinned locale takes effect, behind the splash screen.
+        appLocaleRepository.resolveInitialLanguage()
+
         splashScreen.setKeepOnScreenCondition { viewModel.themeMode.value == null }
         setContent {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()

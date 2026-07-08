@@ -1,25 +1,28 @@
 package uno.lux.sample.data.settings
 
 /**
- * The languages the app ships translations for. [SYSTEM] carries no tag: it means "follow the
- * device's language list", which the per-app language APIs express as an empty locale list.
+ * The languages the app ships translations for. There is deliberately no "follow the system" entry:
+ * with only two languages the device's language is often one we don't ship, which would leave such
+ * a choice meaning "English" without saying so. Instead the system language seeds the choice once,
+ * on first launch — see [AppLocaleRepository.resolveInitialLanguage].
  */
-enum class AppLanguage(val languageTag: String?) {
-    SYSTEM(null),
+enum class AppLanguage(val languageTag: String) {
     ENGLISH("en"),
     CZECH("cs");
 
     companion object {
-        /**
-         * Parses a comma-separated BCP 47 language-tag list — what the per-app language APIs hand
-         * back, e.g. `"cs-CZ,en"` — to the language the app is running in. Only the first tag's
-         * language subtag matters; a list that is empty, absent, or names a language we don't
-         * ship resolves to [SYSTEM].
-         */
-        fun fromLanguageTags(tags: String?): AppLanguage {
-            val language = tags?.substringBefore(',')?.substringBefore('-')?.lowercase()
+        /** The language for a device that prefers nothing we ship. */
+        val Default: AppLanguage = ENGLISH
 
-            return entries.firstOrNull { it.languageTag == language } ?: SYSTEM
-        }
+        /**
+         * The first language we ship out of a comma-separated BCP 47 tag list, in the list's own
+         * order of preference — so a device set to `"de-DE,cs-CZ,en"` resolves to [CZECH], the
+         * best of its preferences that we can actually render. Region subtags are ignored, and
+         * `null` means the list named nothing we ship (or was empty).
+         */
+        fun fromLanguageTags(tags: String?): AppLanguage? =
+            tags?.split(',')
+                ?.map { it.substringBefore('-').trim().lowercase() }
+                ?.firstNotNullOfOrNull { tag -> entries.firstOrNull { it.languageTag == tag } }
     }
 }

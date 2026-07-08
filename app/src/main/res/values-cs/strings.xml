@@ -116,8 +116,6 @@
     <string name="theme_dark">Tmavý</string>
     <string name="theme_system">Systém</string>
     <string name="settings_language">Jazyk</string>
-    <!-- Follows the device's language list. -->
-    <string name="language_system">Systém</string>
 
     <!-- Discard confirmation dialog -->
     <string name="discard_confirmation_title">Zahodit změny?</string>
