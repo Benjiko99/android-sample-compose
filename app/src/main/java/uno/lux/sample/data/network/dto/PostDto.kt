@@ -30,6 +30,5 @@ data class VideoDto(
     val id: String,
     val title: String,
     val durationSeconds: Int,
-    val viewCount: Int,
     val videoUrl: String,
 )

@@ -40,7 +40,6 @@ internal fun VideoDto.toDomain() = Video(
     id = id,
     title = title,
     durationSeconds = durationSeconds,
-    viewCount = viewCount,
     videoUrl = videoUrl,
 )
 

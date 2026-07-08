@@ -217,7 +217,6 @@ class HomeViewModelTest : ViewModelTest() {
             id = "v1",
             title = "Talk",
             durationSeconds = 95,
-            viewCount = 40,
             videoUrl = "https://example.test/v1.mp4",
         )
 
