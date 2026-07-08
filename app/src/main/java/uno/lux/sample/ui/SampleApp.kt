@@ -52,7 +52,7 @@ import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.video.FullscreenVideoScreen
 import uno.lux.sample.ui.video.LocalVideoPlayback
 import uno.lux.sample.ui.video.VideoPlaybackViewModel
-import uno.lux.sample.ui.video.findActivity
+import uno.lux.sample.util.findActivity
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberNavBackStack] back

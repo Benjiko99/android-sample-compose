@@ -1,8 +1,6 @@
 package uno.lux.sample.ui.video
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -124,10 +122,3 @@ class VideoPlaybackViewModel @Inject constructor(
  * (e.g. in `@Preview`s), where video controls render their static thumbnail state.
  */
 val LocalVideoPlayback = compositionLocalOf<VideoPlaybackController?> { null }
-
-/** Unwraps the [Activity] backing a [Context], walking [ContextWrapper]s. */
-internal tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}

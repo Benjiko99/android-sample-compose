@@ -91,7 +91,9 @@ import uno.lux.sample.ui.components.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import uno.lux.sample.ui.post.PostCard
 import uno.lux.sample.ui.post.PostCardData
+import uno.lux.sample.ui.components.MediaBadge
 import uno.lux.sample.ui.components.MosaicGradients
+import uno.lux.sample.ui.components.PlayBadge
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
@@ -693,20 +695,11 @@ private fun VideoCell(
                 .debouncedClickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.34f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_play_arrow),
-                    contentDescription = stringResource(R.string.profile_play),
-                    tint = Color.White,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
+            PlayBadge(
+                contentDescription = stringResource(R.string.profile_play),
+                size = 46.dp,
+                iconSize = 26.dp,
+            )
             MediaBadge(
                 text = formatVideoDuration(video.durationSeconds),
                 modifier = Modifier
@@ -729,37 +722,6 @@ private fun VideoCell(
             ),
             style = MaterialTheme.typography.bodySmall,
             color = LocalMosaicColors.current.textTertiary,
-        )
-    }
-}
-
-/** A small dark-scrim pill (white text, optional leading icon) overlaid on a thumbnail corner. */
-@Composable
-private fun MediaBadge(
-    text: String,
-    modifier: Modifier = Modifier,
-    @DrawableRes iconRes: Int? = null,
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(7.dp))
-            .background(Color.Black.copy(alpha = 0.42f))
-            .padding(horizontal = 7.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (iconRes != null) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(13.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-        }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White,
         )
     }
 }

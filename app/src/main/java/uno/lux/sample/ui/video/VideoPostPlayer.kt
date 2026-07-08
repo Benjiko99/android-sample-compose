@@ -2,24 +2,16 @@ package uno.lux.sample.ui.video
 
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
-import uno.lux.sample.ui.components.debouncedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -27,7 +19,10 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import uno.lux.sample.R
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.ui.components.MediaBadge
 import uno.lux.sample.ui.components.MosaicGradients
+import uno.lux.sample.ui.components.PlayBadge
+import uno.lux.sample.ui.components.debouncedClickable
 import uno.lux.sample.util.formatVideoDuration
 
 /**
@@ -55,7 +50,8 @@ internal fun VideoPostPlayer(
             .background(MosaicGradients.mediaBrush(video.id)),
         contentAlignment = Alignment.Center,
     ) {
-        if (isActive && playback != null) {
+        // `isActive` already establishes playback != null, so it smart-casts inside this branch.
+        if (isActive) {
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -99,33 +95,16 @@ private fun VideoThumbnail(
             .debouncedClickable(onClick = onPlay),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(58.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.34f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_play_arrow),
-                contentDescription = stringResource(R.string.video_play),
-                tint = Color.White,
-                modifier = Modifier.size(32.dp),
-            )
-        }
-        Box(
+        PlayBadge(
+            contentDescription = stringResource(R.string.video_play),
+            size = 58.dp,
+            iconSize = 32.dp,
+        )
+        MediaBadge(
+            text = formatVideoDuration(video.durationSeconds),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(10.dp)
-                .clip(RoundedCornerShape(7.dp))
-                .background(Color.Black.copy(alpha = 0.42f))
-                .padding(horizontal = 7.dp, vertical = 4.dp),
-        ) {
-            Text(
-                text = formatVideoDuration(video.durationSeconds),
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
-            )
-        }
+                .padding(10.dp),
+        )
     }
 }
