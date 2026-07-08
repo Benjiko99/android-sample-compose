@@ -30,7 +30,7 @@ import uno.lux.sample.util.stateInWhileSubscribed
 
 /**
  * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
- * (metadata + ordered post IDs + pagination), and [PostRepository] (entity map) into a single
+ * (counts + ordered post IDs + pagination), and [PostRepository] (entity map) into a single
  * [ProfileScreenData]. Mutations go directly through [PostRepository] so a like toggled here is
  * immediately visible on the home feed — the shared entity store propagates the update to all
  * observers. Navigation intents (opening a post, viewer or the editor, going back) are pushes
@@ -51,8 +51,6 @@ class ProfileViewModel @AssistedInject constructor(
         fun create(userId: UserId): ProfileViewModel
     }
 
-    private data class HasMoreState(val posts: Boolean, val albums: Boolean, val videos: Boolean)
-
     private val _loadError = MutableStateFlow<AppError?>(null)
 
     val uiState: StateFlow<ProfileUiState> = combine(
@@ -62,21 +60,15 @@ class ProfileViewModel @AssistedInject constructor(
             combine(profileRepository.postIds(userId), postRepository.entities) { ids, entities ->
                 ids.mapNotNull { entities[it] }
             },
-            combine(
-                profileRepository.hasMorePosts(userId),
-                profileRepository.hasMoreAlbums(userId),
-                profileRepository.hasMoreVideos(userId),
-            ) { posts, albums, videos -> HasMoreState(posts, albums, videos) },
-        ) { user, profile, posts, hasMore ->
+            profileRepository.hasMorePosts(userId),
+        ) { user, profile, posts, hasMorePosts ->
             if (user == null) null
             else ProfileUiState.Loaded(
                 data = ProfileScreenData(
                     user = user,
                     profile = profile,
                     posts = posts,
-                    postsEndReached = !hasMore.posts,
-                    albumsEndReached = !hasMore.albums,
-                    videosEndReached = !hasMore.videos,
+                    postsEndReached = !hasMorePosts,
                 ),
                 isCurrentUser = userId == currentUserId,
             )
@@ -95,8 +87,6 @@ class ProfileViewModel @AssistedInject constructor(
 
     private var loadJob: Job? = null
     private var loadMorePostsJob: Job? = null
-    private var loadMoreAlbumsJob: Job? = null
-    private var loadMoreVideosJob: Job? = null
 
     init {
         retry()
@@ -137,14 +127,6 @@ class ProfileViewModel @AssistedInject constructor(
 
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
         ignoreErrors { profileRepository.loadMorePosts(userId) }
-    }
-
-    override fun loadMoreAlbums() = launchIfIdle(::loadMoreAlbumsJob) {
-        ignoreErrors { profileRepository.loadMoreAlbums(userId) }
-    }
-
-    override fun loadMoreVideos() = launchIfIdle(::loadMoreVideosJob) {
-        ignoreErrors { profileRepository.loadMoreVideos(userId) }
     }
 
     override fun goBack() = navigator.goBack()

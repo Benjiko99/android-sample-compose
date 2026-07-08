@@ -11,13 +11,13 @@ import uno.lux.sample.data.user.UserId
 /**
  * Source of truth for a user's profile metadata and the ordered IDs of their posts.
  *
- * [profile] streams albums, videos, and counts for a given user. [postIds] streams the ordered
- * list of post IDs authored by that user; callers resolve them via [PostRepository.entities] so
- * mutations (likes, bookmarks) are reflected without any involvement from this repository.
- * Post mutations go directly through [PostRepository] — not through here.
+ * [profile] streams the counts for a given user. [postIds] streams the ordered list of post IDs
+ * authored by that user; callers resolve them via [PostRepository.entities] so mutations (likes,
+ * bookmarks) are reflected without any involvement from this repository. Post mutations go
+ * directly through [PostRepository] — not through here.
  *
- * [hasMorePosts], [hasMoreAlbums], [hasMoreVideos] signal whether another page exists for each
- * tab. The corresponding [loadMore*] methods append the next page into the flows above.
+ * [hasMorePosts] signals whether another page exists; [loadMorePosts] appends it into the flows
+ * above.
  *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [ProfileDataSource].
@@ -32,8 +32,6 @@ class ProfileRepository(
     private data class PageState(val cursor: String?, val hasMore: Boolean)
 
     private val _postPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
-    private val _albumPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
-    private val _videoPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
     fun profile(userId: UserId): Flow<Profile> =
         _profiles.map { it[userId] ?: emptyProfile(userId) }
@@ -44,31 +42,16 @@ class ProfileRepository(
     fun hasMorePosts(userId: UserId): Flow<Boolean> =
         _postPage.map { it[userId]?.hasMore ?: false }
 
-    fun hasMoreAlbums(userId: UserId): Flow<Boolean> =
-        _albumPage.map { it[userId]?.hasMore ?: false }
-
-    fun hasMoreVideos(userId: UserId): Flow<Boolean> =
-        _videoPage.map { it[userId]?.hasMore ?: false }
-
     suspend fun refresh(userId: UserId) {
         val data = dataSource.refresh(userId)
 
         postRepository.ingest(data.posts)
 
         _postPage.update { it + (userId to PageState(data.postCursor, data.postHasMore)) }
-        _albumPage.update { it + (userId to PageState(data.albumCursor, data.albumHasMore)) }
-        _videoPage.update { it + (userId to PageState(data.videoCursor, data.videoHasMore)) }
 
         _userPostIds.update { it + (userId to data.posts.map { p -> p.id }) }
         _profiles.update {
-            it + (userId to Profile(
-                userId = userId,
-                albums = data.albums,
-                videos = data.videos,
-                postsCount = data.postsCount,
-                albumsCount = data.albumsCount,
-                videosCount = data.videosCount,
-            ))
+            it + (userId to Profile(userId = userId, postsCount = data.postsCount))
         }
     }
 
@@ -86,38 +69,5 @@ class ProfileRepository(
         }
     }
 
-    suspend fun loadMoreAlbums(userId: UserId) {
-        val page = _albumPage.value[userId] ?: return
-        if (!page.hasMore) return
-
-        val result = dataSource.loadMoreAlbums(userId, page.cursor)
-
-        _albumPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
-        _profiles.update { map ->
-            val existing = map[userId] ?: return@update map
-            map + (userId to existing.copy(albums = existing.albums + result.albums))
-        }
-    }
-
-    suspend fun loadMoreVideos(userId: UserId) {
-        val page = _videoPage.value[userId] ?: return
-        if (!page.hasMore) return
-
-        val result = dataSource.loadMoreVideos(userId, page.cursor)
-
-        _videoPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
-        _profiles.update { map ->
-            val existing = map[userId] ?: return@update map
-            map + (userId to existing.copy(videos = existing.videos + result.videos))
-        }
-    }
-
-    private fun emptyProfile(userId: UserId) = Profile(
-        userId = userId,
-        albums = emptyList(),
-        videos = emptyList(),
-        postsCount = 0,
-        albumsCount = 0,
-        videosCount = 0,
-    )
+    private fun emptyProfile(userId: UserId) = Profile(userId = userId, postsCount = 0)
 }

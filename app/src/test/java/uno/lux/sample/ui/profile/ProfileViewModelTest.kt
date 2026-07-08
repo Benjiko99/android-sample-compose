@@ -10,17 +10,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
-import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.post.Video
-import uno.lux.sample.data.profile.AlbumsPage
 import uno.lux.sample.data.profile.FakeProfileDataSource
-import uno.lux.sample.data.profile.PostsPage
 import uno.lux.sample.data.profile.ProfileRefreshData
 import uno.lux.sample.data.profile.ProfileRepository
-import uno.lux.sample.data.profile.VideosPage
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
@@ -56,19 +51,13 @@ class ProfileViewModelTest : ViewModelTest() {
             FakeProfileDataSource(
                 refreshData = mapOf(
                     "u1" to ProfileRefreshData(
-                        postsCount = 1, albumsCount = 1, videosCount = 1,
+                        postsCount = 1,
                         posts = listOf(post),
                         postCursor = null, postHasMore = false,
-                        albums = listOf(Album(id = "a1", title = "Sketches", itemCount = 8)),
-                        albumCursor = null, albumHasMore = false,
-                        videos = listOf(Video(id = "v1", title = "Talk", durationSeconds = 95, viewCount = 40, videoUrl = "https://example.test/v1.mp4")),
-                        videoCursor = null, videoHasMore = false,
                     ),
                     "u2" to ProfileRefreshData(
-                        postsCount = 0, albumsCount = 0, videosCount = 0,
+                        postsCount = 0,
                         posts = emptyList(), postCursor = null, postHasMore = false,
-                        albums = emptyList(), albumCursor = null, albumHasMore = false,
-                        videos = emptyList(), videoCursor = null, videoHasMore = false,
                     ),
                 ),
             ),
@@ -140,8 +129,7 @@ class ProfileViewModelTest : ViewModelTest() {
         val loaded = viewModel.uiState.value as ProfileUiState.Loaded
         assertEquals(ada, loaded.data.user)
         assertEquals(listOf(post), loaded.data.posts)
-        assertEquals(1, loaded.data.profile.albumsCount)
-        assertEquals(1, loaded.data.profile.videosCount)
+        assertEquals(1, loaded.data.profile.postsCount)
     }
 
     @Test

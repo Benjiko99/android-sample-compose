@@ -1,9 +1,7 @@
 package uno.lux.sample.ui.profile
 
 import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import uno.lux.sample.ui.components.debouncedClickable
@@ -14,17 +12,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
@@ -41,8 +36,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -51,10 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,25 +52,19 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.data.SampleAlbums
 import uno.lux.sample.data.SamplePosts
 import uno.lux.sample.data.SampleUsers
-import uno.lux.sample.data.SampleVideos
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
-import uno.lux.sample.data.post.Album
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.Profile
@@ -91,15 +75,12 @@ import uno.lux.sample.ui.components.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import uno.lux.sample.ui.post.PostCard
 import uno.lux.sample.ui.post.PostCardData
-import uno.lux.sample.ui.components.MediaBadge
 import uno.lux.sample.ui.components.MosaicGradients
-import uno.lux.sample.ui.components.PlayBadge
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.createActionsProxy
-import uno.lux.sample.util.formatVideoDuration
 
 /**
  * The profile's ViewModel-backed intents — liking / bookmarking the viewed user's posts, plus
@@ -114,8 +95,6 @@ interface ProfileActions {
     fun onToggleBookmark(postId: PostId)
     fun onToggleFollow()
     fun loadMorePosts()
-    fun loadMoreAlbums()
-    fun loadMoreVideos()
     fun goBack()
     fun openEditProfile()
     fun openPost(postId: PostId)
@@ -207,7 +186,7 @@ internal fun ProfileScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileContent(
     data: ProfileScreenData,
@@ -217,36 +196,13 @@ private fun ProfileContent(
     actions: ProfileActions,
     onBack: (() -> Unit)?,
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    // The cover bleeds to the very top, so we can't reserve the bar's height with content
-    // padding. Instead, the sticky tab header grows a top inset as it nears the bar, derived
-    // from the header item's own geometry — independent of the inset, so it can't oscillate.
-    val density = LocalDensity.current
-    val barBottomPx = WindowInsets.statusBars.getTop(density) +
-            with(density) { ProfileBarHeight.toPx() }
-    val tabInset by remember(barBottomPx) {
-        derivedStateOf {
-            val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "header" }
-            val tabsTop = if (header != null) (header.offset + header.size).toFloat() else 0f
-            with(density) { (barBottomPx - tabsTop).coerceIn(0f, barBottomPx).toDp() }
-        }
-    }
-
     LoadMoreEffect(
         listState = listState,
-        endReached = when (selectedTab) {
-            ProfileTab.POSTS -> data.postsEndReached
-            ProfileTab.ALBUMS -> data.albumsEndReached
-            ProfileTab.VIDEOS -> data.videosEndReached
-        },
-        onLoadMore = when (selectedTab) {
-            ProfileTab.POSTS -> actions::loadMorePosts
-            ProfileTab.ALBUMS -> actions::loadMoreAlbums
-            ProfileTab.VIDEOS -> actions::loadMoreVideos
-        },
+        endReached = data.postsEndReached,
+        onLoadMore = actions::loadMorePosts,
     )
 
     Box(
@@ -269,22 +225,7 @@ private fun ProfileContent(
                         onOpenAvatar = actions::openAvatar,
                     )
                 }
-                stickyHeader(key = "tabs") {
-                    ProfileTabs(
-                        selected = selectedTab,
-                        onSelect = { selectedTab = it },
-                        topInset = tabInset,
-                    )
-                }
-                when (selectedTab) {
-                    ProfileTab.POSTS -> postsTab(screenData = data, actions = actions)
-                    ProfileTab.ALBUMS -> albumsTab(data.profile.albums, data.albumsEndReached)
-                    ProfileTab.VIDEOS -> videosTab(
-                        data.profile.videos,
-                        data.videosEndReached,
-                        actions::openVideo,
-                    )
-                }
+                postItems(screenData = data, actions = actions)
                 item(key = "bottom-inset") {
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                 }
@@ -304,7 +245,6 @@ private val CoverHeight = 160.dp
 private val AvatarRingSize = 96.dp
 private val AvatarSize = 88.dp
 private val AvatarOverlap = 44.dp // how far the avatar hangs below the cover
-private val ProfileBarHeight = 64.dp // Material small TopAppBar content height (excl. status bar)
 
 @Composable
 private fun ProfileHeader(
@@ -509,53 +449,9 @@ private fun Stat(value: Int, label: String) {
 
 // endregion
 
-// region Tabs
+// region Posts
 
-private enum class ProfileTab(
-    @get:StringRes val labelRes: Int,
-) {
-    POSTS(R.string.profile_tab_posts),
-    ALBUMS(R.string.profile_tab_albums),
-    VIDEOS(R.string.profile_tab_videos),
-}
-
-@Composable
-private fun ProfileTabs(
-    selected: ProfileTab,
-    onSelect: (ProfileTab) -> Unit,
-    topInset: Dp,
-) {
-    // The surface-colored reserved strip grows as the tabs reach the app bar, so they pin just
-    // below it and sit seamlessly under the then-filled bar (see tabInset in ProfileContent).
-    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-        Spacer(Modifier.height(topInset))
-        PrimaryTabRow(
-            selectedTabIndex = selected.ordinal,
-            containerColor = MaterialTheme.colorScheme.surface,
-        ) {
-            ProfileTab.entries.forEach { tab ->
-                Tab(
-                    selected = tab == selected,
-                    onClick = { onSelect(tab) },
-                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                    unselectedContentColor = LocalMosaicColors.current.textTertiary,
-                ) {
-                    Text(
-                        text = stringResource(tab.labelRes),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(vertical = 14.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-// endregion
-
-// region Tab content
-
-private fun LazyListScope.postsTab(
+private fun LazyListScope.postItems(
     screenData: ProfileScreenData,
     actions: ProfileActions,
 ) {
@@ -563,7 +459,7 @@ private fun LazyListScope.postsTab(
     val author = screenData.user
 
     if (posts.isEmpty()) {
-        item(key = "posts-empty") { EmptyTab(stringResource(R.string.profile_empty_posts)) }
+        item(key = "posts-empty") { EmptyPosts() }
         return
     }
     items(posts, key = { it.id }) { post ->
@@ -583,151 +479,8 @@ private fun LazyListScope.postsTab(
     }
 }
 
-private fun LazyListScope.albumsTab(albums: List<Album>, endReached: Boolean) {
-    if (albums.isEmpty()) {
-        item(key = "albums-empty") { EmptyTab(stringResource(R.string.profile_empty_albums)) }
-        return
-    }
-    gridRows(albums, key = { it.id }) { album -> AlbumCell(album, Modifier.weight(1f)) }
-    if (!endReached) {
-        item(key = "albums-loading-more") { LoadingMoreFooter() }
-    }
-}
-
-private fun LazyListScope.videosTab(
-    videos: List<Video>,
-    endReached: Boolean,
-    onOpenVideo: (Video) -> Unit,
-) {
-    if (videos.isEmpty()) {
-        item(key = "videos-empty") { EmptyTab(stringResource(R.string.profile_empty_videos)) }
-        return
-    }
-    gridRows(videos, key = { it.id }) { video ->
-        VideoCell(
-            video = video,
-            onClick = { onOpenVideo(video) },
-            modifier = Modifier.weight(1f),
-        )
-    }
-    if (!endReached) {
-        item(key = "videos-loading-more") { LoadingMoreFooter() }
-    }
-}
-
-/**
- * Lays a list into a 2-column grid by emitting one LazyColumn item per row of two. We grid
- * inside the LazyColumn rather than swapping in a LazyVerticalGrid so the cover, identity and
- * the **sticky** tab header share one scroll container with the grid — `LazyVerticalGrid` has
- * no sticky-header support.
- */
-private fun <T> LazyListScope.gridRows(
-    items: List<T>,
-    key: (T) -> Any,
-    cell: @Composable RowScope.(T) -> Unit,
-) {
-    val rows = items.chunked(2)
-
-    items(rows, key = { row -> "row-${key(row.first())}" }) { row ->
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            row.forEach { item -> cell(item) }
-            if (row.size == 1) Spacer(Modifier.weight(1f))
-        }
-    }
-}
-
 @Composable
-private fun AlbumCell(album: Album, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(14.dp))
-                .background(MosaicGradients.mediaBrush(album.id)),
-        ) {
-            MediaBadge(
-                text = album.itemCount.toString(),
-                iconRes = R.drawable.ic_layers,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp),
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = album.title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = pluralStringResource(
-                R.plurals.profile_album_photos,
-                album.itemCount,
-                album.itemCount
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = LocalMosaicColors.current.textTertiary,
-        )
-    }
-}
-
-@Composable
-private fun VideoCell(
-    video: Video,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(14.dp))
-                .background(MosaicGradients.mediaBrush(video.id))
-                .debouncedClickable(onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            PlayBadge(
-                contentDescription = stringResource(R.string.profile_play),
-                size = 46.dp,
-                iconSize = 26.dp,
-            )
-            MediaBadge(
-                text = formatVideoDuration(video.durationSeconds),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp),
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = video.title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = stringResource(
-                R.string.profile_video_views,
-                compactCount(video.viewCount).asText()
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = LocalMosaicColors.current.textTertiary,
-        )
-    }
-}
-
-@Composable
-private fun EmptyTab(message: String) {
+private fun EmptyPosts() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -735,7 +488,7 @@ private fun EmptyTab(message: String) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = message,
+            text = stringResource(R.string.profile_empty_posts),
             style = MaterialTheme.typography.bodyLarge,
             color = LocalMosaicColors.current.textTertiary,
         )
@@ -872,19 +625,10 @@ private fun CenteredMessage(message: String) {
 private fun sampleProfileData(): ProfileScreenData {
     val user = SampleUsers.first()
     val posts = SamplePosts.filter { it.authorId == user.id }
-    val albums = SampleAlbums.getValue(user.id)
-    val videos = SampleVideos.getValue(user.id)
 
     return ProfileScreenData(
         user = user,
-        profile = Profile(
-            userId = user.id,
-            albums = albums,
-            videos = videos,
-            postsCount = posts.size,
-            albumsCount = albums.size,
-            videosCount = videos.size,
-        ),
+        profile = Profile(userId = user.id, postsCount = posts.size),
         posts = posts,
     )
 }

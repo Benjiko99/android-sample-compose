@@ -61,7 +61,6 @@ interface MosaicApi {
     @GET("users/{id}/posts")
     suspend fun getUserPosts(
         @Path("id") id: String,
-        @Query("type") type: String? = null,
         @Query("cursor") cursor: String? = null,
         @Query("limit") limit: Int = 20,
     ): UserPostsResponse

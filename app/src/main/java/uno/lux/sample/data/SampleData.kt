@@ -3,13 +3,11 @@ package uno.lux.sample.data
 import java.time.Duration
 import java.time.Instant
 import uno.lux.sample.data.post.Album
-import uno.lux.sample.data.post.AlbumId
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
-import uno.lux.sample.data.user.UserId
 
 /**
  * Stand-in content for the in-memory repository and Compose previews. Timestamps are
@@ -187,34 +185,6 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
 )
 
-/** Album stand-ins per user id, surfaced on the profile's Albums tab. */
-internal val SampleAlbums: Map<UserId, List<Album>> = mapOf(
-    "u1" to listOf(
-        Album(id = "a1", title = "Engine Sketches", itemCount = 24),
-        Album(id = "a2", title = "Notation Studies", itemCount = 12),
-        Album(id = "a3", title = "Loom Patterns", itemCount = 18),
-        Album(id = "a4", title = "Letters & Margins", itemCount = 7),
-    ),
-    "u2" to listOf(
-        Album(id = "a5", title = "Mark I Logbook", itemCount = 31),
-        Album(id = "a6", title = "The First Bug", itemCount = 4),
-        Album(id = "a7", title = "Nanoseconds", itemCount = 9),
-    ),
-    "u3" to listOf(
-        Album(id = "a8", title = "Bombe Rotors", itemCount = 16),
-        Album(id = "a9", title = "Morphogenesis", itemCount = 22),
-    ),
-    "u4" to listOf(
-        Album(id = "a10", title = "Rope Memory", itemCount = 14),
-        Album(id = "a11", title = "Launch Room", itemCount = 28),
-        Album(id = "a12", title = "The Listing", itemCount = 6),
-    ),
-    "u5" to listOf(
-        Album(id = "a13", title = "Build Logs", itemCount = 42),
-        Album(id = "a14", title = "Diving Trips", itemCount = 11),
-    ),
-)
-
 /** Sample comments seeded per post id; timestamps are anchored to first access. */
 internal val SampleComments: Map<PostId, List<Comment>> = buildSampleComments(Instant.now())
 
@@ -260,32 +230,5 @@ private fun buildSampleComments(now: Instant): Map<PostId, List<Comment>> = mapO
     "p6" to listOf(
         Comment("c1p6", SampleUsers[1], now.minus(Duration.ofDays(2)),
             "The Analytical Engine composing music — a beautiful idea.", 11),
-    ),
-)
-
-/** Video stand-ins per user id, surfaced on the profile's Videos tab. */
-internal val SampleVideos: Map<UserId, List<Video>> = mapOf(
-    "u1" to listOf(
-        Video(id = "v1", title = "Weaving algebra on the Analytical Engine", durationSeconds = 222, viewCount = 41_200, videoUrl = SampleVideoUrl),
-        Video(id = "v2", title = "Note G, explained", durationSeconds = 615, viewCount = 12_800, videoUrl = SampleVideoUrl),
-        Video(id = "v3", title = "Poetical science", durationSeconds = 95, viewCount = 8_400, videoUrl = SampleVideoUrl),
-    ),
-    "u2" to listOf(
-        Video(id = "v4", title = "How a compiler thinks", durationSeconds = 1325, viewCount = 220_000, videoUrl = SampleVideoUrl),
-        Video(id = "v5", title = "A nanosecond in your hand", durationSeconds = 184, viewCount = 1_200_000, videoUrl = SampleVideoUrl),
-    ),
-    "u3" to listOf(
-        Video(id = "v6", title = "The imitation game", durationSeconds = 742, viewCount = 980_000, videoUrl = SampleVideoUrl),
-        Video(id = "v7", title = "On computable numbers", durationSeconds = 2010, viewCount = 154_000, videoUrl = SampleVideoUrl),
-        Video(id = "v8", title = "Breaking Enigma", durationSeconds = 366, viewCount = 512_300, videoUrl = SampleVideoUrl),
-    ),
-    "u4" to listOf(
-        Video(id = "v9", title = "The 1202 alarm", durationSeconds = 488, viewCount = 1_540_000, videoUrl = SampleVideoUrl),
-        Video(id = "v10", title = "Software, taken seriously", durationSeconds = 277, viewCount = 96_500, videoUrl = SampleVideoUrl),
-    ),
-    "u5" to listOf(
-        Video(id = "v11", title = "Talk is cheap", durationSeconds = 132, viewCount = 3_100_000, videoUrl = SampleVideoUrl),
-        Video(id = "v12", title = "Git in ten minutes", durationSeconds = 631, viewCount = 2_050_000, videoUrl = SampleVideoUrl),
-        Video(id = "v13", title = "Why monolithic", durationSeconds = 1442, viewCount = 740_000, videoUrl = SampleVideoUrl),
     ),
 )

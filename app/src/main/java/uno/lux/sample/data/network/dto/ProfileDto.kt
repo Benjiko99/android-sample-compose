@@ -5,6 +5,4 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ProfileStatsDto(
     val postsCount: Int,
-    val albumsCount: Int,
-    val videosCount: Int,
 )

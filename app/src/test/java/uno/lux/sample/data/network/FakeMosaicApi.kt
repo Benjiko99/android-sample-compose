@@ -92,17 +92,13 @@ class FakeMosaicApi(
     }
 
     override suspend fun getProfileStats(id: String): ProfileStatsResponse =
-        ProfileStatsResponse(profileStats[id] ?: ProfileStatsDto(0, 0, 0))
+        ProfileStatsResponse(profileStats[id] ?: ProfileStatsDto(postsCount = 0))
 
     override suspend fun getUserPosts(
         id: String,
-        type: String?,
         cursor: String?,
         limit: Int,
-    ): UserPostsResponse = UserPostsResponse(
-        data = if (type == null) userPosts else userPosts.filter { it.matchesType(type) },
-        page = emptyPage,
-    )
+    ): UserPostsResponse = UserPostsResponse(data = userPosts, page = emptyPage)
 
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
         CommentListResponse(data = comments, page = emptyPage)
@@ -130,13 +126,6 @@ class FakeMosaicApi(
         commentId: String,
         body: EmptyBody,
     ): LikeToggleResponse = LikeToggleResponse(likeResult)
-}
-
-private fun PostFeedItemDto.matchesType(type: String): Boolean = when (type) {
-    "photo" -> album != null
-    "video" -> video != null
-    "text" -> album == null && video == null
-    else -> true
 }
 
 fun feedItemDto(
