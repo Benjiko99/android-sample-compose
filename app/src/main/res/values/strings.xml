@@ -93,6 +93,7 @@
     <string name="gender_woman">Woman</string>
     <string name="profile_stat_followers">Followers</string>
     <string name="profile_stat_following">Following</string>
+    <string name="profile_tab_posts">Posts</string>
 
     <!-- Video -->
     <string name="video_play">Play video</string>

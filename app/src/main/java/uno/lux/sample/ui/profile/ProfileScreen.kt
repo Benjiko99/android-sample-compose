@@ -1,7 +1,9 @@
 package uno.lux.sample.ui.profile
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import uno.lux.sample.ui.components.debouncedClickable
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
@@ -36,6 +39,8 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -44,7 +49,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,11 +60,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -186,7 +196,7 @@ internal fun ProfileScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileContent(
     data: ProfileScreenData,
@@ -196,8 +206,23 @@ private fun ProfileContent(
     actions: ProfileActions,
     onBack: (() -> Unit)?,
 ) {
+    var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    // The cover bleeds to the very top, so we can't reserve the bar's height with content
+    // padding. Instead, the sticky tab header grows a top inset as it nears the bar, derived
+    // from the header item's own geometry — independent of the inset, so it can't oscillate.
+    val density = LocalDensity.current
+    val barBottomPx = WindowInsets.statusBars.getTop(density) +
+            with(density) { ProfileBarHeight.toPx() }
+    val tabInset by remember(barBottomPx) {
+        derivedStateOf {
+            val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "header" }
+            val tabsTop = if (header != null) (header.offset + header.size).toFloat() else 0f
+            with(density) { (barBottomPx - tabsTop).coerceIn(0f, barBottomPx).toDp() }
+        }
+    }
 
     LoadMoreEffect(
         listState = listState,
@@ -225,7 +250,16 @@ private fun ProfileContent(
                         onOpenAvatar = actions::openAvatar,
                     )
                 }
-                postItems(screenData = data, actions = actions)
+                stickyHeader(key = "tabs") {
+                    ProfileTabs(
+                        selected = selectedTab,
+                        onSelect = { selectedTab = it },
+                        topInset = tabInset,
+                    )
+                }
+                when (selectedTab) {
+                    ProfileTab.POSTS -> postItems(screenData = data, actions = actions)
+                }
                 item(key = "bottom-inset") {
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                 }
@@ -245,6 +279,7 @@ private val CoverHeight = 160.dp
 private val AvatarRingSize = 96.dp
 private val AvatarSize = 88.dp
 private val AvatarOverlap = 44.dp // how far the avatar hangs below the cover
+private val ProfileBarHeight = 64.dp // Material small TopAppBar content height (excl. status bar)
 
 @Composable
 private fun ProfileHeader(
@@ -449,7 +484,54 @@ private fun Stat(value: Int, label: String) {
 
 // endregion
 
-// region Posts
+// region Tabs
+
+/**
+ * The profile's tab entries, in order. Posts is the only content the app supports today; the
+ * row is generated by iterating [entries], so restoring a tab is an enum addition plus its
+ * branch in [ProfileContent].
+ */
+private enum class ProfileTab(
+    @get:StringRes val labelRes: Int,
+) {
+    POSTS(R.string.profile_tab_posts),
+}
+
+@Composable
+private fun ProfileTabs(
+    selected: ProfileTab,
+    onSelect: (ProfileTab) -> Unit,
+    topInset: Dp,
+) {
+    // The surface-colored reserved strip grows as the tabs reach the app bar, so they pin just
+    // below it and sit seamlessly under the then-filled bar (see tabInset in ProfileContent).
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+        Spacer(Modifier.height(topInset))
+        PrimaryTabRow(
+            selectedTabIndex = selected.ordinal,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            ProfileTab.entries.forEach { tab ->
+                Tab(
+                    selected = tab == selected,
+                    onClick = { onSelect(tab) },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = LocalMosaicColors.current.textTertiary,
+                ) {
+                    Text(
+                        text = stringResource(tab.labelRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(vertical = 14.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+// endregion
+
+// region Tab content
 
 private fun LazyListScope.postItems(
     screenData: ProfileScreenData,
