@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -72,6 +71,7 @@ import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.FullScreenProgress
 import uno.lux.sample.ui.components.debouncedClickable
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.format.asText
@@ -176,12 +176,9 @@ internal fun PostDetailScreen(
         },
     ) { contentPadding ->
         when (uiState) {
-            PostDetailUiState.Loading -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-                contentAlignment = Alignment.Center,
-            ) { CircularProgressIndicator() }
+            PostDetailUiState.Loading -> FullScreenProgress(
+                modifier = Modifier.padding(contentPadding),
+            )
 
             PostDetailUiState.NotFound -> Box(
                 modifier = Modifier

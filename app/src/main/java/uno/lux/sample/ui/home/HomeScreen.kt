@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,6 +44,7 @@ import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.FullScreenError
+import uno.lux.sample.ui.components.FullScreenProgress
 import uno.lux.sample.ui.components.LoadMoreEffect
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.components.LoadingMoreFooter
@@ -133,7 +133,7 @@ internal fun HomeScreen(
                 .padding(contentPadding),
         ) {
             when (uiState) {
-                HomeUiState.Loading -> LoadingState()
+                HomeUiState.Loading -> FullScreenProgress()
                 is HomeUiState.Error -> FullScreenError(
                     message = uiState.error.asText(),
                     onRetry = actions::retry,
@@ -232,13 +232,6 @@ private fun FeedList(
                 LoadingMoreFooter()
             }
         }
-    }
-}
-
-@Composable
-private fun LoadingState(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
     }
 }
 

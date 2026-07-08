@@ -33,7 +33,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -79,6 +78,7 @@ import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.profile.Profile
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.FullScreenError
+import uno.lux.sample.ui.components.FullScreenProgress
 import uno.lux.sample.ui.components.LoadMoreEffect
 import uno.lux.sample.ui.components.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -166,7 +166,7 @@ internal fun ProfileScreen(
     ) {
         when (uiState) {
             ProfileUiState.Loading -> {
-                CenteredProgress()
+                FullScreenProgress()
                 if (onBack != null) PlainBackButton(onBack, Modifier.align(Alignment.TopStart))
             }
 
@@ -644,13 +644,6 @@ private fun ProfileTopBar(
         ),
         scrollBehavior = scrollBehavior,
     )
-}
-
-@Composable
-private fun CenteredProgress() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
-    }
 }
 
 @Composable

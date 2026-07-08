@@ -61,6 +61,7 @@ import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.DiscardChangesDialog
 import uno.lux.sample.ui.components.FullScreenError
+import uno.lux.sample.ui.components.FullScreenProgress
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.MosaicTheme
@@ -179,14 +180,9 @@ internal fun EditProfileScreen(
         },
     ) { contentPadding ->
         when (uiState) {
-            EditProfileUiState.Loading -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            EditProfileUiState.Loading -> FullScreenProgress(
+                modifier = Modifier.padding(contentPadding),
+            )
 
             is EditProfileUiState.Error -> FullScreenError(
                 message = uiState.error.asText(),
