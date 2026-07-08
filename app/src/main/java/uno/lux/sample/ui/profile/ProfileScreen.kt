@@ -58,7 +58,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -86,6 +85,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import uno.lux.sample.ui.post.PostCard
 import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.ui.components.MosaicGradients
+import uno.lux.sample.ui.components.ScrimIconButton
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
@@ -644,35 +644,6 @@ private fun ProfileTopBar(
         ),
         scrollBehavior = scrollBehavior,
     )
-}
-
-/**
- * An app-bar icon button whose gray circular scrim (and white tint) fade to a bare on-surface
- * icon as [progress] goes 0 → 1 — i.e. as the bar fills on scroll.
- */
-@Composable
-private fun ScrimIconButton(
-    @DrawableRes iconRes: Int,
-    contentDescription: String,
-    progress: Float,
-    onClick: () -> Unit,
-) {
-    IconButton(onClick = onClick.rememberDebounced()) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.32f * (1f - progress))),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(iconRes),
-                contentDescription = contentDescription,
-                tint = lerp(Color.White, MaterialTheme.colorScheme.onSurface, progress),
-                modifier = Modifier.size(22.dp),
-            )
-        }
-    }
 }
 
 @Composable
