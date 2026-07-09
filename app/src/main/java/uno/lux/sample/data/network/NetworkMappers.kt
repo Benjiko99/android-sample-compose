@@ -14,33 +14,32 @@ import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
 
-// DTO → domain mapping runs through Mappie (a Kotlin compiler plugin): the mappers below declare
-// only the conversions Mappie can't infer — everything else is matched by name at compile time.
-// AlbumMapper/VideoMapper exist so PostMapper's nested album/video resolve to them automatically.
-//
-// Every body must pass an explicit lambda — `mapping {}`, never `mapping()`. On this version the
-// no-arg overload trips a null-dereference in the plugin's IR pass; the empty lambda avoids it.
+// DTO → domain mapping runs through Mappie (a Kotlin compiler plugin): fields are matched by name
+// at compile time, and the conversions Mappie can't infer are supplied as local conversion methods
+// it applies automatically by type — the String → Instant parse, and the comment author, which
+// routes through the hand-written UserDto → User mapper. AlbumMapper/VideoMapper exist so
+// PostMapper's nested album/video resolve to them.
 
 object AlbumMapper : ObjectMappie<AlbumDto, Album>() {
-    override fun map(from: AlbumDto) = mapping {}
+    override fun map(from: AlbumDto) = mapping()
 }
 
 object VideoMapper : ObjectMappie<VideoDto, Video>() {
-    override fun map(from: VideoDto) = mapping {}
+    override fun map(from: VideoDto) = mapping()
 }
 
 object PostMapper : ObjectMappie<PostFeedItemDto, Post>() {
-    override fun map(from: PostFeedItemDto) = mapping {
-        to::createdAt fromProperty from::createdAt transform { Instant.parse(it) }
-    }
+    override fun map(from: PostFeedItemDto) = mapping()
+
+    fun parseInstant(value: String): Instant = Instant.parse(value)
 }
 
 object CommentMapper : ObjectMappie<CommentDto, Comment>() {
-    // author reuses the hand-written UserDto → User mapper below; createdAt parses the wire string.
-    override fun map(from: CommentDto) = mapping {
-        to::author fromProperty from::author transform { it.toDomain() }
-        to::createdAt fromProperty from::createdAt transform { Instant.parse(it) }
-    }
+    override fun map(from: CommentDto) = mapping()
+
+    fun parseInstant(value: String): Instant = Instant.parse(value)
+
+    fun toDomainUser(dto: UserDto): User = dto.toDomain()
 }
 
 // The two User DTOs stay hand-mapped for now: each populates a different subset of User and leans

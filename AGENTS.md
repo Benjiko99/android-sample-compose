@@ -30,10 +30,11 @@ The shell is Windows PowerShell; invoke the wrapper as `.\gradlew.bat`.
 
 ## Toolchain / build setup
 
-- **Kotlin 2.2.10**, **AGP 9.2.1**, **Gradle 9.4.1**, Compose BOM **2025.12.00**.
+- **Kotlin 2.3.21**, **AGP 9.2.1**, **Gradle 9.4.1**, Compose BOM **2025.12.00**.
 - `compileSdk` is **36.1**, expressed with the newer AGP DSL `release(36) { minorApiLevel = 1 }`; `minSdk = 26`, `targetSdk = 36`.
 - Source/target compatibility is **Java 11**, but the Gradle daemon runs on **JDK 21** (`gradle/gradle-daemon-jvm.properties`, auto-provisioned via foojay).
 - AGP 9's **built-in Kotlin** is in use — there is no standalone `org.jetbrains.kotlin.android` plugin. Annotation processing runs through **KSP** (kapt is incompatible with built-in Kotlin); Hilt's codegen rides on it.
+- AGP 9.2.1 *bundles* Kotlin 2.2.10; the root `build.gradle.kts` puts a newer `kotlin-gradle-plugin` on the **buildscript classpath** (the documented override) to lift the compiler to **2.3.21**. Every compiler plugin is version-locked to that Kotlin and must move with it: the Compose compiler and kotlinx-serialization plugins (`version.ref = "kotlin"`), KSP (`<kotlin>-<ksp>`), and **Mappie** (`<kotlin>-<mappie>`, used for DTO → domain mapping in `data/network/NetworkMappers.kt`).
 - Dependencies are managed through the **version catalog** at `gradle/libs.versions.toml`. Add or bump dependencies there and reference them via the generated `libs.*` accessors in `app/build.gradle.kts` — do not hardcode versions in the build script.
 
 ## Architecture
@@ -59,7 +60,7 @@ Single-activity, 100% Jetpack Compose app — there are no Fragments and no XML 
 
 ## Compose performance — keeping recomposition tight
 
-Holding recomposition to what actually changed is part of "idiomatic Compose" here, but it leans on the compiler rather than hand-tuning. The built-in Compose compiler (Kotlin 2.2.10) runs with **strong skipping on**, which shapes what's worth doing:
+Holding recomposition to what actually changed is part of "idiomatic Compose" here, but it leans on the compiler rather than hand-tuning. The built-in Compose compiler (Kotlin 2.3.21) runs with **strong skipping on**, which shapes what's worth doing:
 
 - **Don't reflexively wrap lambdas in `remember` or chase `@Stable`/`@Immutable` on every model.** Strong skipping auto-remembers lambdas (even ones capturing unstable values) and lets composables with *unstable* parameters still skip via instance equality. The domain models are technically unstable — `Post` carries a `java.time.Instant` and `List<…>` is an unstable type — yet feed and profile rows skip fine because each `LazyColumn` item is compared by instance.
 - **Skipping is by instance, so a mutation must preserve identity for everything that didn't change.** `InMemoryPostRepository.updatePost` rebuilds the list but returns the *same* `Post` instance for every row except the toggled one (`posts.map { if (it.id == postId) transform(it) else it }`), so a like/bookmark recomposes only that one `PostCard`. Mapping `copy()` over the whole list (or otherwise handing back fresh instances for unchanged rows) would recompose every visible row — avoid it.
