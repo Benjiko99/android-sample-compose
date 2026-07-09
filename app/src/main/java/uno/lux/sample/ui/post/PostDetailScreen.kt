@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -444,11 +445,13 @@ private fun CommentComposer(
 ) {
     val textState = rememberTextFieldState()
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val keyboardController = LocalSoftwareKeyboardController.current
     val send = {
         val trimmed = textState.text.toString().trim()
         if (trimmed.isNotEmpty()) {
             onSend(trimmed)
             textState.clearText()
+            keyboardController?.hide()
         }
     }
 
