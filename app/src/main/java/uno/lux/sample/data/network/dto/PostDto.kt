@@ -1,13 +1,15 @@
 package uno.lux.sample.data.network.dto
 
 import kotlinx.serialization.Serializable
+import java.time.Instant
 
 @Serializable
 data class PostFeedItemDto(
     val id: String,
     val title: String,
     val body: String,
-    val createdAt: String,
+    @Serializable(with = InstantSerializer::class)
+    val createdAt: Instant,
     val authorId: String,
     val likeCount: Int,
     val commentCount: Int,

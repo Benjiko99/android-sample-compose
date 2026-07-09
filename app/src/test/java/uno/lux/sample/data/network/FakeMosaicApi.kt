@@ -1,5 +1,6 @@
 package uno.lux.sample.data.network
 
+import java.time.Instant
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
@@ -114,7 +115,7 @@ class FakeMosaicApi(
             CommentDto(
                 id = "c-new",
                 text = body.text,
-                createdAt = "2025-01-01T00:00:00.000Z",
+                createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
                 likeCount = 0,
                 isLiked = false,
                 author = stubAuthor,
@@ -140,7 +141,7 @@ fun feedItemDto(
     id = id,
     title = "Title $id",
     body = "Body $id",
-    createdAt = "2025-01-01T00:00:00.000Z",
+    createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
     authorId = authorId,
     likeCount = likeCount,
     commentCount = 0,
@@ -178,7 +179,7 @@ fun commentDto(
 ) = CommentDto(
     id = id,
     text = text,
-    createdAt = "2025-01-01T00:00:00.000Z",
+    createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
     likeCount = likeCount,
     isLiked = isLiked,
     author = stubAuthor,

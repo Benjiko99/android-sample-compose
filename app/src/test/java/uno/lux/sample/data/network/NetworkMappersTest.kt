@@ -11,26 +11,23 @@ import uno.lux.sample.data.network.dto.VideoDto
 import java.time.Instant
 
 /**
- * Covers the conversions Mappie can't infer by name — the ISO string → [Instant] parse and the
- * nested/author mappings — since those are what would silently break if a mapper regressed.
+ * Covers what Mappie can't verify structurally on its own — the nested album/video mapping and the
+ * author routed through the manual UserDto mapper. (The createdAt timestamp arrives already parsed
+ * from the DTO layer; its parsing is covered by [uno.lux.sample.data.network.dto.InstantSerializerTest].)
  */
 class NetworkMappersTest {
 
     @Test
-    fun `PostMapper parses the createdAt string into an Instant`() {
-        val dto = postDto(createdAt = "2025-01-01T00:00:00.000Z")
-
-        assertEquals(Instant.parse("2025-01-01T00:00:00.000Z"), PostMapper.map(dto).createdAt)
-    }
-
-    @Test
     fun `PostMapper carries scalar fields across unchanged`() {
-        val post = PostMapper.map(postDto())
+        val createdAt = Instant.parse("2025-06-01T12:00:00Z")
+
+        val post = PostMapper.map(postDto(createdAt = createdAt))
 
         assertEquals("p1", post.id)
         assertEquals("u1", post.authorId)
         assertEquals("Title", post.title)
         assertEquals("Body", post.body)
+        assertEquals(createdAt, post.createdAt)
         assertEquals(6, post.likeCount)
         assertEquals(2, post.commentCount)
         assertEquals(true, post.isLiked)
@@ -73,11 +70,11 @@ class NetworkMappersTest {
     }
 
     @Test
-    fun `CommentMapper parses createdAt and maps the author through the manual UserDto mapper`() {
+    fun `CommentMapper maps the author through the manual UserDto mapper`() {
         val dto = CommentDto(
             id = "c1",
             text = "Hello",
-            createdAt = "2025-01-01T00:00:00.000Z",
+            createdAt = Instant.parse("2025-06-01T12:00:00Z"),
             likeCount = 2,
             isLiked = true,
             author = UserDto(
@@ -92,14 +89,14 @@ class NetworkMappersTest {
 
         val comment = CommentMapper.map(dto)
 
-        assertEquals(Instant.parse("2025-01-01T00:00:00.000Z"), comment.createdAt)
         assertEquals("u1", comment.author.id)
         assertEquals("Ada", comment.author.nickname)
         assertEquals(true, comment.author.isFollowing)
+        assertEquals(dto.createdAt, comment.createdAt)
     }
 
     private fun postDto(
-        createdAt: String = "2025-01-01T00:00:00.000Z",
+        createdAt: Instant = Instant.parse("2025-01-01T00:00:00Z"),
         album: AlbumDto? = null,
         video: VideoDto? = null,
     ) = PostFeedItemDto(
