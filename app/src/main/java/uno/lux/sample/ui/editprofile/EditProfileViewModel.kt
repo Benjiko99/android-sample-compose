@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.di.CurrentUserId
+import uno.lux.sample.ui.file.FileLoader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
@@ -30,7 +31,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val avatarImageLoader: AvatarImageLoader,
+    private val fileLoader: FileLoader,
     private val navigator: Navigator,
     @param:CurrentUserId private val userId: UserId,
 ) : ViewModel(), EditProfileActions {
@@ -128,7 +129,7 @@ class EditProfileViewModel @Inject constructor(
                 ignoreErrors(_saveError) {
                     // Read the picked image into upload bytes only if one was chosen; otherwise
                     // the current avatar is left untouched.
-                    val avatar = form.pickedAvatarUri?.let { avatarImageLoader.read(it) }
+                    val avatar = form.pickedAvatarUri?.let { fileLoader.read(it) }
                     userRepository.updateProfile(userId, form.toProfileUpdate(avatar))
                     navigator.goBack()
                 }

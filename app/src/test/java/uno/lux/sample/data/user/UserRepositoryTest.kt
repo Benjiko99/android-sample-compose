@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.file.FileUpload
 
 class UserRepositoryTest {
 
@@ -78,7 +79,7 @@ class UserRepositoryTest {
 
         val update = profileUpdate(
             nickname = "Ada King",
-            avatar = AvatarUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
+            avatar = FileUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
         )
         repo.updateProfile("u1", update)
 
@@ -95,7 +96,7 @@ class UserRepositoryTest {
             "u1",
             profileUpdate(
                 nickname = "Ada",
-                avatar = AvatarUpload(byteArrayOf(9), "image/png", "avatar.png"),
+                avatar = FileUpload(byteArrayOf(9), "image/png", "avatar.png"),
             ),
         )
 
@@ -154,7 +155,7 @@ private fun profileUpdate(
     age: Int? = null,
     gender: String? = null,
     bio: String? = null,
-    avatar: AvatarUpload? = null,
+    avatar: FileUpload? = null,
 ) = ProfileUpdate(
     nickname = nickname,
     age = age,

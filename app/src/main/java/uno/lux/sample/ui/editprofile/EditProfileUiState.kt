@@ -2,7 +2,7 @@ package uno.lux.sample.ui.editprofile
 
 import androidx.annotation.StringRes
 import uno.lux.sample.R
-import uno.lux.sample.data.user.AvatarUpload
+import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 import uno.lux.sample.util.AppError
@@ -57,7 +57,7 @@ data class EditProfileForm(
         get() = nickname.isNotBlank() && isAgeValid
 
     /** [avatar] is the uploaded bytes of [pickedAvatarUri], resolved by the ViewModel on save. */
-    fun toProfileUpdate(avatar: AvatarUpload?) = ProfileUpdate(
+    fun toProfileUpdate(avatar: FileUpload?) = ProfileUpdate(
         nickname = nickname.trim(),
         age = age.toIntOrNull(),
         gender = gender?.storedValue,

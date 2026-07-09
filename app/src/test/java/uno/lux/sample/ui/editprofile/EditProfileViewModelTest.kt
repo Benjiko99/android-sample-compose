@@ -13,11 +13,12 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
-import uno.lux.sample.data.user.AvatarUpload
+import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.file.FileLoader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
@@ -35,13 +36,13 @@ class EditProfileViewModelTest : ViewModelTest() {
     )
 
     /** Records the URI it was asked to read and returns a fixed upload payload. */
-    private class FakeAvatarImageLoader(
-        val result: AvatarUpload = AvatarUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
-    ) : AvatarImageLoader {
+    private class FakeFileLoader(
+        val result: FileUpload = FileUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
+    ) : FileLoader {
         var lastUri: String? = null
             private set
 
-        override suspend fun read(uri: String): AvatarUpload {
+        override suspend fun read(uri: String): FileUpload {
             lastUri = uri
             return result
         }
@@ -51,7 +52,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         val viewModel: EditProfileViewModel,
         val repository: UserRepository,
         val dataSource: FakeUserDataSource,
-        val avatarLoader: FakeAvatarImageLoader,
+        val avatarLoader: FakeFileLoader,
     )
 
     // The editor sits on top of the profile that opened it; a successful save must pop it.
@@ -65,7 +66,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         val dataSource = FakeUserDataSource(mapOf("u1" to ada), failUpdates = failUpdates)
         val repository = UserRepository(dataSource)
         if (cached) repository.ingest(listOf(ada))
-        val avatarLoader = FakeAvatarImageLoader()
+        val avatarLoader = FakeFileLoader()
 
         return Fixture(
             EditProfileViewModel(repository, avatarLoader, navigator, "u1"),

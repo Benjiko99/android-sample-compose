@@ -6,8 +6,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.network.dto.FollowToggleDto
-import uno.lux.sample.data.user.AvatarUpload
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 
@@ -94,7 +94,7 @@ class NetworkUserDataSourceTest {
                 age = null,
                 gender = null,
                 bio = null,
-                avatar = AvatarUpload(
+                avatar = FileUpload(
                     bytes = byteArrayOf(1, 2, 3, 4),
                     mimeType = "image/png",
                     filename = "avatar.png",
