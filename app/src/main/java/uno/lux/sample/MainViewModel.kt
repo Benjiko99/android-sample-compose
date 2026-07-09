@@ -19,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
-    @CurrentUserId val currentUserId: String,
+    @param:CurrentUserId val currentUserId: String,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode?> = settingsRepository.themeMode

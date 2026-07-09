@@ -83,6 +83,7 @@ sealed interface EditProfileUiState {
 
     data class Editing(
         val form: EditProfileForm,
+        val isDirty: Boolean,
         val isSaving: Boolean,
         val showDiscardConfirmation: Boolean,
         val saveError: AppError?,

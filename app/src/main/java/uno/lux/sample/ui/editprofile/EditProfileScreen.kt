@@ -171,7 +171,7 @@ internal fun EditProfileScreen(
                     (uiState as? EditProfileUiState.Editing)?.let { editing ->
                         SaveAction(
                             isSaving = editing.isSaving,
-                            enabled = editing.form.canSave,
+                            enabled = editing.isDirty && editing.form.canSave,
                             onSave = actions::save,
                         )
                     }
@@ -375,6 +375,7 @@ private fun EditProfileScreenPreview() {
         EditProfileScreen(
             uiState = EditProfileUiState.Editing(
                 form = EditProfileForm.from(SampleUsers.first()),
+                isDirty = true,
                 isSaving = false,
                 showDiscardConfirmation = false,
                 saveError = null,

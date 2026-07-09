@@ -42,7 +42,7 @@ class ProfileViewModel @AssistedInject constructor(
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
     private val navigator: Navigator,
-    @CurrentUserId private val currentUserId: UserId,
+    @param:CurrentUserId private val currentUserId: UserId,
     @Assisted private val userId: UserId,
 ) : ViewModel(), ProfileActions {
 

@@ -81,8 +81,10 @@ class EditProfileViewModelTest : ViewModelTest() {
         }
     }
 
-    private fun EditProfileViewModel.form(): EditProfileForm =
-        (uiState.value as EditProfileUiState.Editing).form
+    private fun EditProfileViewModel.editing(): EditProfileUiState.Editing =
+        uiState.value as EditProfileUiState.Editing
+
+    private fun EditProfileViewModel.form(): EditProfileForm = editing().form
 
     @Test
     fun `form is seeded from the cached user`() = runTest {
@@ -150,6 +152,20 @@ class EditProfileViewModelTest : ViewModelTest() {
 
         viewModel.onAgeChange("")
         assertTrue(viewModel.form().canSave)
+    }
+
+    @Test
+    fun `form is not dirty until a field changes, and reverting clears it`() = runTest {
+        val (viewModel, _, _) = fixture()
+        collecting(viewModel)
+
+        assertFalse("seeded form matches the user", viewModel.editing().isDirty)
+
+        viewModel.onNicknameChange("Ada King")
+        assertTrue(viewModel.editing().isDirty)
+
+        viewModel.onNicknameChange("Ada Lovelace")
+        assertFalse("reverting the edit is no longer dirty", viewModel.editing().isDirty)
     }
 
     @Test

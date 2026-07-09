@@ -32,7 +32,7 @@ class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val avatarImageLoader: AvatarImageLoader,
     private val navigator: Navigator,
-    @CurrentUserId private val userId: UserId,
+    @param:CurrentUserId private val userId: UserId,
 ) : ViewModel(), EditProfileActions {
 
     private val _form = MutableStateFlow<EditProfileForm?>(null)
@@ -51,20 +51,23 @@ class EditProfileViewModel @Inject constructor(
 
     val uiState: StateFlow<EditProfileUiState> = combine(
         _form,
+        _initialForm,
         _loadError,
         _isSaving,
         _showDiscardConfirmation,
         _saveError,
     ) { args ->
         val form = args[0] as EditProfileForm?
-        val loadError = args[1] as AppError?
-        val isSaving = args[2] as Boolean
-        val showDiscardConfirmation = args[3] as Boolean
-        val saveError = args[4] as AppError?
+        val initialForm = args[1] as EditProfileForm?
+        val loadError = args[2] as AppError?
+        val isSaving = args[3] as Boolean
+        val showDiscardConfirmation = args[4] as Boolean
+        val saveError = args[5] as AppError?
 
         when {
             form != null -> EditProfileUiState.Editing(
                 form = form,
+                isDirty = form != initialForm,
                 isSaving = isSaving,
                 showDiscardConfirmation = showDiscardConfirmation,
                 saveError = saveError

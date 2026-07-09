@@ -46,7 +46,7 @@ class PostDetailViewModel @AssistedInject constructor(
     private val commentRepository: CommentRepository,
     private val userRepository: UserRepository,
     private val navigator: Navigator,
-    @CurrentUser private val currentUser: User,
+    @param:CurrentUser private val currentUser: User,
     @Assisted private val postId: PostId,
 ) : ViewModel() {
 
