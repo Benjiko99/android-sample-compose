@@ -1,6 +1,7 @@
 package uno.lux.sample.ui.post
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,6 +47,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -134,10 +139,19 @@ internal fun PostDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val loaded = (uiState as? PostDetailUiState.Loaded)
+    val listState = rememberLazyListState()
+    val elevated = listState.canScrollBackward
 
     Scaffold(
         modifier = modifier.imePadding(),
         topBar = {
+            val elevationPx = with(LocalDensity.current) { TopBarElevation.toPx() }
+            val shadowElevation = remember { Animatable(0f) }
+
+            LaunchedEffect(elevated, elevationPx) {
+                shadowElevation.animateTo(if (elevated) elevationPx else 0f)
+            }
+
             TopAppBar(
                 title = {
                     Text(
@@ -165,6 +179,7 @@ internal fun PostDetailScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
+                modifier = Modifier.graphicsLayer { this.shadowElevation = shadowElevation.value },
             )
         },
         bottomBar = {
@@ -200,6 +215,7 @@ internal fun PostDetailScreen(
                 author = uiState.author,
                 comments = uiState.comments,
                 commentsError = uiState.commentsError,
+                listState = listState,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
@@ -213,6 +229,9 @@ internal fun PostDetailScreen(
     }
 }
 
+/** Resting shadow depth of the pinned detail bar once the content is scrolled. */
+private val TopBarElevation = 4.dp
+
 // ── Scrollable content ─────────────────────────────────────────────────────────
 
 @Composable
@@ -221,6 +240,7 @@ private fun PostDetailContent(
     author: User,
     comments: List<Comment>,
     commentsError: AppError?,
+    listState: LazyListState,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
@@ -230,7 +250,6 @@ private fun PostDetailContent(
     onRetryComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
