@@ -21,7 +21,7 @@ class NetworkProfileDataSource(
 
         ProfileRefreshData(
             postsCount = stats.postsCount,
-            posts = postsResponse.data.map { it.toDomain() },
+            posts = postsResponse.data.map { PostMapper.map(it) },
             postCursor = postsResponse.page.nextCursor,
             postHasMore = postsResponse.page.hasMore,
         )
@@ -30,7 +30,7 @@ class NetworkProfileDataSource(
     override suspend fun loadMorePosts(userId: UserId, cursor: String?): PostsPage = withContext(Dispatchers.IO) {
         val response = api.getUserPosts(userId, cursor = cursor)
         PostsPage(
-            posts = response.data.map { it.toDomain() },
+            posts = response.data.map { PostMapper.map(it) },
             cursor = response.page.nextCursor,
             hasMore = response.page.hasMore,
         )

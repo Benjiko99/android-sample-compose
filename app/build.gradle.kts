@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.mappie)
 }
 
 android {
@@ -81,6 +82,8 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.timber)
+    // The Mappie Gradle plugin does not add its api to AGP's built-in Kotlin classpath, so wire it up.
+    implementation(libs.mappie.api)
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

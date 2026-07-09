@@ -13,11 +13,11 @@ class NetworkCommentDataSource(
 ) : CommentDataSource {
 
     override suspend fun loadComments(postId: PostId): List<Comment> = withContext(Dispatchers.IO) {
-        api.getComments(postId).data.map { it.toDomain() }
+        api.getComments(postId).data.map { CommentMapper.map(it) }
     }
 
     override suspend fun addComment(postId: PostId, text: String): Comment = withContext(Dispatchers.IO) {
-        api.addComment(postId, AddCommentRequestDto(text)).data.toDomain()
+        CommentMapper.map(api.addComment(postId, AddCommentRequestDto(text)).data)
     }
 
     override suspend fun toggleLike(postId: PostId, comment: Comment): Comment = withContext(Dispatchers.IO) {
