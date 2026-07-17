@@ -1,5 +1,6 @@
 package uno.lux.sample
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -9,18 +10,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import uno.lux.sample.data.settings.AppLocaleRepository
 import uno.lux.sample.ui.SampleApp
 import uno.lux.sample.ui.navigation.Navigator
+import uno.lux.sample.ui.theme.MosaicDarkNavBarScrim
+import uno.lux.sample.ui.theme.MosaicLightNavBarScrim
 import uno.lux.sample.ui.theme.MosaicTheme
 import javax.inject.Inject
-
-// Scrims drawn behind the gesture navigation bar, per the AndroidX edge-to-edge guidance.
-private val LightScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
-private val DarkScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
 /**
  * The single Activity. It extends [AppCompatActivity] purely so AppCompat's delegate can apply the
@@ -36,10 +36,6 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var navigator: Navigator
 
-    /**
-     * Injected here, not into a ViewModel, because the per-app language APIs it wraps only work
-     * once this Activity's AppCompat delegate has attached.
-     */
     @Inject
     lateinit var appLocaleRepository: AppLocaleRepository
 
@@ -53,6 +49,7 @@ class MainActivity : AppCompatActivity() {
         appLocaleRepository.resolveInitialLanguage()
 
         splashScreen.setKeepOnScreenCondition { viewModel.themeMode.value == null }
+
         setContent {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             val resolvedMode = themeMode ?: return@setContent
@@ -63,16 +60,22 @@ class MainActivity : AppCompatActivity() {
             DisposableEffect(darkTheme) {
                 enableEdgeToEdge(
                     statusBarStyle = SystemBarStyle.auto(
-                        android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT,
+                        lightScrim = Color.TRANSPARENT,
+                        darkScrim = Color.TRANSPARENT,
                     ) { darkTheme },
-                    navigationBarStyle = SystemBarStyle.auto(LightScrim, DarkScrim) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        lightScrim = MosaicLightNavBarScrim.toArgb(),
+                        darkScrim = MosaicDarkNavBarScrim.toArgb(),
+                    ) { darkTheme },
                 )
                 onDispose {}
             }
 
             MosaicTheme(darkTheme = darkTheme) {
-                SampleApp(currentUserId = viewModel.currentUserId, navigator = navigator)
+                SampleApp(
+                    currentUserId = viewModel.currentUserId,
+                    navigator = navigator
+                )
             }
         }
     }

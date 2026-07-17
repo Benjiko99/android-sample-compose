@@ -7,7 +7,7 @@ import java.net.UnknownHostException
 /**
  * Typed error result for any operation that can fail. Used by ViewModels to carry structured
  * failure information instead of a bare boolean, so the UI layer can map each case to a
- * localised message via [uno.lux.sample.ui.format.asText].
+ * localized message via [uno.lux.sample.ui.format.asText].
  */
 sealed interface AppError {
     data object NoConnection : AppError

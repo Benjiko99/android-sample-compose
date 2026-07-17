@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import uno.lux.sample.data.profile.ProfileRepository
 
 /**
  * Normalized entity store for posts.
@@ -15,8 +16,6 @@ import kotlinx.coroutines.flow.update
  *
  * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
  * [FeedRepository] or [ProfileRepository]; this store owns only the entity data.
- *
- * The actual like/bookmark toggle logic (local flip vs. server round-trip) lives in [PostDataSource].
  */
 class PostRepository(
     private val dataSource: PostDataSource,

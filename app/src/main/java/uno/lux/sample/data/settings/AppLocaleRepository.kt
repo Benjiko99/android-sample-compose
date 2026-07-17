@@ -5,16 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Reads and applies the app's language. Unlike [SettingsRepository] the value is not ours to
- * store: the per-app language is platform state, so [AppCompatLocaleRepository] leaves persistence
- * to the platform and this seam only exposes it. [InMemoryAppLocaleRepository] is the in-memory
- * double for tests and previews.
- *
- * [language] is a [StateFlow] rather than a plain `Flow` because a language is always in effect —
- * there is no "not loaded yet" state for a reader to render around.
- *
- * [setLanguage] is not `suspend` because applying a language is a synchronous hand-off — the
- * platform persists in the background and recreates the activity on the main thread.
+ * Reads and applies the app's language.
  */
 interface AppLocaleRepository {
 

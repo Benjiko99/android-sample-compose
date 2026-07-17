@@ -7,9 +7,6 @@ package uno.lux.sample.data.post
  * state and applies the returned value. This keeps comments scoped to the screen that needs them
  * and lets the ViewModel be cleared — along with the comment data — the moment the user pops the
  * post detail screen.
- *
- * Where the data comes from — in-memory sample data vs. a live network call — is decided by
- * [CommentDataSource].
  */
 class CommentRepository(
     private val dataSource: CommentDataSource,

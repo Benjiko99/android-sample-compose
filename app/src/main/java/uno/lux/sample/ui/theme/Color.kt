@@ -10,6 +10,10 @@ val MosaicAccent = Color(0xFF3F5BD8) // indigo
 val MosaicLike = Color(0xFFEF4D6B) // coral like-state
 val MosaicOnAccent = Color(0xFFFFFFFF)
 
+// Scrims drawn behind the gesture navigation bar in edge-to-edge, per the AndroidX guidance.
+val MosaicLightNavBarScrim = Color(0xE6FFFFFF)
+val MosaicDarkNavBarScrim = Color(0x801B1B1B)
+
 // Light
 val MosaicLightBg = Color(0xFFEEF0F4)
 val MosaicLightSurface = Color(0xFFFFFFFF)

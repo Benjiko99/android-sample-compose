@@ -6,8 +6,7 @@ import timber.log.Timber
 
 /**
  * [HiltAndroidApp] root of the dependency graph. App-wide singletons (the repositories) are
- * declared in [uno.lux.sample.di.DataModule] rather than held here, so this class stays
- * thin — it only anchors Hilt's code generation and plants the Timber logging tree.
+ * declared in [uno.lux.sample.di.DataModule] rather than held here, so this class stays thin.
  */
 @HiltAndroidApp
 class MosaicApp : Application() {
