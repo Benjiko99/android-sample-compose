@@ -41,6 +41,7 @@ import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
 import uno.lux.sample.ui.album.AlbumViewerScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
+import uno.lux.sample.ui.create.CreatePostScreen
 import uno.lux.sample.ui.editprofile.EditProfileScreen
 import uno.lux.sample.ui.home.HomeScreen
 import uno.lux.sample.ui.navigation.Navigator
@@ -67,7 +68,7 @@ import uno.lux.sample.util.findActivity
  * (that's what keeps it saveable across configuration changes and process death) but attaches
  * it to the injected [navigator], and each screen's ViewModel pushes and pops through that
  * seam instead of the host threading navigation lambdas down to every screen. Every entry —
- * the fullscreen viewers and the placeholder tab included — reaches the stack through its own
+ * the fullscreen viewers and the composer tab included — reaches the stack through its own
  * ViewModel, so this shell wires no navigation lambdas at all; it only builds the [Screen] keys.
  */
 @Composable
@@ -197,8 +198,7 @@ private fun HomeNavShell(currentUserId: String) {
                 // showBackButton stays false); tapping another author still pushes Screen.Profile.
                 AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
 
-                AppDestinations.FAVORITES ->
-                    PlaceholderScreen(titleRes = destination.labelRes)
+                AppDestinations.CREATE -> CreatePostScreen()
             }
         }
     }
@@ -210,7 +210,7 @@ enum class AppDestinations(
     @get:DrawableRes val icon: Int,
 ) {
     HOME(R.string.nav_home, R.drawable.ic_home),
-    FAVORITES(R.string.nav_favorites, R.drawable.ic_favorite),
+    CREATE(R.string.nav_create, R.drawable.ic_add),
     PROFILE(R.string.nav_profile, R.drawable.ic_account_box),
 }
 

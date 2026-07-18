@@ -5,13 +5,40 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
+import uno.lux.sample.data.network.dto.CreatePostRequestDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
+import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.Post
 import java.time.Instant
 
 class NetworkPostDataSourceTest {
 
     private val stubPost = post("p1")
+
+    @Test
+    fun `create sends the draft and maps the created post with its author flattened to an id`() = runTest {
+        val api = FakeMosaicApi()
+        val dataSource = NetworkPostDataSource(api)
+
+        val created = dataSource.create(NewPost(title = "Title", body = "Body"))
+
+        assertEquals(CreatePostRequestDto(title = "Title", body = "Body"), api.lastCreatePostBody)
+        assertEquals("p-new", created.post.id)
+        assertEquals("Title", created.post.title)
+        assertEquals("Body", created.post.body)
+        assertEquals("u1", created.post.authorId)
+        assertEquals(0, created.post.likeCount)
+    }
+
+    @Test
+    fun `create returns the embedded author as a domain user`() = runTest {
+        val dataSource = NetworkPostDataSource(FakeMosaicApi())
+
+        val created = dataSource.create(NewPost(title = "Title", body = "Body"))
+
+        assertEquals("u1", created.author.id)
+        assertEquals("Ada", created.author.nickname)
+    }
 
     @Test
     fun `toggleLike returns post with updated isLiked and likeCount from the server response`() = runTest {

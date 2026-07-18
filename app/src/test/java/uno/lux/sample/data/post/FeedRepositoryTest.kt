@@ -151,6 +151,41 @@ class FeedRepositoryTest {
     }
 
     @Test
+    fun `publish puts the new post at the head of a loaded feed`() = runTest {
+        val dataSource = FakeFeedDataSource(
+            pages = listOf(FeedPage(listOf(post("p1")), emptyList(), null, false)),
+        )
+        val repo = feedRepo(dataSource)
+        repo.refresh()
+
+        val postId = repo.publish(NewPost(title = "Title", body = "Body"))
+
+        val loaded = repo.feedState.first() as FeedState.Loaded
+        assertEquals(listOf(postId, "p1"), loaded.postIds)
+    }
+
+    @Test
+    fun `publish stores the new post and its author in the entity repositories`() = runTest {
+        val postRepo = postRepo()
+        val userRepo = userRepo()
+        val repo = feedRepo(postRepo = postRepo, userRepo = userRepo)
+
+        val postId = repo.publish(NewPost(title = "Title", body = "Body"))
+
+        assertEquals("Title", postRepo.entities.first()[postId]?.title)
+        assertEquals("Ada", userRepo.user("u1").first()?.nickname)
+    }
+
+    @Test
+    fun `publish leaves a feed that has not loaded yet NotLoaded`() = runTest {
+        val repo = feedRepo()
+
+        repo.publish(NewPost(title = "Title", body = "Body"))
+
+        assertEquals(FeedState.NotLoaded, repo.feedState.first())
+    }
+
+    @Test
     fun `refresh resets the post list and cursor`() = runTest {
         val page1 = FeedPage(listOf(post("p1")), emptyList(), "c2", true)
         val page2 = FeedPage(listOf(post("p2")), emptyList(), null, false)

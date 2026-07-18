@@ -2,7 +2,7 @@
 
     <!-- Navigation destinations -->
     <string name="nav_home">Domů</string>
-    <string name="nav_favorites">Oblíbené</string>
+    <string name="nav_create">Přidat</string>
     <string name="nav_profile">Profil</string>
     <string name="nav_settings">Nastavení</string>
     <string name="navigate_back">Zpět</string>
@@ -16,8 +16,12 @@
     <string name="error_unknown">Něco se pokazilo</string>
     <string name="error_retry">Zkusit znovu</string>
 
-    <!-- Placeholder destinations -->
-    <string name="placeholder_body">Již brzy</string>
+    <!-- Create post -->
+    <string name="create_post_title">Nový příspěvek</string>
+    <string name="create_post_title_label">Nadpis</string>
+    <string name="create_post_body_label">Co máte na mysli?</string>
+    <string name="create_post_publish">Publikovat</string>
+    <string name="create_post_discard">Zahodit</string>
 
     <!-- Post -->
     <string name="post_more_options">Další možnosti</string>

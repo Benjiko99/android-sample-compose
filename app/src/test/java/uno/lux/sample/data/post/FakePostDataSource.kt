@@ -1,6 +1,34 @@
 package uno.lux.sample.data.post
 
+import uno.lux.sample.data.user.User
+import java.time.Instant
+
 internal class FakePostDataSource : PostDataSource {
+
+    /** The draft passed to the most recent [create] call, for test assertions. */
+    var lastDraft: NewPost? = null
+        private set
+
+    /** Thrown by [create] instead of returning, so tests can drive the failure path. */
+    var createError: Exception? = null
+
+    override suspend fun create(draft: NewPost): CreatedPost {
+        lastDraft = draft
+        createError?.let { throw it }
+
+        return CreatedPost(
+            post = Post(
+                id = "p-new",
+                authorId = "u1",
+                title = draft.title,
+                body = draft.body,
+                createdAt = Instant.EPOCH,
+                likeCount = 0,
+                commentCount = 0,
+            ),
+            author = User(id = "u1", nickname = "Ada", handle = "@u1"),
+        )
+    }
 
     override suspend fun toggleLike(post: Post) =
         post.copy(

@@ -11,6 +11,7 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
+import uno.lux.sample.data.network.dto.CreatePostRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
 import uno.lux.sample.data.network.response.CommentListResponse
@@ -18,6 +19,7 @@ import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedResponse
 import uno.lux.sample.data.network.response.FollowToggleResponse
 import uno.lux.sample.data.network.response.LikeToggleResponse
+import uno.lux.sample.data.network.response.PostResponse
 import uno.lux.sample.data.network.response.ProfileStatsResponse
 import uno.lux.sample.data.network.response.UserPostsResponse
 import uno.lux.sample.data.network.response.UserResponse
@@ -71,6 +73,11 @@ interface MosaicApi {
         @Query("cursor") cursor: String? = null,
         @Query("limit") limit: Int = 20,
     ): CommentListResponse
+
+    // Publishes a post authored by the current user (the X-User-Id header). The response is the
+    // full projection, so the created post arrives with its author embedded.
+    @POST("posts")
+    suspend fun createPost(@Body body: CreatePostRequestDto): PostResponse
 
     @POST("posts/{id}/like")
     suspend fun toggleLike(

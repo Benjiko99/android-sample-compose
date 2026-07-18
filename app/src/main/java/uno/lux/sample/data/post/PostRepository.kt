@@ -27,6 +27,18 @@ class PostRepository(
         _entities.update { current -> current + posts.associateBy { it.id } }
     }
 
+    /**
+     * Publishes [draft] and stores the resulting entity, so any screen already resolving that ID
+     * renders it without a re-fetch. The author travels back with it for the caller to ingest —
+     * placing the post in an ordered list is [FeedRepository]'s job, not this store's.
+     */
+    suspend fun create(draft: NewPost): CreatedPost {
+        val created = dataSource.create(draft)
+        _entities.update { it + (created.post.id to created.post) }
+
+        return created
+    }
+
     suspend fun toggleLike(postId: PostId) {
         val post = _entities.value[postId] ?: return
         val updated = dataSource.toggleLike(post)

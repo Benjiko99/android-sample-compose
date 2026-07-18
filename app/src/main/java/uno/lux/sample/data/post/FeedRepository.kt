@@ -3,6 +3,7 @@ package uno.lux.sample.data.post
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.user.UserRepository
 
 /**
@@ -25,6 +26,7 @@ sealed interface FeedState {
  * [feedState] carries the IDs in display order plus the pagination flag; consumers resolve IDs to
  * [Post] objects via [PostRepository.entities] so mutations (likes, bookmarks) propagate automatically
  * without re-fetching. [refresh] re-fetches the first page. [loadMore] appends the next page.
+ * [publish] creates a post and puts it at the head of the feed.
  *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [FeedDataSource]. This class owns only the ordered ID list and pagination state.
@@ -51,6 +53,24 @@ class FeedRepository(
         // Set last: entities and users are already ingested, so when this emits the combine
         // can resolve every post ID without a stale-data gap.
         _feedState.value = FeedState.Loaded(page.posts.map { it.id }, page.hasMore)
+    }
+
+    /**
+     * Publishes [draft] and returns the new post's ID. The post and its author are stored through
+     * the entity repositories, then the ID is prepended to the feed so the composer's result is
+     * visible at the top without a round trip. A feed that hasn't loaded yet is left alone — its
+     * first fetch will carry the new post anyway.
+     */
+    suspend fun publish(draft: NewPost): PostId {
+        val created = postRepository.create(draft)
+        userRepository.ingest(listOf(created.author))
+
+        _feedState.update { state ->
+            if (state is FeedState.Loaded) state.copy(postIds = listOf(created.post.id) + state.postIds)
+            else state
+        }
+
+        return created.post.id
     }
 
     suspend fun loadMore() {

@@ -32,6 +32,26 @@ class PostRepositoryTest {
     }
 
     @Test
+    fun `create stores the published post and returns it with its author`() = runTest {
+        val repo = repository()
+
+        val created = repo.create(NewPost(title = "Title", body = "Body"))
+
+        assertEquals(created.post, repo.entities.first()[created.post.id])
+        assertEquals("u1", created.author.id)
+    }
+
+    @Test
+    fun `create leaves previously ingested posts in place`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(liked))
+
+        repo.create(NewPost(title = "Title", body = "Body"))
+
+        assertEquals(liked, repo.entities.first()["liked"])
+    }
+
+    @Test
     fun `ingest merges without evicting existing entries`() = runTest {
         val repo = repository()
         repo.ingest(listOf(liked))

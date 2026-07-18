@@ -5,10 +5,12 @@ import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
 import uno.lux.sample.data.network.dto.CommentDto
+import uno.lux.sample.data.network.dto.CreatePostRequestDto
 import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.dto.FollowToggleDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
+import uno.lux.sample.data.network.dto.PostDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -23,6 +25,7 @@ import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedResponse
 import uno.lux.sample.data.network.response.FollowToggleResponse
 import uno.lux.sample.data.network.response.LikeToggleResponse
+import uno.lux.sample.data.network.response.PostResponse
 import uno.lux.sample.data.network.response.ProfileStatsResponse
 import uno.lux.sample.data.network.response.UserPostsResponse
 import uno.lux.sample.data.network.response.UserResponse
@@ -103,6 +106,28 @@ class FakeMosaicApi(
 
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
         CommentListResponse(data = comments, page = emptyPage)
+
+    /** The body passed to the most recent [createPost] call, for test assertions. */
+    var lastCreatePostBody: CreatePostRequestDto? = null
+        private set
+
+    override suspend fun createPost(body: CreatePostRequestDto): PostResponse {
+        lastCreatePostBody = body
+
+        return PostResponse(
+            PostDto(
+                id = "p-new",
+                title = body.title,
+                body = body.body,
+                createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
+                author = stubAuthor,
+                likeCount = 0,
+                commentCount = 0,
+                isLiked = false,
+                isBookmarked = false,
+            )
+        )
+    }
 
     override suspend fun toggleLike(postId: String, body: EmptyBody): LikeToggleResponse =
         LikeToggleResponse(likeResult)

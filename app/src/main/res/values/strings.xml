@@ -3,7 +3,7 @@
 
     <!-- Navigation destinations -->
     <string name="nav_home">Home</string>
-    <string name="nav_favorites">Favorites</string>
+    <string name="nav_create">Create</string>
     <string name="nav_profile">Profile</string>
     <string name="nav_settings">Settings</string>
     <string name="navigate_back">Back</string>
@@ -17,8 +17,12 @@
     <string name="error_unknown">Something went wrong</string>
     <string name="error_retry">Retry</string>
 
-    <!-- Placeholder destinations -->
-    <string name="placeholder_body">Coming soon</string>
+    <!-- Create post -->
+    <string name="create_post_title">New post</string>
+    <string name="create_post_title_label">Title</string>
+    <string name="create_post_body_label">What\'s on your mind?</string>
+    <string name="create_post_publish">Publish</string>
+    <string name="create_post_discard">Discard</string>
 
     <!-- Post -->
     <string name="post_more_options">More options</string>
