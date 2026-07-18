@@ -22,7 +22,8 @@ import java.io.IOException
 
 class CreatePostViewModelTest : ViewModelTest() {
 
-    private val backStack = mutableListOf<NavKey>(Screen.Shell)
+    // The composer is pushed over the shell, so it always has an entry of its own to leave.
+    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.CreatePost)
     private val navigator = Navigator().apply { attach(backStack) }
 
     private data class Fixture(
@@ -97,7 +98,7 @@ class CreatePostViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `a published post clears the form and opens its detail page`() = runTest {
+    fun `a published post clears the form and replaces the composer with its detail page`() = runTest {
         val viewModel = fixture().viewModel
         viewModel.fillIn()
 
@@ -105,6 +106,7 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         assertTrue(viewModel.uiState.first().form.isEmpty)
         assertFalse(viewModel.uiState.first().isPublishing)
+        // Replaced, not stacked: backing out of the new post must not land on the composer.
         assertEquals(listOf(Screen.Shell, Screen.PostDetail("p-new")), backStack)
     }
 
@@ -116,7 +118,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.publish()
 
         assertNull(dataSource.lastDraft)
-        assertEquals(listOf(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
     }
 
     @Test
@@ -130,7 +132,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         assertEquals("Title", state.form.title)
         assertEquals(AppError.Unknown, state.publishError)
         assertFalse(state.isPublishing)
-        assertEquals(listOf(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
     }
 
     @Test
@@ -144,12 +146,49 @@ class CreatePostViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `openSettings does not stack a second settings page`() = runTest {
+    fun `goBack leaves straight away when nothing has been typed`() = runTest {
         val viewModel = fixture().viewModel
 
-        viewModel.openSettings()
-        viewModel.openSettings()
+        viewModel.goBack()
 
-        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack)
+        assertFalse(viewModel.uiState.first().showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `goBack asks before dropping a part-written post`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onTitleChange("Half a thought")
+
+        viewModel.goBack()
+
+        assertTrue(viewModel.uiState.first().showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+    }
+
+    @Test
+    fun `confirming the discard leaves the composer`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.fillIn()
+        viewModel.goBack()
+
+        viewModel.confirmDiscard()
+
+        assertFalse(viewModel.uiState.first().showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `dismissing the discard stays put and keeps the typed text`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.fillIn(title = "Half a thought")
+        viewModel.goBack()
+
+        viewModel.dismissDiscardConfirmation()
+
+        val state = viewModel.uiState.first()
+        assertFalse(state.showDiscardConfirmation)
+        assertEquals("Half a thought", state.form.title)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
     }
 }

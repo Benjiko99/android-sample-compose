@@ -73,8 +73,33 @@ class NavigatorTest {
     }
 
     @Test
+    fun `replaceTop swaps the top entry, leaving what sat below it`() {
+        backStack.add(Screen.CreatePost)
+        navigator.attach(backStack)
+
+        navigator.replaceTop(Screen.PostDetail("p1"))
+
+        assertEquals(listOf(Screen.Shell, Screen.PostDetail("p1")), backStack)
+    }
+
+    @Test
+    fun `replaceTop leaves entries below the top untouched`() {
+        backStack.add(Screen.Profile("u1"))
+        backStack.add(Screen.CreatePost)
+        navigator.attach(backStack)
+
+        navigator.replaceTop(Screen.PostDetail("p1"))
+
+        assertEquals(
+            listOf(Screen.Shell, Screen.Profile("u1"), Screen.PostDetail("p1")),
+            backStack,
+        )
+    }
+
+    @Test
     fun `navigation is dropped while no back stack is attached`() {
         navigator.goTo(Screen.Settings)
+        navigator.replaceTop(Screen.Settings)
         navigator.goBack()
 
         assertEquals(listOf<NavKey>(Screen.Shell), backStack)

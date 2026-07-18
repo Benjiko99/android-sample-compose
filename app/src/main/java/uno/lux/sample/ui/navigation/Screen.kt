@@ -38,6 +38,14 @@ sealed interface Screen : NavKey {
     data object EditProfile : Screen
 
     /**
+     * The post composer. Reached from the navigation suite's Create item, which pushes it over
+     * the whole shell rather than swapping the shell's content — so it covers the tab bar and
+     * the tab the user was on stays selected underneath.
+     */
+    @Serializable
+    data object CreatePost : Screen
+
+    /**
      * The full-screen video page. Opened by a profile-grid video (which it loads itself) or by
      * an inline post player's fullscreen control (whose running player it reuses). [videoId]
      * keys the shared player so the inline → full-screen hand-off keeps the same instance.

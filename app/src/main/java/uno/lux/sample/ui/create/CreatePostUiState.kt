@@ -27,10 +27,12 @@ data class CreatePostForm(
 /**
  * The composer's state. Unlike the other screens there is nothing to load — the form starts
  * blank — so this is a single data class rather than a sealed hierarchy: the live [form], whether
- * a publish is in flight, and the error of a publish that failed.
+ * a publish is in flight, whether leaving with a part-written post is awaiting confirmation, and
+ * the error of a publish that failed.
  */
 data class CreatePostUiState(
     val form: CreatePostForm = CreatePostForm(),
     val isPublishing: Boolean = false,
+    val showDiscardConfirmation: Boolean = false,
     val publishError: AppError? = null,
 )

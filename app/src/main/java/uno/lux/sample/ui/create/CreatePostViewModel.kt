@@ -19,13 +19,14 @@ import javax.inject.Inject
 
 /**
  * Drives the post composer. Publishing goes through [FeedRepository], which stores the new post
- * and puts it at the head of the feed, and then the composer opens the new post's detail page
- * through the injected [Navigator] — confirmation the post exists, and the way back is a plain
- * pop to the still-selected Create tab. A failed publish keeps the typed text and surfaces the
- * error, so nothing is lost to a dropped connection.
+ * and puts it at the head of the feed; the composer then [replaces][Navigator.replaceTop] itself
+ * with the new post's detail page — confirmation the post exists, and backing out of it returns
+ * to the shell rather than to a composer the user is done with. A failed publish keeps the typed
+ * text and surfaces the error, so nothing is lost to a dropped connection.
  *
- * The tab is not a back-stack entry, so this ViewModel outlives navigating away and back; the
- * form is cleared on success rather than relying on a fresh instance.
+ * Leaving with a part-written post asks first, mirroring the profile editor: [goBack] raises the
+ * confirmation instead of popping when the form has content. (That is distinct from [discard],
+ * the top-bar action that empties the form but stays on the page.)
  */
 @HiltViewModel
 class CreatePostViewModel @Inject constructor(
@@ -63,14 +64,26 @@ class CreatePostViewModel @Inject constructor(
                 // clears the in-flight flag along with the form.
                 val postId = feedRepository.publish(draft)
                 _uiState.value = CreatePostUiState()
-                navigator.goTo(Screen.PostDetail(postId))
+                navigator.replaceTop(Screen.PostDetail(postId))
             }
         }
     }
 
     override fun discard() = updateForm { CreatePostForm() }
 
-    override fun openSettings() = navigator.goToSingleTop(Screen.Settings)
+    override fun goBack() {
+        if (_uiState.value.form.isEmpty) navigator.goBack()
+        else _uiState.update { it.copy(showDiscardConfirmation = true) }
+    }
+
+    override fun dismissDiscardConfirmation() {
+        _uiState.update { it.copy(showDiscardConfirmation = false) }
+    }
+
+    override fun confirmDiscard() {
+        _uiState.update { it.copy(showDiscardConfirmation = false) }
+        navigator.goBack()
+    }
 
     private fun updateForm(transform: (CreatePostForm) -> CreatePostForm) {
         _uiState.update { it.copy(form = transform(it.form)) }

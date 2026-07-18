@@ -122,6 +122,9 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
                 entry<Screen.EditProfile> {
                     EditProfileScreen()
                 }
+                entry<Screen.CreatePost> {
+                    CreatePostScreen()
+                }
                 entry<Screen.FullscreenVideo> { video ->
                     FullscreenVideoScreen(
                         videoId = video.videoId,
@@ -149,9 +152,17 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
  * selected [AppDestinations] entry chooses which screen fills the content area. Tabs are peer
  * destinations held as plain selection state (switching tabs is not a navigation event and
  * never grows the back stack), so the content cross-fades (fade-through) rather than sliding.
+ *
+ * An [AppDestinations] entry carrying a [Screen] breaks that rule deliberately: it is an action,
+ * not a tab, and selecting it pushes that page over the whole shell through [ShellViewModel] —
+ * covering the navigation bar, leaving the current tab selected underneath, and sliding in like
+ * any other page. [AppDestinations.CREATE] opens the composer this way.
  */
 @Composable
-private fun HomeNavShell(currentUserId: String) {
+private fun HomeNavShell(
+    currentUserId: String,
+    viewModel: ShellViewModel = hiltViewModel(),
+) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val navItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -174,8 +185,14 @@ private fun HomeNavShell(currentUserId: String) {
                         )
                     },
                     label = { Text(stringResource(destination.labelRes)) },
+                    // An action entry never reports as selected — it pushes a page and leaves
+                    // the current tab highlighted underneath.
                     selected = destination == currentDestination,
-                    onClick = { currentDestination = destination },
+                    onClick = {
+                        val screen = destination.screen
+                        if (screen != null) viewModel.openDestination(screen)
+                        else currentDestination = destination
+                    },
                     colors = navItemColors,
                 )
             }
@@ -198,19 +215,30 @@ private fun HomeNavShell(currentUserId: String) {
                 // showBackButton stays false); tapping another author still pushes Screen.Profile.
                 AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
 
-                AppDestinations.CREATE -> CreatePostScreen()
+                // CREATE pushes Screen.CreatePost over the shell rather than filling the
+                // content area, so it is never the selected destination and never renders here.
+                AppDestinations.CREATE -> Unit
             }
         }
     }
 }
 
-/** The top-level tabs of the navigation suite; add or change a tab by editing the enum. */
+/**
+ * The top-level entries of the navigation suite; add or change one by editing the enum.
+ *
+ * Most are **tabs**: selecting one swaps the shell's content area and leaves the item
+ * highlighted. An entry carrying a [screen] is instead an **action** — selecting it pushes that
+ * page over the entire shell (covering the tab bar) and never becomes the selection, so the tab
+ * the user was on stays highlighted underneath. That is how [CREATE] opens the composer, the
+ * behaviour a centre "new post" button has in apps like TikTok.
+ */
 enum class AppDestinations(
     @get:StringRes val labelRes: Int,
     @get:DrawableRes val icon: Int,
+    val screen: Screen? = null,
 ) {
     HOME(R.string.nav_home, R.drawable.ic_home),
-    CREATE(R.string.nav_create, R.drawable.ic_add),
+    CREATE(R.string.nav_create, R.drawable.ic_add, Screen.CreatePost),
     PROFILE(R.string.nav_profile, R.drawable.ic_account_box),
 }
 

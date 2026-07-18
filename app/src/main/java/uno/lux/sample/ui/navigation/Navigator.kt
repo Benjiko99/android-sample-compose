@@ -5,7 +5,8 @@ import androidx.navigation3.runtime.NavKey
 /**
  * The navigation seam between ViewModels and the Navigation 3 back stack. ViewModels take a
  * [Navigator] as a constructor dependency and express navigation as intent — [goTo] pushes a
- * [Screen], [goBack] pops — instead of screens receiving navigation lambdas from the host.
+ * [Screen], [goBack] pops, [replaceTop] swaps — instead of screens receiving navigation lambdas
+ * from the host.
  *
  * The back stack itself stays owned by the composition (`rememberNavBackStack` in `SampleApp`),
  * which is what keeps it saveable across configuration changes and process death; the UI [attach]es
@@ -51,6 +52,20 @@ class Navigator {
         val backStack = backStack ?: return
 
         if (backStack.lastOrNull() != screen) backStack.add(screen)
+    }
+
+    /**
+     * Swaps the top entry for [screen] — pop and push as one step. Used by a page that has served
+     * its purpose and hands off to another: back from [screen] then returns to whatever sat below
+     * the replaced page, not to the page itself. The composer replaces itself with the published
+     * post's detail page this way, so backing out of that post lands on the feed rather than on a
+     * composer the user is done with.
+     */
+    fun replaceTop(screen: Screen) {
+        val backStack = backStack ?: return
+
+        backStack.removeLastOrNull()
+        backStack.add(screen)
     }
 
     /** Pops the top entry off the back stack. */

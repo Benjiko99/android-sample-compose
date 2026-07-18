@@ -1,5 +1,7 @@
 package uno.lux.sample.ui.create
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -28,6 +32,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,7 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.ui.components.SettingsAction
+import uno.lux.sample.ui.components.DiscardChangesDialog
+import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
@@ -53,12 +60,15 @@ interface CreatePostActions {
     fun onBodyChange(value: String)
     fun publish()
     fun discard()
-    fun openSettings()
+    fun goBack()
+    fun dismissDiscardConfirmation()
+    fun confirmDiscard()
 }
 
 /**
  * Stateful entry point: binds the [CreatePostViewModel] and forwards state and intent to the
- * stateless overload below.
+ * stateless overload below. System back is routed through the ViewModel like the top bar's up
+ * affordance, so both ask before dropping a part-written post.
  */
 @Composable
 fun CreatePostScreen(
@@ -67,17 +77,28 @@ fun CreatePostScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    BackHandler {
+        viewModel.goBack()
+    }
+
     CreatePostScreen(
         uiState = uiState,
         actions = viewModel,
         modifier = modifier,
     )
+
+    if (uiState.showDiscardConfirmation) {
+        DiscardChangesDialog(
+            onConfirm = viewModel::confirmDiscard,
+            onDismiss = viewModel::dismissDiscardConfirmation,
+        )
+    }
 }
 
 /**
- * Stateless post composer — a title and a body, published from the top bar. It is a root tab
- * rather than a pushed page, so the bar carries no up-affordance; the discard action clears the
- * form instead of navigating. Holding no ViewModel makes it directly previewable and testable.
+ * Stateless post composer — a title and a body. It is pushed over the shell rather than being a
+ * tab, so the bar carries an up-affordance; the separate discard action empties the form without
+ * leaving. Holding no ViewModel makes it directly previewable and testable.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,14 +120,21 @@ internal fun CreatePostScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.create_post_title)) },
+                modifier = Modifier.shadow(4.dp),
+                navigationIcon = {
+                    IconButton(onClick = actions::goBack.rememberDebounced()) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.navigate_back),
+                        )
+                    }
+                },
                 actions = {
                     if (!uiState.form.isEmpty && !uiState.isPublishing) {
                         TextButton(onClick = actions::discard) {
                             Text(stringResource(R.string.create_post_discard))
                         }
                     }
-
-                    SettingsAction(actions::openSettings)
                 },
             )
         },
@@ -132,6 +160,7 @@ private fun CreatePostForm(
 ) {
     Column(
         modifier = modifier
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
