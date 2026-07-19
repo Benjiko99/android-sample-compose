@@ -2,12 +2,14 @@ package uno.lux.sample.data.network
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.post.NewPost
+import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
 import java.time.Instant
 
@@ -42,15 +44,44 @@ class NetworkPostDataSourceTest {
             FileUpload(bytes = byteArrayOf(3, 4), mimeType = "image/jpeg", filename = "two.jpg"),
         )
 
-        dataSource.create(NewPost(title = "Title", body = "Body", images = images))
+        dataSource.create(
+            NewPost(title = "Title", body = "Body", media = NewPostMedia.Images(images))
+        )
 
+        val parts = api.lastCreatePostParts
         assertEquals(
             listOf(
                 FakeMosaicApi.UploadedPart(filename = "one.png", bytes = byteArrayOf(1, 2)),
                 FakeMosaicApi.UploadedPart(filename = "two.jpg", bytes = byteArrayOf(3, 4)),
             ),
-            api.lastCreatePostParts?.images,
+            parts?.images,
         )
+        // Media is exclusive on the wire, not just in the model.
+        assertNull(parts?.video)
+        assertNull(parts?.videoDurationSeconds)
+    }
+
+    @Test
+    fun `create uploads a video as a single part carrying its duration`() = runTest {
+        val api = FakeMosaicApi()
+        val dataSource = NetworkPostDataSource(api)
+        val clip = FileUpload(bytes = byteArrayOf(9), mimeType = "video/mp4", filename = "clip.mp4")
+
+        dataSource.create(
+            NewPost(
+                title = "Title",
+                body = "Body",
+                media = NewPostMedia.Video(file = clip, durationSeconds = 42),
+            )
+        )
+
+        val parts = api.lastCreatePostParts
+        assertEquals(
+            FakeMosaicApi.UploadedPart(filename = "clip.mp4", bytes = byteArrayOf(9)),
+            parts?.video,
+        )
+        assertEquals("42", parts?.videoDurationSeconds)
+        assertEquals(emptyList<FakeMosaicApi.UploadedPart>(), parts?.images)
     }
 
     @Test

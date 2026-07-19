@@ -9,6 +9,7 @@ import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.CreatedPost
 import uno.lux.sample.data.post.NewPost
+import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostDataSource
 
@@ -17,10 +18,15 @@ class NetworkPostDataSource(
 ) : PostDataSource {
 
     override suspend fun create(draft: NewPost): CreatedPost = withContext(Dispatchers.IO) {
+        val media = draft.media
+        val video = media as? NewPostMedia.Video
+
         val dto = api.createPost(
             title = textPart(draft.title),
             body = textPart(draft.body),
-            images = draft.images.map(::imagePart),
+            images = (media as? NewPostMedia.Images)?.files.orEmpty().map(::imagePart),
+            video = video?.let { filePart(name = "video", file = it.file) },
+            videoDurationSeconds = video?.let { textPart(it.durationSeconds.toString()) },
         ).data
 
         CreatedPostMapper.toCreatedPost(dto)
@@ -38,10 +44,12 @@ class NetworkPostDataSource(
 
     // The trailing brackets are what make Rack collect the repeated parts into one `images`
     // array server-side; a plain "images" name would let each part overwrite the last.
-    private fun imagePart(image: FileUpload) = MultipartBody.Part.createFormData(
-        name = "images[]",
-        filename = image.filename,
-        body = image.bytes.toRequestBody(image.mimeType.toMediaType()),
+    private fun imagePart(image: FileUpload) = filePart(name = "images[]", file = image)
+
+    private fun filePart(name: String, file: FileUpload) = MultipartBody.Part.createFormData(
+        name = name,
+        filename = file.filename,
+        body = file.bytes.toRequestBody(file.mimeType.toMediaType()),
     )
 
     private fun textPart(value: String) = value.toRequestBody(PLAIN_TEXT)

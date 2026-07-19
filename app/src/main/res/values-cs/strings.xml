@@ -24,6 +24,11 @@
     <string name="create_post_photos_label">Fotky</string>
     <string name="create_post_add_photos">Přidat</string>
     <string name="create_post_remove_photo">Odebrat fotku</string>
+    <string name="create_post_media_label">Média</string>
+    <string name="create_post_add_video">Video</string>
+    <string name="create_post_remove_video">Odebrat video</string>
+    <!-- %1$d = the size limit in whole megabytes -->
+    <string name="create_post_video_too_large">Video může mít nejvýše %1$d MB</string>
 
     <!-- Post -->
     <string name="post_more_options">Další možnosti</string>

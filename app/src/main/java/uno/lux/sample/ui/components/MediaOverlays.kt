@@ -41,6 +41,9 @@ private val PlayScrim = Color.Black.copy(alpha = 0.34f)
 /** Behind an immersive viewer's back arrow, which sits over full-bleed content. */
 private val BackButtonScrim = Color.Black.copy(alpha = 0.4f)
 
+/** Behind the composer's remove glyph: opaque enough to read over a bright or a dark frame. */
+private val RemoveButtonScrim = Color.Black.copy(alpha = 0.55f)
+
 /** A small dark-scrim pill (white text, optional leading icon) overlaid on a thumbnail corner. */
 @Composable
 internal fun MediaBadge(
@@ -96,6 +99,36 @@ internal fun PlayBadge(
             tint = Color.White,
             modifier = Modifier.size(iconSize),
         )
+    }
+}
+
+/**
+ * The corner affordance that detaches a picked photo or video in the composer. The visible scrim
+ * is an *inner* box because [IconButton] expands to the 48dp minimum touch target — painting the
+ * background on the button itself would spill a circle well past the thumbnail's corner.
+ */
+@Composable
+internal fun MediaRemoveButton(
+    contentDescription: String,
+    enabled: Boolean,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(onClick = onRemove, enabled = enabled, modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(RemoveButtonScrim),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = contentDescription,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 

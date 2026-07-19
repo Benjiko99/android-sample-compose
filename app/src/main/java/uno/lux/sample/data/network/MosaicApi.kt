@@ -74,15 +74,19 @@ interface MosaicApi {
     ): CommentListResponse
 
     // Publishes a post authored by the current user (the X-User-Id header). Sent as
-    // multipart/form-data — like the avatar upload above — so the post's images ride along with
-    // the text in one request; [images] is empty for a text-only post. The response is the full
-    // projection, so the created post arrives with its author and stored album embedded.
+    // multipart/form-data — like the avatar upload above — so the post's media rides along with
+    // the text in one request. Media is exclusive: either [images] is non-empty or [video] is
+    // present, never both (the server 422s the combination). [videoDurationSeconds] accompanies a
+    // video because the server cannot extract it. The response is the full projection, so the
+    // created post arrives with its author and stored album or video embedded.
     @Multipart
     @POST("posts")
     suspend fun createPost(
         @Part("title") title: RequestBody,
         @Part("body") body: RequestBody,
         @Part images: List<MultipartBody.Part>,
+        @Part video: MultipartBody.Part?,
+        @Part("videoDurationSeconds") videoDurationSeconds: RequestBody?,
     ): PostResponse
 
     @POST("posts/{id}/like")

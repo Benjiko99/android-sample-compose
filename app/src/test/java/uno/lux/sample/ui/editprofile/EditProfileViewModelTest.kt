@@ -46,6 +46,9 @@ class EditProfileViewModelTest : ViewModelTest() {
             lastUri = uri
             return result
         }
+
+        // The editor has no size limit of its own — the server is the only judge for an avatar.
+        override suspend fun sizeOf(uri: String): Long = result.bytes.size.toLong()
     }
 
     private data class Fixture(

@@ -25,6 +25,11 @@
     <string name="create_post_photos_label">Photos</string>
     <string name="create_post_add_photos">Add</string>
     <string name="create_post_remove_photo">Remove photo</string>
+    <string name="create_post_media_label">Media</string>
+    <string name="create_post_add_video">Video</string>
+    <string name="create_post_remove_video">Remove video</string>
+    <!-- %1$d = the size limit in whole megabytes -->
+    <string name="create_post_video_too_large">Video must be at most %1$d MB</string>
 
     <!-- Post -->
     <string name="post_more_options">More options</string>

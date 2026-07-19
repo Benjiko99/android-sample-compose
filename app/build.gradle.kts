@@ -74,6 +74,8 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    // Decodes a frame out of a local video so the composer can preview a picked clip.
+    implementation(libs.coil.video)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.retrofit)
@@ -87,6 +89,9 @@ dependencies {
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Drives the real Retrofit stack over loopback, so the multipart wire format the backend
+    // parses is asserted rather than assumed (see MosaicApiMultipartTest).
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

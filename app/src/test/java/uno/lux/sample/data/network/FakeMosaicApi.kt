@@ -115,6 +115,8 @@ class FakeMosaicApi(
         val title: String,
         val body: String,
         val images: List<UploadedPart>,
+        val video: UploadedPart? = null,
+        val videoDurationSeconds: String? = null,
     )
 
     /** One `images[]` part: the filename it declared and the bytes it carried. */
@@ -133,6 +135,8 @@ class FakeMosaicApi(
         title: RequestBody,
         body: RequestBody,
         images: List<MultipartBody.Part>,
+        video: MultipartBody.Part?,
+        videoDurationSeconds: RequestBody?,
     ): PostResponse {
         val titleText = title.readText()
         val bodyText = body.readText()
@@ -142,6 +146,10 @@ class FakeMosaicApi(
             images = images.map { part ->
                 UploadedPart(filename = part.filename(), bytes = part.body.readBytes())
             },
+            video = video?.let {
+                UploadedPart(filename = it.filename(), bytes = it.body.readBytes())
+            },
+            videoDurationSeconds = videoDurationSeconds?.readText(),
         )
 
         return PostResponse(

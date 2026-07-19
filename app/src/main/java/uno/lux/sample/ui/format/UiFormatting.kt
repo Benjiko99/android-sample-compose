@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import uno.lux.sample.R
 import uno.lux.sample.data.post.ReportReason
+import uno.lux.sample.ui.create.CreatePostMaxVideoBytes
+import uno.lux.sample.ui.create.CreatePostMediaError
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.CompactCount
 import uno.lux.sample.util.RelativeTime
@@ -35,6 +37,15 @@ fun AppError.asText(): String = stringResource(
         AppError.Unknown -> R.string.error_unknown
     }
 )
+
+/** Maps a [CreatePostMediaError] to its localized message, filling in the limit it names. */
+@Composable
+fun CreatePostMediaError.asText(): String = when (this) {
+    CreatePostMediaError.VideoTooLarge -> stringResource(
+        R.string.create_post_video_too_large,
+        CreatePostMaxVideoBytes / (1024 * 1024),
+    )
+}
 
 /** Maps a [ReportReason] to its localized display label. */
 @Composable

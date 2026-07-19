@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -54,12 +57,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.ui.components.DiscardChangesDialog
+import uno.lux.sample.ui.components.MediaBadge
+import uno.lux.sample.ui.components.MediaRemoveButton
 import uno.lux.sample.ui.components.debouncedClickable
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.createActionsProxy
+import uno.lux.sample.util.formatVideoDuration
 
 /**
  * The composer's ViewModel-backed intents, as one [Stable] seam the stateless
@@ -74,6 +80,8 @@ interface CreatePostActions {
     fun onBodyChange(value: String)
     fun onImagesPicked(uris: List<String>)
     fun onRemoveImage(uri: String)
+    fun onVideoPicked(uri: String)
+    fun onRemoveVideo()
     fun publish()
     fun goBack()
     fun dismissDiscardConfirmation()
@@ -102,6 +110,12 @@ fun CreatePostScreen(
         if (uris.isNotEmpty()) viewModel.onImagesPicked(uris.map { it.toString() })
     }
 
+    val pickVideo = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) viewModel.onVideoPicked(uri.toString())
+    }
+
     BackHandler {
         viewModel.goBack()
     }
@@ -112,6 +126,11 @@ fun CreatePostScreen(
         onPickImages = {
             pickImages.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        },
+        onPickVideo = {
+            pickVideo.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
             )
         },
         modifier = modifier,
@@ -126,11 +145,11 @@ fun CreatePostScreen(
 }
 
 /**
- * Stateless post composer — a title, a body, and up to [CreatePostMaxImages] photos. It is pushed
- * over the shell rather than being a tab, so the bar carries an up-affordance. Holding no
- * ViewModel makes it directly previewable and testable; [onPickImages] is passed in rather than
- * living on [CreatePostActions] because launching the system picker needs a composition-scoped
- * launcher, not a ViewModel.
+ * Stateless post composer — a title, a body, and either up to [CreatePostMaxImages] photos or one
+ * video. It is pushed over the shell rather than being a tab, so the bar carries an
+ * up-affordance. Holding no ViewModel makes it directly previewable and testable; the two pick
+ * callbacks are passed in rather than living on [CreatePostActions] because launching the system
+ * picker needs a composition-scoped launcher, not a ViewModel.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,13 +157,15 @@ internal fun CreatePostScreen(
     uiState: CreatePostUiState,
     actions: CreatePostActions,
     onPickImages: () -> Unit,
+    onPickVideo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val publishErrorMessage = uiState.publishError?.asText()
+    // A rejected file and a failed publish surface the same way; only one can be set at a time.
+    val errorMessage = uiState.publishError?.asText() ?: uiState.mediaError?.asText()
 
-    LaunchedEffect(publishErrorMessage) {
-        if (publishErrorMessage != null) snackbarHostState.showSnackbar(publishErrorMessage)
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null) snackbarHostState.showSnackbar(errorMessage)
     }
 
     Scaffold(
@@ -170,6 +191,7 @@ internal fun CreatePostScreen(
             isPublishing = uiState.isPublishing,
             actions = actions,
             onPickImages = onPickImages,
+            onPickVideo = onPickVideo,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
@@ -184,6 +206,7 @@ private fun CreatePostForm(
     isPublishing: Boolean,
     actions: CreatePostActions,
     onPickImages: () -> Unit,
+    onPickVideo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -213,12 +236,12 @@ private fun CreatePostForm(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        PostImages(
-            imageUris = form.imageUris,
-            canAddImages = form.canAddImages,
+        PostMediaPicker(
+            media = form.media,
             enabled = !isPublishing,
+            actions = actions,
             onPickImages = onPickImages,
-            onRemoveImage = actions::onRemoveImage,
+            onPickVideo = onPickVideo,
         )
 
         PublishButton(
@@ -230,54 +253,155 @@ private fun CreatePostForm(
 }
 
 /**
- * The picked photos as a horizontally scrolling strip of thumbnails, each with a remove
- * affordance, followed by the add-photos tile until the album limit is reached. Images are
- * optional, so an empty selection shows just the tile rather than an empty-state message.
+ * The draft's media. A post holds photos *or* a video, so the section renders one of three
+ * shapes: with nothing chosen both affordances are offered; once photos are picked only the photo
+ * strip remains; once a video is picked only it remains. Deliberately **no** affordance for the
+ * other kind is shown while one is attached — swapping means removing what's there first, which
+ * keeps the exclusivity self-evident rather than something a dialog has to explain.
  */
 @Composable
-private fun PostImages(
-    imageUris: List<String>,
-    canAddImages: Boolean,
+private fun PostMediaPicker(
+    media: CreatePostMedia,
     enabled: Boolean,
+    actions: CreatePostActions,
     onPickImages: () -> Unit,
-    onRemoveImage: (uri: String) -> Unit,
+    onPickVideo: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = stringResource(R.string.create_post_photos_label),
+            text = stringResource(
+                when (media) {
+                    is CreatePostMedia.Images -> R.string.create_post_photos_label
+                    else -> R.string.create_post_media_label
+                }
+            ),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            // Keyed by URI so removing one thumbnail doesn't recompose (or re-fetch) the rest.
-            items(imageUris, key = { it }) { uri ->
-                PostImageThumbnail(
-                    uri = uri,
+        when (media) {
+            CreatePostMedia.None -> EmptyMediaTiles(
+                enabled = enabled,
+                onPickImages = onPickImages,
+                onPickVideo = onPickVideo,
+            )
+
+            is CreatePostMedia.Images -> PickedImages(
+                media = media,
+                enabled = enabled,
+                onPickImages = onPickImages,
+                onRemoveImage = actions::onRemoveImage,
+            )
+
+            is CreatePostMedia.Video -> PostVideoThumbnail(
+                video = media,
+                enabled = enabled,
+                onRemove = actions::onRemoveVideo,
+            )
+        }
+    }
+}
+
+/** Nothing attached yet: both kinds on offer, side by side. */
+@Composable
+private fun EmptyMediaTiles(
+    enabled: Boolean,
+    onPickImages: () -> Unit,
+    onPickVideo: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        MediaTile(
+            iconRes = R.drawable.ic_add,
+            labelRes = R.string.create_post_add_photos,
+            enabled = enabled,
+            onClick = onPickImages,
+        )
+
+        MediaTile(
+            iconRes = R.drawable.ic_play_arrow,
+            labelRes = R.string.create_post_add_video,
+            enabled = enabled,
+            onClick = onPickVideo,
+        )
+    }
+}
+
+/** The picked photos as a scrolling strip, with the add tile trailing until the limit is hit. */
+@Composable
+private fun PickedImages(
+    media: CreatePostMedia.Images,
+    enabled: Boolean,
+    onPickImages: () -> Unit,
+    onRemoveImage: (uri: String) -> Unit,
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        // Keyed by URI so removing one thumbnail doesn't recompose (or re-fetch) the rest.
+        items(media.uris, key = { it }) { uri ->
+            PostImageThumbnail(
+                uri = uri,
+                enabled = enabled,
+                onRemove = { onRemoveImage(uri) },
+                modifier = Modifier.animateItem(),
+            )
+        }
+
+        if (media.canAddMore) {
+            item(key = AddPhotosTileKey) {
+                MediaTile(
+                    iconRes = R.drawable.ic_add,
+                    labelRes = R.string.create_post_add_photos,
                     enabled = enabled,
-                    onRemove = { onRemoveImage(uri) },
+                    onClick = onPickImages,
                     modifier = Modifier.animateItem(),
                 )
             }
-
-            if (canAddImages) {
-                item(key = AddPhotosTileKey) {
-                    AddPhotosTile(
-                        enabled = enabled,
-                        onClick = onPickImages,
-                        modifier = Modifier.animateItem(),
-                    )
-                }
-            }
         }
+    }
 
-        Text(
-            text = "${imageUris.size} / $CreatePostMaxImages",
-            style = MaterialTheme.typography.bodySmall,
-            color = LocalMosaicColors.current.textTertiary,
+    Text(
+        text = "${media.uris.size} / $CreatePostMaxImages",
+        style = MaterialTheme.typography.bodySmall,
+        color = LocalMosaicColors.current.textTertiary,
+    )
+}
+
+/**
+ * The picked clip: a frame from the video with its duration, and the same remove affordance the
+ * photo thumbnails carry. Coil decodes the frame straight from the content URI.
+ */
+@Composable
+private fun PostVideoThumbnail(
+    video: CreatePostMedia.Video,
+    enabled: Boolean,
+    onRemove: () -> Unit,
+) {
+    Box(modifier = Modifier.size(ThumbnailSize)) {
+        AsyncImage(
+            model = video.uri,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        )
+
+        MediaBadge(
+            text = formatVideoDuration(video.durationSeconds),
+            iconRes = R.drawable.ic_play_arrow,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(4.dp),
+        )
+
+        MediaRemoveButton(
+            contentDescription = stringResource(R.string.create_post_remove_video),
+            enabled = enabled,
+            onRemove = onRemove,
+            modifier = Modifier.align(Alignment.TopEnd),
         )
     }
 }
@@ -300,33 +424,20 @@ private fun PostImageThumbnail(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         )
 
-        // The scrim that keeps the icon legible over a light photo is an *inner* box: the
-        // button itself is expanded to the 48dp minimum touch target, so drawing the
-        // background on it directly would spill a large circle past the thumbnail's corner.
-        IconButton(
-            onClick = onRemove,
+        MediaRemoveButton(
+            contentDescription = stringResource(R.string.create_post_remove_photo),
             enabled = enabled,
+            onRemove = onRemove,
             modifier = Modifier.align(Alignment.TopEnd),
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(24.dp)
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f), CircleShape),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_close),
-                    contentDescription = stringResource(R.string.create_post_remove_photo),
-                    tint = MaterialTheme.colorScheme.inverseOnSurface,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
+        )
     }
 }
 
+/** A dashed-outline tile that opens a picker — one per media kind still on offer. */
 @Composable
-private fun AddPhotosTile(
+private fun MediaTile(
+    @DrawableRes iconRes: Int,
+    @StringRes labelRes: Int,
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -347,13 +458,13 @@ private fun AddPhotosTile(
             .debouncedClickable(enabled = enabled, onClick = onClick),
     ) {
         Icon(
-            painter = painterResource(R.drawable.ic_add),
+            painter = painterResource(iconRes),
             contentDescription = null,
             tint = contentColor,
         )
 
         Text(
-            text = stringResource(R.string.create_post_add_photos),
+            text = stringResource(labelRes),
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
         )
@@ -391,7 +502,7 @@ private val ThumbnailSize = 88.dp
 /** Stable list key for the trailing add tile, so it isn't confused with an image URI. */
 private const val AddPhotosTileKey = "add-photos"
 
-@Preview(showBackground = true)
+@Preview(name = "No media", showBackground = true)
 @Composable
 private fun CreatePostScreenPreview() {
     MosaicTheme {
@@ -404,6 +515,26 @@ private fun CreatePostScreenPreview() {
             ),
             actions = createActionsProxy(),
             onPickImages = {},
+            onPickVideo = {},
+        )
+    }
+}
+
+@Preview(name = "With a video", showBackground = true)
+@Composable
+private fun CreatePostScreenVideoPreview() {
+    MosaicTheme {
+        CreatePostScreen(
+            uiState = CreatePostUiState(
+                form = CreatePostForm(
+                    title = "The engine, running",
+                    body = "Forty seconds of the carry mechanism in motion.",
+                    media = CreatePostMedia.Video(uri = "", durationSeconds = 42),
+                ),
+            ),
+            actions = createActionsProxy(),
+            onPickImages = {},
+            onPickVideo = {},
         )
     }
 }

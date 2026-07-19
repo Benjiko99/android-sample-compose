@@ -15,8 +15,10 @@ import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.file.FileUpload
+import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.file.FileLoader
+import uno.lux.sample.ui.file.VideoMetadataReader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
@@ -29,11 +31,20 @@ class CreatePostViewModelTest : ViewModelTest() {
     private val navigator = Navigator().apply { attach(backStack) }
 
     /** Turns each URI into a payload naming it, so a test can assert which files were uploaded. */
-    private class FakeFileLoader(private val error: Exception? = null) : FileLoader {
+    private class FakeFileLoader(
+        private val error: Exception? = null,
+        private val size: Long? = 1_000,
+    ) : FileLoader {
         override suspend fun read(uri: String): FileUpload {
             error?.let { throw it }
             return FileUpload(bytes = uri.toByteArray(), mimeType = "image/png", filename = uri)
         }
+
+        override suspend fun sizeOf(uri: String): Long? = size
+    }
+
+    private class FakeVideoMetadataReader(private val duration: Int = 12) : VideoMetadataReader {
+        override suspend fun durationSeconds(uri: String): Int = duration
     }
 
     private data class Fixture(
@@ -44,6 +55,8 @@ class CreatePostViewModelTest : ViewModelTest() {
     private fun fixture(
         createError: Exception? = null,
         fileError: Exception? = null,
+        videoSize: Long? = 1_000,
+        videoDuration: Int = 12,
     ): Fixture {
         val postDataSource = FakePostDataSource().apply { this.createError = createError }
         val feedRepository = FeedRepository(
@@ -53,10 +66,19 @@ class CreatePostViewModelTest : ViewModelTest() {
         )
 
         return Fixture(
-            CreatePostViewModel(feedRepository, FakeFileLoader(fileError), navigator),
+            CreatePostViewModel(
+                feedRepository,
+                FakeFileLoader(fileError, videoSize),
+                FakeVideoMetadataReader(videoDuration),
+                navigator,
+            ),
             postDataSource,
         )
     }
+
+    /** The picked image URIs, or an empty list when the draft holds no photos. */
+    private val CreatePostForm.imageUris: List<String>
+        get() = (media as? CreatePostMedia.Images)?.uris.orEmpty()
 
     private fun CreatePostViewModel.fillIn(title: String = "Title", body: String = "Body") {
         onTitleChange(title)
@@ -177,9 +199,9 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.onImagesPicked(List(CreatePostMaxImages + 5) { "uri-$it" })
 
-        val form = viewModel.uiState.first().form
-        assertEquals(CreatePostMaxImages, form.imageUris.size)
-        assertFalse(form.canAddImages)
+        val media = viewModel.uiState.first().form.media as CreatePostMedia.Images
+        assertEquals(CreatePostMaxImages, media.uris.size)
+        assertFalse(media.canAddMore)
     }
 
     @Test
@@ -193,6 +215,16 @@ class CreatePostViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `removing the last image returns to no media, re-offering video`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onImagesPicked(listOf("uri-a"))
+
+        viewModel.onRemoveImage("uri-a")
+
+        assertEquals(CreatePostMedia.None, viewModel.uiState.first().form.media)
+    }
+
+    @Test
     fun `publish uploads the picked images with the draft`() = runTest {
         val (viewModel, dataSource) = fixture()
         viewModel.fillIn()
@@ -200,7 +232,85 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.publish()
 
-        assertEquals(listOf("uri-a", "uri-b"), dataSource.lastDraft?.images?.map { it.filename })
+        val media = dataSource.lastDraft?.media as NewPostMedia.Images
+        assertEquals(listOf("uri-a", "uri-b"), media.files.map { it.filename })
+    }
+
+    @Test
+    fun `a picked video is attached with the duration read from the file`() = runTest {
+        val viewModel = fixture(videoDuration = 42).viewModel
+
+        viewModel.onVideoPicked("clip")
+
+        assertEquals(
+            CreatePostMedia.Video(uri = "clip", durationSeconds = 42),
+            viewModel.uiState.first().form.media,
+        )
+    }
+
+    @Test
+    fun `an oversized video is refused without being attached`() = runTest {
+        val viewModel = fixture(videoSize = CreatePostMaxVideoBytes + 1).viewModel
+
+        viewModel.onVideoPicked("clip")
+
+        val state = viewModel.uiState.first()
+        assertEquals(CreatePostMedia.None, state.form.media)
+        assertEquals(CreatePostMediaError.VideoTooLarge, state.mediaError)
+    }
+
+    @Test
+    fun `a video of unknown size is left to the server rather than refused`() = runTest {
+        val viewModel = fixture(videoSize = null).viewModel
+
+        viewModel.onVideoPicked("clip")
+
+        val state = viewModel.uiState.first()
+        assertTrue(state.form.media is CreatePostMedia.Video)
+        assertNull(state.mediaError)
+    }
+
+    @Test
+    fun `picking images is a no-op while a video is attached`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onVideoPicked("clip")
+
+        viewModel.onImagesPicked(listOf("uri-a"))
+
+        assertTrue(viewModel.uiState.first().form.media is CreatePostMedia.Video)
+    }
+
+    @Test
+    fun `a removed video returns to no media`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onVideoPicked("clip")
+
+        viewModel.onRemoveVideo()
+
+        assertEquals(CreatePostMedia.None, viewModel.uiState.first().form.media)
+    }
+
+    @Test
+    fun `publish uploads the video and its duration with the draft`() = runTest {
+        val (viewModel, dataSource) = fixture(videoDuration = 7)
+        viewModel.fillIn()
+        viewModel.onVideoPicked("clip")
+
+        viewModel.publish()
+
+        val media = dataSource.lastDraft?.media as NewPostMedia.Video
+        assertEquals("clip", media.file.filename)
+        assertEquals(7, media.durationSeconds)
+    }
+
+    @Test
+    fun `a text-only post carries no media`() = runTest {
+        val (viewModel, dataSource) = fixture()
+        viewModel.fillIn()
+
+        viewModel.publish()
+
+        assertEquals(NewPostMedia.None, dataSource.lastDraft?.media)
     }
 
     @Test
@@ -223,6 +333,17 @@ class CreatePostViewModelTest : ViewModelTest() {
     fun `images alone count as a part-written post`() = runTest {
         val viewModel = fixture().viewModel
         viewModel.onImagesPicked(listOf("uri-a"))
+
+        viewModel.goBack()
+
+        assertTrue(viewModel.uiState.first().showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+    }
+
+    @Test
+    fun `a video alone counts as a part-written post`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onVideoPicked("clip")
 
         viewModel.goBack()
 
