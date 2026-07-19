@@ -11,7 +11,6 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
-import uno.lux.sample.data.network.dto.CreatePostRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
 import uno.lux.sample.data.network.response.CommentListResponse
@@ -74,10 +73,17 @@ interface MosaicApi {
         @Query("limit") limit: Int = 20,
     ): CommentListResponse
 
-    // Publishes a post authored by the current user (the X-User-Id header). The response is the
-    // full projection, so the created post arrives with its author embedded.
+    // Publishes a post authored by the current user (the X-User-Id header). Sent as
+    // multipart/form-data — like the avatar upload above — so the post's images ride along with
+    // the text in one request; [images] is empty for a text-only post. The response is the full
+    // projection, so the created post arrives with its author and stored album embedded.
+    @Multipart
     @POST("posts")
-    suspend fun createPost(@Body body: CreatePostRequestDto): PostResponse
+    suspend fun createPost(
+        @Part("title") title: RequestBody,
+        @Part("body") body: RequestBody,
+        @Part images: List<MultipartBody.Part>,
+    ): PostResponse
 
     @POST("posts/{id}/like")
     suspend fun toggleLike(

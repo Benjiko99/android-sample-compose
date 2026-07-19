@@ -1,15 +1,17 @@
 package uno.lux.sample.data.post
 
+import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.user.User
 
 /**
- * A post the signed-in user is about to publish. Carries only what the composer collects —
- * the author is derived server-side from the caller, and media attachments aren't authorable
- * from the client, so a draft has no [Album] or [Video].
+ * A post the signed-in user is about to publish. The author is derived server-side from the
+ * caller, so a draft carries only what the composer collects: the text plus any [images], which
+ * the server stores and hands back as the post's [Album]. Video is not authorable from the client.
  */
 data class NewPost(
     val title: String,
     val body: String,
+    val images: List<FileUpload> = emptyList(),
 )
 
 /**

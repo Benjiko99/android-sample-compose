@@ -40,10 +40,11 @@ fun (() -> Unit).rememberDebounced(debounceMs: Long = 500L): () -> Unit {
 
 /** Like [Modifier.clickable] but ignores taps within [debounceMs] milliseconds of the prior one. */
 fun Modifier.debouncedClickable(
+    enabled: Boolean = true,
     debounceMs: Long = 500L,
     onClick: () -> Unit,
 ): Modifier = composed {
     val debounced = onClick.rememberDebounced(debounceMs)
 
-    clickable(onClick = debounced)
+    clickable(enabled = enabled, onClick = debounced)
 }

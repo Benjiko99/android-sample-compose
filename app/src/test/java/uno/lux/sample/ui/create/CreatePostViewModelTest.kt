@@ -14,7 +14,9 @@ import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.FakeUserDataSource
+import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.ui.file.FileLoader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
@@ -26,12 +28,23 @@ class CreatePostViewModelTest : ViewModelTest() {
     private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.CreatePost)
     private val navigator = Navigator().apply { attach(backStack) }
 
+    /** Turns each URI into a payload naming it, so a test can assert which files were uploaded. */
+    private class FakeFileLoader(private val error: Exception? = null) : FileLoader {
+        override suspend fun read(uri: String): FileUpload {
+            error?.let { throw it }
+            return FileUpload(bytes = uri.toByteArray(), mimeType = "image/png", filename = uri)
+        }
+    }
+
     private data class Fixture(
         val viewModel: CreatePostViewModel,
         val postDataSource: FakePostDataSource,
     )
 
-    private fun fixture(createError: Exception? = null): Fixture {
+    private fun fixture(
+        createError: Exception? = null,
+        fileError: Exception? = null,
+    ): Fixture {
         val postDataSource = FakePostDataSource().apply { this.createError = createError }
         val feedRepository = FeedRepository(
             dataSource = FakeFeedDataSource(),
@@ -39,7 +52,10 @@ class CreatePostViewModelTest : ViewModelTest() {
             userRepository = UserRepository(FakeUserDataSource()),
         )
 
-        return Fixture(CreatePostViewModel(feedRepository, navigator), postDataSource)
+        return Fixture(
+            CreatePostViewModel(feedRepository, FakeFileLoader(fileError), navigator),
+            postDataSource,
+        )
     }
 
     private fun CreatePostViewModel.fillIn(title: String = "Title", body: String = "Body") {
@@ -136,13 +152,82 @@ class CreatePostViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `discard clears the form`() = runTest {
+    fun `picked images are added to the form in order`() = runTest {
         val viewModel = fixture().viewModel
+
+        viewModel.onImagesPicked(listOf("uri-a", "uri-b"))
+        viewModel.onImagesPicked(listOf("uri-c"))
+
+        assertEquals(listOf("uri-a", "uri-b", "uri-c"), viewModel.uiState.first().form.imageUris)
+    }
+
+    @Test
+    fun `re-picking an already chosen image does not duplicate it`() = runTest {
+        val viewModel = fixture().viewModel
+
+        viewModel.onImagesPicked(listOf("uri-a", "uri-b"))
+        viewModel.onImagesPicked(listOf("uri-a", "uri-c"))
+
+        assertEquals(listOf("uri-a", "uri-b", "uri-c"), viewModel.uiState.first().form.imageUris)
+    }
+
+    @Test
+    fun `the selection is capped at the album limit`() = runTest {
+        val viewModel = fixture().viewModel
+
+        viewModel.onImagesPicked(List(CreatePostMaxImages + 5) { "uri-$it" })
+
+        val form = viewModel.uiState.first().form
+        assertEquals(CreatePostMaxImages, form.imageUris.size)
+        assertFalse(form.canAddImages)
+    }
+
+    @Test
+    fun `a removed image leaves the rest in place`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onImagesPicked(listOf("uri-a", "uri-b", "uri-c"))
+
+        viewModel.onRemoveImage("uri-b")
+
+        assertEquals(listOf("uri-a", "uri-c"), viewModel.uiState.first().form.imageUris)
+    }
+
+    @Test
+    fun `publish uploads the picked images with the draft`() = runTest {
+        val (viewModel, dataSource) = fixture()
         viewModel.fillIn()
+        viewModel.onImagesPicked(listOf("uri-a", "uri-b"))
 
-        viewModel.discard()
+        viewModel.publish()
 
-        assertTrue(viewModel.uiState.first().form.isEmpty)
+        assertEquals(listOf("uri-a", "uri-b"), dataSource.lastDraft?.images?.map { it.filename })
+    }
+
+    @Test
+    fun `an unreadable image fails the publish and keeps the form`() = runTest {
+        val (viewModel, dataSource) = fixture(fileError = IOException("gone"))
+        viewModel.fillIn(title = "Title", body = "Body")
+        viewModel.onImagesPicked(listOf("uri-a"))
+
+        viewModel.publish()
+
+        assertNull(dataSource.lastDraft)
+        val state = viewModel.uiState.first()
+        assertEquals("Title", state.form.title)
+        assertEquals(listOf("uri-a"), state.form.imageUris)
+        assertEquals(AppError.Unknown, state.publishError)
+        assertFalse(state.isPublishing)
+    }
+
+    @Test
+    fun `images alone count as a part-written post`() = runTest {
+        val viewModel = fixture().viewModel
+        viewModel.onImagesPicked(listOf("uri-a"))
+
+        viewModel.goBack()
+
+        assertTrue(viewModel.uiState.first().showDiscardConfirmation)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
     }
 
     @Test

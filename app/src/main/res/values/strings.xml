@@ -22,7 +22,9 @@
     <string name="create_post_title_label">Title</string>
     <string name="create_post_body_label">What\'s on your mind?</string>
     <string name="create_post_publish">Publish</string>
-    <string name="create_post_discard">Discard</string>
+    <string name="create_post_photos_label">Photos</string>
+    <string name="create_post_add_photos">Add</string>
+    <string name="create_post_remove_photo">Remove photo</string>
 
     <!-- Post -->
     <string name="post_more_options">More options</string>

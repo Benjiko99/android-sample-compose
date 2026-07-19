@@ -40,12 +40,6 @@ data class PostDto(
 )
 
 @Serializable
-data class CreatePostRequestDto(
-    val title: String,
-    val body: String,
-)
-
-@Serializable
 data class AlbumDto(
     val id: String,
     val title: String,

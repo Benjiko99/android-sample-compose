@@ -1,22 +1,21 @@
 package uno.lux.sample.data.network
 
 import java.time.Instant
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okio.Buffer
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
 import uno.lux.sample.data.network.dto.CommentDto
-import uno.lux.sample.data.network.dto.CreatePostRequestDto
 import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.dto.FollowToggleDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
+import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.PostDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
-import okio.Buffer
 import uno.lux.sample.data.network.dto.ProfileStatsDto
-import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
@@ -107,18 +106,49 @@ class FakeMosaicApi(
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
         CommentListResponse(data = comments, page = emptyPage)
 
-    /** The body passed to the most recent [createPost] call, for test assertions. */
-    var lastCreatePostBody: CreatePostRequestDto? = null
+    /** The multipart parts of the most recent [createPost] call, for test assertions. */
+    var lastCreatePostParts: CreatePostParts? = null
         private set
 
-    override suspend fun createPost(body: CreatePostRequestDto): PostResponse {
-        lastCreatePostBody = body
+    /** The parts [createPost] received, decoded back to the values a test can compare against. */
+    data class CreatePostParts(
+        val title: String,
+        val body: String,
+        val images: List<UploadedPart>,
+    )
+
+    /** One `images[]` part: the filename it declared and the bytes it carried. */
+    data class UploadedPart(val filename: String?, val bytes: ByteArray) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is UploadedPart) return false
+
+            return filename == other.filename && bytes.contentEquals(other.bytes)
+        }
+
+        override fun hashCode(): Int = 31 * (filename?.hashCode() ?: 0) + bytes.contentHashCode()
+    }
+
+    override suspend fun createPost(
+        title: RequestBody,
+        body: RequestBody,
+        images: List<MultipartBody.Part>,
+    ): PostResponse {
+        val titleText = title.readText()
+        val bodyText = body.readText()
+        lastCreatePostParts = CreatePostParts(
+            title = titleText,
+            body = bodyText,
+            images = images.map { part ->
+                UploadedPart(filename = part.filename(), bytes = part.body.readBytes())
+            },
+        )
 
         return PostResponse(
             PostDto(
                 id = "p-new",
-                title = body.title,
-                body = body.body,
+                title = titleText,
+                body = bodyText,
                 createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
                 author = stubAuthor,
                 likeCount = 0,
@@ -128,6 +158,18 @@ class FakeMosaicApi(
             )
         )
     }
+
+    // Retrofit hands the fake real RequestBody parts, so the assertions read them back out.
+    private fun RequestBody.readText() = Buffer().also { writeTo(it) }.readUtf8()
+
+    private fun RequestBody.readBytes() = Buffer().also { writeTo(it) }.readByteArray()
+
+    /** The `filename="…"` of a part's Content-Disposition header, which is how the server names it. */
+    private fun MultipartBody.Part.filename(): String? =
+        headers?.get("Content-Disposition")
+            ?.substringAfter("filename=\"", missingDelimiterValue = "")
+            ?.substringBefore('"')
+            ?.takeIf { it.isNotEmpty() }
 
     override suspend fun toggleLike(postId: String, body: EmptyBody): LikeToggleResponse =
         LikeToggleResponse(likeResult)

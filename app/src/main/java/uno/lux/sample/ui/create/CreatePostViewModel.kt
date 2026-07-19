@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.ui.file.FileLoader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.ignoreErrors
@@ -25,12 +26,12 @@ import javax.inject.Inject
  * text and surfaces the error, so nothing is lost to a dropped connection.
  *
  * Leaving with a part-written post asks first, mirroring the profile editor: [goBack] raises the
- * confirmation instead of popping when the form has content. (That is distinct from [discard],
- * the top-bar action that empties the form but stays on the page.)
+ * confirmation instead of popping when the form has content.
  */
 @HiltViewModel
 class CreatePostViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
+    private val fileLoader: FileLoader,
     private val navigator: Navigator,
 ) : ViewModel(), CreatePostActions {
 
@@ -47,11 +48,25 @@ class CreatePostViewModel @Inject constructor(
         it.copy(body = value.take(CreatePostBodyMaxLength))
     }
 
+    /**
+     * Adds a picked selection, keeping it within [CreatePostMaxImages]. Already-picked URIs are
+     * dropped rather than duplicated — the system picker re-reports every image chosen in a
+     * session, so a second trip through it would otherwise repeat the earlier ones.
+     */
+    override fun onImagesPicked(uris: List<String>) = updateForm { form ->
+        val added = uris.filterNot { it in form.imageUris }
+        form.copy(imageUris = (form.imageUris + added).take(CreatePostMaxImages))
+    }
+
+    override fun onRemoveImage(uri: String) = updateForm { form ->
+        form.copy(imageUris = form.imageUris - uri)
+    }
+
     override fun publish() {
         if (!_uiState.value.form.canPublish) return
 
         launchIfIdle(::publishJob) {
-            val draft = _uiState.value.form.toNewPost()
+            val form = _uiState.value.form
             _uiState.update { it.copy(isPublishing = true, publishError = null) }
 
             ignoreErrors(
@@ -60,6 +75,10 @@ class CreatePostViewModel @Inject constructor(
                     _uiState.update { it.copy(isPublishing = false, publishError = e.toAppError()) }
                 },
             ) {
+                // The picked images are only read into memory here, at the point of upload —
+                // an unreadable URI fails the publish like any other error, keeping the form.
+                val draft = form.toNewPost(images = form.imageUris.map { fileLoader.read(it) })
+
                 // A published draft leaves nothing to edit, so the whole state resets — which
                 // clears the in-flight flag along with the form.
                 val postId = feedRepository.publish(draft)
@@ -68,8 +87,6 @@ class CreatePostViewModel @Inject constructor(
             }
         }
     }
-
-    override fun discard() = updateForm { CreatePostForm() }
 
     override fun goBack() {
         if (_uiState.value.form.isEmpty) navigator.goBack()

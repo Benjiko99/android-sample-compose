@@ -4,8 +4,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
-import uno.lux.sample.data.network.dto.CreatePostRequestDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.Post
@@ -22,12 +22,35 @@ class NetworkPostDataSourceTest {
 
         val created = dataSource.create(NewPost(title = "Title", body = "Body"))
 
-        assertEquals(CreatePostRequestDto(title = "Title", body = "Body"), api.lastCreatePostBody)
+        val parts = api.lastCreatePostParts
+        assertEquals("Title", parts?.title)
+        assertEquals("Body", parts?.body)
+        assertEquals(emptyList<FakeMosaicApi.UploadedPart>(), parts?.images)
         assertEquals("p-new", created.post.id)
         assertEquals("Title", created.post.title)
         assertEquals("Body", created.post.body)
         assertEquals("u1", created.post.authorId)
         assertEquals(0, created.post.likeCount)
+    }
+
+    @Test
+    fun `create uploads each image as its own part, in order`() = runTest {
+        val api = FakeMosaicApi()
+        val dataSource = NetworkPostDataSource(api)
+        val images = listOf(
+            FileUpload(bytes = byteArrayOf(1, 2), mimeType = "image/png", filename = "one.png"),
+            FileUpload(bytes = byteArrayOf(3, 4), mimeType = "image/jpeg", filename = "two.jpg"),
+        )
+
+        dataSource.create(NewPost(title = "Title", body = "Body", images = images))
+
+        assertEquals(
+            listOf(
+                FakeMosaicApi.UploadedPart(filename = "one.png", bytes = byteArrayOf(1, 2)),
+                FakeMosaicApi.UploadedPart(filename = "two.jpg", bytes = byteArrayOf(3, 4)),
+            ),
+            api.lastCreatePostParts?.images,
+        )
     }
 
     @Test
