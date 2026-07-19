@@ -44,8 +44,6 @@ object CreatedPostMapper : ObjectMappie<PostDto, Post>() {
 
 object CommentMapper : ObjectMappie<CommentDto, Comment>() {
     override fun map(from: CommentDto) = mapping()
-
-    fun toDomainUser(dto: UserDto): User = dto.toDomain()
 }
 
 internal fun MinimalUserDto.toDomain() = User(

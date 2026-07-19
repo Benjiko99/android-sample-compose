@@ -2,10 +2,6 @@ package uno.lux.sample.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.post.CreatedPost
 import uno.lux.sample.data.post.NewPost
@@ -22,11 +18,13 @@ class NetworkPostDataSource(
         val video = media as? NewPostMedia.Video
 
         val dto = api.createPost(
-            title = textPart(draft.title),
-            body = textPart(draft.body),
-            images = (media as? NewPostMedia.Images)?.files.orEmpty().map(::imagePart),
-            video = video?.let { filePart(name = "video", file = it.file) },
-            videoDurationSeconds = video?.let { textPart(it.durationSeconds.toString()) },
+            title = draft.title.asTextPart(),
+            body = draft.body.asTextPart(),
+            // The trailing brackets are what make Rack collect the repeated parts into one
+            // `images` array; a plain "images" name would let each part overwrite the last.
+            images = (media as? NewPostMedia.Images)?.files.orEmpty().map { it.asPart("images[]") },
+            video = video?.file?.asPart("video"),
+            videoDurationSeconds = video?.durationSeconds?.toString()?.asTextPart(),
         ).data
 
         CreatedPostMapper.toCreatedPost(dto)
@@ -40,21 +38,5 @@ class NetworkPostDataSource(
     override suspend fun toggleBookmark(post: Post): Post = withContext(Dispatchers.IO) {
         val result = api.toggleBookmark(post.id, EmptyBody()).data
         post.copy(isBookmarked = result.isBookmarked)
-    }
-
-    // The trailing brackets are what make Rack collect the repeated parts into one `images`
-    // array server-side; a plain "images" name would let each part overwrite the last.
-    private fun imagePart(image: FileUpload) = filePart(name = "images[]", file = image)
-
-    private fun filePart(name: String, file: FileUpload) = MultipartBody.Part.createFormData(
-        name = name,
-        filename = file.filename,
-        body = file.bytes.toRequestBody(file.mimeType.toMediaType()),
-    )
-
-    private fun textPart(value: String) = value.toRequestBody(PLAIN_TEXT)
-
-    private companion object {
-        val PLAIN_TEXT = "text/plain".toMediaType()
     }
 }

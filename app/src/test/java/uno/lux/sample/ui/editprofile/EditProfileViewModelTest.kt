@@ -18,7 +18,7 @@ import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
-import uno.lux.sample.ui.file.FileLoader
+import uno.lux.sample.ui.file.FakeFileLoader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
@@ -35,21 +35,8 @@ class EditProfileViewModelTest : ViewModelTest() {
         bio = "Mathematician & writer.",
     )
 
-    /** Records the URI it was asked to read and returns a fixed upload payload. */
-    private class FakeFileLoader(
-        val result: FileUpload = FileUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png"),
-    ) : FileLoader {
-        var lastUri: String? = null
-            private set
-
-        override suspend fun read(uri: String): FileUpload {
-            lastUri = uri
-            return result
-        }
-
-        // The editor has no size limit of its own — the server is the only judge for an avatar.
-        override suspend fun sizeOf(uri: String): Long = result.bytes.size.toLong()
-    }
+    /** What the shared fake hands back for a picked avatar, so assertions can name the bytes. */
+    private val avatarUpload = FileUpload(byteArrayOf(1, 2, 3), "image/png", "avatar.png")
 
     private data class Fixture(
         val viewModel: EditProfileViewModel,
@@ -69,7 +56,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         val dataSource = FakeUserDataSource(mapOf("u1" to ada), failUpdates = failUpdates)
         val repository = UserRepository(dataSource)
         if (cached) repository.ingest(listOf(ada))
-        val avatarLoader = FakeFileLoader()
+        val avatarLoader = FakeFileLoader(result = avatarUpload)
 
         return Fixture(
             EditProfileViewModel(repository, avatarLoader, navigator, "u1"),
@@ -205,7 +192,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         viewModel.save()
 
         assertEquals("content://media/picker/42", avatarLoader.lastUri)
-        assertEquals(avatarLoader.result, dataSource.lastUpdate?.second?.avatar)
+        assertEquals(avatarUpload, dataSource.lastUpdate?.second?.avatar)
         assertEquals(listOf<NavKey>(Screen.Shell), backStack)
     }
 

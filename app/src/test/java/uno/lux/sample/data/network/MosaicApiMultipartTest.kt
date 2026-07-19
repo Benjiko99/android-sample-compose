@@ -1,7 +1,6 @@
 package uno.lux.sample.data.network
 
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -16,6 +15,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
+import uno.lux.sample.di.NetworkModule
 
 /**
  * Pins the `POST /posts` **wire format** by driving the real Retrofit stack over loopback.
@@ -45,10 +45,12 @@ class MosaicApiMultipartTest {
         server.start()
         server.enqueue(MockResponse().setResponseCode(201).setBody(createdPostJson))
 
+        // Production's own Json, not a copy of its settings — a test that pins the wire format
+        // against a config nobody ships would keep passing while the real one drifted.
         val api = Retrofit.Builder()
             .baseUrl(server.url("/api/"))
             .addConverterFactory(
-                Json { ignoreUnknownKeys = true }
+                NetworkModule.provideJson()
                     .asConverterFactory("application/json; charset=UTF-8".toMediaType())
             )
             .build()

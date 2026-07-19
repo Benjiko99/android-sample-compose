@@ -90,13 +90,13 @@ class CreatePostViewModel @Inject constructor(
             ignoreErrors(
                 onError = { e ->
                     Timber.w(e)
-                    _uiState.update { it.copy(publishError = e.toAppError()) }
+                    _uiState.update { it.copy(error = CreatePostError.Failed(e.toAppError())) }
                 },
             ) {
                 val size = fileLoader.sizeOf(uri)
 
                 if (size != null && size > CreatePostMaxVideoBytes) {
-                    _uiState.update { it.copy(mediaError = CreatePostMediaError.VideoTooLarge) }
+                    _uiState.update { it.copy(error = CreatePostError.VideoTooLarge) }
                     return@ignoreErrors
                 }
 
@@ -106,7 +106,7 @@ class CreatePostViewModel @Inject constructor(
                         form = state.form.copy(
                             media = CreatePostMedia.Video(uri = uri, durationSeconds = duration),
                         ),
-                        mediaError = null,
+                        error = null,
                     )
                 }
             }
@@ -122,12 +122,14 @@ class CreatePostViewModel @Inject constructor(
 
         launchIfIdle(::publishJob) {
             val form = _uiState.value.form
-            _uiState.update { it.copy(isPublishing = true, publishError = null) }
+            _uiState.update { it.copy(isPublishing = true, error = null) }
 
             ignoreErrors(
                 onError = { e ->
                     Timber.w(e)
-                    _uiState.update { it.copy(isPublishing = false, publishError = e.toAppError()) }
+                    _uiState.update {
+                        it.copy(isPublishing = false, error = CreatePostError.Failed(e.toAppError()))
+                    }
                 },
             ) {
                 // The picked files are only read into memory here, at the point of upload —

@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -161,8 +162,7 @@ internal fun CreatePostScreen(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    // A rejected file and a failed publish surface the same way; only one can be set at a time.
-    val errorMessage = uiState.publishError?.asText() ?: uiState.mediaError?.asText()
+    val errorMessage = uiState.error?.asText()
 
     LaunchedEffect(errorMessage) {
         if (errorMessage != null) snackbarHostState.showSnackbar(errorMessage)
@@ -293,11 +293,20 @@ private fun PostMediaPicker(
                 onRemoveImage = actions::onRemoveImage,
             )
 
-            is CreatePostMedia.Video -> PostVideoThumbnail(
-                video = media,
+            is CreatePostMedia.Video -> PickedMediaThumbnail(
+                uri = media.uri,
+                removeDescription = stringResource(R.string.create_post_remove_video),
                 enabled = enabled,
                 onRemove = actions::onRemoveVideo,
-            )
+            ) {
+                MediaBadge(
+                    text = formatVideoDuration(media.durationSeconds),
+                    iconRes = R.drawable.ic_play_arrow,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(4.dp),
+                )
+            }
         }
     }
 }
@@ -311,7 +320,7 @@ private fun EmptyMediaTiles(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         MediaTile(
-            iconRes = R.drawable.ic_add,
+            iconRes = R.drawable.ic_image,
             labelRes = R.string.create_post_add_photos,
             enabled = enabled,
             onClick = onPickImages,
@@ -340,8 +349,9 @@ private fun PickedImages(
     ) {
         // Keyed by URI so removing one thumbnail doesn't recompose (or re-fetch) the rest.
         items(media.uris, key = { it }) { uri ->
-            PostImageThumbnail(
+            PickedMediaThumbnail(
                 uri = uri,
+                removeDescription = stringResource(R.string.create_post_remove_photo),
                 enabled = enabled,
                 onRemove = { onRemoveImage(uri) },
                 modifier = Modifier.animateItem(),
@@ -369,49 +379,18 @@ private fun PickedImages(
 }
 
 /**
- * The picked clip: a frame from the video with its duration, and the same remove affordance the
- * photo thumbnails carry. Coil decodes the frame straight from the content URI.
+ * One picked file: a preview of it with a remove affordance. Coil renders both kinds from the
+ * content URI — a still directly, a video via the frame decoder `MosaicApp` registers. [overlay]
+ * carries whatever else the kind needs on top, which today is the video's duration badge.
  */
 @Composable
-private fun PostVideoThumbnail(
-    video: CreatePostMedia.Video,
-    enabled: Boolean,
-    onRemove: () -> Unit,
-) {
-    Box(modifier = Modifier.size(ThumbnailSize)) {
-        AsyncImage(
-            model = video.uri,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-        )
-
-        MediaBadge(
-            text = formatVideoDuration(video.durationSeconds),
-            iconRes = R.drawable.ic_play_arrow,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(4.dp),
-        )
-
-        MediaRemoveButton(
-            contentDescription = stringResource(R.string.create_post_remove_video),
-            enabled = enabled,
-            onRemove = onRemove,
-            modifier = Modifier.align(Alignment.TopEnd),
-        )
-    }
-}
-
-@Composable
-private fun PostImageThumbnail(
+private fun PickedMediaThumbnail(
     uri: String,
+    removeDescription: String,
     enabled: Boolean,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    overlay: @Composable BoxScope.() -> Unit = {},
 ) {
     Box(modifier = modifier.size(ThumbnailSize)) {
         AsyncImage(
@@ -424,8 +403,10 @@ private fun PostImageThumbnail(
                 .background(MaterialTheme.colorScheme.surfaceVariant),
         )
 
+        overlay()
+
         MediaRemoveButton(
-            contentDescription = stringResource(R.string.create_post_remove_photo),
+            contentDescription = removeDescription,
             enabled = enabled,
             onRemove = onRemove,
             modifier = Modifier.align(Alignment.TopEnd),

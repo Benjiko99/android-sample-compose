@@ -22,7 +22,7 @@
     <string name="create_post_body_label">Co máte na mysli?</string>
     <string name="create_post_publish">Publikovat</string>
     <string name="create_post_photos_label">Fotky</string>
-    <string name="create_post_add_photos">Přidat</string>
+    <string name="create_post_add_photos">Fotka</string>
     <string name="create_post_remove_photo">Odebrat fotku</string>
     <string name="create_post_media_label">Média</string>
     <string name="create_post_add_video">Video</string>

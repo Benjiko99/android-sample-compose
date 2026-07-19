@@ -14,11 +14,10 @@ import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.FeedRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.FakeUserDataSource
-import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.user.UserRepository
-import uno.lux.sample.ui.file.FileLoader
-import uno.lux.sample.ui.file.VideoMetadataReader
+import uno.lux.sample.ui.file.FakeFileLoader
+import uno.lux.sample.ui.file.FakeVideoMetadataReader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
@@ -29,23 +28,6 @@ class CreatePostViewModelTest : ViewModelTest() {
     // The composer is pushed over the shell, so it always has an entry of its own to leave.
     private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.CreatePost)
     private val navigator = Navigator().apply { attach(backStack) }
-
-    /** Turns each URI into a payload naming it, so a test can assert which files were uploaded. */
-    private class FakeFileLoader(
-        private val error: Exception? = null,
-        private val size: Long? = 1_000,
-    ) : FileLoader {
-        override suspend fun read(uri: String): FileUpload {
-            error?.let { throw it }
-            return FileUpload(bytes = uri.toByteArray(), mimeType = "image/png", filename = uri)
-        }
-
-        override suspend fun sizeOf(uri: String): Long? = size
-    }
-
-    private class FakeVideoMetadataReader(private val duration: Int = 12) : VideoMetadataReader {
-        override suspend fun durationSeconds(uri: String): Int = duration
-    }
 
     private data class Fixture(
         val viewModel: CreatePostViewModel,
@@ -68,7 +50,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         return Fixture(
             CreatePostViewModel(
                 feedRepository,
-                FakeFileLoader(fileError, videoSize),
+                FakeFileLoader(error = fileError, size = videoSize),
                 FakeVideoMetadataReader(videoDuration),
                 navigator,
             ),
@@ -168,7 +150,7 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         val state = viewModel.uiState.first()
         assertEquals("Title", state.form.title)
-        assertEquals(AppError.Unknown, state.publishError)
+        assertEquals(CreatePostError.Failed(AppError.Unknown), state.error)
         assertFalse(state.isPublishing)
         assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
     }
@@ -256,7 +238,7 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         val state = viewModel.uiState.first()
         assertEquals(CreatePostMedia.None, state.form.media)
-        assertEquals(CreatePostMediaError.VideoTooLarge, state.mediaError)
+        assertEquals(CreatePostError.VideoTooLarge, state.error)
     }
 
     @Test
@@ -267,7 +249,7 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         val state = viewModel.uiState.first()
         assertTrue(state.form.media is CreatePostMedia.Video)
-        assertNull(state.mediaError)
+        assertNull(state.error)
     }
 
     @Test
@@ -325,7 +307,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         val state = viewModel.uiState.first()
         assertEquals("Title", state.form.title)
         assertEquals(listOf("uri-a"), state.form.imageUris)
-        assertEquals(AppError.Unknown, state.publishError)
+        assertEquals(CreatePostError.Failed(AppError.Unknown), state.error)
         assertFalse(state.isPublishing)
     }
 
