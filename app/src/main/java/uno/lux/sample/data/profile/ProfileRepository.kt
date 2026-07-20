@@ -2,8 +2,11 @@ package uno.lux.sample.data.profile
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserId
@@ -27,6 +30,14 @@ import uno.lux.sample.data.user.UserRepository
  * tab from an unopened one. Their authors are arbitrary users, so they are ingested into
  * [UserRepository] the way the feed's are.
  *
+ * Those two lists also *narrow* as the entities change: a list defined by a viewer-scoped flag has
+ * to drop a post the moment the flag clears, or unsaving from the Saved tab would leave the row
+ * sitting there. That derivation is the same [PostRepository.entities] join the ordered IDs already
+ * go through — it is not a second copy of the state to keep in step, so un-saving and saving again
+ * (the accidental tap) restores the row for free. It applies only to the signed-in user's own
+ * lists: `isLiked`/`isBookmarked` describe *the viewer*, so on someone else's Likes tab they say
+ * nothing about why a post is on that list.
+ *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [ProfileDataSource].
  */
@@ -34,6 +45,7 @@ class ProfileRepository(
     private val dataSource: ProfileDataSource,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
+    private val currentUserId: UserId,
 ) {
     private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
     private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
@@ -42,10 +54,11 @@ class ProfileRepository(
 
     private val _postPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
-    // The two on-demand tabs. They differ only in which endpoint fills them — the ordering,
-    // paging and "not asked yet" bookkeeping is identical, so it lives in one place.
-    private val savedPosts = OnDemandPostIds(dataSource::bookmarks)
-    private val likedPosts = OnDemandPostIds(dataSource::likes)
+    // The two on-demand tabs. They differ only in which endpoint fills them and which flag keeps
+    // a post on the list — the ordering, paging and "not asked yet" bookkeeping is identical, so
+    // it lives in one place.
+    private val savedPosts = OnDemandPostIds(dataSource::bookmarks, Post::isBookmarked)
+    private val likedPosts = OnDemandPostIds(dataSource::likes, Post::isLiked)
 
     fun profile(userId: UserId): Flow<Profile> =
         _profiles.map { it[userId] ?: emptyProfile(userId) }
@@ -117,11 +130,24 @@ class ProfileRepository(
      */
     private inner class OnDemandPostIds(
         private val fetchPage: suspend (UserId, String?) -> PostsWithAuthorsPage,
+        private val stillBelongs: (Post) -> Boolean,
     ) {
         private val _ids = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
         private val _page = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
-        fun ids(userId: UserId): Flow<List<PostId>?> = _ids.map { it[userId] }
+        /**
+         * The fetched order, narrowed to the posts [stillBelongs] accepts — which is what drops a
+         * row the instant its like/bookmark is toggled off, from this tab or anywhere else. A post
+         * not yet in the entity store is kept: the ID is all we know, and the caller resolving it
+         * drops it anyway.
+         */
+        fun ids(userId: UserId): Flow<List<PostId>?> =
+            combine(_ids, postRepository.entities) { idsByUser, entities ->
+                val ids = idsByUser[userId] ?: return@combine null
+
+                if (userId != currentUserId) ids
+                else ids.filter { id -> entities[id]?.let(stillBelongs) ?: true }
+            }.distinctUntilChanged()
 
         fun hasMore(userId: UserId): Flow<Boolean> = _page.map { it[userId]?.hasMore ?: false }
 

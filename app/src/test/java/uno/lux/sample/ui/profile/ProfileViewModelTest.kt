@@ -104,6 +104,7 @@ class ProfileViewModelTest : ViewModelTest() {
             profileDataSource,
             postRepo,
             userRepo,
+            currentUserId,
         )
         return ProfileViewModel(
             profileRepository = profileRepo,
@@ -301,20 +302,22 @@ class ProfileViewModelTest : ViewModelTest() {
         assertEquals(emptyList<Any>(), saved?.posts)
     }
 
-    // The saved posts resolve through the shared entity store, so unbookmarking one from the
-    // Saved tab is reflected on its card without a re-fetch.
+    // The saved posts resolve through the shared entity store, so liking one from the Saved tab
+    // is reflected on its card without a re-fetch. (Clearing the *bookmark* instead removes the
+    // row outright — that is the tab's defining flag, asserted further down.)
     @Test
-    fun `unbookmarking a saved post updates it in place`() = runTest {
+    fun `liking a saved post updates it in place`() = runTest {
         val viewModel = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
         }
         viewModel.onSavedTabShown()
 
-        viewModel.onToggleBookmark("p2")
+        viewModel.onToggleLike("p2")
 
         val card = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!.posts.single()
-        assertFalse(card.post.isBookmarked)
+        assertTrue(card.post.isLiked)
+        assertEquals(4, card.post.likeCount)
     }
 
     @Test
@@ -421,6 +424,53 @@ class ProfileViewModelTest : ViewModelTest() {
         viewModel.refresh()
 
         assertEquals(2, profileDataSource.likeCalls.size)
+    }
+
+    // ── The on-demand tabs narrow as their defining flag clears ─────────────────
+
+    @Test
+    fun `un-bookmarking from the Saved tab removes the row`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.onToggleBookmark("p2")
+
+        val bookmarks = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!
+        assertTrue(bookmarks.posts.isEmpty())
+    }
+
+    @Test
+    fun `unliking from the Likes tab removes the row`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onLikesTabShown()
+
+        viewModel.onToggleLike("p3")
+
+        val likes = (viewModel.uiState.value as ProfileUiState.Loaded).data.likes!!
+        assertTrue(likes.posts.isEmpty())
+    }
+
+    // The Saved tab is only ever your own, but a *liked* post can also be saved — clearing one
+    // flag must not disturb the list the other flag defines.
+    @Test
+    fun `unliking a post leaves it on the Saved tab`() = runTest {
+        val alsoSaved = savedPost.copy(isLiked = true)
+        val viewModel = viewModel(bookmarks = listOf(alsoSaved), likes = listOf(alsoSaved))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.onToggleLike("p2")
+
+        val bookmarks = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!
+        assertEquals(listOf("p2"), bookmarks.posts.map { it.post.id })
     }
 
     @Test
