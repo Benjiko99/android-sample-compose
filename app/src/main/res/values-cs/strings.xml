@@ -63,7 +63,6 @@
     <string name="report_sent">Hlášení bylo odesláno, děkujeme</string>
     <string name="post_action_like">Lajknout</string>
     <string name="post_action_unlike">Zrušit lajk</string>
-    <string name="post_action_like_own">Vlastní příspěvek nelze lajknout</string>
     <string name="post_action_comment">Komentovat</string>
     <string name="post_action_bookmark">Přidat do záložek</string>
     <string name="post_action_unbookmark">Odebrat ze záložek</string>

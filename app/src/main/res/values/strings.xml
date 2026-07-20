@@ -64,8 +64,6 @@
     <string name="report_sent">Report was sent, thank you</string>
     <string name="post_action_like">Like</string>
     <string name="post_action_unlike">Unlike</string>
-    <!-- Spoken by a screen reader on the disabled like button of your own post. -->
-    <string name="post_action_like_own">You can’t like your own post</string>
     <string name="post_action_comment">Comment</string>
     <string name="post_action_bookmark">Bookmark</string>
     <string name="post_action_unbookmark">Remove bookmark</string>

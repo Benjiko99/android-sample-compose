@@ -3,7 +3,6 @@ package uno.lux.sample.data.network
 import tech.mappie.api.ObjectMappie
 import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.CommentDto
-import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.PostDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.UserDto
@@ -45,14 +44,6 @@ object CreatedPostMapper : ObjectMappie<PostDto, Post>() {
 object CommentMapper : ObjectMappie<CommentDto, Comment>() {
     override fun map(from: CommentDto) = mapping()
 }
-
-internal fun MinimalUserDto.toDomain() = User(
-    id = id,
-    nickname = nickname,
-    handle = handle,
-    avatarUrl = avatarUrl,
-    isFollowing = isFollowing,
-)
 
 internal fun UserDto.toDomain() = User(
     id = id,

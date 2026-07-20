@@ -6,7 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.data.network.dto.CursorPageDto
-import uno.lux.sample.data.network.dto.MinimalUserDto
+import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.response.PostsWithAuthorsResponse
 import uno.lux.sample.data.network.response.FeedIncluded
@@ -15,13 +15,13 @@ class NetworkProfileDataSourceTest {
 
     private fun postsResponse(
         data: List<PostFeedItemDto>,
-        users: List<MinimalUserDto> = emptyList(),
+        users: List<UserDto> = emptyList(),
         page: CursorPageDto = emptyPage,
     ) = PostsWithAuthorsResponse(data = data, included = FeedIncluded(users = users), page = page)
 
     private fun bookmarksResponse(
         data: List<PostFeedItemDto>,
-        users: List<MinimalUserDto> = emptyList(),
+        users: List<UserDto> = emptyList(),
         page: CursorPageDto = emptyPage,
     ) = postsResponse(data, users, page)
 
@@ -44,7 +44,7 @@ class NetworkProfileDataSourceTest {
         val api = FakeMosaicApi(
             bookmarksResponse = bookmarksResponse(
                 data = listOf(feedItemDto("p2", "u2")),
-                users = listOf(minimalUserDto("u2", "Grace", isFollowing = true)),
+                users = listOf(userDto("u2", "Grace", isFollowing = true)),
             ),
         )
         val result = NetworkProfileDataSource(api).bookmarks("u1", cursor = null)
@@ -93,7 +93,7 @@ class NetworkProfileDataSourceTest {
         val api = FakeMosaicApi(
             likesResponse = postsResponse(
                 data = listOf(feedItemDto("p3", "u3"), feedItemDto("p4", "u4")),
-                users = listOf(minimalUserDto("u3", "Alan"), minimalUserDto("u4", "Margaret")),
+                users = listOf(userDto("u3", "Alan"), userDto("u4", "Margaret")),
             ),
         )
         val result = NetworkProfileDataSource(api).likes("u1", cursor = null)

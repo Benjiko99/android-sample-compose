@@ -193,7 +193,6 @@ internal fun PostActions(
     // (and fades back the same way on unlike) rather than snapping.
     val likeTint by animateColorAsState(
         targetValue = when {
-            isOwn -> muted.copy(alpha = DisabledAlpha)
             post.isLiked -> LocalMosaicColors.current.like
             else -> muted
         },
@@ -209,7 +208,6 @@ internal fun PostActions(
         ActionButton(
             iconRes = if (post.isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border,
             contentDescriptionRes = when {
-                isOwn -> R.string.post_action_like_own
                 post.isLiked -> R.string.post_action_unlike
                 else -> R.string.post_action_like
             },

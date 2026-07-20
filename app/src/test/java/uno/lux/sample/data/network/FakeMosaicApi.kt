@@ -12,7 +12,6 @@ import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.dto.FollowToggleDto
 import uno.lux.sample.data.network.dto.LikeToggleDto
-import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.PostDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.ProfileStatsDto
@@ -265,13 +264,6 @@ fun feedItemDto(
     isBookmarked = isBookmarked,
     album = album,
     video = video,
-)
-
-fun minimalUserDto(id: String, nickname: String, isFollowing: Boolean = false) = MinimalUserDto(
-    id = id,
-    handle = "@$id",
-    nickname = nickname,
-    isFollowing = isFollowing,
 )
 
 fun userDto(id: String, nickname: String, isFollowing: Boolean = false) = UserDto(

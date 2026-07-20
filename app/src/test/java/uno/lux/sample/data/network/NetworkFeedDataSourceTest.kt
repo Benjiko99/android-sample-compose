@@ -30,7 +30,7 @@ class NetworkFeedDataSourceTest {
         val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
-                included = FeedIncluded(users = listOf(minimalUserDto("u1", "Ada"), minimalUserDto("u2", "Grace"))),
+                included = FeedIncluded(users = listOf(userDto("u1", "Ada"), userDto("u2", "Grace"))),
                 page = emptyPage,
             ),
         )
@@ -45,7 +45,7 @@ class NetworkFeedDataSourceTest {
         val api = FakeMosaicApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
-                included = FeedIncluded(users = listOf(minimalUserDto("u1", "Ada", isFollowing = true))),
+                included = FeedIncluded(users = listOf(userDto("u1", "Ada", isFollowing = true))),
                 page = emptyPage,
             ),
         )

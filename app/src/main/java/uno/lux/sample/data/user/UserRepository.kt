@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.update
  * [users] streams the full map of all currently known users keyed by id — used by list
  * screens (the feed, a profile's posts tab) to resolve author names without a per-row lookup.
  * [ingest] merges a batch of users (e.g. sideloaded from the feed response) into the cache.
+ * Entries replace wholesale rather than merging field-wise, which is safe only because the API
+ * serves one user projection: a sideloaded author is as complete as a fetched profile. Were a
+ * partial projection reintroduced, this write would silently blank profile detail already held.
  * [refresh] forces a re-fetch of a single entry from the backing source, replacing the cache.
  * [updateProfile] persists edited profile fields and replaces the cached entry with the
  * result, so every observing screen sees the change immediately.

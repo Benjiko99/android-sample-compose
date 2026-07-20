@@ -43,10 +43,14 @@ class MosaicApiProfileTabsTest {
            "video":null,"authorId":"u4"}],
          "page":{"next_cursor":"djE6MTc4NDU0NzI0MDMxNDpwMg","has_more":true},
          "included":{"users":[
-           {"id":"u2","handle":"@amazinggrace","nickname":"Grace Hopper",
-            "avatarUrl":null,"isFollowing":false},
-           {"id":"u4","handle":"@mhamilton","nickname":"Margaret Hamilton",
-            "avatarUrl":null,"isFollowing":true}]}}
+           {"id":"u2","nickname":"Grace Hopper","handle":"@amazinggrace","age":85,
+            "gender":"Female","location":"Arlington, VA",
+            "bio":"Rear Admiral. Compiler pioneer.","avatarUrl":null,
+            "followerCount":9821,"followingCount":42,"isFollowing":false},
+           {"id":"u4","nickname":"Margaret Hamilton","handle":"@mhamilton","age":88,
+            "gender":"Female","location":"Cambridge, MA",
+            "bio":"I coined \"software engineering\".","avatarUrl":null,
+            "followerCount":7310,"followingCount":15,"isFollowing":true}]}}
     """.trimIndent()
 
     @Before
@@ -100,6 +104,24 @@ class MosaicApiProfileTabsTest {
         assertEquals("Grace Hopper", page.users.first().nickname)
         assertFalse(page.users.first().isFollowing)
         assertTrue(page.users[1].isFollowing)
+    }
+
+    /**
+     * The sideload is the *same* projection `GET /users/:id` serves, not an identity-only subset.
+     * That is what lets these users go straight into the cache: a partial one would be
+     * indistinguishable from a user who has genuinely left the fields empty, so ingesting it
+     * would blank the bio and identity chips of a profile already loaded in full.
+     */
+    @Test
+    fun `the sideloaded authors carry full profile detail`() = runTest {
+        val grace = dataSource.bookmarks("u1", cursor = null).users.first()
+
+        assertEquals(85, grace.age)
+        assertEquals("Female", grace.gender)
+        assertEquals("Arlington, VA", grace.location)
+        assertEquals("Rear Admiral. Compiler pioneer.", grace.bio)
+        assertEquals(9821, grace.followerCount)
+        assertEquals(42, grace.followingCount)
     }
 
     @Test

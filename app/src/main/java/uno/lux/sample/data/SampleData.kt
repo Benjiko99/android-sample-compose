@@ -99,7 +99,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         createdAt = now.minus(Duration.ofMinutes(4)),
         likeCount = 128,
         commentCount = 17,
-        isLiked = true,
+        isLiked = false,
         album = Album(
             id = "pa1",
             title = "Engine sketches",
@@ -116,6 +116,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         createdAt = now.minus(Duration.ofMinutes(38)),
         likeCount = 342,
         commentCount = 51,
+        isLiked = true,
         isBookmarked = true,
     ),
     Post(
