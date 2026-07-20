@@ -73,6 +73,7 @@
         <item quantity="other">%1$d komentářů</item>
     </plurals>
     <string name="post_detail_comment_hint">Přidat komentář…</string>
+    <string name="post_detail_no_comments">Zatím žádné komentáře</string>
     <string name="post_detail_send_comment">Odeslat</string>
 
     <!-- Comment actions -->

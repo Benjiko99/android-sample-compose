@@ -276,12 +276,29 @@ private fun PostDetailContent(
             }
         } else {
             item(key = "comments_header") { CommentsHeader(count = comments.size) }
-            items(comments, key = { it.id }) { comment ->
-                CommentRow(
-                    comment = comment,
-                    onLike = { onToggleCommentLike(comment.id) },
-                    onOpenProfile = { onOpenProfile(comment.author.id) },
-                )
+            if (comments.isNotEmpty()) {
+                items(comments, key = { it.id }) { comment ->
+                    CommentRow(
+                        comment = comment,
+                        onLike = { onToggleCommentLike(comment.id) },
+                        onOpenProfile = { onOpenProfile(comment.author.id) },
+                    )
+                }
+            } else {
+                item(key = "empty_comments") {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(vertical = 32.dp, horizontal = 24.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.post_detail_no_comments),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
 
@@ -528,8 +545,6 @@ private fun CommentComposer(
         }
     }
 }
-
-// ── Previews ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true)
 @Composable

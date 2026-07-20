@@ -72,6 +72,7 @@
         <item quantity="other">%1$d comments</item>
     </plurals>
     <string name="post_detail_comment_hint">Add a comment…</string>
+    <string name="post_detail_no_comments">No comments yet</string>
     <string name="post_detail_send_comment">Send</string>
 
     <!-- Comment actions -->
