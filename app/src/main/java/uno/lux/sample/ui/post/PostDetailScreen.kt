@@ -219,7 +219,6 @@ internal fun PostDetailScreen(
             is PostDetailUiState.Loaded -> PostDetailContent(
                 post = uiState.post,
                 author = uiState.author,
-                isOwn = uiState.isOwn,
                 comments = uiState.comments,
                 commentsError = uiState.commentsError,
                 listState = listState,
@@ -245,7 +244,6 @@ private val TopBarElevation = 4.dp
 private fun PostDetailContent(
     post: Post,
     author: User,
-    isOwn: Boolean,
     comments: List<Comment>,
     commentsError: AppError?,
     listState: LazyListState,
@@ -265,7 +263,6 @@ private fun PostDetailContent(
             DetailPostCard(
                 post = post,
                 author = author,
-                isOwn = isOwn,
                 onOpenProfile = { onOpenProfile(author.id) },
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
@@ -352,7 +349,6 @@ private fun CommentsError(error: AppError, onRetry: () -> Unit) {
 private fun DetailPostCard(
     post: Post,
     author: User,
-    isOwn: Boolean,
     onOpenProfile: () -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
@@ -371,7 +367,6 @@ private fun DetailPostCard(
         PostMedia(post = post, onOpenVideo = onOpenVideo, onOpenAlbum = onOpenAlbum)
         PostActions(
             post = post,
-            isOwn = isOwn,
             onToggleLike = onToggleLike,
             onToggleBookmark = onToggleBookmark,
             onCommentClick = onScrollToComments,

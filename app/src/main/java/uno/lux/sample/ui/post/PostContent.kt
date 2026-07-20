@@ -174,15 +174,10 @@ internal fun PostMedia(
 /**
  * The like / comment / bookmark row. [onCommentClick] opens the post from the feed and scrolls to
  * the thread on the detail screen — the button is otherwise the same.
- *
- * [isOwn] grays out and disables the like button: a like endorses someone else's post, so an
- * author cannot like their own (the server rejects it with a 403 either way). Bookmarking and
- * commenting on your own post stay available — only the endorsement is barred.
  */
 @Composable
 internal fun PostActions(
     post: Post,
-    isOwn: Boolean,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onCommentClick: () -> Unit,
@@ -192,10 +187,7 @@ internal fun PostActions(
     // Crossfade the heart between muted and coral so the color change tracks the like pop
     // (and fades back the same way on unlike) rather than snapping.
     val likeTint by animateColorAsState(
-        targetValue = when {
-            post.isLiked -> LocalMosaicColors.current.like
-            else -> muted
-        },
+        targetValue = if (post.isLiked) LocalMosaicColors.current.like else muted,
         label = "likeTint",
     )
 
@@ -207,14 +199,10 @@ internal fun PostActions(
     ) {
         ActionButton(
             iconRes = if (post.isLiked) R.drawable.ic_favorite_filled else R.drawable.ic_favorite_border,
-            contentDescriptionRes = when {
-                post.isLiked -> R.string.post_action_unlike
-                else -> R.string.post_action_like
-            },
+            contentDescriptionRes = if (post.isLiked) R.string.post_action_unlike else R.string.post_action_like,
             label = compactCount(post.likeCount).asText(),
             tint = likeTint,
             onClick = onToggleLike,
-            enabled = !isOwn,
             iconModifier = Modifier.pop(post.isLiked),
         )
         Spacer(Modifier.width(2.dp))
@@ -237,14 +225,7 @@ internal fun PostActions(
     }
 }
 
-/** The tint alpha of an action that is shown but barred — Material's disabled-content value. */
-private const val DisabledAlpha = 0.38f
-
-/**
- * Pill-shaped action: icon + optional count, both tinted by [tint] (accented when active).
- * A disabled button keeps its place and its count — it is grayed out, not hidden — but takes
- * no clicks and reports its own state to accessibility.
- */
+/** Pill-shaped action: icon + optional count, both tinted by [tint] (accented when active). */
 @Composable
 private fun ActionButton(
     iconRes: Int,
@@ -253,13 +234,12 @@ private fun ActionButton(
     tint: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true,
     iconModifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(100.dp))
-            .debouncedClickable(enabled = enabled, onClick = onClick)
+            .debouncedClickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
