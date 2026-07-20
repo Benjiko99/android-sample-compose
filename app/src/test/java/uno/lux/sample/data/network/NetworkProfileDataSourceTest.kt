@@ -8,16 +8,22 @@ import org.junit.Test
 import uno.lux.sample.data.network.dto.CursorPageDto
 import uno.lux.sample.data.network.dto.MinimalUserDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
-import uno.lux.sample.data.network.response.BookmarksResponse
+import uno.lux.sample.data.network.response.PostsWithAuthorsResponse
 import uno.lux.sample.data.network.response.FeedIncluded
 
 class NetworkProfileDataSourceTest {
+
+    private fun postsResponse(
+        data: List<PostFeedItemDto>,
+        users: List<MinimalUserDto> = emptyList(),
+        page: CursorPageDto = emptyPage,
+    ) = PostsWithAuthorsResponse(data = data, included = FeedIncluded(users = users), page = page)
 
     private fun bookmarksResponse(
         data: List<PostFeedItemDto>,
         users: List<MinimalUserDto> = emptyList(),
         page: CursorPageDto = emptyPage,
-    ) = BookmarksResponse(data = data, included = FeedIncluded(users = users), page = page)
+    ) = postsResponse(data, users, page)
 
     @Test
     fun `bookmarks maps post DTOs to domain posts`() = runTest {
@@ -78,5 +84,47 @@ class NetworkProfileDataSourceTest {
 
         assertTrue(result.posts.isEmpty())
         assertNull(result.cursor)
+    }
+
+    // ── Likes ───────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `likes maps post DTOs and their sideloaded authors`() = runTest {
+        val api = FakeMosaicApi(
+            likesResponse = postsResponse(
+                data = listOf(feedItemDto("p3", "u3"), feedItemDto("p4", "u4")),
+                users = listOf(minimalUserDto("u3", "Alan"), minimalUserDto("u4", "Margaret")),
+            ),
+        )
+        val result = NetworkProfileDataSource(api).likes("u1", cursor = null)
+
+        assertEquals(listOf("p3", "p4"), result.posts.map { it.id })
+        assertEquals(listOf("Alan", "Margaret"), result.users.map { it.nickname })
+    }
+
+    // Likes and bookmarks are separate lists behind separate endpoints — asking for one
+    // must not touch the other.
+    @Test
+    fun `likes requests the likes endpoint, not bookmarks`() = runTest {
+        val api = FakeMosaicApi()
+
+        NetworkProfileDataSource(api).likes("u2", cursor = "c3")
+
+        assertEquals(listOf("u2" to "c3"), api.likeCalls)
+        assertTrue(api.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `likes propagates cursor and hasMore from the page`() = runTest {
+        val api = FakeMosaicApi(
+            likesResponse = postsResponse(
+                data = listOf(feedItemDto("p3", "u3")),
+                page = CursorPageDto(nextCursor = "c2", hasMore = true),
+            ),
+        )
+        val result = NetworkProfileDataSource(api).likes("u1", cursor = null)
+
+        assertEquals("c2", result.cursor)
+        assertTrue(result.hasMore)
     }
 }

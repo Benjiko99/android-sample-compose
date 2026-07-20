@@ -61,6 +61,7 @@ internal fun PostCard(
         PostMedia(post = post, onOpenVideo = onOpenVideo, onOpenAlbum = onOpenAlbum)
         PostActions(
             post = post,
+            isOwn = data.isOwn,
             onToggleLike = onToggleLike,
             onToggleBookmark = onToggleBookmark,
             onCommentClick = onOpenPost,

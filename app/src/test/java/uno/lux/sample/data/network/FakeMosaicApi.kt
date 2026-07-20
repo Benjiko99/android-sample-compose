@@ -19,7 +19,7 @@ import uno.lux.sample.data.network.dto.ProfileStatsDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
-import uno.lux.sample.data.network.response.BookmarksResponse
+import uno.lux.sample.data.network.response.PostsWithAuthorsResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedIncluded
@@ -33,6 +33,12 @@ import uno.lux.sample.data.network.response.UserResponse
 
 internal val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
 
+internal val emptyPostsWithAuthors = PostsWithAuthorsResponse(
+    data = emptyList(),
+    included = FeedIncluded(users = emptyList()),
+    page = emptyPage,
+)
+
 /** The hosted URL the fake reports after an avatar file is uploaded. */
 const val UPLOADED_AVATAR_URL = "https://cdn.test/avatars/uploaded.png"
 
@@ -45,11 +51,8 @@ class FakeMosaicApi(
     private val userById: Map<String, UserDto> = emptyMap(),
     private val profileStats: Map<String, ProfileStatsDto> = emptyMap(),
     private val userPosts: List<PostFeedItemDto> = emptyList(),
-    private val bookmarksResponse: BookmarksResponse = BookmarksResponse(
-        data = emptyList(),
-        included = FeedIncluded(users = emptyList()),
-        page = emptyPage,
-    ),
+    private val bookmarksResponse: PostsWithAuthorsResponse = emptyPostsWithAuthors,
+    private val likesResponse: PostsWithAuthorsResponse = emptyPostsWithAuthors,
     private val comments: List<CommentDto> = emptyList(),
     val likeResult: LikeToggleDto = LikeToggleDto(isLiked = true, likeCount = 1),
     val bookmarkResult: BookmarkToggleDto = BookmarkToggleDto(isBookmarked = true),
@@ -117,9 +120,21 @@ class FakeMosaicApi(
         id: String,
         cursor: String?,
         limit: Int,
-    ): BookmarksResponse {
+    ): PostsWithAuthorsResponse {
         bookmarkCalls += id to cursor
         return bookmarksResponse
+    }
+
+    /** The (id, cursor) pairs [getLikes] was called with, in call order. */
+    val likeCalls = mutableListOf<Pair<String, String?>>()
+
+    override suspend fun getLikes(
+        id: String,
+        cursor: String?,
+        limit: Int,
+    ): PostsWithAuthorsResponse {
+        likeCalls += id to cursor
+        return likesResponse
     }
 
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =

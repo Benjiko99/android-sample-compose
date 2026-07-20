@@ -38,9 +38,10 @@ import uno.lux.sample.util.stateInWhileSubscribed
  * observers. Navigation intents (opening a post, profile, viewer or the editor, going back) are
  * pushes and pops on the injected [Navigator]. [userId] is a runtime arg wired through [Factory].
  *
- * The saved posts behind the Saved tab are loaded lazily, on [onSavedTabShown]; the screen only
- * offers that tab on the signed-in user's own profile, and the server refuses the list to anyone
- * else regardless.
+ * The Saved and Likes tabs are loaded lazily, on [onSavedTabShown] / [onLikesTabShown]. Saved is
+ * private: the screen offers that tab only on the signed-in user's own profile, and the server
+ * refuses the list to anyone else regardless. Likes are public, and load the same way only
+ * because a tab nobody opened should cost no request.
  */
 @HiltViewModel(assistedFactory = ProfileViewModel.Factory::class)
 class ProfileViewModel @AssistedInject constructor(
@@ -59,31 +60,45 @@ class ProfileViewModel @AssistedInject constructor(
 
     private val _loadError = MutableStateFlow<AppError?>(null)
 
-    // Preserves PostCardData instances across emissions so Compose strong-skipping can use
-    // reference equality to skip PostCard recomposition for saved posts that didn't change.
-    private var bookmarkCardCache = emptyMap<PostId, PostCardData>()
+    /**
+     * Resolves one on-demand tab's post IDs into cards, staying null until that tab's first load
+     * lands. Each call captures its own cache, which preserves [PostCardData] instances across
+     * emissions so Compose strong-skipping can skip the rows that didn't change.
+     */
+    private fun cardListFlow(
+        ids: Flow<List<PostId>?>,
+        hasMore: Flow<Boolean>,
+    ): Flow<ProfilePostList?> {
+        var cache = emptyMap<PostId, PostCardData>()
 
-    // Null until the Saved tab is first opened, which is what keeps this private list unfetched
-    // on every profile the signed-in user merely looks at.
-    private val bookmarks: Flow<ProfileBookmarks?> = combine(
-        profileRepository.bookmarkIds(userId),
-        profileRepository.hasMoreBookmarks(userId),
-        postRepository.entities,
-        userRepository.users,
-    ) { ids, hasMore, entities, users ->
-        if (ids == null) return@combine null
+        return combine(
+            ids,
+            hasMore,
+            postRepository.entities,
+            userRepository.users,
+        ) { postIds, more, entities, users ->
+            if (postIds == null) return@combine null
 
-        val cards = ids.mapNotNull { id ->
-            val post = entities[id] ?: return@mapNotNull null
-            val author = users[post.authorId] ?: return@mapNotNull null
-            val cached = bookmarkCardCache[id]
-            if (cached != null && cached.post === post && cached.author === author) cached
-            else PostCardData(post = post, author = author, isOwn = post.authorId == currentUserId)
+            val cards = postIds.mapNotNull { id ->
+                val post = entities[id] ?: return@mapNotNull null
+                val author = users[post.authorId] ?: return@mapNotNull null
+                val cached = cache[id]
+                if (cached != null && cached.post === post && cached.author === author) cached
+                else PostCardData(post = post, author = author, isOwn = post.authorId == currentUserId)
+            }
+            cache = cards.associateBy { it.post.id }
+
+            ProfilePostList(posts = cards, endReached = !more)
         }
-        bookmarkCardCache = cards.associateBy { it.post.id }
-
-        ProfileBookmarks(posts = cards, endReached = !hasMore)
     }
+
+    /** The two lazily-loaded tabs, paired so the state combine stays within its typed arity. */
+    private data class LazyTabs(val bookmarks: ProfilePostList?, val likes: ProfilePostList?)
+
+    private val lazyTabs: Flow<LazyTabs> = combine(
+        cardListFlow(profileRepository.bookmarkIds(userId), profileRepository.hasMoreBookmarks(userId)),
+        cardListFlow(profileRepository.likeIds(userId), profileRepository.hasMoreLikes(userId)),
+    ) { savedPosts, likedPosts -> LazyTabs(savedPosts, likedPosts) }
 
     val uiState: StateFlow<ProfileUiState> = combine(
         combine(
@@ -93,8 +108,8 @@ class ProfileViewModel @AssistedInject constructor(
                 ids.mapNotNull { entities[it] }
             },
             profileRepository.hasMorePosts(userId),
-            bookmarks,
-        ) { user, profile, posts, hasMorePosts, savedPosts ->
+            lazyTabs,
+        ) { user, profile, posts, hasMorePosts, tabs ->
             if (user == null) null
             else ProfileUiState.Loaded(
                 data = ProfileScreenData(
@@ -102,7 +117,8 @@ class ProfileViewModel @AssistedInject constructor(
                     profile = profile,
                     posts = posts,
                     postsEndReached = !hasMorePosts,
-                    bookmarks = savedPosts,
+                    bookmarks = tabs.bookmarks,
+                    likes = tabs.likes,
                 ),
                 isCurrentUser = userId == currentUserId,
             )
@@ -122,6 +138,7 @@ class ProfileViewModel @AssistedInject constructor(
     private var loadJob: Job? = null
     private var loadMorePostsJob: Job? = null
     private var bookmarksJob: Job? = null
+    private var likesJob: Job? = null
 
     init {
         retry()
@@ -138,10 +155,13 @@ class ProfileViewModel @AssistedInject constructor(
             coroutineScope {
                 launch { userRepository.refresh(userId) }
                 launch { profileRepository.refresh(userId) }
-                // Only once the Saved tab has been opened — a profile load must not reach for
-                // a private list nobody has asked to see.
+                // Only for tabs that have been opened — a profile load must not reach for a
+                // list nobody has asked to see, least of all the private one.
                 if (profileRepository.hasLoadedBookmarks(userId)) {
                     launch { profileRepository.refreshBookmarks(userId) }
+                }
+                if (profileRepository.hasLoadedLikes(userId)) {
+                    launch { profileRepository.refreshLikes(userId) }
                 }
             }
         }
@@ -189,6 +209,19 @@ class ProfileViewModel @AssistedInject constructor(
 
     override fun loadMoreBookmarks() = launchIfIdle(::bookmarksJob) {
         ignoreErrors { profileRepository.loadMoreBookmarks(userId) }
+    }
+
+    /** The Likes tab became visible. Loads once, the way [onSavedTabShown] does. */
+    override fun onLikesTabShown() {
+        if (profileRepository.hasLoadedLikes(userId)) return
+
+        launchIfIdle(::likesJob) {
+            ignoreErrors { profileRepository.refreshLikes(userId) }
+        }
+    }
+
+    override fun loadMoreLikes() = launchIfIdle(::likesJob) {
+        ignoreErrors { profileRepository.loadMoreLikes(userId) }
     }
 
     override fun goBack() = navigator.goBack()

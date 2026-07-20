@@ -3,8 +3,9 @@ package uno.lux.sample.data.network
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-import uno.lux.sample.data.profile.BookmarksPage
+import uno.lux.sample.data.network.response.PostsWithAuthorsResponse
 import uno.lux.sample.data.profile.PostsPage
+import uno.lux.sample.data.profile.PostsWithAuthorsPage
 import uno.lux.sample.data.profile.ProfileDataSource
 import uno.lux.sample.data.profile.ProfileRefreshData
 import uno.lux.sample.data.user.UserId
@@ -28,15 +29,18 @@ class NetworkProfileDataSource(
         )
     }
 
-    override suspend fun bookmarks(userId: UserId, cursor: String?): BookmarksPage = withContext(Dispatchers.IO) {
-        val response = api.getBookmarks(userId, cursor = cursor)
-        BookmarksPage(
-            posts = response.data.map { PostMapper.map(it) },
-            users = response.included.users.map { it.toDomain() },
-            cursor = response.page.nextCursor,
-            hasMore = response.page.hasMore,
-        )
-    }
+    override suspend fun bookmarks(userId: UserId, cursor: String?): PostsWithAuthorsPage =
+        withContext(Dispatchers.IO) { api.getBookmarks(userId, cursor = cursor).toPage() }
+
+    override suspend fun likes(userId: UserId, cursor: String?): PostsWithAuthorsPage =
+        withContext(Dispatchers.IO) { api.getLikes(userId, cursor = cursor).toPage() }
+
+    private fun PostsWithAuthorsResponse.toPage() = PostsWithAuthorsPage(
+        posts = data.map { PostMapper.map(it) },
+        users = included.users.map { it.toDomain() },
+        cursor = page.nextCursor,
+        hasMore = page.hasMore,
+    )
 
     override suspend fun loadMorePosts(userId: UserId, cursor: String?): PostsPage = withContext(Dispatchers.IO) {
         val response = api.getUserPosts(userId, cursor = cursor)

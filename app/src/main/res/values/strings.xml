@@ -64,6 +64,8 @@
     <string name="report_sent">Report was sent, thank you</string>
     <string name="post_action_like">Like</string>
     <string name="post_action_unlike">Unlike</string>
+    <!-- Spoken by a screen reader on the disabled like button of your own post. -->
+    <string name="post_action_like_own">You can’t like your own post</string>
     <string name="post_action_comment">Comment</string>
     <string name="post_action_bookmark">Bookmark</string>
     <string name="post_action_unbookmark">Remove bookmark</string>
@@ -117,12 +119,14 @@
     <string name="profile_stat_followers">Followers</string>
     <string name="profile_stat_following">Following</string>
     <string name="profile_tab_posts">Posts</string>
+    <string name="profile_tab_likes">Likes</string>
     <string name="profile_tab_saved">Saved</string>
 
     <!-- Video -->
     <string name="video_play">Play video</string>
     <string name="profile_empty_posts">No posts yet</string>
     <string name="profile_empty_saved">Nothing saved yet</string>
+    <string name="profile_empty_likes">No likes yet</string>
     <string name="profile_not_found">We couldn’t find that profile.</string>
 
     <!-- Settings -->

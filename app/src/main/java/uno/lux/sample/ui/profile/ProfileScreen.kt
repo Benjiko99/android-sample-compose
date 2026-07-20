@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -109,6 +110,8 @@ interface ProfileActions {
     fun loadMorePosts()
     fun onSavedTabShown()
     fun loadMoreBookmarks()
+    fun onLikesTabShown()
+    fun loadMoreLikes()
     fun goBack()
     fun openEditProfile()
     fun openPost(postId: PostId)
@@ -234,7 +237,7 @@ private fun ProfileContent(
         }
     }
 
-    // Both tabs page the one LazyColumn, so the effect follows whichever is showing.
+    // Every tab pages the one LazyColumn, so the effects follow whichever is showing.
     when (selectedTab) {
         ProfileTab.POSTS -> LoadMoreEffect(
             listState = listState,
@@ -242,15 +245,19 @@ private fun ProfileContent(
             onLoadMore = actions::loadMorePosts,
         )
 
-        ProfileTab.SAVED -> {
-            LaunchedEffect(Unit) { actions.onSavedTabShown() }
+        ProfileTab.LIKES -> OnDemandTabEffects(
+            listState = listState,
+            list = data.likes,
+            onShown = actions::onLikesTabShown,
+            onLoadMore = actions::loadMoreLikes,
+        )
 
-            LoadMoreEffect(
-                listState = listState,
-                endReached = data.bookmarks?.endReached ?: true,
-                onLoadMore = actions::loadMoreBookmarks,
-            )
-        }
+        ProfileTab.SAVED -> OnDemandTabEffects(
+            listState = listState,
+            list = data.bookmarks,
+            onShown = actions::onSavedTabShown,
+            onLoadMore = actions::loadMoreBookmarks,
+        )
     }
 
     Box(
@@ -288,9 +295,18 @@ private fun ProfileContent(
                         isCurrentUser = isCurrentUser,
                     )
 
-                    ProfileTab.SAVED -> bookmarkItems(
-                        bookmarks = data.bookmarks,
+                    ProfileTab.LIKES -> onDemandTabItems(
+                        list = data.likes,
                         actions = actions,
+                        keyPrefix = "likes",
+                        emptyMessageRes = R.string.profile_empty_likes,
+                    )
+
+                    ProfileTab.SAVED -> onDemandTabItems(
+                        list = data.bookmarks,
+                        actions = actions,
+                        keyPrefix = "saved",
+                        emptyMessageRes = R.string.profile_empty_saved,
                     )
                 }
                 item(key = "bottom-inset") {
@@ -531,13 +547,15 @@ private fun Stat(value: Int, label: String) {
  * tab is an enum addition plus its branch in [ProfileContent]. [ownerOnly] marks a tab that only
  * belongs on the signed-in user's own profile — Saved holds what *they* bookmarked, which is
  * private, so it is filtered out of the row on anyone else's profile (and the server refuses the
- * list to a caller who isn't its owner regardless).
+ * list to a caller who isn't its owner regardless). Likes are deliberately not owner-only: what
+ * someone endorsed is public, and the server serves anyone's to anyone.
  */
 private enum class ProfileTab(
     @get:StringRes val labelRes: Int,
     val ownerOnly: Boolean = false,
 ) {
     POSTS(R.string.profile_tab_posts),
+    LIKES(R.string.profile_tab_likes),
     SAVED(R.string.profile_tab_saved, true),
 }
 
@@ -613,30 +631,52 @@ private fun LazyListScope.postItems(
 }
 
 /**
- * The Saved tab. A null [bookmarks] is the list before its first fetch lands — the tab loads on
- * demand, so unlike the posts above it has a loading state of its own.
+ * Fires an on-demand tab's first load when it becomes visible, and pages it thereafter. The two
+ * such tabs differ only in which list and callbacks they carry.
  */
-private fun LazyListScope.bookmarkItems(
-    bookmarks: ProfileBookmarks?,
-    actions: ProfileActions,
+@Composable
+private fun OnDemandTabEffects(
+    listState: LazyListState,
+    list: ProfilePostList?,
+    onShown: () -> Unit,
+    onLoadMore: () -> Unit,
 ) {
-    if (bookmarks == null) {
-        item(key = "saved-loading") { LoadingMoreFooter() }
+    LaunchedEffect(Unit) { onShown() }
+
+    LoadMoreEffect(
+        listState = listState,
+        endReached = list?.endReached ?: true,
+        onLoadMore = onLoadMore,
+    )
+}
+
+/**
+ * One on-demand tab's rows — Saved or Likes. A null [list] is the state before that tab's first
+ * fetch lands, so unlike the posts above it has a loading state of its own.
+ */
+private fun LazyListScope.onDemandTabItems(
+    list: ProfilePostList?,
+    actions: ProfileActions,
+    keyPrefix: String,
+    @StringRes emptyMessageRes: Int,
+) {
+    if (list == null) {
+        item(key = "$keyPrefix-loading") { LoadingMoreFooter() }
         return
     }
 
-    if (bookmarks.posts.isEmpty()) {
-        item(key = "saved-empty") { EmptyTab(R.string.profile_empty_saved) }
+    if (list.posts.isEmpty()) {
+        item(key = "$keyPrefix-empty") { EmptyTab(emptyMessageRes) }
         return
     }
 
-    items(bookmarks.posts, key = { it.post.id }) { data ->
+    items(list.posts, key = { "$keyPrefix-${it.post.id}" }) { data ->
         PostCard(
             data = data,
             onToggleLike = { actions.onToggleLike(data.post.id) },
             onToggleBookmark = { actions.onToggleBookmark(data.post.id) },
-            // A saved post can be by anyone, so its header opens that author's profile —
-            // the one place this screen pushes another profile over itself.
+            // A saved or liked post can be by anyone, so its header opens that author's
+            // profile — the one place this screen pushes another profile over itself.
             onOpenProfile = { actions.openProfile(data.author.id) },
             onOpenVideo = actions::openVideo,
             onOpenAlbum = actions::openAlbum,
@@ -645,8 +685,8 @@ private fun LazyListScope.bookmarkItems(
         )
     }
 
-    if (!bookmarks.endReached) {
-        item(key = "saved-loading-more") { LoadingMoreFooter() }
+    if (!list.endReached) {
+        item(key = "$keyPrefix-loading-more") { LoadingMoreFooter() }
     }
 }
 

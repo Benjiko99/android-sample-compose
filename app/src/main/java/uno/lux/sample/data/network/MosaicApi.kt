@@ -14,7 +14,7 @@ import retrofit2.http.Query
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
-import uno.lux.sample.data.network.response.BookmarksResponse
+import uno.lux.sample.data.network.response.PostsWithAuthorsResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedResponse
@@ -76,7 +76,17 @@ interface MosaicApi {
         @Path("id") id: String,
         @Query("cursor") cursor: String? = null,
         @Query("limit") limit: Int = 20,
-    ): BookmarksResponse
+    ): PostsWithAuthorsResponse
+
+    // The posts [id] liked. Public — any caller may read anyone's — which is the one way this
+    // differs from [getBookmarks]. The viewer flags on the items still belong to the current
+    // user, not to [id].
+    @GET("users/{id}/likes")
+    suspend fun getLikes(
+        @Path("id") id: String,
+        @Query("cursor") cursor: String? = null,
+        @Query("limit") limit: Int = 20,
+    ): PostsWithAuthorsResponse
 
     @GET("posts/{id}/comments")
     suspend fun getComments(

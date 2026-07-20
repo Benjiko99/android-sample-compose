@@ -20,11 +20,12 @@ import uno.lux.sample.data.user.UserRepository
  * [hasMorePosts] signals whether another page exists; [loadMorePosts] appends it into the flows
  * above.
  *
- * [bookmarkIds] is the same arrangement for the posts a user saved, with two differences: it is
- * loaded on demand by [refreshBookmarks] rather than by [refresh] — the Saved tab is private to
- * its owner, so nothing fetches it until they open it — and it emits `null` until that first load
- * lands, which is how a caller tells "no saved posts" from "not asked yet". Their authors are
- * arbitrary users, so they are ingested into [UserRepository] the way the feed's are.
+ * [bookmarkIds] and [likeIds] are the same arrangement for the posts a user saved and liked, with
+ * two differences: each is loaded on demand ([refreshBookmarks] / [refreshLikes]) rather than by
+ * [refresh] — a tab nobody opened costs no request, and the Saved one is private to its owner
+ * besides — and each emits `null` until its first load lands, which is how a caller tells an empty
+ * tab from an unopened one. Their authors are arbitrary users, so they are ingested into
+ * [UserRepository] the way the feed's are.
  *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [ProfileDataSource].
@@ -36,12 +37,15 @@ class ProfileRepository(
 ) {
     private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
     private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
-    private val _bookmarkIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
 
     private data class PageState(val cursor: String?, val hasMore: Boolean)
 
     private val _postPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
-    private val _bookmarkPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
+
+    // The two on-demand tabs. They differ only in which endpoint fills them — the ordering,
+    // paging and "not asked yet" bookkeeping is identical, so it lives in one place.
+    private val savedPosts = OnDemandPostIds(dataSource::bookmarks)
+    private val likedPosts = OnDemandPostIds(dataSource::likes)
 
     fun profile(userId: UserId): Flow<Profile> =
         _profiles.map { it[userId] ?: emptyProfile(userId) }
@@ -53,10 +57,14 @@ class ProfileRepository(
         _postPage.map { it[userId]?.hasMore ?: false }
 
     /** The saved post IDs in display order, or `null` before [refreshBookmarks] has run. */
-    fun bookmarkIds(userId: UserId): Flow<List<PostId>?> = _bookmarkIds.map { it[userId] }
+    fun bookmarkIds(userId: UserId): Flow<List<PostId>?> = savedPosts.ids(userId)
 
-    fun hasMoreBookmarks(userId: UserId): Flow<Boolean> =
-        _bookmarkPage.map { it[userId]?.hasMore ?: false }
+    fun hasMoreBookmarks(userId: UserId): Flow<Boolean> = savedPosts.hasMore(userId)
+
+    /** The liked post IDs in display order, or `null` before [refreshLikes] has run. */
+    fun likeIds(userId: UserId): Flow<List<PostId>?> = likedPosts.ids(userId)
+
+    fun hasMoreLikes(userId: UserId): Flow<Boolean> = likedPosts.hasMore(userId)
 
     suspend fun refresh(userId: UserId) {
         val data = dataSource.refresh(userId)
@@ -86,35 +94,64 @@ class ProfileRepository(
     }
 
     /** Whether [refreshBookmarks] has ever completed for [userId] — the caller's load-once guard. */
-    fun hasLoadedBookmarks(userId: UserId): Boolean = _bookmarkIds.value.containsKey(userId)
+    fun hasLoadedBookmarks(userId: UserId): Boolean = savedPosts.hasLoaded(userId)
 
-    suspend fun refreshBookmarks(userId: UserId) {
-        val page = dataSource.bookmarks(userId, cursor = null)
+    suspend fun refreshBookmarks(userId: UserId) = savedPosts.refresh(userId)
 
-        ingestBookmarks(page)
+    suspend fun loadMoreBookmarks(userId: UserId) = savedPosts.loadMore(userId)
 
-        _bookmarkPage.update { it + (userId to PageState(page.cursor, page.hasMore)) }
-        _bookmarkIds.update { it + (userId to page.posts.map { post -> post.id }) }
-    }
+    /** Whether [refreshLikes] has ever completed for [userId] — the caller's load-once guard. */
+    fun hasLoadedLikes(userId: UserId): Boolean = likedPosts.hasLoaded(userId)
 
-    suspend fun loadMoreBookmarks(userId: UserId) {
-        val page = _bookmarkPage.value[userId] ?: return
-        if (!page.hasMore) return
+    suspend fun refreshLikes(userId: UserId) = likedPosts.refresh(userId)
 
-        val result = dataSource.bookmarks(userId, page.cursor)
-        ingestBookmarks(result)
-
-        _bookmarkPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
-        _bookmarkIds.update { map ->
-            val existing = map[userId] ?: emptyList()
-            map + (userId to existing + result.posts.map { it.id })
-        }
-    }
-
-    private fun ingestBookmarks(page: BookmarksPage) {
-        postRepository.ingest(page.posts)
-        userRepository.ingest(page.users)
-    }
+    suspend fun loadMoreLikes(userId: UserId) = likedPosts.loadMore(userId)
 
     private fun emptyProfile(userId: UserId) = Profile(userId = userId, postsCount = 0)
+
+    /**
+     * One profile tab's worth of post IDs per user, filled on demand by [fetchPage] and paged
+     * with its cursor. [ids] emits `null` until the first [refresh] lands, so a caller can tell
+     * an empty tab from an unopened one; the posts and their authors go into the shared entity
+     * stores on the way through, which is what lets a like toggled anywhere reach these lists.
+     */
+    private inner class OnDemandPostIds(
+        private val fetchPage: suspend (UserId, String?) -> PostsWithAuthorsPage,
+    ) {
+        private val _ids = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
+        private val _page = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
+
+        fun ids(userId: UserId): Flow<List<PostId>?> = _ids.map { it[userId] }
+
+        fun hasMore(userId: UserId): Flow<Boolean> = _page.map { it[userId]?.hasMore ?: false }
+
+        fun hasLoaded(userId: UserId): Boolean = _ids.value.containsKey(userId)
+
+        suspend fun refresh(userId: UserId) {
+            val page = ingest(fetchPage(userId, null))
+
+            _page.update { it + (userId to PageState(page.cursor, page.hasMore)) }
+            _ids.update { it + (userId to page.posts.map { post -> post.id }) }
+        }
+
+        suspend fun loadMore(userId: UserId) {
+            val current = _page.value[userId] ?: return
+            if (!current.hasMore) return
+
+            val page = ingest(fetchPage(userId, current.cursor))
+
+            _page.update { it + (userId to PageState(page.cursor, page.hasMore)) }
+            _ids.update { map ->
+                val existing = map[userId] ?: emptyList()
+                map + (userId to existing + page.posts.map { it.id })
+            }
+        }
+
+        private fun ingest(page: PostsWithAuthorsPage): PostsWithAuthorsPage {
+            postRepository.ingest(page.posts)
+            userRepository.ingest(page.users)
+
+            return page
+        }
+    }
 }

@@ -25,7 +25,7 @@ class ProfileRepositoryTest {
         posts: List<Post>,
         users: List<User> = emptyList(),
     ) = FakeProfileDataSource(
-        bookmarks = mapOf("u1" to mapOf(null to BookmarksPage(posts, users, null, false))),
+        bookmarks = mapOf("u1" to mapOf(null to PostsWithAuthorsPage(posts, users, null, false))),
     )
 
     private fun postRepo() = PostRepository(FakePostDataSource())
@@ -192,8 +192,8 @@ class ProfileRepositoryTest {
         val dataSource = FakeProfileDataSource(
             bookmarks = mapOf(
                 "u1" to mapOf(
-                    null to BookmarksPage(listOf(gracePost), listOf(grace), "c2", true),
-                    "c2" to BookmarksPage(listOf(p3), emptyList(), null, false),
+                    null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), "c2", true),
+                    "c2" to PostsWithAuthorsPage(listOf(p3), emptyList(), null, false),
                 ),
             ),
         )
@@ -239,6 +239,92 @@ class ProfileRepositoryTest {
         postRepo.toggleLike("p2")
 
         assertTrue(postRepo.entities.first().getValue("p2").isLiked)
+    }
+
+    // ── Likes (the public tab) ──────────────────────────────────────────────────
+
+    @Test
+    fun `likeIds is null before the Likes tab asks for them`() = runTest {
+        val dataSource = FakeProfileDataSource()
+        val repo = repository(dataSource)
+
+        repo.refresh("u1")
+
+        assertNull(repo.likeIds("u1").first())
+        assertFalse(repo.hasLoadedLikes("u1"))
+        assertTrue(dataSource.likeCalls.isEmpty())
+    }
+
+    @Test
+    fun `refreshLikes populates likeIds and ingests the authors`() = runTest {
+        val userRepo = userRepo()
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), null, false)),
+            ),
+        )
+        val repo = repository(dataSource, userRepo = userRepo)
+
+        repo.refreshLikes("u1")
+
+        assertEquals(listOf("p2"), repo.likeIds("u1").first())
+        assertEquals(grace, userRepo.users.first()["u2"])
+    }
+
+    // The two tabs are separate lists behind separate endpoints; filling one must leave
+    // the other untouched and still unloaded.
+    @Test
+    fun `likes and bookmarks are independent lists`() = runTest {
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+            ),
+            bookmarks = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(adaPost), emptyList(), null, false)),
+            ),
+        )
+        val repo = repository(dataSource)
+
+        repo.refreshLikes("u1")
+
+        assertEquals(listOf("p2"), repo.likeIds("u1").first())
+        assertNull(repo.bookmarkIds("u1").first())
+        assertTrue(dataSource.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `loadMoreLikes appends the next page`() = runTest {
+        val p3 = post(id = "p3", authorId = "u3")
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u1" to mapOf(
+                    null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), "c2", true),
+                    "c2" to PostsWithAuthorsPage(listOf(p3), emptyList(), null, false),
+                ),
+            ),
+        )
+        val repo = repository(dataSource)
+        repo.refreshLikes("u1")
+
+        repo.loadMoreLikes("u1")
+
+        assertEquals(listOf("p2", "p3"), repo.likeIds("u1").first())
+        assertFalse(repo.hasMoreLikes("u1").first())
+    }
+
+    @Test
+    fun `loadMoreLikes is a no-op when hasMore is false`() = runTest {
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+            ),
+        )
+        val repo = repository(dataSource)
+        repo.refreshLikes("u1")
+
+        repo.loadMoreLikes("u1")
+
+        assertEquals(1, dataSource.likeCalls.size)
     }
 
     @Test

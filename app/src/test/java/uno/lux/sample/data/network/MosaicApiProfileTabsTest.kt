@@ -15,15 +15,16 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import uno.lux.sample.di.NetworkModule
 
 /**
- * Pins the `GET /users/:id/bookmarks` **wire format** by driving the real Retrofit stack over
- * loopback, against a body captured verbatim from the Rails backend.
+ * Pins the **wire format** of the profile's on-demand tabs — `GET /users/:id/bookmarks` and
+ * `GET /users/:id/likes`, which share one response shape — by driving the real Retrofit stack
+ * over loopback against a body captured verbatim from the Rails backend.
  *
  * [NetworkProfileDataSourceTest] fakes [MosaicApi], which proves what the data source does with a
  * response but not that the response parses. The parts client and server have to agree on live
- * here: the request path, the snake_case `page` keys next to the camelCase item fields, and the
- * `included.users` sideload the Saved tab cannot render without.
+ * here: the request paths, the snake_case `page` keys next to the camelCase item fields, and the
+ * `included.users` sideload neither tab can render without.
  */
-class MosaicApiBookmarksTest {
+class MosaicApiProfileTabsTest {
 
     private lateinit var server: MockWebServer
     private lateinit var dataSource: NetworkProfileDataSource
@@ -107,5 +108,16 @@ class MosaicApiBookmarksTest {
 
         assertEquals("djE6MTc4NDU0NzI0MDMxNDpwMg", page.cursor)
         assertTrue(page.hasMore)
+    }
+
+    // Likes share the shape above, so what is left to pin is that they are asked for at their
+    // own path — a copy-paste that reused /bookmarks would parse perfectly and be wrong.
+    @Test
+    fun `likes are requested from the likes path and parse the same shape`() = runTest {
+        val page = dataSource.likes("u1", cursor = null)
+
+        assertEquals("/api/users/u1/likes?limit=20", server.takeRequest().path)
+        assertEquals(listOf("p2", "p4"), page.posts.map { it.id })
+        assertEquals(listOf("u2", "u4"), page.users.map { it.id })
     }
 }
