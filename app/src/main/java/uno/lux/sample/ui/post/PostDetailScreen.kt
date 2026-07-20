@@ -103,6 +103,7 @@ fun PostDetailScreen(
 
     PostDetailScreen(
         uiState = uiState,
+        composerUserId = viewModel.composerUserId,
         composerUserName = viewModel.composerUserName,
         onBack = viewModel::goBack,
         onOpenProfile = viewModel::openProfile,
@@ -127,6 +128,7 @@ fun PostDetailScreen(
 @Composable
 internal fun PostDetailScreen(
     uiState: PostDetailUiState,
+    composerUserId: String,
     composerUserName: String,
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
@@ -188,6 +190,7 @@ internal fun PostDetailScreen(
         bottomBar = {
             if (loaded != null) {
                 CommentComposer(
+                    userId = composerUserId,
                     userNickname = composerUserName,
                     onSend = onAddComment,
                 )
@@ -411,7 +414,12 @@ private fun CommentRow(
                 .clip(CircleShape)
                 .debouncedClickable(onClick = onOpenProfile),
         ) {
-            Avatar(name = comment.author.nickname, size = 36.dp, imageUrl = comment.author.avatarUrl)
+            Avatar(
+                userId = comment.author.id,
+                name = comment.author.nickname,
+                size = 36.dp,
+                imageUrl = comment.author.avatarUrl,
+            )
         }
 
         Column(Modifier.weight(1f)) {
@@ -478,6 +486,7 @@ private fun CommentRow(
 
 @Composable
 private fun CommentComposer(
+    userId: String,
     userNickname: String,
     onSend: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -505,7 +514,7 @@ private fun CommentComposer(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Avatar(name = userNickname, size = 36.dp)
+            Avatar(userId = userId, name = userNickname, size = 36.dp)
             OutlinedTextField(
                 state = textState,
                 placeholder = {
@@ -559,6 +568,7 @@ private fun PostDetailLoadedPreview() {
                 author = SampleUsers.first(),
                 comments = SampleComments["p1"] ?: emptyList(),
             ),
+            composerUserId = SampleUsers.first().id,
             composerUserName = SampleUsers.first().nickname,
             onBack = {},
             onOpenProfile = {},
@@ -580,6 +590,7 @@ private fun PostDetailLoadingPreview() {
     MosaicTheme {
         PostDetailScreen(
             uiState = PostDetailUiState.Loading,
+            composerUserId = "",
             composerUserName = "",
             onBack = {},
             onOpenProfile = {},

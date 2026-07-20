@@ -21,11 +21,14 @@ import uno.lux.sample.util.initials
 
 /**
  * A circular avatar. With no [imageUrl] it renders the user's initials on a gradient keyed
- * deterministically by [name]; a non-null [imageUrl] loads the profile photo over that layer,
- * so the initials double as the loading / error fallback.
+ * deterministically by [userId] — an identity that never changes, so a user's colour stays put
+ * when they rename themselves — while [name] supplies the initials drawn on it. A non-null
+ * [imageUrl] loads the profile photo over that layer, so the initials double as the loading /
+ * error fallback.
  */
 @Composable
 fun Avatar(
+    userId: String,
     name: String,
     modifier: Modifier = Modifier,
     size: Dp = 42.dp,
@@ -35,7 +38,7 @@ fun Avatar(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(MosaicGradients.avatarBrush(name)),
+            .background(MosaicGradients.avatarBrush(userId)),
         contentAlignment = Alignment.Center,
     ) {
         Text(

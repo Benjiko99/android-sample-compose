@@ -75,7 +75,8 @@ class PostDetailViewModel @AssistedInject constructor(
         )
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
-    /** Nickname of the signed-in user, shown as the composer's avatar label. */
+    /** Identity of the signed-in user, drawn as the composer's avatar. */
+    val composerUserId: String = currentUser.id
     val composerUserName: String = currentUser.nickname
 
     init {

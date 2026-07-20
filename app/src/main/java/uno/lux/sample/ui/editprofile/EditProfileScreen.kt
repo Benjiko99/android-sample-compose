@@ -244,6 +244,7 @@ private fun EditProfileContent(
     ) {
         item(key = "avatar") {
             AvatarPicker(
+                userId = form.userId,
                 name = form.nickname,
                 avatarUrl = form.displayAvatar,
                 onClick = onPickAvatar,
@@ -305,6 +306,7 @@ private fun EditProfileContent(
 /** The tappable avatar preview with a pencil badge signalling it opens the photo picker. */
 @Composable
 private fun AvatarPicker(
+    userId: String,
     name: String,
     avatarUrl: String?,
     onClick: () -> Unit,
@@ -314,7 +316,12 @@ private fun AvatarPicker(
             modifier = Modifier
                 .clip(CircleShape),
         ) {
-            Avatar(name = name, size = 96.dp, imageUrl = avatarUrl)
+            Avatar(
+                userId = userId,
+                name = name,
+                size = 96.dp,
+                imageUrl = avatarUrl,
+            )
         }
 
         Box(

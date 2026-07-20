@@ -32,9 +32,11 @@ val EditProfileAgeRange = 13..120
  * The editable form fields, seeded once from the loaded [User]. [age] stays the raw digit
  * string the user typed; it only becomes an [Int] in [toProfileUpdate]. [avatarUrl] is the
  * current server avatar; [pickedAvatarUri] is a newly chosen local image (a `content://` URI)
- * not yet uploaded — [displayAvatar] prefers it for the live preview.
+ * not yet uploaded — [displayAvatar] prefers it for the live preview. [userId] is carried
+ * along, unedited, only so the avatar preview can key its fallback gradient on it.
  */
 data class EditProfileForm(
+    val userId: String,
     val nickname: String,
     val age: String,
     val gender: GenderOption?,
@@ -67,6 +69,7 @@ data class EditProfileForm(
 
     companion object {
         fun from(user: User) = EditProfileForm(
+            userId = user.id,
             nickname = user.nickname,
             age = user.age?.toString().orEmpty(),
             gender = GenderOption.fromStored(user.gender),

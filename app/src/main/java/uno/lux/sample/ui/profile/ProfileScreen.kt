@@ -336,6 +336,7 @@ private fun ProfileHeader(
                 )
             }
             AvatarRing(
+                userId = user.id,
                 name = user.nickname,
                 avatarUrl = user.avatarUrl,
                 modifier = Modifier
@@ -379,6 +380,7 @@ private fun ProfileHeader(
 /** A circular avatar wrapped in a surface-colored ring, so it reads against the cover. */
 @Composable
 private fun AvatarRing(
+    userId: String,
     name: String,
     avatarUrl: String?,
     modifier: Modifier = Modifier,
@@ -390,7 +392,12 @@ private fun AvatarRing(
             .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center,
     ) {
-        Avatar(name = name, size = AvatarSize, imageUrl = avatarUrl)
+        Avatar(
+            userId = userId,
+            name = name,
+            size = AvatarSize,
+            imageUrl = avatarUrl,
+        )
     }
 }
 
