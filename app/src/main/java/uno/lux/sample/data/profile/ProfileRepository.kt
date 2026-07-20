@@ -8,10 +8,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
+import uno.lux.sample.data.post.PostKey
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.key
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
-import java.time.Instant
 
 /**
  * Source of truth for a user's profile metadata and the ordered IDs of their posts.
@@ -55,27 +56,19 @@ class ProfileRepository(
     private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
     private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
 
-    private data class PageState(
-        val cursor: String?,
-        val hasMore: Boolean,
-        /**
-         * Key of the last post the last page delivered — the floor of the loaded window. Only the
-         * on-demand tabs track it; the profile's own posts have nothing to merge into their order.
-         */
-        val oldestLoaded: PostKey? = null,
-    )
+    private data class PageState(val cursor: String?, val hasMore: Boolean)
 
     /**
-     * A post's position in the server's ordering: `(created_at DESC, id DESC)`, the keyset every
-     * paginated list here is sorted and cursored by. The client holds both fields, so it can place
-     * a post in that order itself rather than only ever echoing back the order it was handed.
+     * One on-demand tab's loaded window for one user: the IDs the server sent, where to continue
+     * from, and [oldestLoaded] — the key of the last post delivered, i.e. the floor of what has
+     * been paged in. Absent until that tab's first load lands.
      */
-    private data class PostKey(val createdAt: Instant, val id: PostId) : Comparable<PostKey> {
-        override fun compareTo(other: PostKey): Int =
-            compareValuesBy(this, other, PostKey::createdAt, PostKey::id)
-    }
-
-    private val Post.key: PostKey get() = PostKey(createdAt, id)
+    private data class TabState(
+        val ids: List<PostId>,
+        val cursor: String?,
+        val hasMore: Boolean,
+        val oldestLoaded: PostKey?,
+    )
 
     private val _postPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
@@ -157,8 +150,15 @@ class ProfileRepository(
         private val fetchPage: suspend (UserId, String?) -> PostsWithAuthorsPage,
         private val stillBelongs: (Post) -> Boolean,
     ) {
-        private val _ids = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
-        private val _page = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
+        private val _state = MutableStateFlow<Map<UserId, TabState>>(emptyMap())
+
+        /**
+         * Which of the two shapes a tab takes is fixed by whose profile it is, so the choice is
+         * made once here rather than on every emission — an echoed list has no reason to watch the
+         * entity store at all.
+         */
+        fun ids(userId: UserId): Flow<List<PostId>?> =
+            if (userId == currentUserId) derivedIds(userId) else echoedIds(userId)
 
         /**
          * Your own list is *derived*, not echoed: every post [stillBelongs] accepts, in the
@@ -166,55 +166,61 @@ class ProfileRepository(
          * feed, a post's detail screen — inserts it here in the right place, and unliking removes
          * it, with no re-fetch and no asymmetry between the two directions.
          *
-         * The one thing paging costs: a post older than [PageState.oldestLoaded] belongs to a page
+         * The one thing paging costs: a post older than [TabState.oldestLoaded] belongs to a page
          * the server hasn't sent yet, so it is held back rather than jumped to the end of a partial
          * list. It arrives in order once that page is paged in. A fully-loaded list has no floor.
-         *
-         * Someone else's list can only be echoed. [stillBelongs] reads a viewer-scoped flag, which
-         * on their profile describes *you*, not them — it says nothing about what belongs there.
          */
-        fun ids(userId: UserId): Flow<List<PostId>?> =
-            combine(_ids, _page, postRepository.entities) { idsByUser, pages, entities ->
-                // Absent until the first load lands — how a caller tells empty from unopened.
-                val fetched = idsByUser[userId] ?: return@combine null
-                if (userId != currentUserId) return@combine fetched
-
-                val floor = pages[userId]?.takeIf { it.hasMore }?.oldestLoaded
+        private fun derivedIds(userId: UserId): Flow<List<PostId>?> =
+            combine(_state, postRepository.entities) { states, entities ->
+                val state = states[userId] ?: return@combine null
+                val floor = state.oldestLoaded.takeIf { state.hasMore }
 
                 entities.values
-                    .filter { stillBelongs(it) && (floor == null || it.key >= floor) }
-                    .sortedByDescending { it.key }
+                    .filter(stillBelongs)
+                    .map { it.key }
+                    .filter { floor == null || it >= floor }
+                    .sortedDescending()
                     .map { it.id }
             }.distinctUntilChanged()
 
-        fun hasMore(userId: UserId): Flow<Boolean> = _page.map { it[userId]?.hasMore ?: false }
+        /**
+         * Someone else's list can only be echoed. [stillBelongs] reads a viewer-scoped flag, which
+         * on their profile describes *you*, not them — it says nothing about what belongs there.
+         */
+        private fun echoedIds(userId: UserId): Flow<List<PostId>?> =
+            _state.map { it[userId]?.ids }.distinctUntilChanged()
 
-        fun hasLoaded(userId: UserId): Boolean = _ids.value.containsKey(userId)
+        fun hasMore(userId: UserId): Flow<Boolean> = _state.map { it[userId]?.hasMore ?: false }
+
+        fun hasLoaded(userId: UserId): Boolean = _state.value.containsKey(userId)
 
         suspend fun refresh(userId: UserId) {
             val page = ingest(fetchPage(userId, null))
 
-            _page.update {
-                it + (userId to PageState(page.cursor, page.hasMore, page.posts.lastOrNull()?.key))
+            _state.update {
+                it + (userId to TabState(
+                    ids = page.posts.map { post -> post.id },
+                    cursor = page.cursor,
+                    hasMore = page.hasMore,
+                    oldestLoaded = page.posts.lastOrNull()?.key,
+                ))
             }
-            _ids.update { it + (userId to page.posts.map { post -> post.id }) }
         }
 
         suspend fun loadMore(userId: UserId) {
-            val current = _page.value[userId] ?: return
+            val current = _state.value[userId] ?: return
             if (!current.hasMore) return
 
             val page = ingest(fetchPage(userId, current.cursor))
 
-            _page.update {
-                // An empty page moves the cursor but not the floor.
-                val floor = page.posts.lastOrNull()?.key ?: current.oldestLoaded
-
-                it + (userId to PageState(page.cursor, page.hasMore, floor))
-            }
-            _ids.update { map ->
-                val existing = map[userId] ?: emptyList()
-                map + (userId to existing + page.posts.map { it.id })
+            _state.update {
+                it + (userId to current.copy(
+                    ids = current.ids + page.posts.map { post -> post.id },
+                    cursor = page.cursor,
+                    hasMore = page.hasMore,
+                    // An empty page moves the cursor but not the floor.
+                    oldestLoaded = page.posts.lastOrNull()?.key ?: current.oldestLoaded,
+                ))
             }
         }
 

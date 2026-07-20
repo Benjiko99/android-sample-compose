@@ -34,6 +34,16 @@ class ProfileRepositoryTest {
         bookmarks = mapOf("u1" to mapOf(null to PostsWithAuthorsPage(posts, users, null, false))),
     )
 
+    private fun likesDataSource(
+        posts: List<Post>,
+        users: List<User> = emptyList(),
+        userId: String = "u1",
+        cursor: String? = null,
+        hasMore: Boolean = false,
+    ) = FakeProfileDataSource(
+        likes = mapOf(userId to mapOf(null to PostsWithAuthorsPage(posts, users, cursor, hasMore))),
+    )
+
     private fun postRepo() = PostRepository(FakePostDataSource())
 
     private fun userRepo() = UserRepository(FakeUserDataSource())
@@ -251,30 +261,18 @@ class ProfileRepositoryTest {
         assertEquals(listOf("p2"), repo.bookmarkIds("u1").first())
     }
 
-    // A list defined by a viewer-scoped flag has to narrow when the flag clears — otherwise
-    // un-saving from the Saved tab leaves the row sitting there until a re-fetch.
+    // Membership moves both ways: the list is derived from the entity rather than a copy of it,
+    // so un-saving drops the row and saving again is a free undo of the accidental tap.
     @Test
-    fun `un-bookmarking drops the post from bookmarkIds`() = runTest {
+    fun `bookmarkIds follows the bookmark flag in both directions`() = runTest {
         val postRepo = postRepo()
         val repo = repository(bookmarksDataSource(listOf(gracePost), listOf(grace)), postRepo)
         repo.refreshBookmarks("u1")
 
         postRepo.toggleBookmark("p2")
-
         assertEquals(emptyList<String>(), repo.bookmarkIds("u1").first())
-    }
-
-    // The row comes back on its own — the list is derived from the entity, not a copy of it,
-    // so saving again is a free undo of the accidental tap.
-    @Test
-    fun `re-bookmarking restores the post to bookmarkIds`() = runTest {
-        val postRepo = postRepo()
-        val repo = repository(bookmarksDataSource(listOf(gracePost), listOf(grace)), postRepo)
-        repo.refreshBookmarks("u1")
 
         postRepo.toggleBookmark("p2")
-        postRepo.toggleBookmark("p2")
-
         assertEquals(listOf("p2"), repo.bookmarkIds("u1").first())
     }
 
@@ -295,12 +293,7 @@ class ProfileRepositoryTest {
     @Test
     fun `refreshLikes populates likeIds and ingests the authors`() = runTest {
         val userRepo = userRepo()
-        val dataSource = FakeProfileDataSource(
-            likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), null, false)),
-            ),
-        )
-        val repo = repository(dataSource, userRepo = userRepo)
+        val repo = repository(likesDataSource(listOf(gracePost), listOf(grace)), userRepo = userRepo)
 
         repo.refreshLikes("u1")
 
@@ -351,11 +344,7 @@ class ProfileRepositoryTest {
 
     @Test
     fun `loadMoreLikes is a no-op when hasMore is false`() = runTest {
-        val dataSource = FakeProfileDataSource(
-            likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
-            ),
-        )
+        val dataSource = likesDataSource(listOf(gracePost))
         val repo = repository(dataSource)
         repo.refreshLikes("u1")
 
@@ -367,12 +356,7 @@ class ProfileRepositoryTest {
     @Test
     fun `unliking drops the post from likeIds`() = runTest {
         val postRepo = postRepo()
-        val dataSource = FakeProfileDataSource(
-            likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), null, false)),
-            ),
-        )
-        val repo = repository(dataSource, postRepo)
+        val repo = repository(likesDataSource(listOf(gracePost), listOf(grace)), postRepo)
         repo.refreshLikes("u1")
 
         postRepo.toggleLike("p2")
@@ -385,12 +369,10 @@ class ProfileRepositoryTest {
     @Test
     fun `another user's likeIds are not narrowed by the viewer's own like state`() = runTest {
         val unlikedByViewer = post(id = "p4", authorId = "u3", isLiked = false)
-        val dataSource = FakeProfileDataSource(
-            likes = mapOf(
-                "u2" to mapOf(null to PostsWithAuthorsPage(listOf(unlikedByViewer), emptyList(), null, false)),
-            ),
+        val repo = repository(
+            likesDataSource(listOf(unlikedByViewer), userId = "u2"),
+            currentUserId = "u1",
         )
-        val repo = repository(dataSource, currentUserId = "u1")
 
         repo.refreshLikes("u2")
 

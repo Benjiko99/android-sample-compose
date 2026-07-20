@@ -442,20 +442,6 @@ class ProfileViewModelTest : ViewModelTest() {
         assertTrue(bookmarks.posts.isEmpty())
     }
 
-    @Test
-    fun `unliking from the Likes tab removes the row`() = runTest {
-        val viewModel = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
-        viewModel.onLikesTabShown()
-
-        viewModel.onToggleLike("p3")
-
-        val likes = (viewModel.uiState.value as ProfileUiState.Loaded).data.likes!!
-        assertTrue(likes.posts.isEmpty())
-    }
-
     // The Saved tab is only ever your own, but a *liked* post can also be saved — clearing one
     // flag must not disturb the list the other flag defines.
     @Test
