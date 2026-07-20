@@ -11,6 +11,7 @@ import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
+import java.time.Instant
 
 /**
  * Source of truth for a user's profile metadata and the ordered IDs of their posts.
@@ -30,13 +31,17 @@ import uno.lux.sample.data.user.UserRepository
  * tab from an unopened one. Their authors are arbitrary users, so they are ingested into
  * [UserRepository] the way the feed's are.
  *
- * Those two lists also *narrow* as the entities change: a list defined by a viewer-scoped flag has
- * to drop a post the moment the flag clears, or unsaving from the Saved tab would leave the row
- * sitting there. That derivation is the same [PostRepository.entities] join the ordered IDs already
- * go through — it is not a second copy of the state to keep in step, so un-saving and saving again
- * (the accidental tap) restores the row for free. It applies only to the signed-in user's own
- * lists: `isLiked`/`isBookmarked` describe *the viewer*, so on someone else's Likes tab they say
- * nothing about why a post is on that list.
+ * For the signed-in user those two lists are **derived from the flag, not echoed from the fetch**:
+ * a list defined by `isBookmarked`/`isLiked` *is* the set of entities carrying that flag, ordered
+ * by the server's own `(createdAt, id)` keyset. Membership therefore moves both ways and from
+ * anywhere — liking a post in the Posts tab or the feed inserts it in the Likes tab in the right
+ * place, unliking removes it — with no re-fetch and no dependence on whether the post happened to
+ * be in a page the server already sent. Paging is the only limit: a post below the loaded window's
+ * floor is held back until the page it belongs to arrives, so it can't jump the queue.
+ *
+ * None of that applies to *another* user's Likes tab, which is echoed exactly as fetched:
+ * `isLiked`/`isBookmarked` are viewer-scoped — on their profile the flags describe you, not them —
+ * so the fetched order is the only thing that says what belongs there. Hence [currentUserId].
  *
  * Where the data comes from — in-memory sample data vs. a live network call — is decided by
  * [ProfileDataSource].
@@ -50,7 +55,27 @@ class ProfileRepository(
     private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
     private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
 
-    private data class PageState(val cursor: String?, val hasMore: Boolean)
+    private data class PageState(
+        val cursor: String?,
+        val hasMore: Boolean,
+        /**
+         * Key of the last post the last page delivered — the floor of the loaded window. Only the
+         * on-demand tabs track it; the profile's own posts have nothing to merge into their order.
+         */
+        val oldestLoaded: PostKey? = null,
+    )
+
+    /**
+     * A post's position in the server's ordering: `(created_at DESC, id DESC)`, the keyset every
+     * paginated list here is sorted and cursored by. The client holds both fields, so it can place
+     * a post in that order itself rather than only ever echoing back the order it was handed.
+     */
+    private data class PostKey(val createdAt: Instant, val id: PostId) : Comparable<PostKey> {
+        override fun compareTo(other: PostKey): Int =
+            compareValuesBy(this, other, PostKey::createdAt, PostKey::id)
+    }
+
+    private val Post.key: PostKey get() = PostKey(createdAt, id)
 
     private val _postPage = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
@@ -136,17 +161,30 @@ class ProfileRepository(
         private val _page = MutableStateFlow<Map<UserId, PageState>>(emptyMap())
 
         /**
-         * The fetched order, narrowed to the posts [stillBelongs] accepts — which is what drops a
-         * row the instant its like/bookmark is toggled off, from this tab or anywhere else. A post
-         * not yet in the entity store is kept: the ID is all we know, and the caller resolving it
-         * drops it anyway.
+         * Your own list is *derived*, not echoed: every post [stillBelongs] accepts, in the
+         * server's own `(createdAt, id)` order. So liking a post anywhere — the Posts tab, the
+         * feed, a post's detail screen — inserts it here in the right place, and unliking removes
+         * it, with no re-fetch and no asymmetry between the two directions.
+         *
+         * The one thing paging costs: a post older than [PageState.oldestLoaded] belongs to a page
+         * the server hasn't sent yet, so it is held back rather than jumped to the end of a partial
+         * list. It arrives in order once that page is paged in. A fully-loaded list has no floor.
+         *
+         * Someone else's list can only be echoed. [stillBelongs] reads a viewer-scoped flag, which
+         * on their profile describes *you*, not them — it says nothing about what belongs there.
          */
         fun ids(userId: UserId): Flow<List<PostId>?> =
-            combine(_ids, postRepository.entities) { idsByUser, entities ->
-                val ids = idsByUser[userId] ?: return@combine null
+            combine(_ids, _page, postRepository.entities) { idsByUser, pages, entities ->
+                // Absent until the first load lands — how a caller tells empty from unopened.
+                val fetched = idsByUser[userId] ?: return@combine null
+                if (userId != currentUserId) return@combine fetched
 
-                if (userId != currentUserId) ids
-                else ids.filter { id -> entities[id]?.let(stillBelongs) ?: true }
+                val floor = pages[userId]?.takeIf { it.hasMore }?.oldestLoaded
+
+                entities.values
+                    .filter { stillBelongs(it) && (floor == null || it.key >= floor) }
+                    .sortedByDescending { it.key }
+                    .map { it.id }
             }.distinctUntilChanged()
 
         fun hasMore(userId: UserId): Flow<Boolean> = _page.map { it[userId]?.hasMore ?: false }
@@ -156,7 +194,9 @@ class ProfileRepository(
         suspend fun refresh(userId: UserId) {
             val page = ingest(fetchPage(userId, null))
 
-            _page.update { it + (userId to PageState(page.cursor, page.hasMore)) }
+            _page.update {
+                it + (userId to PageState(page.cursor, page.hasMore, page.posts.lastOrNull()?.key))
+            }
             _ids.update { it + (userId to page.posts.map { post -> post.id }) }
         }
 
@@ -166,7 +206,12 @@ class ProfileRepository(
 
             val page = ingest(fetchPage(userId, current.cursor))
 
-            _page.update { it + (userId to PageState(page.cursor, page.hasMore)) }
+            _page.update {
+                // An empty page moves the cursor but not the floor.
+                val floor = page.posts.lastOrNull()?.key ?: current.oldestLoaded
+
+                it + (userId to PageState(page.cursor, page.hasMore, floor))
+            }
             _ids.update { map ->
                 val existing = map[userId] ?: emptyList()
                 map + (userId to existing + page.posts.map { it.id })

@@ -18,7 +18,13 @@ import java.time.Instant
 class ProfileRepositoryTest {
 
     private val adaPost = post(id = "p1", authorId = "u1")
-    private val gracePost = post(id = "p2", authorId = "u2", isLiked = true, isBookmarked = true)
+    private val gracePost = post(
+        id = "p2",
+        authorId = "u2",
+        createdAt = newer,
+        isLiked = true,
+        isBookmarked = true,
+    )
     private val grace = User(id = "u2", nickname = "Grace", handle = "@grace")
 
     private fun bookmarksDataSource(
@@ -189,7 +195,7 @@ class ProfileRepositoryTest {
 
     @Test
     fun `loadMoreBookmarks appends the next page`() = runTest {
-        val p3 = post(id = "p3", authorId = "u3", isBookmarked = true)
+        val p3 = post(id = "p3", authorId = "u3", createdAt = older, isBookmarked = true)
         val dataSource = FakeProfileDataSource(
             bookmarks = mapOf(
                 "u1" to mapOf(
@@ -325,7 +331,7 @@ class ProfileRepositoryTest {
 
     @Test
     fun `loadMoreLikes appends the next page`() = runTest {
-        val p3 = post(id = "p3", authorId = "u3", isLiked = true)
+        val p3 = post(id = "p3", authorId = "u3", createdAt = older, isLiked = true)
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
                 "u1" to mapOf(
@@ -391,6 +397,83 @@ class ProfileRepositoryTest {
         assertEquals(listOf("p4"), repo.likeIds("u2").first())
     }
 
+    // The point of deriving the list: a post liked anywhere else — the Posts tab, the feed — joins
+    // the Likes tab straight away, not only if it happened to be in a page already fetched.
+    @Test
+    fun `liking a post not in the fetched page adds it to likeIds`() = runTest {
+        val postRepo = postRepo()
+        postRepo.ingest(listOf(adaPost))
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf("u1" to mapOf(null to PostsWithAuthorsPage(emptyList(), emptyList(), null, false))),
+        )
+        val repo = repository(dataSource, postRepo)
+        repo.refreshLikes("u1")
+
+        postRepo.toggleLike("p1")
+
+        assertEquals(listOf("p1"), repo.likeIds("u1").first())
+    }
+
+    // It lands in the server's own order rather than at whichever end is convenient, so the tab
+    // reads the same before and after the next refresh.
+    @Test
+    fun `a newly liked post is inserted in keyset order`() = runTest {
+        val postRepo = postRepo()
+        val middle = post(id = "p9", authorId = "u3", createdAt = older.plusSeconds(50))
+        postRepo.ingest(listOf(middle))
+        val newest = post(id = "p3", authorId = "u3", createdAt = older, isLiked = true)
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost, newest), emptyList(), null, false)),
+            ),
+        )
+        val repo = repository(dataSource, postRepo)
+        repo.refreshLikes("u1")
+
+        postRepo.toggleLike("p9")
+
+        assertEquals(listOf("p2", "p9", "p3"), repo.likeIds("u1").first())
+    }
+
+    // A post older than everything loaded belongs to a page the server has not sent. Slotting it
+    // in at the end would put it ahead of posts that outrank it, so it waits for its page.
+    @Test
+    fun `a liked post below the loaded window waits for its page`() = runTest {
+        val postRepo = postRepo()
+        val ancient = post(id = "p9", authorId = "u3", createdAt = Instant.EPOCH)
+        postRepo.ingest(listOf(ancient))
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), "c2", true)),
+            ),
+        )
+        val repo = repository(dataSource, postRepo)
+        repo.refreshLikes("u1")
+
+        postRepo.toggleLike("p9")
+
+        assertEquals(listOf("p2"), repo.likeIds("u1").first())
+    }
+
+    // Someone else's Likes tab is echoed as fetched: the viewer's own flags describe the viewer,
+    // so liking a post of your own must not add it to their list.
+    @Test
+    fun `liking a post does not add it to another user's likeIds`() = runTest {
+        val postRepo = postRepo()
+        postRepo.ingest(listOf(adaPost))
+        val dataSource = FakeProfileDataSource(
+            likes = mapOf(
+                "u2" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+            ),
+        )
+        val repo = repository(dataSource, postRepo, currentUserId = "u1")
+        repo.refreshLikes("u2")
+
+        postRepo.toggleLike("p1")
+
+        assertEquals(listOf("p2"), repo.likeIds("u2").first())
+    }
+
     @Test
     fun `loadMorePosts is a no-op when hasMore is false`() = runTest {
         val dataSource = FakeProfileDataSource(
@@ -410,9 +493,15 @@ private fun refreshData(posts: List<Post> = emptyList()) = ProfileRefreshData(
     posts = posts, postCursor = null, postHasMore = false,
 )
 
+// These lists come back in (createdAt, id) descending order, so a later page is always older
+// than the one before it. Fixtures spanning pages need distinct timestamps to be realistic.
+private val newer: Instant = Instant.EPOCH.plusSeconds(200)
+private val older: Instant = Instant.EPOCH.plusSeconds(100)
+
 private fun post(
     id: String,
     authorId: String,
+    createdAt: Instant = Instant.EPOCH,
     isLiked: Boolean = false,
     isBookmarked: Boolean = false,
 ) = Post(
@@ -420,7 +509,7 @@ private fun post(
     authorId = authorId,
     title = "Title $id",
     body = "Body $id",
-    createdAt = Instant.EPOCH,
+    createdAt = createdAt,
     likeCount = 0,
     commentCount = 0,
     isLiked = isLiked,

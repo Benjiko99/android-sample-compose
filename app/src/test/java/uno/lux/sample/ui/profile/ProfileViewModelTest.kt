@@ -473,6 +473,22 @@ class ProfileViewModelTest : ViewModelTest() {
         assertEquals(listOf("p2"), bookmarks.posts.map { it.post.id })
     }
 
+    // Liking a post from the Posts tab puts it on the Likes tab immediately — the tabs read the
+    // same entity store, so neither a re-fetch nor a prior visit to the post is needed.
+    @Test
+    fun `liking a post from the Posts tab adds it to the Likes tab`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onLikesTabShown()
+
+        viewModel.onToggleLike("p1")
+
+        val likes = (viewModel.uiState.value as ProfileUiState.Loaded).data.likes!!
+        assertTrue(likes.posts.any { it.post.id == "p1" })
+    }
+
     @Test
     fun `openProfile pushes the saved post's author`() {
         viewModel().openProfile("u2")
