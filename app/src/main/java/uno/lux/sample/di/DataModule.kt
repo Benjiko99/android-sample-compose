@@ -78,7 +78,8 @@ object DataModule {
     fun provideProfileRepository(
         dataSource: ProfileDataSource,
         postRepository: PostRepository,
-    ): ProfileRepository = ProfileRepository(dataSource, postRepository)
+        userRepository: UserRepository,
+    ): ProfileRepository = ProfileRepository(dataSource, postRepository, userRepository)
 
     @Provides
     fun provideCommentDataSource(api: MosaicApi): CommentDataSource = NetworkCommentDataSource(api)

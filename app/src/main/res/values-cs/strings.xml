@@ -121,10 +121,12 @@
     <string name="profile_stat_followers">Sledující</string>
     <string name="profile_stat_following">Sledovaní</string>
     <string name="profile_tab_posts">Příspěvky</string>
+    <string name="profile_tab_saved">Uložené</string>
 
     <!-- Video -->
     <string name="video_play">Přehrát video</string>
     <string name="profile_empty_posts">Zatím žádné příspěvky</string>
+    <string name="profile_empty_saved">Zatím nic uloženého</string>
     <string name="profile_not_found">Tento profil se nepodařilo najít.</string>
 
     <!-- Settings -->

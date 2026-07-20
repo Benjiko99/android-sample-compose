@@ -4,24 +4,39 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.user.FakeUserDataSource
+import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
 class ProfileRepositoryTest {
 
     private val adaPost = post(id = "p1", authorId = "u1")
     private val gracePost = post(id = "p2", authorId = "u2")
+    private val grace = User(id = "u2", nickname = "Grace", handle = "@grace")
+
+    private fun bookmarksDataSource(
+        posts: List<Post>,
+        users: List<User> = emptyList(),
+    ) = FakeProfileDataSource(
+        bookmarks = mapOf("u1" to mapOf(null to BookmarksPage(posts, users, null, false))),
+    )
 
     private fun postRepo() = PostRepository(FakePostDataSource())
+
+    private fun userRepo() = UserRepository(FakeUserDataSource())
 
     private fun repository(
         dataSource: ProfileDataSource = FakeProfileDataSource(),
         postRepo: PostRepository = postRepo(),
-    ) = ProfileRepository(dataSource, postRepo)
+        userRepo: UserRepository = userRepo(),
+    ) = ProfileRepository(dataSource, postRepo, userRepo)
 
     @Test
     fun `profile is empty before refresh`() = runTest {
@@ -119,6 +134,111 @@ class ProfileRepositoryTest {
         repo.loadMorePosts("u1")
 
         assertEquals(listOf("p1", "p3"), repo.postIds("u1").first())
+    }
+
+    // ── Bookmarks (the Saved tab) ───────────────────────────────────────────────
+
+    @Test
+    fun `bookmarkIds is null before the Saved tab asks for them`() = runTest {
+        val dataSource = FakeProfileDataSource()
+        val repo = repository(dataSource)
+
+        repo.refresh("u1")
+
+        assertNull(repo.bookmarkIds("u1").first())
+        assertFalse(repo.hasLoadedBookmarks("u1"))
+        // A profile load must not reach for a list nobody has opened.
+        assertTrue(dataSource.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `refreshBookmarks populates bookmarkIds`() = runTest {
+        val repo = repository(bookmarksDataSource(listOf(gracePost)))
+
+        repo.refreshBookmarks("u1")
+
+        assertEquals(listOf("p2"), repo.bookmarkIds("u1").first())
+        assertTrue(repo.hasLoadedBookmarks("u1"))
+    }
+
+    // An empty list is still a loaded one — that is what tells the Saved tab to show
+    // "nothing saved" rather than keep spinning.
+    @Test
+    fun `refreshBookmarks marks an empty result as loaded`() = runTest {
+        val repo = repository(bookmarksDataSource(emptyList()))
+
+        repo.refreshBookmarks("u1")
+
+        assertEquals(emptyList<String>(), repo.bookmarkIds("u1").first())
+        assertTrue(repo.hasLoadedBookmarks("u1"))
+    }
+
+    @Test
+    fun `refreshBookmarks ingests the saved posts and their authors`() = runTest {
+        val postRepo = postRepo()
+        val userRepo = userRepo()
+        val repo = repository(bookmarksDataSource(listOf(gracePost), listOf(grace)), postRepo, userRepo)
+
+        repo.refreshBookmarks("u1")
+
+        assertEquals("p2", postRepo.entities.first()["p2"]?.id)
+        // Saved posts are by arbitrary authors, so they arrive with the page.
+        assertEquals(grace, userRepo.users.first()["u2"])
+    }
+
+    @Test
+    fun `loadMoreBookmarks appends the next page`() = runTest {
+        val p3 = post(id = "p3", authorId = "u3")
+        val dataSource = FakeProfileDataSource(
+            bookmarks = mapOf(
+                "u1" to mapOf(
+                    null to BookmarksPage(listOf(gracePost), listOf(grace), "c2", true),
+                    "c2" to BookmarksPage(listOf(p3), emptyList(), null, false),
+                ),
+            ),
+        )
+        val repo = repository(dataSource)
+        repo.refreshBookmarks("u1")
+
+        repo.loadMoreBookmarks("u1")
+
+        assertEquals(listOf("p2", "p3"), repo.bookmarkIds("u1").first())
+        assertFalse(repo.hasMoreBookmarks("u1").first())
+    }
+
+    @Test
+    fun `loadMoreBookmarks is a no-op when hasMore is false`() = runTest {
+        val dataSource = bookmarksDataSource(listOf(gracePost))
+        val repo = repository(dataSource)
+        repo.refreshBookmarks("u1")
+
+        repo.loadMoreBookmarks("u1")
+
+        assertEquals(1, dataSource.bookmarkCalls.size)
+    }
+
+    @Test
+    fun `loadMoreBookmarks is a no-op before the first page has loaded`() = runTest {
+        val dataSource = bookmarksDataSource(listOf(gracePost))
+        val repo = repository(dataSource)
+
+        repo.loadMoreBookmarks("u1")
+
+        assertTrue(dataSource.bookmarkCalls.isEmpty())
+        assertNull(repo.bookmarkIds("u1").first())
+    }
+
+    // The saved posts resolve through PostRepository like the profile's own, so a like
+    // toggled anywhere lands in the Saved tab without this repository being involved.
+    @Test
+    fun `a saved post reflects a like toggled through the post repository`() = runTest {
+        val postRepo = postRepo()
+        val repo = repository(bookmarksDataSource(listOf(gracePost), listOf(grace)), postRepo)
+        repo.refreshBookmarks("u1")
+
+        postRepo.toggleLike("p2")
+
+        assertTrue(postRepo.entities.first().getValue("p2").isLiked)
     }
 
     @Test

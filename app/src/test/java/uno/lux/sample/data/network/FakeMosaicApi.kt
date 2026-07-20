@@ -19,8 +19,10 @@ import uno.lux.sample.data.network.dto.ProfileStatsDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
+import uno.lux.sample.data.network.response.BookmarksResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
+import uno.lux.sample.data.network.response.FeedIncluded
 import uno.lux.sample.data.network.response.FeedResponse
 import uno.lux.sample.data.network.response.FollowToggleResponse
 import uno.lux.sample.data.network.response.LikeToggleResponse
@@ -43,6 +45,11 @@ class FakeMosaicApi(
     private val userById: Map<String, UserDto> = emptyMap(),
     private val profileStats: Map<String, ProfileStatsDto> = emptyMap(),
     private val userPosts: List<PostFeedItemDto> = emptyList(),
+    private val bookmarksResponse: BookmarksResponse = BookmarksResponse(
+        data = emptyList(),
+        included = FeedIncluded(users = emptyList()),
+        page = emptyPage,
+    ),
     private val comments: List<CommentDto> = emptyList(),
     val likeResult: LikeToggleDto = LikeToggleDto(isLiked = true, likeCount = 1),
     val bookmarkResult: BookmarkToggleDto = BookmarkToggleDto(isBookmarked = true),
@@ -102,6 +109,18 @@ class FakeMosaicApi(
         cursor: String?,
         limit: Int,
     ): UserPostsResponse = UserPostsResponse(data = userPosts, page = emptyPage)
+
+    /** The (id, cursor) pairs [getBookmarks] was called with, in call order. */
+    val bookmarkCalls = mutableListOf<Pair<String, String?>>()
+
+    override suspend fun getBookmarks(
+        id: String,
+        cursor: String?,
+        limit: Int,
+    ): BookmarksResponse {
+        bookmarkCalls += id to cursor
+        return bookmarksResponse
+    }
 
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
         CommentListResponse(data = comments, page = emptyPage)

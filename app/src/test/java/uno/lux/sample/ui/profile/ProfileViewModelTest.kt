@@ -7,12 +7,14 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.profile.BookmarksPage
 import uno.lux.sample.data.profile.FakeProfileDataSource
 import uno.lux.sample.data.profile.ProfileRefreshData
 import uno.lux.sample.data.profile.ProfileRepository
@@ -42,26 +44,50 @@ class ProfileViewModelTest : ViewModelTest() {
     private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.Profile("u1"))
     private val navigator = Navigator().apply { attach(backStack) }
 
-    private fun viewModel(userId: String = "u1", currentUserId: String = "u1"): ProfileViewModel {
+    /** A post by someone else that u1 saved — the Saved tab's defining case. */
+    private val savedPost = Post(
+        id = "p2",
+        authorId = "u2",
+        title = "Saved",
+        body = "Body",
+        createdAt = Instant.EPOCH,
+        likeCount = 3,
+        commentCount = 0,
+        isBookmarked = true,
+    )
+
+    /** The data source the last [viewModel] built, for asserting on what was fetched. */
+    private lateinit var profileDataSource: FakeProfileDataSource
+
+    private fun viewModel(
+        userId: String = "u1",
+        currentUserId: String = "u1",
+        bookmarks: List<Post> = listOf(savedPost),
+    ): ProfileViewModel {
         val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(
             FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
         )
-        val profileRepo = ProfileRepository(
-            FakeProfileDataSource(
-                refreshData = mapOf(
-                    "u1" to ProfileRefreshData(
-                        postsCount = 1,
-                        posts = listOf(post),
-                        postCursor = null, postHasMore = false,
-                    ),
-                    "u2" to ProfileRefreshData(
-                        postsCount = 0,
-                        posts = emptyList(), postCursor = null, postHasMore = false,
-                    ),
+        profileDataSource = FakeProfileDataSource(
+            refreshData = mapOf(
+                "u1" to ProfileRefreshData(
+                    postsCount = 1,
+                    posts = listOf(post),
+                    postCursor = null, postHasMore = false,
+                ),
+                "u2" to ProfileRefreshData(
+                    postsCount = 0,
+                    posts = emptyList(), postCursor = null, postHasMore = false,
                 ),
             ),
+            bookmarks = mapOf(
+                "u1" to mapOf(null to BookmarksPage(bookmarks, listOf(grace), null, false)),
+            ),
+        )
+        val profileRepo = ProfileRepository(
+            profileDataSource,
             postRepo,
+            userRepo,
         )
         return ProfileViewModel(
             profileRepository = profileRepo,
@@ -200,6 +226,111 @@ class ProfileViewModelTest : ViewModelTest() {
 
         val bookmarked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
         assertTrue(bookmarked.isBookmarked)
+    }
+
+    // ── The Saved tab ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `bookmarks are absent until the Saved tab is shown`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertNull((viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks)
+        assertTrue(profileDataSource.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `onSavedTabShown loads the saved posts with their authors`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onSavedTabShown()
+
+        val saved = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!
+        val card = saved.posts.single()
+        assertEquals("p2", card.post.id)
+        // A saved post is usually someone else's, so the card carries that author, not the profile's.
+        assertEquals(grace, card.author)
+        assertFalse(card.isOwn)
+        assertTrue(saved.endReached)
+    }
+
+    @Test
+    fun `onSavedTabShown fetches only once across repeat visits`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onSavedTabShown()
+        viewModel.onSavedTabShown()
+
+        assertEquals(1, profileDataSource.bookmarkCalls.size)
+    }
+
+    @Test
+    fun `an empty Saved tab is loaded, not pending`() = runTest {
+        val viewModel = viewModel(bookmarks = emptyList())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onSavedTabShown()
+
+        val saved = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks
+        assertEquals(emptyList<Any>(), saved?.posts)
+    }
+
+    // The saved posts resolve through the shared entity store, so unbookmarking one from the
+    // Saved tab is reflected on its card without a re-fetch.
+    @Test
+    fun `unbookmarking a saved post updates it in place`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.onToggleBookmark("p2")
+
+        val card = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!.posts.single()
+        assertFalse(card.post.isBookmarked)
+    }
+
+    @Test
+    fun `refresh leaves an unopened Saved tab unfetched`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.refresh()
+
+        assertTrue(profileDataSource.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `refresh re-fetches the Saved tab once it has been opened`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.refresh()
+
+        assertEquals(2, profileDataSource.bookmarkCalls.size)
+    }
+
+    @Test
+    fun `openProfile pushes the saved post's author`() {
+        viewModel().openProfile("u2")
+
+        assertEquals(Screen.Profile("u2"), backStack.last())
     }
 
     @Test

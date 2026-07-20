@@ -14,6 +14,7 @@ import retrofit2.http.Query
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.EmptyBody
 import uno.lux.sample.data.network.response.BookmarkToggleResponse
+import uno.lux.sample.data.network.response.BookmarksResponse
 import uno.lux.sample.data.network.response.CommentListResponse
 import uno.lux.sample.data.network.response.CommentResponse
 import uno.lux.sample.data.network.response.FeedResponse
@@ -66,6 +67,16 @@ interface MosaicApi {
         @Query("cursor") cursor: String? = null,
         @Query("limit") limit: Int = 20,
     ): UserPostsResponse
+
+    // The posts [id] saved. Bookmarks are private: the server answers only when [id] is the
+    // current user (the X-User-Id header) and 403s otherwise, so this is called only for the
+    // signed-in user's own profile.
+    @GET("users/{id}/bookmarks")
+    suspend fun getBookmarks(
+        @Path("id") id: String,
+        @Query("cursor") cursor: String? = null,
+        @Query("limit") limit: Int = 20,
+    ): BookmarksResponse
 
     @GET("posts/{id}/comments")
     suspend fun getComments(

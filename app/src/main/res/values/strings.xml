@@ -117,10 +117,12 @@
     <string name="profile_stat_followers">Followers</string>
     <string name="profile_stat_following">Following</string>
     <string name="profile_tab_posts">Posts</string>
+    <string name="profile_tab_saved">Saved</string>
 
     <!-- Video -->
     <string name="video_play">Play video</string>
     <string name="profile_empty_posts">No posts yet</string>
+    <string name="profile_empty_saved">Nothing saved yet</string>
     <string name="profile_not_found">We couldn’t find that profile.</string>
 
     <!-- Settings -->
