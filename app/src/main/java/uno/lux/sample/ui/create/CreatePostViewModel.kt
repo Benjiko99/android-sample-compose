@@ -133,7 +133,7 @@ class CreatePostViewModel @Inject constructor(
                 },
             ) {
                 // The picked files are only read into memory here, at the point of upload —
-                // an unreadable URI fails the publish like any other error, keeping the form.
+                // an unreadable URI fails the publishing like any other error, keeping the form.
                 val draft = form.toNewPost(media = loadMedia(form.media))
 
                 // A published draft leaves nothing to edit, so the whole state resets — which

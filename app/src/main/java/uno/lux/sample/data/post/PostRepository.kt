@@ -39,6 +39,17 @@ class PostRepository(
         return created
     }
 
+    /**
+     * Deletes [postId] and drops it from the store. The ordered ID lists in [FeedRepository] and
+     * [ProfileRepository] are deliberately left alone: they resolve IDs through [entities], so a
+     * removed entity disappears from every screen showing it in the same emission — the same
+     * propagation a like toggle relies on, rather than a second place that has to be kept in step.
+     */
+    suspend fun delete(postId: PostId) {
+        dataSource.delete(postId)
+        _entities.update { it - postId }
+    }
+
     suspend fun toggleLike(postId: PostId) {
         val post = _entities.value[postId] ?: return
         val updated = dataSource.toggleLike(post)

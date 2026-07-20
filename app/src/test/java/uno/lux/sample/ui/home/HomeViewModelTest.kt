@@ -58,11 +58,12 @@ class HomeViewModelTest : ViewModelTest() {
 
     private fun viewModel(
         feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
+        currentUserId: String = "u1",
     ): HomeViewModel {
         val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(FakeUserDataSource())
         val feedRepo = FeedRepository(feedDataSource, postRepo, userRepo)
-        return HomeViewModel(feedRepo, postRepo, userRepo, navigator)
+        return HomeViewModel(feedRepo, postRepo, userRepo, navigator, currentUserId)
     }
 
     @Test
@@ -78,7 +79,7 @@ class HomeViewModelTest : ViewModelTest() {
         }
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
-        assertEquals(listOf(PostCardData(post, author)), feed.posts)
+        assertEquals(listOf(PostCardData(post, author, isOwn = true)), feed.posts)
         assertTrue(feed.endReached)
     }
 
@@ -107,6 +108,29 @@ class HomeViewModelTest : ViewModelTest() {
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
         assertTrue(feed.posts.single().post.isBookmarked)
+    }
+
+    @Test
+    fun `a card is marked own only when the signed-in user wrote it`() = runTest {
+        val viewModel = viewModel(currentUserId = "u2")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        val feed = viewModel.uiState.value as HomeUiState.Feed
+        assertFalse(feed.posts.single().isOwn)
+    }
+
+    @Test
+    fun `onDeletePost drops the post from the feed`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onDeletePost("p1")
+
+        assertTrue((viewModel.uiState.value as HomeUiState.Feed).posts.isEmpty())
     }
 
     @Test

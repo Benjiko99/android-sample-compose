@@ -37,6 +37,11 @@
     <string name="post_menu_share">Sdílet</string>
     <string name="post_menu_copy_link">Kopírovat odkaz</string>
     <string name="post_menu_report">Nahlásit</string>
+    <string name="post_menu_delete">Smazat příspěvek</string>
+    <string name="post_delete_confirmation_title">Smazat tento příspěvek?</string>
+    <string name="post_delete_confirmation_message">Příspěvek i jeho komentáře se odstraní všem. Tuto akci nelze vrátit zpět.</string>
+    <string name="post_delete_confirmation_confirm">Smazat</string>
+    <string name="post_delete_confirmation_dismiss">Zrušit</string>
     <!-- Share / copy link -->
     <string name="post_share_chooser">Sdílet příspěvek</string>
     <string name="post_link_clip_label">Odkaz na příspěvek</string>

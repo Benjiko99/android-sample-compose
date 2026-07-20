@@ -66,7 +66,13 @@ class PostDetailViewModel @AssistedInject constructor(
     ) { post, comments, users, commentsError ->
         if (post == null) return@combine PostDetailUiState.NotFound
         val author = users[post.authorId] ?: return@combine PostDetailUiState.NotFound
-        PostDetailUiState.Loaded(post, author, comments, commentsError)
+        PostDetailUiState.Loaded(
+            post = post,
+            author = author,
+            comments = comments,
+            commentsError = commentsError,
+            isOwn = post.authorId == currentUser.id,
+        )
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
     /** Nickname of the signed-in user, shown as the composer's avatar label. */
@@ -97,6 +103,20 @@ class PostDetailViewModel @AssistedInject constructor(
     fun onToggleBookmark() {
         viewModelScope.launch {
             ignoreErrors { postRepository.toggleBookmark(postId) }
+        }
+    }
+
+    /**
+     * Deletes the post and pops this screen. Backing out is part of the outcome, not the caller's
+     * follow-up: once the entity is gone the detail view has nothing left to show, and the feed or
+     * profile underneath has already dropped the post through the shared entity store.
+     */
+    fun onDelete() {
+        viewModelScope.launch {
+            ignoreErrors {
+                postRepository.delete(postId)
+                navigator.goBack()
+            }
         }
     }
 

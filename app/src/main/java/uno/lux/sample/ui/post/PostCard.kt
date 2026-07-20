@@ -33,6 +33,7 @@ internal fun PostCard(
     onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: () -> Unit,
     modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null,
 ) {
     val post = data.post
     val author = data.author
@@ -48,7 +49,12 @@ internal fun PostCard(
             onOpenProfile = onOpenProfile,
             // The avatar + identity open the author's profile; the overflow stays its own target.
             trailing = {
-                PostOverflowMenu(post = post, author = author, onToggleBookmark = onToggleBookmark)
+                PostOverflowMenu(
+                    post = post,
+                    author = author,
+                    onToggleBookmark = onToggleBookmark,
+                    onDelete = onDelete,
+                )
             },
         )
         PostBody(title = post.title, body = post.body, onClick = onOpenPost)

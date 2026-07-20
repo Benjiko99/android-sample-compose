@@ -113,6 +113,7 @@ fun PostDetailScreen(
         onToggleCommentLike = viewModel::onToggleCommentLike,
         onAddComment = viewModel::addComment,
         onRetryComments = viewModel::retryComments,
+        onDelete = viewModel::onDelete,
         modifier = modifier,
     )
 }
@@ -136,6 +137,7 @@ internal fun PostDetailScreen(
     onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
     onRetryComments: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loaded = (uiState as? PostDetailUiState.Loaded)
@@ -173,6 +175,7 @@ internal fun PostDetailScreen(
                             post = loaded.post,
                             author = loaded.author,
                             onToggleBookmark = onToggleBookmark,
+                            onDelete = if (loaded.isOwn) onDelete else null,
                         )
                     }
                 },
@@ -566,6 +569,7 @@ private fun PostDetailLoadedPreview() {
             onToggleCommentLike = {},
             onAddComment = {},
             onRetryComments = {},
+            onDelete = {},
         )
     }
 }
@@ -586,6 +590,7 @@ private fun PostDetailLoadingPreview() {
             onToggleCommentLike = {},
             onAddComment = {},
             onRetryComments = {},
+            onDelete = {},
         )
     }
 }

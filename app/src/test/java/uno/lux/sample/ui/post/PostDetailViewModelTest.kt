@@ -71,6 +71,41 @@ class PostDetailViewModelTest : ViewModelTest() {
         )
     }
 
+    // ── delete ────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `a post by someone else is not marked own`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertFalse((viewModel.uiState.value as PostDetailUiState.Loaded).isOwn)
+    }
+
+    @Test
+    fun `a post by the signed-in user is marked own`() = runTest {
+        val viewModel = viewModel(posts = listOf(post.copy(authorId = "me")))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertTrue((viewModel.uiState.value as PostDetailUiState.Loaded).isOwn)
+    }
+
+    @Test
+    fun `onDelete removes the post and pops the detail page`() = runTest {
+        val viewModel = viewModel(posts = listOf(post.copy(authorId = "me")))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onDelete()
+
+        assertEquals(PostDetailUiState.NotFound, viewModel.uiState.value)
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
     // ── navigation ────────────────────────────────────────────────────────────
 
     @Test

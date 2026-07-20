@@ -103,6 +103,7 @@ import uno.lux.sample.util.createActionsProxy
 interface ProfileActions {
     fun onToggleLike(postId: PostId)
     fun onToggleBookmark(postId: PostId)
+    fun onDeletePost(postId: PostId)
     fun onToggleFollow()
     fun loadMorePosts()
     fun goBack()
@@ -258,7 +259,11 @@ private fun ProfileContent(
                     )
                 }
                 when (selectedTab) {
-                    ProfileTab.POSTS -> postItems(screenData = data, actions = actions)
+                    ProfileTab.POSTS -> postItems(
+                        screenData = data,
+                        actions = actions,
+                        isCurrentUser = isCurrentUser,
+                    )
                 }
                 item(key = "bottom-inset") {
                     Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
@@ -536,6 +541,7 @@ private fun ProfileTabs(
 private fun LazyListScope.postItems(
     screenData: ProfileScreenData,
     actions: ProfileActions,
+    isCurrentUser: Boolean,
 ) {
     val posts = screenData.posts
     val author = screenData.user
@@ -546,7 +552,9 @@ private fun LazyListScope.postItems(
     }
     items(posts, key = { it.id }) { post ->
         PostCard(
-            data = PostCardData(post, author),
+            // Every post here is by the profile's user, so "own post" is simply whose profile
+            // this is — no per-post comparison needed.
+            data = PostCardData(post, author, isOwn = isCurrentUser),
             onToggleLike = { actions.onToggleLike(post.id) },
             onToggleBookmark = { actions.onToggleBookmark(post.id) },
             // Already on this author's profile — tapping the header again is a no-op.
@@ -554,6 +562,7 @@ private fun LazyListScope.postItems(
             onOpenVideo = actions::openVideo,
             onOpenAlbum = actions::openAlbum,
             onOpenPost = { actions.openPost(post.id) },
+            onDelete = if (isCurrentUser) ({ actions.onDeletePost(post.id) }) else null,
         )
     }
     if (!screenData.postsEndReached) {

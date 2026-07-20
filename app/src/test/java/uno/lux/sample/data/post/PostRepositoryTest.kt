@@ -96,6 +96,38 @@ class PostRepositoryTest {
     }
 
     @Test
+    fun `delete removes the post from the entity map`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(unliked, liked))
+
+        repo.delete("unliked")
+
+        assertEquals(mapOf("liked" to liked), repo.entities.first())
+    }
+
+    @Test
+    fun `delete goes through the data source`() = runTest {
+        val dataSource = FakePostDataSource()
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+
+        repo.delete("unliked")
+
+        assertEquals(listOf("unliked"), dataSource.deletedPostIds)
+    }
+
+    @Test
+    fun `a failed delete keeps the post in the entity map`() = runTest {
+        val dataSource = FakePostDataSource().apply { deleteError = IllegalStateException("boom") }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+
+        runCatching { repo.delete("unliked") }
+
+        assertEquals(unliked, repo.entities.first()["unliked"])
+    }
+
+    @Test
     fun `toggling an unknown id leaves the entities unchanged`() = runTest {
         val repo = repository()
         repo.ingest(listOf(unliked))

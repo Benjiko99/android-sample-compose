@@ -179,6 +179,13 @@ class FakeMosaicApi(
             ?.substringBefore('"')
             ?.takeIf { it.isNotEmpty() }
 
+    /** IDs passed to [deletePost], in call order, for test assertions. */
+    val deletedPostIds = mutableListOf<String>()
+
+    override suspend fun deletePost(postId: String) {
+        deletedPostIds += postId
+    }
+
     override suspend fun toggleLike(postId: String, body: EmptyBody): LikeToggleResponse =
         LikeToggleResponse(likeResult)
 

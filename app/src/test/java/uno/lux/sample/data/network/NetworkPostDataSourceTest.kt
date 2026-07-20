@@ -95,6 +95,16 @@ class NetworkPostDataSourceTest {
     }
 
     @Test
+    fun `delete asks the API to remove that post`() = runTest {
+        val api = FakeMosaicApi()
+        val dataSource = NetworkPostDataSource(api)
+
+        dataSource.delete("p1")
+
+        assertEquals(listOf("p1"), api.deletedPostIds)
+    }
+
+    @Test
     fun `toggleLike returns post with updated isLiked and likeCount from the server response`() = runTest {
         val api = FakeMosaicApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 6))
         val dataSource = NetworkPostDataSource(api)

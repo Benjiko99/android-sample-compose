@@ -49,8 +49,12 @@ import uno.lux.sample.util.postLink
 
 /**
  * The post's "⋮" affordance and everything behind it: a bottom sheet of save / share / copy-link /
- * report actions, plus the report dialog it can raise. Hosted by the feed card's header and by the
+ * report actions, plus the dialogs it can raise. Hosted by the feed card's header and by the
  * detail screen's top bar, so both offer the same menu from the same code.
+ *
+ * [onDelete] is null for a post the signed-in user didn't write, and the sheet then omits the
+ * delete row entirely — a nullable action rather than a separate `canDelete` flag, so there is no
+ * way for the two to disagree. Deleting is irreversible, so it is confirmed before it fires.
  */
 @Composable
 internal fun PostOverflowMenu(
@@ -58,10 +62,12 @@ internal fun PostOverflowMenu(
     author: User,
     onToggleBookmark: () -> Unit,
     modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var showSheet by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     IconButton(onClick = ({ showSheet = true }).rememberDebounced(), modifier = modifier) {
         Icon(
@@ -79,6 +85,17 @@ internal fun PostOverflowMenu(
             onDismiss = { showSheet = false },
             onToggleBookmark = onToggleBookmark,
             onReport = { showReportDialog = true },
+            onDelete = onDelete?.let { { showDeleteDialog = true } },
+        )
+    }
+
+    if (showDeleteDialog) {
+        DeletePostDialog(
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete?.invoke()
+            },
         )
     }
 
@@ -102,6 +119,7 @@ private fun PostOverflowSheet(
     onDismiss: () -> Unit,
     onToggleBookmark: () -> Unit,
     onReport: () -> Unit,
+    onDelete: (() -> Unit)?,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -168,6 +186,16 @@ private fun PostOverflowSheet(
             danger = true,
             onClick = { onReport(); dismiss() },
         )
+        if (onDelete != null) {
+            SheetRow(
+                iconRes = R.drawable.ic_delete,
+                label = stringResource(R.string.post_menu_delete),
+                danger = true,
+                // Dismiss first: the confirmation dialog replaces the sheet rather than
+                // stacking on top of it.
+                onClick = { dismiss(); onDelete() },
+            )
+        }
         Spacer(Modifier.height(16.dp))
     }
 }

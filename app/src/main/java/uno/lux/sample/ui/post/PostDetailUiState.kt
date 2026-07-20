@@ -8,10 +8,12 @@ import uno.lux.sample.util.AppError
 sealed interface PostDetailUiState {
     data object Loading : PostDetailUiState
     data object NotFound : PostDetailUiState
+    /** [isOwn] is the post being authored by the signed-in user; it gates the delete action. */
     data class Loaded(
         val post: Post,
         val author: User,
         val comments: List<Comment>,
         val commentsError: AppError? = null,
+        val isOwn: Boolean = false,
     ) : PostDetailUiState
 }

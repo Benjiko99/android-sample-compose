@@ -30,6 +30,17 @@ internal class FakePostDataSource : PostDataSource {
         )
     }
 
+    /** IDs passed to [delete], in call order, for test assertions. */
+    val deletedPostIds = mutableListOf<PostId>()
+
+    /** Thrown by [delete] instead of returning, so tests can drive the failure path. */
+    var deleteError: Exception? = null
+
+    override suspend fun delete(postId: PostId) {
+        deleteError?.let { throw it }
+        deletedPostIds += postId
+    }
+
     override suspend fun toggleLike(post: Post) =
         post.copy(
             isLiked = !post.isLiked,

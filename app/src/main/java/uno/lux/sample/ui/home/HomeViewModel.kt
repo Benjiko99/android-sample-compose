@@ -16,6 +16,7 @@ import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.di.CurrentUserId
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.ui.navigation.Screen
@@ -45,6 +46,7 @@ class HomeViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
     private val navigator: Navigator,
+    @param:CurrentUserId private val currentUserId: UserId,
 ) : ViewModel(), HomeActions {
 
     private val _loadError = MutableStateFlow<AppError?>(null)
@@ -68,7 +70,11 @@ class HomeViewModel @Inject constructor(
                     val author = users[post.authorId] ?: return@mapNotNull null
                     val cached = cardCache[id]
                     if (cached != null && cached.post === post && cached.author === author) cached
-                    else PostCardData(post = post, author = author)
+                    else PostCardData(
+                        post = post,
+                        author = author,
+                        isOwn = post.authorId == currentUserId,
+                    )
                 }
                 cardCache = cards.associateBy { it.post.id }
                 HomeUiState.Feed(posts = cards, endReached = !feedState.hasMore)
@@ -113,6 +119,12 @@ class HomeViewModel @Inject constructor(
     override fun onToggleBookmark(postId: PostId) {
         viewModelScope.launch {
             ignoreErrors { postRepository.toggleBookmark(postId) }
+        }
+    }
+
+    override fun onDeletePost(postId: PostId) {
+        viewModelScope.launch {
+            ignoreErrors { postRepository.delete(postId) }
         }
     }
 

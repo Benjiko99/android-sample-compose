@@ -74,6 +74,19 @@ class ProfileViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `onDeletePost drops the post from the profile`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onDeletePost("p1")
+
+        val loaded = viewModel.uiState.value as ProfileUiState.Loaded
+        assertTrue(loaded.data.posts.isEmpty())
+    }
+
+    @Test
     fun `goBack pops the profile page`() {
         viewModel().goBack()
 

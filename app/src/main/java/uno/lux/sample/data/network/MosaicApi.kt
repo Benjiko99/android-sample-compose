@@ -3,6 +3,7 @@ package uno.lux.sample.data.network
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
@@ -88,6 +89,12 @@ interface MosaicApi {
         @Part video: MultipartBody.Part?,
         @Part("videoDurationSeconds") videoDurationSeconds: RequestBody?,
     ): PostResponse
+
+    // Deletes a post authored by the current user (the X-User-Id header). 403 when the caller is
+    // not the author, 404 when the post is unknown. The server answers 204, so there is no body
+    // to parse — hence the Unit return rather than one of the response envelopes.
+    @DELETE("posts/{id}")
+    suspend fun deletePost(@Path("id") postId: String)
 
     @POST("posts/{id}/like")
     suspend fun toggleLike(

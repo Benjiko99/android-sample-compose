@@ -38,6 +38,11 @@
     <string name="post_menu_share">Share</string>
     <string name="post_menu_copy_link">Copy link</string>
     <string name="post_menu_report">Report</string>
+    <string name="post_menu_delete">Delete post</string>
+    <string name="post_delete_confirmation_title">Delete this post?</string>
+    <string name="post_delete_confirmation_message">This post and its comments will be removed for everyone. This can\'t be undone.</string>
+    <string name="post_delete_confirmation_confirm">Delete</string>
+    <string name="post_delete_confirmation_dismiss">Cancel</string>
     <!-- Share / copy link -->
     <string name="post_share_chooser">Share post</string>
     <string name="post_link_clip_label">Post link</string>

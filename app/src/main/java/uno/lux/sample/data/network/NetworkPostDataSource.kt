@@ -8,6 +8,7 @@ import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostDataSource
+import uno.lux.sample.data.post.PostId
 
 class NetworkPostDataSource(
     private val api: MosaicApi,
@@ -28,6 +29,10 @@ class NetworkPostDataSource(
         ).data
 
         CreatedPostMapper.toCreatedPost(dto)
+    }
+
+    override suspend fun delete(postId: PostId) = withContext(Dispatchers.IO) {
+        api.deletePost(postId)
     }
 
     override suspend fun toggleLike(post: Post): Post = withContext(Dispatchers.IO) {

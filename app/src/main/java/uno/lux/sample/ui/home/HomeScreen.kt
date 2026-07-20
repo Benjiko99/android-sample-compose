@@ -71,6 +71,7 @@ interface HomeActions {
     fun loadMore()
     fun onToggleLike(postId: PostId)
     fun onToggleBookmark(postId: PostId)
+    fun onDeletePost(postId: PostId)
     fun openSettings()
     fun openProfile(userId: UserId)
     fun openPost(postId: PostId)
@@ -221,6 +222,7 @@ private fun FeedList(
                 onOpenVideo = actions::openVideo,
                 onOpenAlbum = actions::openAlbum,
                 onOpenPost = { actions.openPost(data.post.id) },
+                onDelete = if (data.isOwn) ({ actions.onDeletePost(data.post.id) }) else null,
             )
         }
         if (endReached) {

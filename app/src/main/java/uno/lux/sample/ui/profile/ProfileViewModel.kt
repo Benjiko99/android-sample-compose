@@ -119,6 +119,12 @@ class ProfileViewModel @AssistedInject constructor(
         }
     }
 
+    override fun onDeletePost(postId: PostId) {
+        viewModelScope.launch {
+            ignoreErrors { postRepository.delete(postId) }
+        }
+    }
+
     override fun onToggleFollow() {
         viewModelScope.launch {
             ignoreErrors { userRepository.toggleFollow(userId) }
