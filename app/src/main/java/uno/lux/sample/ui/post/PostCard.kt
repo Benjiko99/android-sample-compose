@@ -16,6 +16,9 @@ import uno.lux.sample.data.SampleUsers
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.ui.theme.MosaicTheme
 
+/** In the feed the body is a perex — clipped to this many lines, with a "Show more" affordance. */
+private const val FeedBodyMaxLines = 5
+
 /**
  * A single feed post (Mosaic design): an edge-to-edge surface item separated by a bottom
  * divider — author header with overflow menu, the title (Bricolage) and body (Manrope), and
@@ -57,7 +60,12 @@ internal fun PostCard(
                 )
             },
         )
-        PostBody(title = post.title, body = post.body, onClick = onOpenPost)
+        PostBody(
+            title = post.title,
+            body = post.body,
+            maxBodyLines = FeedBodyMaxLines,
+            onClick = onOpenPost,
+        )
         PostMedia(post = post, onOpenVideo = onOpenVideo, onOpenAlbum = onOpenAlbum)
         PostActions(
             post = post,

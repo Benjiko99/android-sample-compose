@@ -67,6 +67,7 @@
     <string name="post_action_comment">Comment</string>
     <string name="post_action_bookmark">Bookmark</string>
     <string name="post_action_unbookmark">Remove bookmark</string>
+    <string name="post_show_more">Show more</string>
 
     <!-- Post detail -->
     <string name="post_detail_title">Post</string>

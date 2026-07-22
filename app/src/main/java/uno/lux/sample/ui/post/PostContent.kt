@@ -26,11 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.data.post.Post
@@ -110,13 +117,16 @@ internal fun PostAuthorHeader(
 
 /**
  * The post's title (Bricolage) over its body (Manrope). [onClick] is null on the detail screen,
- * where the post is already the subject and there is nowhere left to open.
+ * where the post is already the subject and there is nowhere left to open. [maxBodyLines] clips
+ * the body to a perex on the feed (see [PostBodyText]); left uncapped (the default), the body is a
+ * plain [Text] — the detail screen never runs the truncation apparatus.
  */
 @Composable
 internal fun PostBody(
     title: String,
     body: String,
     modifier: Modifier = Modifier,
+    maxBodyLines: Int = Int.MAX_VALUE,
     onClick: (() -> Unit)? = null,
 ) {
     val clickable = if (onClick == null) Modifier else Modifier.debouncedClickable(onClick = onClick)
@@ -133,12 +143,73 @@ internal fun PostBody(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(6.dp))
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (maxBodyLines == Int.MAX_VALUE) {
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            PostBodyText(body = body, maxLines = maxBodyLines)
+        }
     }
+}
+
+/**
+ * The body copy as a perex, clipped to [maxLines]. When it overflows that cap, the last line is
+ * trimmed to leave exactly enough room for an inline "… Show more" suffix, which is then appended
+ * in the same [Text] — so the label sits at the end of the perex without ever overlapping the body.
+ * The cut is found from the layout result by mapping the pixel position `lineWidth − suffixWidth`
+ * back to a character offset, and the reserved width is the suffix's *measured* width, so the fit
+ * holds regardless of the label's heavier weight. Tapping is handled by the enclosing [PostBody].
+ */
+@Composable
+private fun PostBodyText(body: String, maxLines: Int) {
+    val showMore = stringResource(R.string.post_show_more)
+    val bodyStyle = MaterialTheme.typography.bodyMedium.copy(
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    val moreStyle = SpanStyle(
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold,
+    )
+    val ellipsis = "… "
+    val measurer = rememberTextMeasurer()
+
+    // The suffix appended when the body overflows, and the width it must be given on the last line.
+    val suffix = remember(showMore, moreStyle) {
+        buildAnnotatedString {
+            append(ellipsis)
+            withStyle(moreStyle) { append(showMore) }
+        }
+    }
+    val suffixWidth = remember(suffix, bodyStyle) {
+        measurer.measure(text = suffix, style = bodyStyle).size.width
+    }
+
+    var display by remember(body, maxLines) { mutableStateOf(AnnotatedString(body)) }
+
+    Text(
+        text = display,
+        style = bodyStyle,
+        maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { result ->
+            // Only the untrimmed body can overflow; once trimmed it fits, so this runs at most once.
+            if (result.hasVisualOverflow && display.text == body) {
+                val lastLine = result.lineCount - 1
+                val lineMid = (result.getLineTop(lastLine) + result.getLineBottom(lastLine)) / 2f
+                val cutX = (result.size.width - suffixWidth).toFloat().coerceAtLeast(0f)
+                val cut = result.getOffsetForPosition(Offset(x = cutX, y = lineMid))
+                    .coerceIn(0, body.length)
+
+                display = buildAnnotatedString {
+                    append(body.substring(0, cut).trimEnd())
+                    append(suffix)
+                }
+            }
+        },
+    )
 }
 
 /** A post's attached media, if any: an album's photo strip and/or its video player. */

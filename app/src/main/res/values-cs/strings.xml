@@ -66,6 +66,7 @@
     <string name="post_action_comment">Komentovat</string>
     <string name="post_action_bookmark">Přidat do záložek</string>
     <string name="post_action_unbookmark">Odebrat ze záložek</string>
+    <string name="post_show_more">Zobrazit více</string>
 
     <!-- Post detail -->
     <string name="post_detail_title">Příspěvek</string>
