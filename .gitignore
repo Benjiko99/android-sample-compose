@@ -9,6 +9,7 @@
 /.idea/assetWizardSettings.xml
 /.idea/appInsightsSettings.xml
 /.idea/deploymentTargetSelector.xml
+/.idea/deviceManager.xml
 .DS_Store
 /build
 /captures

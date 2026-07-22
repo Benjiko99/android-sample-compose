@@ -3,7 +3,10 @@ package uno.lux.sample.ui.profile
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import uno.lux.sample.ui.components.debouncedClickable
@@ -44,11 +47,12 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.runtime.FloatState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,7 +62,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -66,7 +69,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -205,7 +208,7 @@ internal fun ProfileScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileContent(
     data: ProfileScreenData,
@@ -222,30 +225,50 @@ private fun ProfileContent(
     }
     var selectedTab by rememberSaveable { mutableStateOf(ProfileTab.POSTS) }
     val listState = rememberLazyListState()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
-    // The cover bleeds to the very top, so we can't reserve the bar's height with content
-    // padding. Instead, the sticky tab header grows a top inset as it nears the bar, derived
-    // from the header item's own geometry — independent of the inset, so it can't oscillate.
+    // A collapsing header. The cover + identity block is hoisted out of the posts list into a
+    // Column above it, and slides up behind the app bar as you scroll; the tab row rides up with
+    // it until it pins flush beneath the bar, after which the posts list scrolls under the tabs.
+    // The two motions are one continuous gesture because a shared `collapse` offset — advanced by
+    // the NestedScrollConnection below, which consumes upward scroll to collapse the header before
+    // the list moves — replaces the old faked spacer, so there is no dead scroll at the hand-off.
     val density = LocalDensity.current
-    val barBottomPx = WindowInsets.statusBars.getTop(density) +
-            with(density) { ProfileBarHeight.toPx() }
-    val tabInset by remember(barBottomPx) {
-        derivedStateOf {
-            val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "header" }
-            val tabsTop = if (header != null) (header.offset + header.size).toFloat() else 0f
-            with(density) { (barBottomPx - tabsTop).coerceIn(0f, barBottomPx).toDp() }
+    val barBottomPx = with(density) {
+        WindowInsets.statusBars.getTop(this) + ProfileBarHeight.roundToPx()
+    }
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val collapse = remember { mutableFloatStateOf(0f) }
+    // The header collapses until its foot reaches the bar; past that the tabs are pinned and the
+    // list takes over. Keyed off the measured header height, never off `collapse`, so this scope
+    // does not recompose as you scroll — only the header relayouts and the bar (which reads it).
+    val maxCollapse = (headerHeightPx - barBottomPx).coerceAtLeast(0).toFloat()
+
+    val collapseConnection = remember(maxCollapse) {
+        object : NestedScrollConnection {
+            // Fold `dy` of scroll into the collapse offset, returning what it consumed (same sign):
+            // scrolling up (negative) collapses the header, scrolling down (positive) re-expands it.
+            fun consume(dy: Float): Offset {
+                val before = collapse.floatValue
+                collapse.floatValue = (before - dy).coerceIn(0f, maxCollapse)
+                return Offset(x = 0f, y = before - collapse.floatValue)
+            }
+
+            // Scrolling up collapses the header first, before the posts list scrolls.
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset =
+                if (available.y >= 0f) Offset.Zero else consume(available.y)
+
+            // Scrolling down re-expands the header, but only from the leftover once the list has
+            // reached its top — and, since pull-to-refresh wraps this, before the refresh sees it.
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset =
+                if (available.y <= 0f) Offset.Zero else consume(available.y)
         }
     }
-    // Once that inset has grown to the full bar height the tabs rest directly under the now-filled
-    // bar and posts scroll beneath them — the moment they take on the bar's elevation. Derived so
-    // readers recompose only when it flips, not on every scroll frame.
-    val barBottomDp = with(density) { barBottomPx.toDp() }
-    val tabsPinned by remember(barBottomDp) {
-        derivedStateOf { tabInset >= barBottomDp }
-    }
 
-    // Every tab pages the one LazyColumn, so the effects follow whichever is showing.
+    // Every tab pages the one posts list, so the effects follow whichever is showing.
     when (selectedTab) {
         ProfileTab.POSTS -> LoadMoreEffect(
             listState = listState,
@@ -268,66 +291,85 @@ private fun ProfileContent(
         )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+    // Pull-to-refresh wraps the collapse Box so its connection sits *outside* the collapse one:
+    // scrolling down re-expands the header (collapse's onPostScroll) before the refresh gesture
+    // gets the leftover, so a downward drag never triggers a refresh while the header is collapsed.
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize(),
     ) {
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = onRefresh,
-            modifier = Modifier.fillMaxSize(),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(collapseConnection),
         ) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                item(key = "header") {
-                    ProfileHeader(
-                        user = data.user,
-                        isCurrentUser = isCurrentUser,
-                        onEditProfile = actions::openEditProfile,
-                        onToggleFollow = actions::onToggleFollow,
-                        onOpenAvatar = actions::openAvatar,
-                    )
-                }
-                stickyHeader(key = "tabs") {
-                    ProfileTabs(
-                        tabs = tabs,
-                        selected = selectedTab,
-                        onSelect = { selectedTab = it },
-                        topInset = tabInset,
-                    )
-                }
-                when (selectedTab) {
-                    ProfileTab.POSTS -> postItems(
-                        screenData = data,
-                        actions = actions,
-                        isCurrentUser = isCurrentUser,
-                    )
+            Column(modifier = Modifier.fillMaxSize()) {
+                ProfileHeader(
+                    user = data.user,
+                    isCurrentUser = isCurrentUser,
+                    onEditProfile = actions::openEditProfile,
+                    onToggleFollow = actions::onToggleFollow,
+                    onOpenAvatar = actions::openAvatar,
+                    // Reserve `collapse` less height and draw the full header shifted up by that
+                    // much: it slides up behind the bar while the tabs below move up to meet it,
+                    // with no gap left behind. `collapse` is read in the layout pass, so a scroll
+                    // reflows the header without recomposing this screen.
+                    modifier = Modifier.layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        if (placeable.height != headerHeightPx) headerHeightPx = placeable.height
 
-                    ProfileTab.LIKES -> onDemandTabItems(
-                        list = data.likes,
-                        actions = actions,
-                        keyPrefix = "likes",
-                        emptyMessageRes = R.string.profile_empty_likes,
-                    )
+                        val offset = collapse.floatValue.roundToInt()
+                        layout(placeable.width, (placeable.height - offset).coerceAtLeast(0)) {
+                            placeable.place(0, -offset)
+                        }
+                    },
+                )
+                ProfileTabs(
+                    tabs = tabs,
+                    selected = selectedTab,
+                    onSelect = { selectedTab = it },
+                )
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                ) {
+                    when (selectedTab) {
+                        ProfileTab.POSTS -> postItems(
+                            screenData = data,
+                            actions = actions,
+                            isCurrentUser = isCurrentUser,
+                        )
 
-                    ProfileTab.SAVED -> onDemandTabItems(
-                        list = data.bookmarks,
-                        actions = actions,
-                        keyPrefix = "saved",
-                        emptyMessageRes = R.string.profile_empty_saved,
-                    )
-                }
-                item(key = "bottom-inset") {
-                    Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                        ProfileTab.LIKES -> onDemandTabItems(
+                            list = data.likes,
+                            actions = actions,
+                            keyPrefix = "likes",
+                            emptyMessageRes = R.string.profile_empty_likes,
+                        )
+
+                        ProfileTab.SAVED -> onDemandTabItems(
+                            list = data.bookmarks,
+                            actions = actions,
+                            keyPrefix = "saved",
+                            emptyMessageRes = R.string.profile_empty_saved,
+                        )
+                    }
+                    item(key = "bottom-inset") {
+                        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+                    }
                 }
             }
+
+            ProfileTopBar(
+                userName = data.user.nickname,
+                collapse = collapse,
+                maxCollapse = maxCollapse,
+                onBack = onBack,
+            )
         }
-        ProfileTopBar(
-            scrollBehavior = scrollBehavior,
-            userName = data.user.nickname,
-            tabsPinned = tabsPinned,
-            onBack = onBack,
-        )
     }
 }
 
@@ -565,31 +607,28 @@ private fun ProfileTabs(
     tabs: List<ProfileTab>,
     selected: ProfileTab,
     onSelect: (ProfileTab) -> Unit,
-    topInset: Dp,
 ) {
-    // The surface-colored reserved strip grows as the tabs reach the app bar, so they pin just
-    // below it and sit seamlessly under the then-filled bar (see tabInset in ProfileContent).
-    Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-        Spacer(Modifier.height(topInset))
-        PrimaryTabRow(
-            // The index into the *visible* tabs, which an ownerOnly entry makes narrower than
-            // the enum — so this is not the selected tab's ordinal.
-            selectedTabIndex = tabs.indexOf(selected),
-            containerColor = MaterialTheme.colorScheme.surface,
-        ) {
-            tabs.forEach { tab ->
-                Tab(
-                    selected = tab == selected,
-                    onClick = { onSelect(tab) },
-                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                    unselectedContentColor = LocalMosaicColors.current.textTertiary,
-                ) {
-                    Text(
-                        text = stringResource(tab.labelRes),
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(vertical = 14.dp),
-                    )
-                }
+    // Opaque surface so it sits seamlessly under the filled bar it pins beneath, and hides the
+    // posts scrolling under it once pinned. It ends up flush below the bar because the header
+    // above it collapses to exactly the bar's height (see maxCollapse in ProfileContent).
+    PrimaryTabRow(
+        // The index into the *visible* tabs, which an ownerOnly entry makes narrower than
+        // the enum — so this is not the selected tab's ordinal.
+        selectedTabIndex = tabs.indexOf(selected),
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        tabs.forEach { tab ->
+            Tab(
+                selected = tab == selected,
+                onClick = { onSelect(tab) },
+                selectedContentColor = MaterialTheme.colorScheme.primary,
+                unselectedContentColor = LocalMosaicColors.current.textTertiary,
+            ) {
+                Text(
+                    text = stringResource(tab.labelRes),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(vertical = 14.dp),
+                )
             }
         }
     }
@@ -728,30 +767,40 @@ private fun PlainBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
+/** How far into the header's collapse the bar has finished filling to the surface color. */
+private const val BarFillFraction = 0.5f
+
 /**
- * A transparent app bar over the cover that fills to the surface color on scroll (via the
- * Material container/scrolledContainer colors). Its buttons carry a gray circular scrim with a
- * white icon over the cover, and fade that to a bare on-surface icon once the bar fills — both
- * driven by the same scroll [progress], so bar and buttons move in lockstep.
+ * A transparent app bar over the cover that fills to the surface color as the header collapses. Its
+ * buttons carry a gray circular scrim with a white icon over the cover, and fade that to a bare
+ * on-surface icon once the bar fills — both driven by the same [progress], so bar and buttons move
+ * in lockstep, reaching opaque [BarFillFraction] of the way through the collapse rather than at the
+ * very end, so the chrome settles while the cover is still on its way out.
  *
- * Once the tab row pins flush beneath it ([tabsPinned]) the bar drops its shadow: the bar and the
- * tabs are separate stacked surfaces (the bar paints over the tabs), so a shadow here would only
- * fall across the seam onto the tabs. Going flat at that point reads cleaner than that seam.
+ * Once the tab row pins flush beneath it the bar drops its shadow: the bar and the tabs are
+ * separate stacked surfaces (the bar paints over the tabs), so a shadow here would only fall
+ * across the seam onto the tabs. Going flat at that point reads cleaner than that seam. That is
+ * keyed off the *raw* collapse, not [progress], since it tracks where the tabs actually are.
+ *
+ * [collapse] is read here rather than at the screen scope so a scroll recomposes only the bar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileTopBar(
-    scrollBehavior: TopAppBarScrollBehavior,
     userName: String,
-    tabsPinned: Boolean,
+    collapse: FloatState,
+    maxCollapse: Float,
     onBack: (() -> Unit)?,
 ) {
-    val scrolled by remember {
-        derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f }
+    val collapsed = if (maxCollapse > 0f) {
+        (collapse.floatValue / maxCollapse).coerceIn(0f, 1f)
+    } else {
+        0f
     }
-    val progress by animateFloatAsState(if (scrolled) 1f else 0f, label = "appBarProgress")
-    // Animated with the same default spec as the tab row's shadow, so the hand-off stays in step.
-    val pinned by animateFloatAsState(if (tabsPinned) 1f else 0f, label = "appBarPinned")
+    val progress = (collapsed / BarFillFraction).coerceIn(0f, 1f)
+    // `collapsed` is clamped to [0, 1] and reaches exactly 1f at full collapse, so this is the true
+    // pinned state. Animated with the same default spec as the tab row's shadow, easing in step.
+    val pinned by animateFloatAsState(if (collapsed >= 1f) 1f else 0f, label = "appBarPinned")
 
     TopAppBar(
         modifier = Modifier.shadow(
@@ -778,10 +827,8 @@ private fun ProfileTopBar(
         },
         actions = {},
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
-            scrolledContainerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = progress),
         ),
-        scrollBehavior = scrollBehavior,
     )
 }
 
