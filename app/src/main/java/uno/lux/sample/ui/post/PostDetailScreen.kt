@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -218,6 +219,7 @@ internal fun PostDetailScreen(
                 author = uiState.author,
                 comments = uiState.comments,
                 commentsError = uiState.commentsError,
+                commentsLoading = uiState.commentsLoading,
                 listState = listState,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
@@ -243,6 +245,7 @@ private fun PostDetailContent(
     author: User,
     comments: List<Comment>,
     commentsError: AppError?,
+    commentsLoading: Boolean,
     listState: LazyListState,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -277,6 +280,8 @@ private fun PostDetailContent(
                     onRetry = onRetryComments
                 )
             }
+        } else if (commentsLoading) {
+            item(key = "comments_loading") { CommentsLoading() }
         } else {
             item(key = "comments_header") { CommentsHeader(count = comments.size) }
             if (comments.isNotEmpty()) {
@@ -306,6 +311,18 @@ private fun PostDetailContent(
         }
 
         item { Spacer(Modifier.height(8.dp)) }
+    }
+}
+
+@Composable
+private fun CommentsLoading() {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp, horizontal = 24.dp),
+    ) {
+        CircularProgressIndicator()
     }
 }
 

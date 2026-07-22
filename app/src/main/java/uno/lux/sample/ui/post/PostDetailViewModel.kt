@@ -57,13 +57,15 @@ class PostDetailViewModel @AssistedInject constructor(
 
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     private val _commentsError = MutableStateFlow<AppError?>(null)
+    private val _commentsLoading = MutableStateFlow(true)
 
     val uiState: StateFlow<PostDetailUiState> = combine(
         postRepository.entities.map { it[postId] },
         _comments,
         userRepository.users,
         _commentsError,
-    ) { post, comments, users, commentsError ->
+        _commentsLoading,
+    ) { post, comments, users, commentsError, commentsLoading ->
         if (post == null) return@combine PostDetailUiState.NotFound
         val author = users[post.authorId] ?: return@combine PostDetailUiState.NotFound
         PostDetailUiState.Loaded(
@@ -71,6 +73,7 @@ class PostDetailViewModel @AssistedInject constructor(
             author = author,
             comments = comments,
             commentsError = commentsError,
+            commentsLoading = commentsLoading,
             isOwn = post.authorId == currentUser.id,
         )
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
@@ -88,9 +91,14 @@ class PostDetailViewModel @AssistedInject constructor(
 
     private suspend fun loadComments() {
         _commentsError.value = null
+        _commentsLoading.value = true
 
-        ignoreErrors(_commentsError) {
-            _comments.value = commentRepository.loadComments(postId)
+        try {
+            ignoreErrors(_commentsError) {
+                _comments.value = commentRepository.loadComments(postId)
+            }
+        } finally {
+            _commentsLoading.value = false
         }
     }
 

@@ -90,6 +90,7 @@ import uno.lux.sample.ui.components.MosaicGradients
 import uno.lux.sample.ui.components.ScrimIconButton
 import uno.lux.sample.ui.format.asText
 import uno.lux.sample.ui.theme.LocalMosaicColors
+import uno.lux.sample.ui.theme.MosaicElevations
 import uno.lux.sample.ui.theme.MosaicTheme
 import uno.lux.sample.util.compactCount
 import uno.lux.sample.util.createActionsProxy
@@ -236,6 +237,13 @@ private fun ProfileContent(
             with(density) { (barBottomPx - tabsTop).coerceIn(0f, barBottomPx).toDp() }
         }
     }
+    // Once that inset has grown to the full bar height the tabs rest directly under the now-filled
+    // bar and posts scroll beneath them — the moment they take on the bar's elevation. Derived so
+    // readers recompose only when it flips, not on every scroll frame.
+    val barBottomDp = with(density) { barBottomPx.toDp() }
+    val tabsPinned by remember(barBottomDp) {
+        derivedStateOf { tabInset >= barBottomDp }
+    }
 
     // Every tab pages the one LazyColumn, so the effects follow whichever is showing.
     when (selectedTab) {
@@ -317,6 +325,7 @@ private fun ProfileContent(
         ProfileTopBar(
             scrollBehavior = scrollBehavior,
             userName = data.user.nickname,
+            tabsPinned = tabsPinned,
             onBack = onBack,
         )
     }
@@ -724,21 +733,30 @@ private fun PlainBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
  * Material container/scrolledContainer colors). Its buttons carry a gray circular scrim with a
  * white icon over the cover, and fade that to a bare on-surface icon once the bar fills — both
  * driven by the same scroll [progress], so bar and buttons move in lockstep.
+ *
+ * Once the tab row pins flush beneath it ([tabsPinned]) the bar drops its shadow: the bar and the
+ * tabs are separate stacked surfaces (the bar paints over the tabs), so a shadow here would only
+ * fall across the seam onto the tabs. Going flat at that point reads cleaner than that seam.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
     userName: String,
+    tabsPinned: Boolean,
     onBack: (() -> Unit)?,
 ) {
     val scrolled by remember {
         derivedStateOf { scrollBehavior.state.overlappedFraction > 0.01f }
     }
     val progress by animateFloatAsState(if (scrolled) 1f else 0f, label = "appBarProgress")
+    // Animated with the same default spec as the tab row's shadow, so the hand-off stays in step.
+    val pinned by animateFloatAsState(if (tabsPinned) 1f else 0f, label = "appBarPinned")
 
     TopAppBar(
-        modifier = Modifier.shadow(elevation = 4.dp * progress),
+        modifier = Modifier.shadow(
+            elevation = MosaicElevations.ScrolledBar * progress * (1f - pinned),
+        ),
         title = {
             Text(
                 text = userName,

@@ -1,16 +1,22 @@
 package uno.lux.sample.ui.post
 
 import androidx.navigation3.runtime.NavKey
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.ViewModelTest
 import uno.lux.sample.data.post.Comment
+import uno.lux.sample.data.post.CommentDataSource
 import uno.lux.sample.data.post.FakeCommentDataSource
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.CommentRepository
@@ -56,6 +62,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         postId: String = "p1",
         posts: List<Post> = listOf(post),
         comments: Map<String, List<Comment>> = mapOf("p1" to listOf(seedComment)),
+        commentDataSource: CommentDataSource = FakeCommentDataSource(currentUser, comments),
     ): PostDetailViewModel {
         val postRepo = PostRepository(FakePostDataSource())
         postRepo.ingest(posts)
@@ -63,7 +70,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         userRepo.ingest(listOf(currentUser, otherUser))
         return PostDetailViewModel(
             postRepository = postRepo,
-            commentRepository = CommentRepository(FakeCommentDataSource(currentUser, comments)),
+            commentRepository = CommentRepository(commentDataSource),
             userRepository = userRepo,
             navigator = navigator,
             currentUser = currentUser,
@@ -147,6 +154,25 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(post, state.post)
         assertEquals(otherUser, state.author)
         assertEquals(listOf(seedComment), state.comments)
+        assertFalse(state.commentsLoading)
+    }
+
+    @Test
+    fun `comments are marked loading until they resolve`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val gate = CompletableDeferred<Unit>()
+        val vm = viewModel(commentDataSource = GatedCommentDataSource(gate, listOf(seedComment)))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertTrue((vm.uiState.value as PostDetailUiState.Loaded).commentsLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        val loaded = vm.uiState.value as PostDetailUiState.Loaded
+        assertFalse(loaded.commentsLoading)
+        assertEquals(listOf(seedComment), loaded.comments)
     }
 
     @Test
@@ -245,5 +271,23 @@ class PostDetailViewModelTest : ViewModelTest() {
         val state = vm.uiState.value as PostDetailUiState.Loaded
         assertEquals(2, state.comments.size)
     }
+}
+
+/** A [CommentDataSource] whose load suspends on [gate], so a test can observe the in-flight state. */
+private class GatedCommentDataSource(
+    private val gate: CompletableDeferred<Unit>,
+    private val result: List<Comment>,
+) : CommentDataSource {
+
+    override suspend fun loadComments(postId: PostId): List<Comment> {
+        gate.await()
+        return result
+    }
+
+    override suspend fun addComment(postId: PostId, text: String): Comment =
+        throw UnsupportedOperationException()
+
+    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment =
+        throw UnsupportedOperationException()
 }
 

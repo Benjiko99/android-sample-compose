@@ -14,6 +14,7 @@ sealed interface PostDetailUiState {
         val author: User,
         val comments: List<Comment>,
         val commentsError: AppError? = null,
+        val commentsLoading: Boolean = false,
         val isOwn: Boolean = false,
     ) : PostDetailUiState
 }
