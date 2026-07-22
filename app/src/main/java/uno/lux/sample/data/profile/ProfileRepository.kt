@@ -214,7 +214,7 @@ class ProfileRepository(
             val page = ingest(fetchPage(userId, current.cursor))
 
             _state.update {
-                it + (userId to current.copy(
+                it + (userId to TabState(
                     ids = current.ids + page.posts.map { post -> post.id },
                     cursor = page.cursor,
                     hasMore = page.hasMore,

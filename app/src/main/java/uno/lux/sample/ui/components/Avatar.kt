@@ -20,9 +20,7 @@ import uno.lux.sample.ui.theme.Manrope
 import uno.lux.sample.util.initials
 
 /**
- * A circular avatar. With no [imageUrl] it renders the user's initials on a gradient keyed
- * deterministically by [userId] — an identity that never changes, so a user's colour stays put
- * when they rename themselves — while [name] supplies the initials drawn on it. A non-null
+ * A circular avatar. With no [imageUrl] it renders the user's initials on a gradient. A non-null
  * [imageUrl] loads the profile photo over that layer, so the initials double as the loading /
  * error fallback.
  */
