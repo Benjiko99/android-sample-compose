@@ -1,6 +1,7 @@
 package uno.lux.sample.ui.components
 
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,7 +23,10 @@ fun DiscardChangesDialog(
         text = { Text(stringResource(R.string.discard_confirmation_message)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.discard_confirmation_confirm))
+                Text(
+                    text = stringResource(R.string.discard_confirmation_confirm),
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         },
         dismissButton = {

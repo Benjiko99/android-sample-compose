@@ -45,6 +45,9 @@ internal fun DeletePostDialog(
 @Composable
 private fun DeletePostDialogPreview() {
     MosaicTheme {
-        DeletePostDialog(onConfirm = {}, onDismiss = {})
+        DeletePostDialog(
+            onConfirm = {},
+            onDismiss = {},
+        )
     }
 }
