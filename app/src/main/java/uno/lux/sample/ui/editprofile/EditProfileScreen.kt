@@ -312,10 +312,11 @@ private fun AvatarPicker(
     avatarUrl: String?,
     onClick: () -> Unit,
 ) {
-    Box(modifier = Modifier.clickable(onClick = onClick)) {
+    Box {
         Box(
             modifier = Modifier
-                .clip(CircleShape),
+                .clip(CircleShape)
+                .clickable(onClick = onClick),
         ) {
             Avatar(
                 userId = userId,
@@ -330,7 +331,8 @@ private fun AvatarPicker(
                 .align(Alignment.BottomEnd)
                 .size(28.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

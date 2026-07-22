@@ -385,6 +385,7 @@ private fun ProfileHeader(
                     .align(Alignment.TopStart)
                     .padding(start = 16.dp)
                     .padding(top = CoverHeight - AvatarOverlap)
+                    .clip(CircleShape)
                     .debouncedClickable(enabled = !user.avatarUrl.isNullOrEmpty(), onClick = {
                         if (user.avatarUrl != null) onOpenAvatar(user.avatarUrl)
                     }),
