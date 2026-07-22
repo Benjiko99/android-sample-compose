@@ -414,12 +414,7 @@ private fun CommentRow(
                 .clip(CircleShape)
                 .debouncedClickable(onClick = onOpenProfile),
         ) {
-            Avatar(
-                userId = comment.author.id,
-                name = comment.author.nickname,
-                size = 36.dp,
-                imageUrl = comment.author.avatarUrl,
-            )
+            Avatar(user = comment.author, size = 36.dp)
         }
 
         Column(Modifier.weight(1f)) {

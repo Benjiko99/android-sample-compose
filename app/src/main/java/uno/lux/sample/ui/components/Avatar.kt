@@ -16,8 +16,28 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import uno.lux.sample.data.user.User
 import uno.lux.sample.ui.theme.Manrope
 import uno.lux.sample.util.initials
+
+/**
+ * A circular avatar for [user], pulling its identity (id, display name) and photo straight off the
+ * model so call sites don't spell those out. Delegates to the primitive overload below.
+ */
+@Composable
+fun Avatar(
+    user: User,
+    modifier: Modifier = Modifier,
+    size: Dp = 42.dp,
+) {
+    Avatar(
+        userId = user.id,
+        name = user.nickname,
+        modifier = modifier,
+        size = size,
+        imageUrl = user.avatarUrl,
+    )
+}
 
 /**
  * A circular avatar. With no [imageUrl] it renders the user's initials on a gradient. A non-null

@@ -138,12 +138,7 @@ private fun PostOverflowSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Avatar(
-                userId = author.id,
-                name = author.nickname,
-                size = 38.dp,
-                imageUrl = author.avatarUrl,
-            )
+            Avatar(user = author, size = 38.dp)
             Column(Modifier.weight(1f)) {
                 Text(
                     text = author.nickname,

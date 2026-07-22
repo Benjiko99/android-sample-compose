@@ -83,12 +83,7 @@ internal fun PostAuthorHeader(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(
-                userId = author.id,
-                name = author.nickname,
-                size = 42.dp,
-                imageUrl = author.avatarUrl,
-            )
+            Avatar(user = author, size = 42.dp)
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text(
