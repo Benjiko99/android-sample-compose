@@ -75,9 +75,8 @@ class PostDetailViewModel @AssistedInject constructor(
         )
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
-    /** Identity of the signed-in user, drawn as the composer's avatar. */
-    val composerUserId: String = currentUser.id
-    val composerUserName: String = currentUser.nickname
+    /** The signed-in user, drawn as the composer's avatar. */
+    val composerUser: User = currentUser
 
     init {
         retryComments()

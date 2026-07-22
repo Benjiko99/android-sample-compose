@@ -103,8 +103,7 @@ fun PostDetailScreen(
 
     PostDetailScreen(
         uiState = uiState,
-        composerUserId = viewModel.composerUserId,
-        composerUserName = viewModel.composerUserName,
+        composerUser = viewModel.composerUser,
         onBack = viewModel::goBack,
         onOpenProfile = viewModel::openProfile,
         onOpenVideo = viewModel::openVideo,
@@ -128,8 +127,7 @@ fun PostDetailScreen(
 @Composable
 internal fun PostDetailScreen(
     uiState: PostDetailUiState,
-    composerUserId: String,
-    composerUserName: String,
+    composerUser: User,
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -190,8 +188,7 @@ internal fun PostDetailScreen(
         bottomBar = {
             if (loaded != null) {
                 CommentComposer(
-                    userId = composerUserId,
-                    userNickname = composerUserName,
+                    user = composerUser,
                     onSend = onAddComment,
                 )
             }
@@ -481,8 +478,7 @@ private fun CommentRow(
 
 @Composable
 private fun CommentComposer(
-    userId: String,
-    userNickname: String,
+    user: User,
     onSend: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -509,7 +505,7 @@ private fun CommentComposer(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Avatar(userId = userId, name = userNickname, size = 36.dp)
+            Avatar(user = user, size = 36.dp)
             OutlinedTextField(
                 state = textState,
                 placeholder = {
@@ -563,8 +559,7 @@ private fun PostDetailLoadedPreview() {
                 author = SampleUsers.first(),
                 comments = SampleComments["p1"] ?: emptyList(),
             ),
-            composerUserId = SampleUsers.first().id,
-            composerUserName = SampleUsers.first().nickname,
+            composerUser = SampleUsers.first(),
             onBack = {},
             onOpenProfile = {},
             onOpenVideo = {},
@@ -585,8 +580,7 @@ private fun PostDetailLoadingPreview() {
     MosaicTheme {
         PostDetailScreen(
             uiState = PostDetailUiState.Loading,
-            composerUserId = "",
-            composerUserName = "",
+            composerUser = SampleUsers.first(),
             onBack = {},
             onOpenProfile = {},
             onOpenVideo = {},

@@ -21,8 +21,7 @@ import uno.lux.sample.ui.theme.Manrope
 import uno.lux.sample.util.initials
 
 /**
- * A circular avatar for [user], pulling its identity (id, display name) and photo straight off the
- * model so call sites don't spell those out. Delegates to the primitive overload below.
+ * A circular avatar for a [user].
  */
 @Composable
 fun Avatar(

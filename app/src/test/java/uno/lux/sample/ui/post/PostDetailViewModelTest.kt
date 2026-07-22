@@ -157,11 +157,11 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
     }
 
-    // ── composerUserName ──────────────────────────────────────────────────────
+    // ── composerUser ──────────────────────────────────────────────────────────
 
     @Test
-    fun `composerUserName is the current user's nickname`() {
-        assertEquals("Me", viewModel().composerUserName)
+    fun `composerUser is the current user`() {
+        assertEquals(currentUser, viewModel().composerUser)
     }
 
     // ── like / bookmark ───────────────────────────────────────────────────────
