@@ -23,6 +23,7 @@ import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
@@ -58,7 +59,7 @@ class HomeViewModelTest : ViewModelTest() {
 
     private fun viewModel(
         feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
-        currentUserId: String = "u1",
+        currentUserId: UserId = "u1",
     ): HomeViewModel {
         val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(FakeUserDataSource())

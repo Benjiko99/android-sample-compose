@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.di.CurrentUserId
 import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
@@ -19,7 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
-    @param:CurrentUserId val currentUserId: String,
+    @param:CurrentUserId val currentUserId: UserId,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode?> = settingsRepository.themeMode

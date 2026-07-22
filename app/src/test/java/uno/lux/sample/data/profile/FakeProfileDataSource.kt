@@ -1,5 +1,7 @@
 package uno.lux.sample.data.profile
 
+import uno.lux.sample.data.user.UserId
+
 internal class FakeProfileDataSource(
     private val refreshData: Map<String, ProfileRefreshData> = emptyMap(),
     private val morePosts: Map<String, PostsPage> = emptyMap(),
@@ -15,22 +17,22 @@ internal class FakeProfileDataSource(
     /** The (userId, cursor) pairs [likes] was called with, in call order. */
     val likeCalls = mutableListOf<Pair<String, String?>>()
 
-    override suspend fun refresh(userId: String) =
+    override suspend fun refresh(userId: UserId) =
         refreshData[userId] ?: ProfileRefreshData(
             postsCount = 0,
             posts = emptyList(), postCursor = null, postHasMore = false,
         )
 
-    override suspend fun loadMorePosts(userId: String, cursor: String?) =
+    override suspend fun loadMorePosts(userId: UserId, cursor: String?) =
         morePosts[userId] ?: PostsPage(emptyList(), null, false)
 
-    override suspend fun bookmarks(userId: String, cursor: String?): PostsWithAuthorsPage {
+    override suspend fun bookmarks(userId: UserId, cursor: String?): PostsWithAuthorsPage {
         bookmarkCalls += userId to cursor
 
         return bookmarks[userId]?.get(cursor) ?: emptyPage()
     }
 
-    override suspend fun likes(userId: String, cursor: String?): PostsWithAuthorsPage {
+    override suspend fun likes(userId: UserId, cursor: String?): PostsWithAuthorsPage {
         likeCalls += userId to cursor
 
         return likes[userId]?.get(cursor) ?: emptyPage()

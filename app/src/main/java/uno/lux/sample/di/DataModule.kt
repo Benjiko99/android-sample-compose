@@ -32,6 +32,7 @@ import uno.lux.sample.data.settings.DataStoreSettingsRepository
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserDataSource
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.file.AndroidFileLoader
 import uno.lux.sample.ui.file.AndroidVideoMetadataReader
@@ -79,7 +80,7 @@ object DataModule {
         dataSource: ProfileDataSource,
         postRepository: PostRepository,
         userRepository: UserRepository,
-        @CurrentUserId currentUserId: String,
+        @CurrentUserId currentUserId: UserId,
     ): ProfileRepository =
         ProfileRepository(dataSource, postRepository, userRepository, currentUserId)
 
@@ -120,6 +121,6 @@ object DataModule {
     @Provides
     @Singleton
     @CurrentUser
-    fun provideCurrentUser(@CurrentUserId currentUserId: String): User =
+    fun provideCurrentUser(@CurrentUserId currentUserId: UserId): User =
         SampleUsers.first { it.id == currentUserId }
 }

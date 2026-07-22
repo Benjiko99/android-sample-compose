@@ -39,6 +39,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.album.AlbumViewerScreen
 import uno.lux.sample.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.ui.create.CreatePostScreen
@@ -72,7 +73,7 @@ import uno.lux.sample.util.findActivity
  * ViewModel, so this shell wires no navigation lambdas at all; it only builds the [Screen] keys.
  */
 @Composable
-fun SampleApp(currentUserId: String, navigator: Navigator) {
+fun SampleApp(currentUserId: UserId, navigator: Navigator) {
     val backStack = rememberNavBackStack(Screen.Shell)
 
     DisposableEffect(navigator, backStack) {
@@ -160,7 +161,7 @@ fun SampleApp(currentUserId: String, navigator: Navigator) {
  */
 @Composable
 private fun HomeNavShell(
-    currentUserId: String,
+    currentUserId: UserId,
     viewModel: ShellViewModel = hiltViewModel(),
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }

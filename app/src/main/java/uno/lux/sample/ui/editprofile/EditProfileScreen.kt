@@ -58,6 +58,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.data.SampleUsers
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.DiscardChangesDialog
 import uno.lux.sample.ui.components.FullScreenError
@@ -306,7 +307,7 @@ private fun EditProfileContent(
 /** The tappable avatar preview with a pencil badge signalling it opens the photo picker. */
 @Composable
 private fun AvatarPicker(
-    userId: String,
+    userId: UserId,
     name: String,
     avatarUrl: String?,
     onClick: () -> Unit,

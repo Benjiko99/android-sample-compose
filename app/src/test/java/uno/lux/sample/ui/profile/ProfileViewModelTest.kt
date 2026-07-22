@@ -20,6 +20,7 @@ import uno.lux.sample.data.profile.ProfileRefreshData
 import uno.lux.sample.data.profile.ProfileRepository
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
@@ -72,8 +73,8 @@ class ProfileViewModelTest : ViewModelTest() {
     private lateinit var profileDataSource: FakeProfileDataSource
 
     private fun viewModel(
-        userId: String = "u1",
-        currentUserId: String = "u1",
+        userId: UserId = "u1",
+        currentUserId: UserId = "u1",
         bookmarks: List<Post> = listOf(savedPost),
         likes: List<Post> = listOf(likedPost),
     ): ProfileViewModel {

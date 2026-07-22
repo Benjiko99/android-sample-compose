@@ -12,6 +12,7 @@ import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import java.time.Instant
 
@@ -37,7 +38,7 @@ class ProfileRepositoryTest {
     private fun likesDataSource(
         posts: List<Post>,
         users: List<User> = emptyList(),
-        userId: String = "u1",
+        userId: UserId = "u1",
         cursor: String? = null,
         hasMore: Boolean = false,
     ) = FakeProfileDataSource(
@@ -52,7 +53,7 @@ class ProfileRepositoryTest {
         dataSource: ProfileDataSource = FakeProfileDataSource(),
         postRepo: PostRepository = postRepo(),
         userRepo: UserRepository = userRepo(),
-        currentUserId: String = "u1",
+        currentUserId: UserId = "u1",
     ) = ProfileRepository(dataSource, postRepo, userRepo, currentUserId)
 
     @Test
@@ -482,7 +483,7 @@ private val older: Instant = Instant.EPOCH.plusSeconds(100)
 
 private fun post(
     id: String,
-    authorId: String,
+    authorId: UserId,
     createdAt: Instant = Instant.EPOCH,
     isLiked: Boolean = false,
     isBookmarked: Boolean = false,

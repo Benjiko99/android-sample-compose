@@ -5,6 +5,7 @@ import uno.lux.sample.R
 import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.user.ProfileUpdate
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.util.AppError
 
 /**
@@ -36,7 +37,7 @@ val EditProfileAgeRange = 13..120
  * along, unedited, only so the avatar preview can key its fallback gradient on it.
  */
 data class EditProfileForm(
-    val userId: String,
+    val userId: UserId,
     val nickname: String,
     val age: String,
     val gender: GenderOption?,

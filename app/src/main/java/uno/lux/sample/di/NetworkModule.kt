@@ -12,6 +12,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import uno.lux.sample.BuildConfig
 import uno.lux.sample.data.network.MosaicApi
+import uno.lux.sample.data.user.UserId
 import javax.inject.Singleton
 
 @Module
@@ -27,7 +28,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(@CurrentUserId currentUserId: String): OkHttpClient =
+    fun provideOkHttpClient(@CurrentUserId currentUserId: UserId): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor { chain ->
                 chain.proceed(

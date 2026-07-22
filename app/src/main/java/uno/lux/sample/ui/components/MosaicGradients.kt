@@ -2,14 +2,14 @@ package uno.lux.sample.ui.components
 
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import uno.lux.sample.data.user.UserId
 
 /**
  * Mosaic's duotone gradient stand-ins for imagery, keyed deterministically by a string so a
  * given user / album / video always renders the same hues — no image-loading dependency.
  *
- * The brushes are built once and reused (only these few ever exist), so avatars and grid cells
- * never re-allocate one while recomposing. [avatarBrush] draws from the first
- * [AVATAR_PALETTE_SIZE] hues; [mediaBrush] from the full, slightly richer set used for cover
+ * The brushes are built once and reused, so avatars and grid cells
+ * never re-allocate one while recomposing.They provide a rich set used for cover
  * photos and media thumbnails.
  */
 object MosaicGradients {
@@ -28,8 +28,8 @@ object MosaicGradients {
 
     private const val AVATAR_PALETTE_SIZE = 6
 
-    /** A brush for an avatar, keyed by [key] over the avatar hue set. */
-    fun avatarBrush(key: String): Brush = brushes[key.hashCode().mod(AVATAR_PALETTE_SIZE)]
+    /** A brush for an avatar, keyed by [userId] over the avatar hue set. */
+    fun avatarBrush(userId: UserId): Brush = brushes[userId.hashCode().mod(brushes.size)]
 
     /** A brush for cover / media imagery, keyed by [key] over the full hue set. */
     fun mediaBrush(key: String): Brush = brushes[key.hashCode().mod(brushes.size)]

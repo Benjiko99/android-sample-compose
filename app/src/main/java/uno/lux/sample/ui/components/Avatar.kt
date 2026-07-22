@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.theme.Manrope
 import uno.lux.sample.util.initials
 
@@ -45,7 +46,7 @@ fun Avatar(
  */
 @Composable
 fun Avatar(
-    userId: String,
+    userId: UserId,
     name: String,
     modifier: Modifier = Modifier,
     size: Dp = 42.dp,
