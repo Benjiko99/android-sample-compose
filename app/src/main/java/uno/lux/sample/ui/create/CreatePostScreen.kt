@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -25,8 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,7 +33,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.ui.components.DiscardChangesDialog
+import uno.lux.sample.ui.components.HoldToConfirmButton
 import uno.lux.sample.ui.components.MediaBadge
 import uno.lux.sample.ui.components.MediaRemoveButton
 import uno.lux.sample.ui.components.debouncedClickable
@@ -452,30 +449,24 @@ private fun MediaTile(
     }
 }
 
-/** The publish affordance: a filled button whose label yields to a spinner while a publish runs. */
+/**
+ * The publish affordance. Publishing is the one irreversible step in the composer — it puts the
+ * post in front of everyone — so it asks to be *held* rather than tapped, and its label yields to
+ * a spinner while the upload runs.
+ */
 @Composable
 private fun PublishButton(
     isPublishing: Boolean,
     enabled: Boolean,
     onPublish: () -> Unit,
 ) {
-    Button(
-        onClick = onPublish,
-        enabled = enabled && !isPublishing,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
-    ) {
-        if (isPublishing) {
-            CircularProgressIndicator(
-                strokeWidth = 2.5.dp,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(20.dp),
-            )
-        } else {
-            Text(stringResource(R.string.create_post_publish))
-        }
-    }
+    HoldToConfirmButton(
+        text = stringResource(R.string.create_post_publish),
+        onConfirm = onPublish,
+        enabled = enabled,
+        isBusy = isPublishing,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 private val ThumbnailSize = 88.dp

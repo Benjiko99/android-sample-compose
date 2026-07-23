@@ -138,6 +138,9 @@
     <string name="language_english" translatable="false">English</string>
     <string name="language_czech" translatable="false">Čeština</string>
 
+    <!-- Hold-to-confirm button: shown in place of the label when a press was too short -->
+    <string name="hold_to_confirm_hint">Press &amp; hold</string>
+
     <!-- Discard confirmation dialog -->
     <string name="discard_confirmation_title">Discard changes?</string>
     <string name="discard_confirmation_message">You have unsaved changes. Are you sure you want to discard them?</string>

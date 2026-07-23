@@ -139,6 +139,9 @@
     <string name="theme_system">Systém</string>
     <string name="settings_language">Jazyk</string>
 
+    <!-- Hold-to-confirm button: shown in place of the label when a press was too short -->
+    <string name="hold_to_confirm_hint">Stiskněte a podržte</string>
+
     <!-- Discard confirmation dialog -->
     <string name="discard_confirmation_title">Zahodit změny?</string>
     <string name="discard_confirmation_message">Máte neuložené změny. Opravdu je chcete zahodit?</string>
