@@ -51,9 +51,22 @@ util/       pure functions with zero project imports
 fixtures/   stand-in content for previews and DI seeding
 ```
 
-**Aggregates vs read models** is the distinction that keeps the graph acyclic. `post`, `user` and `comment` own an entity and everything about it. `feed` and `profile` own no entity — they are read models over those stores, holding an ordered list of IDs plus paging state, which is why `ProfileRepository` *composes* `PostRepository` instead of duplicating it. The rule, worth preserving:
+**Aggregates vs read models** is the distinction that keeps the graph directed. `post`, `user` and `comment` own an entity and everything about it. `feed` and `profile` own no entity — they are read models over those stores, holding an ordered list of IDs plus paging state, which is why `ProfileRepository` *composes* `PostRepository` instead of duplicating it. The rule, worth preserving:
 
-> Features may depend on aggregates. **Aggregates never depend on features, and read models never on each other.**
+> Features may depend on aggregates. **Aggregates never depend on features.**
+
+The actual cross-slice graph, which any new import should be checked against:
+
+```
+user      -> (nothing)          settings  -> (nothing)
+post      -> comment user       comment   -> post user
+feed      -> post settings user profile   -> post user
+composer  -> feed post
+```
+
+Two feature-to-feature edges are deliberate: `composer -> feed` (publishing prepends the new ID to the feed) and `feed -> settings` (the auto-play preference). **`post <-> comment` is a real cycle** — a comment needs a `PostId` and `PostDetailScreen` renders comments. `Comment` is arguably an entity *inside* the post aggregate rather than a root of its own (it cannot exist without its post and is deleted with it), so folding `comment/` into `post/` is the fix if the cycle ever bites; it stays separate while it earns its own folder.
+
+Two things that look like violations but are not, and should not be reintroduced: a KDoc `[Link]` needs an import, so cross-slice doc references are written fully qualified (`[uno.lux.sample.profile.data.ProfileRepository]`) rather than imported; and a wire type shared by two features belongs to the aggregate it describes, not to whichever feature happened to declare it first — `SideloadedUsers` is a list of `UserDto`, so it lives in `user/data/network/` and both `feed` and `profile` depend *down* onto it.
 
 To file a new file, ask in order — no two questions tie:
 

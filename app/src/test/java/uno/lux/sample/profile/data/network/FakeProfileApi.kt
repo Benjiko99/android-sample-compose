@@ -1,12 +1,12 @@
 package uno.lux.sample.profile.data.network
 
 import uno.lux.sample.core.network.emptyPage
-import uno.lux.sample.feed.data.network.FeedIncluded
+import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.post.data.network.PostFeedItemDto
 
 internal val emptyPostsWithAuthors = PostsWithAuthorsResponse(
     data = emptyList(),
-    included = FeedIncluded(users = emptyList()),
+    included = SideloadedUsers(users = emptyList()),
     page = emptyPage,
 )
 

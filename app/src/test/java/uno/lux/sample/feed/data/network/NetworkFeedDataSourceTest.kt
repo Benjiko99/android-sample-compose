@@ -9,6 +9,7 @@ import org.junit.Test
 import uno.lux.sample.core.network.CursorPageDto
 import uno.lux.sample.core.network.emptyPage
 import uno.lux.sample.post.data.network.feedItemDto
+import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.user.data.network.userDto
 
 class NetworkFeedDataSourceTest {
@@ -31,7 +32,7 @@ class NetworkFeedDataSourceTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
-                included = FeedIncluded(users = listOf(userDto("u1", "Ada"), userDto("u2", "Grace"))),
+                included = SideloadedUsers(users = listOf(userDto("u1", "Ada"), userDto("u2", "Grace"))),
                 page = emptyPage,
             ),
         )
@@ -46,7 +47,7 @@ class NetworkFeedDataSourceTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
-                included = FeedIncluded(users = listOf(userDto("u1", "Ada", isFollowing = true))),
+                included = SideloadedUsers(users = listOf(userDto("u1", "Ada", isFollowing = true))),
                 page = emptyPage,
             ),
         )

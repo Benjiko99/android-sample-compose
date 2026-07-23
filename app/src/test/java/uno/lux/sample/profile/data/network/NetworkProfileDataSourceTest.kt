@@ -9,7 +9,7 @@ import uno.lux.sample.core.network.CursorPageDto
 import uno.lux.sample.core.network.emptyPage
 import uno.lux.sample.post.data.network.feedItemDto
 import uno.lux.sample.user.data.network.userDto
-import uno.lux.sample.feed.data.network.FeedIncluded
+import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.post.data.network.PostFeedItemDto
 import uno.lux.sample.user.data.network.UserDto
 
@@ -19,7 +19,7 @@ class NetworkProfileDataSourceTest {
         data: List<PostFeedItemDto>,
         users: List<UserDto> = emptyList(),
         page: CursorPageDto = emptyPage,
-    ) = PostsWithAuthorsResponse(data = data, included = FeedIncluded(users = users), page = page)
+    ) = PostsWithAuthorsResponse(data = data, included = SideloadedUsers(users = users), page = page)
 
     private fun bookmarksResponse(
         data: List<PostFeedItemDto>,

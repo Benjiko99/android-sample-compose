@@ -8,7 +8,6 @@ import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
 import uno.lux.sample.post.PostWithAuthor
-import uno.lux.sample.profile.data.ProfileRepository
 import uno.lux.sample.user.data.UserRepository
 
 /**
@@ -20,10 +19,10 @@ import uno.lux.sample.user.data.UserRepository
  * so every observer sees the update in the same emission.
  *
  * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
- * [uno.lux.sample.feed.data.FeedRepository] or [ProfileRepository]; this store owns only the entity data.
+ * [uno.lux.sample.feed.data.FeedRepository] or [uno.lux.sample.profile.data.ProfileRepository]; this store owns only the entity data.
  *
  * The two endpoints that answer with a *single* post embed its author, so [load] and [create]
- * seed [userRepository] with it — the same thing [ProfileRepository] does for the authors that
+ * seed [userRepository] with it — the same thing [uno.lux.sample.profile.data.ProfileRepository] does for the authors that
  * ride along with a page of saved or liked posts. Sideloaded users belong in the user store
  * wherever they arrive from, rather than each caller remembering to put them there.
  */
@@ -66,7 +65,7 @@ class PostRepository(
 
     /**
      * Deletes [postId] and drops it from the store. The ordered ID lists in [uno.lux.sample.feed.data.FeedRepository] and
-     * [ProfileRepository] are deliberately left alone: they resolve IDs through [entities], so a
+     * [uno.lux.sample.profile.data.ProfileRepository] are deliberately left alone: they resolve IDs through [entities], so a
      * removed entity disappears from every screen showing it in the same emission — the same
      * propagation a like toggle relies on, rather than a second place that has to be kept in step.
      */
