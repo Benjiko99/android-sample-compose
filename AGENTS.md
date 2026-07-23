@@ -39,6 +39,10 @@ The shell is Windows PowerShell; invoke the wrapper as `.\gradlew.bat`.
 - AGP 9.2.1 *bundles* Kotlin 2.2.10; the root `build.gradle.kts` puts a newer `kotlin-gradle-plugin` on the **buildscript classpath** (the documented override) to lift the compiler to **2.3.21**. Every compiler plugin is version-locked to that Kotlin and must move with it: the Compose compiler and kotlinx-serialization plugins (`version.ref = "kotlin"`), KSP (`<kotlin>-<ksp>`), and **Mappie** (`<kotlin>-<mappie>`, used for DTO → domain mapping in `post/data/network/PostMappers.kt`).
 - Dependencies are managed through the **version catalog** at `gradle/libs.versions.toml`. Add or bump dependencies there and reference them via the generated `libs.*` accessors in `app/build.gradle.kts` — do not hardcode versions in the build script.
 
+## Backend
+
+The app talks to a **Rails** backend at `https://mosaic.tree-among-shrubs.com/api/` (`BASE_URL` in `app/di/NetworkModule.kt`); its source is the `mosaic-server` repo, checked out under WSL at `\\wsl.localhost\ubuntu\home\benji\projects\mosaic-server`. There is **no sign-in**: the signed-in user is seeded from `app/fixtures/SampleData.kt` and sent as an `X-User-Id` header on every request, which is what the server scopes viewer state (`isLiked`, `isBookmarked`) by and what it enforces ownership with — deleting someone else's post and reading someone else's bookmarks both 403 on the server, not merely in the client. Client-side limits (`CreatePostMaxImages`, `CreatePostMaxVideoBytes`, the composer's field lengths) mirror server validations; changing one means changing both.
+
 ## Package structure — where a new file goes
 
 The top level is **slices, not layers**; layers are the shape *inside* a slice. There is no `data/` or `ui/` root package, and deliberately no `activities/`, `fragments/`, `viewmodels/`, `adapters/` or `dialogs/`: **a file's home is decided by what it is *about*, never by what it extends.** Supertype is what the IDE indexes for you; it never needs a folder.
