@@ -25,7 +25,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -82,7 +81,8 @@ internal class HoldToConfirmState(
      */
     suspend fun press(awaitRelease: suspend () -> Unit, onConfirm: () -> Unit) {
         val press = ++presses
-        moveTo(press, HoldPhase.HOLDING)
+        // Unguarded: nothing can have superseded a press that has not suspended yet.
+        phase = HoldPhase.HOLDING
 
         try {
             val heldLongEnough = withTimeoutOrNull(holdMillis) { awaitRelease() } == null
@@ -103,17 +103,6 @@ internal class HoldToConfirmState(
     private fun moveTo(press: Int, next: HoldPhase) {
         if (press == presses) phase = next
     }
-}
-
-/** Tuning for [HoldToConfirmButton], exposed so a caller can lengthen a weightier confirmation. */
-object HoldToConfirmDefaults {
-    /** How long the finger must stay down before the action fires. */
-    const val HoldMillis = 1_500L
-
-    /** How long the "press & hold" nudge stays up after too short a press before the label returns. */
-    const val HintMillis = 1_500L
-
-    val MinHeight = 52.dp
 }
 
 /**
@@ -137,8 +126,8 @@ fun HoldToConfirmButton(
     enabled: Boolean = true,
     isBusy: Boolean = false,
     hintText: String = stringResource(R.string.hold_to_confirm_hint),
-    holdMillis: Long = HoldToConfirmDefaults.HoldMillis,
-    hintMillis: Long = HoldToConfirmDefaults.HintMillis,
+    holdMillis: Long = 1_500L,
+    hintMillis: Long = 1_500L,
 ) {
     val haptics = LocalHapticFeedback.current
     val colors = ButtonDefaults.buttonColors()
@@ -154,11 +143,9 @@ fun HoldToConfirmButton(
 
     // Kept current so the gesture isn't torn down and rebuilt every time the caller recomposes.
     val currentConfirm by rememberUpdatedState(onConfirm)
-    val confirm = remember {
-        {
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            currentConfirm()
-        }
+    val confirm = {
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        currentConfirm()
     }
 
     LaunchedEffect(state.phase) {
@@ -182,23 +169,23 @@ fun HoldToConfirmButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            // Both animations are read in the draw/layer phase, so a frame of the sweep costs no
-            // recomposition — only the phase changes below recompose the label.
+            // Every animation here is read in the draw/layer phase, so a frame of the sweep or of
+            // the label swap costs no recomposition — only an actual phase change does. The scale
+            // shares its layer with the clip rather than stacking a second one.
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
+                this.shape = shape
+                clip = true
             }
-            .defaultMinSize(
-                minWidth = ButtonDefaults.MinWidth,
-                minHeight = HoldToConfirmDefaults.MinHeight,
-            )
-            .clip(shape)
+            .defaultMinSize(minWidth = ButtonDefaults.MinWidth, minHeight = MinHeight)
             .background(containerColor)
             .drawBehind {
                 val fraction = progress.value
                 if (fraction <= 0f) return@drawBehind
 
                 val width = size.width * fraction
+                val edge = LeadingEdgeWidth.toPx()
 
                 drawRect(
                     color = contentColor.copy(alpha = FillAlpha),
@@ -208,8 +195,8 @@ fun HoldToConfirmButton(
                 // A bright leading edge, so the sweep reads as a moving front rather than a stain.
                 drawRect(
                     color = contentColor.copy(alpha = LeadingEdgeAlpha),
-                    topLeft = Offset(x = width - LeadingEdgeWidth.toPx(), y = 0f),
-                    size = Size(width = LeadingEdgeWidth.toPx(), height = size.height),
+                    topLeft = Offset(x = width - edge, y = 0f),
+                    size = Size(width = edge, height = size.height),
                 )
             }
             .pointerInput(active) {
@@ -225,12 +212,14 @@ fun HoldToConfirmButton(
                 // in the tree and a screen reader would otherwise read the pair back to back.
                 contentDescription = text
                 if (!active) disabled()
+                // The same [confirm] the gesture fires, so the escape hatch keeps whatever
+                // confirming comes to entail rather than drifting into its own version of it.
                 onClick(label = text) {
-                    if (active) currentConfirm()
+                    if (active) confirm()
                     active
                 }
             }
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+            .padding(ButtonDefaults.ContentPadding),
     ) {
         if (isBusy) {
             CircularProgressIndicator(
@@ -242,14 +231,9 @@ fun HoldToConfirmButton(
             // The two labels are stacked and both stay in the layout for good — only their alpha
             // moves. Swapping which one is *composed* would resize the box to whichever label is
             // showing, so the shorter one would drift off centre as the other faded in.
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.clearAndSetSemantics {},
-            ) {
-                HoldLabel(text = text, color = contentColor) { 1f - hintAlpha.value }
+            HoldLabel(text = text, color = contentColor) { 1f - hintAlpha.value }
 
-                HoldLabel(text = hintText, color = contentColor) { hintAlpha.value }
-            }
+            HoldLabel(text = hintText, color = contentColor) { hintAlpha.value }
         }
     }
 }
@@ -257,6 +241,8 @@ fun HoldToConfirmButton(
 /**
  * One of the button's two stacked labels. [alpha] is passed as a lambda and read inside
  * [graphicsLayer], so a frame of the swap re-runs the layer rather than recomposing the button.
+ * Both labels are permanently in the tree, so each clears itself from the semantics tree — the
+ * button names itself instead, rather than having a screen reader read the pair back to back.
  */
 @Composable
 private fun HoldLabel(
@@ -269,9 +255,14 @@ private fun HoldLabel(
         style = MaterialTheme.typography.labelLarge,
         color = color,
         textAlign = TextAlign.Center,
-        modifier = Modifier.graphicsLayer { this.alpha = alpha() },
+        modifier = Modifier
+            .clearAndSetSemantics {}
+            .graphicsLayer { this.alpha = alpha() },
     )
 }
+
+/** Roomier than Material's 40.dp button: a target a finger rests on wants more than a tap target. */
+private val MinHeight = 52.dp
 
 /** How far the button sinks under the finger, the usual press feedback a filled button gives. */
 private const val PressedScale = 0.97f

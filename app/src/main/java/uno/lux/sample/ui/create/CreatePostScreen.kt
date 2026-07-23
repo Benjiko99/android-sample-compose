@@ -492,7 +492,27 @@ private fun CreatePostScreenPreview() {
     }
 }
 
-@Preview(name = "Publishing progress", showBackground = true)
+@Preview(name = "With a video", showBackground = true)
+@Composable
+private fun CreatePostScreenVideoPreview() {
+    MosaicTheme {
+        CreatePostScreen(
+            uiState = CreatePostUiState(
+                form = CreatePostForm(
+                    title = "The engine, running",
+                    body = "Forty seconds of the carry mechanism in motion.",
+                    media = CreatePostMedia.Video(uri = "", durationSeconds = 42),
+                ),
+            ),
+            actions = createActionsProxy(),
+            onPickImages = {},
+            onPickVideo = {},
+        )
+    }
+}
+
+/** The in-flight publish, where every affordance is inert and the button yields to its spinner. */
+@Preview(name = "Publishing", showBackground = true)
 @Composable
 private fun CreatePostScreenPublishingPreview() {
     MosaicTheme {

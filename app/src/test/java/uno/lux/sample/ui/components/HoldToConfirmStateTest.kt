@@ -75,14 +75,16 @@ class HoldToConfirmStateTest {
 
         backgroundScope.launch { state.press(awaitRelease = { delay(200) }) { confirmed++ } }
         runCurrent()
-        advanceTimeBy(201) // released at 200, so the hint runs until 1200
+        advanceTimeBy(201)
         assertEquals(HoldPhase.HINT, state.phase)
 
         backgroundScope.launch { state.press(awaitRelease = { awaitCancellation() }) { confirmed++ } }
         runCurrent()
         assertEquals(HoldPhase.HOLDING, state.phase)
 
-        advanceTimeBy(1_049) // now at 1250 — past the first press's hint, mid-hold for the second
+        // A full hint's worth of time: whenever the first press's hint was due to expire, it has.
+        // Still short of the second press's own hold, which started later.
+        advanceTimeBy(HintMillis)
         assertEquals(HoldPhase.HOLDING, state.phase)
         assertEquals(0, confirmed)
 
