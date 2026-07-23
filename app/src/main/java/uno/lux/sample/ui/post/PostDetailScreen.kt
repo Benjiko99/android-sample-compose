@@ -578,57 +578,33 @@ private fun CommentComposer(
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailLoadedPreview() {
-    MosaicTheme {
-        PostDetailScreen(
-            uiState = PostDetailUiState.Loaded(
-                post = SamplePosts.first(),
-                author = SampleUsers.first(),
-                comments = SampleComments["p1"] ?: emptyList(),
-            ),
-            composerUser = SampleUsers.first(),
-            onBack = {},
-            onOpenProfile = {},
-            onOpenVideo = {},
-            onOpenAlbum = { _, _ -> },
-            onToggleLike = {},
-            onToggleBookmark = {},
-            onToggleCommentLike = {},
-            onAddComment = {},
-            onRetryComments = {},
-            onRetry = {},
-            onDelete = {},
+    PostDetailPreview(
+        PostDetailUiState.Loaded(
+            post = SamplePosts.first(),
+            author = SampleUsers.first(),
+            comments = SampleComments["p1"] ?: emptyList(),
         )
-    }
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailErrorPreview() {
-    MosaicTheme {
-        PostDetailScreen(
-            uiState = PostDetailUiState.Error(AppError.NoConnection),
-            composerUser = SampleUsers.first(),
-            onBack = {},
-            onOpenProfile = {},
-            onOpenVideo = {},
-            onOpenAlbum = { _, _ -> },
-            onToggleLike = {},
-            onToggleBookmark = {},
-            onToggleCommentLike = {},
-            onAddComment = {},
-            onRetryComments = {},
-            onRetry = {},
-            onDelete = {},
-        )
-    }
+    PostDetailPreview(PostDetailUiState.Error(AppError.NoConnection))
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailLoadingPreview() {
+    PostDetailPreview(PostDetailUiState.Loading)
+}
+
+/** The screen with every callback stubbed, so each preview supplies only the state it shows. */
+@Composable
+private fun PostDetailPreview(uiState: PostDetailUiState) {
     MosaicTheme {
         PostDetailScreen(
-            uiState = PostDetailUiState.Loading,
+            uiState = uiState,
             composerUser = SampleUsers.first(),
             onBack = {},
             onOpenProfile = {},

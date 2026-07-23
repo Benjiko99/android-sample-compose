@@ -82,10 +82,10 @@ class ProfileViewModelTest : ViewModelTest() {
         bookmarks: List<Post> = listOf(savedPost),
         likes: List<Post> = listOf(likedPost),
     ): ProfileViewModel {
-        val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(
             FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
         )
+        val postRepo = PostRepository(FakePostDataSource(), userRepo)
         profileDataSource = FakeProfileDataSource(
             refreshData = mapOf(
                 "u1" to ProfileRefreshData(

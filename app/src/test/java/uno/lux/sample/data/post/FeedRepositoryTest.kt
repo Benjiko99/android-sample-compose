@@ -14,8 +14,9 @@ import java.time.Instant
 
 class FeedRepositoryTest {
 
-    private fun postRepo() = PostRepository(FakePostDataSource())
     private fun userRepo() = UserRepository(FakeUserDataSource())
+    private fun postRepo(userRepo: UserRepository = userRepo()) =
+        PostRepository(FakePostDataSource(), userRepo)
 
     private fun feedRepo(
         dataSource: FeedDataSource = FakeFeedDataSource(),
@@ -167,8 +168,8 @@ class FeedRepositoryTest {
 
     @Test
     fun `publish stores the new post and its author in the entity repositories`() = runTest {
-        val postRepo = postRepo()
         val userRepo = userRepo()
+        val postRepo = postRepo(userRepo)
         val repo = feedRepo(postRepo = postRepo, userRepo = userRepo)
 
         val postId = repo.publish(NewPost(title = "Title", body = "Body"))

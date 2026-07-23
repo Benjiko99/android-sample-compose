@@ -2,6 +2,7 @@ package uno.lux.sample.data.user
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -30,7 +31,7 @@ class UserRepository(
     private val dataSource: UserDataSource,
 ) {
     private val _cache = MutableStateFlow<Map<UserId, User>>(emptyMap())
-    val users: Flow<Map<UserId, User>> = _cache.asStateFlow()
+    val users: StateFlow<Map<UserId, User>> = _cache.asStateFlow()
 
     fun user(userId: UserId): Flow<User?> = _cache.map { it[userId] }
 

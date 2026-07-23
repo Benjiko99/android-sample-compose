@@ -46,9 +46,10 @@ class ProfileRepositoryTest {
         likes = mapOf(userId to mapOf(null to PostsWithAuthorsPage(posts, users, cursor, hasMore))),
     )
 
-    private fun postRepo() = PostRepository(FakePostDataSource())
-
     private fun userRepo() = UserRepository(FakeUserDataSource())
+
+    private fun postRepo(userRepo: UserRepository = userRepo()) =
+        PostRepository(FakePostDataSource(), userRepo)
 
     private fun repository(
         dataSource: ProfileDataSource = FakeProfileDataSource(),

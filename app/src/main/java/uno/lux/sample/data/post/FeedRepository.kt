@@ -56,21 +56,20 @@ class FeedRepository(
     }
 
     /**
-     * Publishes [draft] and returns the new post's ID. The post and its author are stored through
-     * the entity repositories, then the ID is prepended to the feed so the composer's result is
-     * visible at the top without a round trip. A feed that hasn't loaded yet is left alone — its
-     * first fetch will carry the new post anyway.
+     * Publishes [draft] and returns the new post's ID. [PostRepository] stores the post and its
+     * embedded author; the ID is then prepended to the feed so the composer's result is visible
+     * at the top without a round trip. A feed that hasn't loaded yet is left alone — its first
+     * fetch will carry the new post anyway.
      */
     suspend fun publish(draft: NewPost): PostId {
         val created = postRepository.create(draft)
-        userRepository.ingest(listOf(created.author))
 
         _feedState.update { state ->
-            if (state is FeedState.Loaded) state.copy(postIds = listOf(created.post.id) + state.postIds)
+            if (state is FeedState.Loaded) state.copy(postIds = listOf(created.id) + state.postIds)
             else state
         }
 
-        return created.post.id
+        return created.id
     }
 
     suspend fun loadMore() {

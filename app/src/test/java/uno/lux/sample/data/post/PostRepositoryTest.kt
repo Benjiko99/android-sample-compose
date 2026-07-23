@@ -7,7 +7,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
+import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
@@ -18,8 +20,10 @@ class PostRepositoryTest {
     private val bookmarked = post(id = "bookmarked", isBookmarked = true)
     private val author = User(id = "u-unliked", nickname = "Ada", handle = "@ada")
 
+    private val userRepository = UserRepository(FakeUserDataSource())
+
     private fun repository(dataSource: PostDataSource = FakePostDataSource()) =
-        PostRepository(dataSource)
+        PostRepository(dataSource, userRepository)
 
     @Test
     fun `entities starts empty`() = runTest {
@@ -38,15 +42,16 @@ class PostRepositoryTest {
     // load() is what a screen with nothing but a post ID falls back on — a detail page restored
     // after process death, whose stores start empty.
     @Test
-    fun `load stores the fetched post and returns it with its author`() = runTest {
+    fun `load stores the fetched post and seeds its embedded author`() = runTest {
         val dataSource = FakePostDataSource()
         dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
         val repo = repository(dataSource)
 
-        val loaded = repo.load("unliked")!!
+        assertEquals(unliked, repo.load("unliked"))
 
         assertEquals(unliked, repo.entities.first()["unliked"])
-        assertEquals(author, loaded.author)
+        // The author rides along, so a screen resolving the post finds its header user too.
+        assertEquals(author, userRepository.users.first()[author.id])
     }
 
     @Test
@@ -70,13 +75,13 @@ class PostRepositoryTest {
     }
 
     @Test
-    fun `create stores the published post and returns it with its author`() = runTest {
+    fun `create stores the published post and seeds its embedded author`() = runTest {
         val repo = repository()
 
         val created = repo.create(NewPost(title = "Title", body = "Body"))
 
-        assertEquals(created.post, repo.entities.first()[created.post.id])
-        assertEquals("u1", created.author.id)
+        assertEquals(created, repo.entities.first()[created.id])
+        assertEquals("u1", userRepository.users.first()["u1"]?.id)
     }
 
     @Test

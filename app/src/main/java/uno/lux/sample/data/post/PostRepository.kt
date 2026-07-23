@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.profile.ProfileRepository
+import uno.lux.sample.data.user.UserRepository
 
 /**
  * Normalized entity store for posts.
@@ -16,9 +17,15 @@ import uno.lux.sample.data.profile.ProfileRepository
  *
  * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
  * [FeedRepository] or [ProfileRepository]; this store owns only the entity data.
+ *
+ * The two endpoints that answer with a *single* post embed its author, so [load] and [create]
+ * seed [userRepository] with it — the same thing [ProfileRepository] does for the authors that
+ * ride along with a page of saved or liked posts. Sideloaded users belong in the user store
+ * wherever they arrive from, rather than each caller remembering to put them there.
  */
 class PostRepository(
     private val dataSource: PostDataSource,
+    private val userRepository: UserRepository,
 ) {
     private val _entities = MutableStateFlow<Map<PostId, Post>>(emptyMap())
     val entities: StateFlow<Map<PostId, Post>> = _entities.asStateFlow()
@@ -28,32 +35,29 @@ class PostRepository(
     }
 
     /**
-     * Fetches a single post into the store, returning it with its author — or null when the server
-     * says there is no such post, so a caller can render "gone" rather than a retryable failure.
-     * As with [create], the author travels back to the caller to ingest rather than being written
-     * here: this store owns post entities only.
+     * Fetches a single post into the store, returning it — or null when the server says there is
+     * no such post, so a caller can render "gone" rather than a retryable failure.
      *
-     * A screen reached the ordinary way never needs this — it opens from a feed or profile whose
+     * A screen reached the ordinary way never needs this: it opens from a feed or profile whose
      * fetch already filled the store. It exists for the screen that is the *first* thing to ask
-     * for a post: a post detail page restored after process death, whose stores start empty.
+     * for a post — a post detail page restored after process death, whose stores start empty,
+     * which is also why the embedded author is seeded here rather than fetched separately.
      */
-    suspend fun load(postId: PostId): PostWithAuthor? {
-        val loaded = dataSource.fetch(postId) ?: return null
-        _entities.update { it + (loaded.post.id to loaded.post) }
-
-        return loaded
-    }
+    suspend fun load(postId: PostId): Post? = dataSource.fetch(postId)?.let(::store)
 
     /**
      * Publishes [draft] and stores the resulting entity, so any screen already resolving that ID
-     * renders it without a re-fetch. The author travels back with it for the caller to ingest —
-     * placing the post in an ordered list is [FeedRepository]'s job, not this store's.
+     * renders it without a re-fetch. Placing the post in an ordered list is [FeedRepository]'s
+     * job, not this store's.
      */
-    suspend fun create(draft: NewPost): PostWithAuthor {
-        val created = dataSource.create(draft)
-        _entities.update { it + (created.post.id to created.post) }
+    suspend fun create(draft: NewPost): Post = store(dataSource.create(draft))
 
-        return created
+    /** Puts a single post's two halves where each belongs, and hands back the post. */
+    private fun store(fetched: PostWithAuthor): Post {
+        _entities.update { it + (fetched.post.id to fetched.post) }
+        userRepository.ingest(listOf(fetched.author))
+
+        return fetched.post
     }
 
     /**

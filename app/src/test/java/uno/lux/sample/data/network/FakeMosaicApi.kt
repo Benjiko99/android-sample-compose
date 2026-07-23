@@ -206,20 +206,7 @@ class FakeMosaicApi(
             videoDurationSeconds = videoDurationSeconds?.readText(),
         )
 
-        return PostResponse(
-            PostDto(
-                id = "p-new",
-                url = testPostUrl("p-new"),
-                title = titleText,
-                body = bodyText,
-                createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
-                author = stubAuthor,
-                likeCount = 0,
-                commentCount = 0,
-                isLiked = false,
-                isBookmarked = false,
-            )
-        )
+        return PostResponse(fullPostDto("p-new").copy(title = titleText, body = bodyText))
     }
 
     // Retrofit hands the fake real RequestBody parts, so the assertions read them back out.
@@ -290,7 +277,7 @@ fun feedItemDto(
 )
 
 /** The full projection — [feedItemDto]'s counterpart with the author embedded. */
-fun postDto(
+fun fullPostDto(
     id: String,
     author: UserDto = stubAuthor,
     isLiked: Boolean = false,

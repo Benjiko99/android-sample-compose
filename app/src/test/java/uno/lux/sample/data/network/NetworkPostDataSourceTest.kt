@@ -23,7 +23,9 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `fetch maps the full projection with its author flattened to an id`() = runTest {
-        val api = FakeMosaicApi(postById = mapOf("p1" to postDto("p1", author = userDto("u7", "Grace"))))
+        val api = FakeMosaicApi(
+            postById = mapOf("p1" to fullPostDto("p1", author = userDto("u7", "Grace"))),
+        )
         val dataSource = NetworkPostDataSource(api)
 
         val fetched = dataSource.fetch("p1")!!

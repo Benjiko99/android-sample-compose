@@ -71,10 +71,10 @@ class PostDetailViewModelTest : ViewModelTest() {
         commentDataSource: CommentDataSource = FakeCommentDataSource(currentUser, comments),
         postDataSource: FakePostDataSource = FakePostDataSource(),
     ): PostDetailViewModel {
-        val postRepo = PostRepository(postDataSource)
-        postRepo.ingest(posts)
         val userRepo = UserRepository(FakeUserDataSource())
         userRepo.ingest(users)
+        val postRepo = PostRepository(postDataSource, userRepo)
+        postRepo.ingest(posts)
         return PostDetailViewModel(
             postRepository = postRepo,
             commentRepository = CommentRepository(commentDataSource),

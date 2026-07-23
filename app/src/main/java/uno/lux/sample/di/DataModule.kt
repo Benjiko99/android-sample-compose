@@ -49,8 +49,10 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun providePostRepository(dataSource: PostDataSource): PostRepository =
-        PostRepository(dataSource)
+    fun providePostRepository(
+        dataSource: PostDataSource,
+        userRepository: UserRepository,
+    ): PostRepository = PostRepository(dataSource, userRepository)
 
     @Provides
     fun provideFeedDataSource(api: MosaicApi): FeedDataSource = NetworkFeedDataSource(api)

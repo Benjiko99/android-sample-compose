@@ -15,9 +15,8 @@ class NetworkPostDataSource(
 ) : PostDataSource {
 
     override suspend fun fetch(postId: PostId): PostWithAuthor? = withContext(Dispatchers.IO) {
-        val response = notFoundAsNull { api.getPost(postId) } ?: return@withContext null
-
-        PostWithAuthorMapper.toPostWithAuthor(response.data)
+        notFoundAsNull { api.getPost(postId) }
+            ?.let { PostWithAuthorMapper.toPostWithAuthor(it.data) }
     }
 
     override suspend fun create(draft: NewPost): PostWithAuthor = withContext(Dispatchers.IO) {

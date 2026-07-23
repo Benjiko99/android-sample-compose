@@ -41,10 +41,11 @@ class CreatePostViewModelTest : ViewModelTest() {
         videoDuration: Int = 12,
     ): Fixture {
         val postDataSource = FakePostDataSource().apply { this.createError = createError }
+        val userRepository = UserRepository(FakeUserDataSource())
         val feedRepository = FeedRepository(
             dataSource = FakeFeedDataSource(),
-            postRepository = PostRepository(postDataSource),
-            userRepository = UserRepository(FakeUserDataSource()),
+            postRepository = PostRepository(postDataSource, userRepository),
+            userRepository = userRepository,
         )
 
         return Fixture(

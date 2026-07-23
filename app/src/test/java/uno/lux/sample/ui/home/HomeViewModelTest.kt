@@ -64,8 +64,8 @@ class HomeViewModelTest : ViewModelTest() {
         feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
         currentUserId: UserId = "u1",
     ): HomeViewModel {
-        val postRepo = PostRepository(FakePostDataSource())
         val userRepo = UserRepository(FakeUserDataSource())
+        val postRepo = PostRepository(FakePostDataSource(), userRepo)
         val feedRepo = FeedRepository(feedDataSource, postRepo, userRepo)
         return HomeViewModel(feedRepo, postRepo, userRepo, navigator, currentUserId)
     }

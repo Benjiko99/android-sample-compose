@@ -12,13 +12,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.CommentRepository
+import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.PostWithAuthor
@@ -85,14 +86,15 @@ class PostDetailViewModel @AssistedInject constructor(
     private val _commentsError = MutableStateFlow<AppError?>(null)
     private val _commentsLoading = MutableStateFlow(true)
 
-    /** The post and its author, resolved together — one is no use without the other. */
+    /**
+     * The post and its author, resolved together — one is no use without the other. Both stores
+     * emit for changes to any post or user, so this only passes on the ones that move *this*
+     * pair; without that, a like anywhere in the feed underneath would rebuild the whole state.
+     */
     private val postWithAuthor: Flow<PostWithAuthor?> =
         combine(postRepository.entities, userRepository.users) { entities, users ->
-            val post = entities[postId] ?: return@combine null
-            val author = users[post.authorId] ?: return@combine null
-
-            PostWithAuthor(post, author)
-        }
+            resolve(entities, users)
+        }.distinctUntilChanged()
 
     val uiState: StateFlow<PostDetailUiState> = combine(
         postWithAuthor,
@@ -143,7 +145,7 @@ class PostDetailViewModel @AssistedInject constructor(
      * restored after process death, where this ViewModel is the first thing to ask for the post.
      */
     private suspend fun loadPost() {
-        if (postWithAuthor.first() != null) return
+        if (resolve(postRepository.entities.value, userRepository.users.value) != null) return
 
         _postLoad.value = PostLoad.Pending
         ignoreErrors(
@@ -152,12 +154,17 @@ class PostDetailViewModel @AssistedInject constructor(
                 _postLoad.value = PostLoad.Failed(e.toAppError())
             },
         ) {
-            val loaded = postRepository.load(postId)
-
             // A 404 is the server saying the post is gone — an answer, not a failure to retry.
-            if (loaded == null) _postLoad.value = PostLoad.Missing
-            else userRepository.ingest(listOf(loaded.author))
+            if (postRepository.load(postId) == null) _postLoad.value = PostLoad.Missing
         }
+    }
+
+    /** This post paired with its author, or null while either store is still missing its half. */
+    private fun resolve(entities: Map<PostId, Post>, users: Map<UserId, User>): PostWithAuthor? {
+        val post = entities[postId] ?: return null
+        val author = users[post.authorId] ?: return null
+
+        return PostWithAuthor(post, author)
     }
 
     private suspend fun loadComments() {
