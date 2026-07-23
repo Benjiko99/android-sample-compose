@@ -42,12 +42,6 @@ android {
         compose = true
         buildConfig = true
     }
-    androidResources {
-        // Derives res/xml/_generated_res_locale_config.xml from the values-* folders and points
-        // the manifest's android:localeConfig at it, which is what lists the app under the
-        // system's per-app language settings. The default locale comes from res/resources.properties.
-        generateLocaleConfig = true
-    }
 }
 
 dependencies {
@@ -74,7 +68,6 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
-    // Decodes a frame out of a local video so the composer can preview a picked clip.
     implementation(libs.coil.video)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
@@ -84,7 +77,6 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.timber)
-    // The Mappie Gradle plugin does not add its api to AGP's built-in Kotlin classpath, so wire it up.
     implementation(libs.mappie.api)
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
