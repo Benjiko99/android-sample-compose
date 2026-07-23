@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.create
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -7,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import uno.lux.sample.data.post.FeedRepository
@@ -16,6 +18,8 @@ import uno.lux.sample.ui.file.VideoMetadataReader
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.ignoreErrors
+import uno.lux.sample.util.restoreDraft
+import uno.lux.sample.util.saveDraft
 import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.toAppError
 import javax.inject.Inject
@@ -36,13 +40,22 @@ class CreatePostViewModel @Inject constructor(
     private val fileLoader: FileLoader,
     private val videoMetadataReader: VideoMetadataReader,
     private val navigator: Navigator,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel(), CreatePostActions {
 
-    private val _uiState = MutableStateFlow(CreatePostUiState())
+    // Only the form is saved. Whether a publish is in flight, and anything that failed, belong to
+    // the process that was killed — the restored composer is idle, holding what the user typed.
+    private val _uiState = MutableStateFlow(
+        CreatePostUiState(form = savedStateHandle.restoreDraft(DraftKey) ?: CreatePostForm()),
+    )
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
 
     private var publishJob: Job? = null
     private var pickVideoJob: Job? = null
+
+    init {
+        savedStateHandle.saveDraft(viewModelScope, DraftKey, uiState.map { it.form })
+    }
 
     override fun onTitleChange(value: String) = updateForm {
         it.copy(title = value.take(CreatePostTitleMaxLength))
@@ -175,3 +188,6 @@ class CreatePostViewModel @Inject constructor(
         _uiState.update { it.copy(form = transform(it.form)) }
     }
 }
+
+/** Where the in-progress draft is kept in the entry's saved state. */
+private const val DraftKey = "create_post_draft"

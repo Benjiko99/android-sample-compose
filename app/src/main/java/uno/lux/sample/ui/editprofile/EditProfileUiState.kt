@@ -1,6 +1,7 @@
 package uno.lux.sample.ui.editprofile
 
 import androidx.annotation.StringRes
+import kotlinx.serialization.Serializable
 import uno.lux.sample.R
 import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.user.ProfileUpdate
@@ -35,7 +36,10 @@ val EditProfileAgeRange = 13..120
  * current server avatar; [pickedAvatarUri] is a newly chosen local image (a `content://` URI)
  * not yet uploaded — [displayAvatar] prefers it for the live preview. [userId] is carried
  * along, unedited, only so the avatar preview can key its fallback gradient on it.
+ *
+ * [Serializable] so in-progress edits survive process death — see [uno.lux.sample.util.saveDraft].
  */
+@Serializable
 data class EditProfileForm(
     val userId: UserId,
     val nickname: String,

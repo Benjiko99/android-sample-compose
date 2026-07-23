@@ -2,6 +2,7 @@ package uno.lux.sample.ui.create
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,6 +19,7 @@ import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.file.FakeFileLoader
 import uno.lux.sample.ui.file.FakeVideoMetadataReader
+import androidx.lifecycle.SavedStateHandle
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
@@ -39,6 +41,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         fileError: Exception? = null,
         videoSize: Long? = 1_000,
         videoDuration: Int = 12,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ): Fixture {
         val postDataSource = FakePostDataSource().apply { this.createError = createError }
         val userRepository = UserRepository(FakeUserDataSource())
@@ -54,6 +57,7 @@ class CreatePostViewModelTest : ViewModelTest() {
                 FakeFileLoader(error = fileError, size = videoSize),
                 FakeVideoMetadataReader(videoDuration),
                 navigator,
+                savedStateHandle,
             ),
             postDataSource,
         )
@@ -379,5 +383,72 @@ class CreatePostViewModelTest : ViewModelTest() {
         assertFalse(state.showDiscardConfirmation)
         assertEquals("Half a thought", state.form.title)
         assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+    }
+
+    // ── surviving process death ───────────────────────────────────────────────
+    //
+    // A killed composer comes back on the same back-stack entry, so it comes back with the same
+    // SavedStateHandle — the round trip below is a rebuilt ViewModel reading what the old one left.
+
+    @Test
+    fun `a part-written post survives being rebuilt from the same saved state`() = runTest {
+        val handle = SavedStateHandle()
+        val killed = fixture(savedStateHandle = handle).viewModel
+        killed.fillIn(title = "Engine sketches", body = "Carry mechanism works.")
+        killed.onImagesPicked(listOf("uri-a", "uri-b"))
+        advanceUntilIdle()
+
+        val restored = fixture(savedStateHandle = handle).viewModel
+
+        val form = restored.uiState.first().form
+        assertEquals("Engine sketches", form.title)
+        assertEquals("Carry mechanism works.", form.body)
+        assertEquals(listOf("uri-a", "uri-b"), form.imageUris)
+    }
+
+    @Test
+    fun `a restored draft keeps an attached video with its duration`() = runTest {
+        val handle = SavedStateHandle()
+        val killed = fixture(savedStateHandle = handle, videoDuration = 42).viewModel
+        killed.onVideoPicked("uri-clip")
+        advanceUntilIdle()
+
+        val restored = fixture(savedStateHandle = handle).viewModel
+
+        assertEquals(
+            CreatePostMedia.Video(uri = "uri-clip", durationSeconds = 42),
+            restored.uiState.first().form.media,
+        )
+    }
+
+    // Only the form is worth saving: a publish that was in flight when the process died is not
+    // still running, and an error from that process is about a request nobody is waiting on.
+    @Test
+    fun `a restored composer is idle and carries no stale error`() = runTest {
+        val handle = SavedStateHandle()
+        val killed = fixture(createError = IOException("offline"), savedStateHandle = handle).viewModel
+        killed.fillIn()
+        killed.publish()
+        advanceUntilIdle()
+
+        val restored = fixture(savedStateHandle = handle).viewModel
+
+        val state = restored.uiState.first()
+        assertFalse(state.isPublishing)
+        assertNull(state.error)
+        assertEquals("Title", state.form.title)
+    }
+
+    @Test
+    fun `a published draft is not restored afterwards`() = runTest {
+        val handle = SavedStateHandle()
+        val killed = fixture(savedStateHandle = handle).viewModel
+        killed.fillIn()
+        killed.publish()
+        advanceUntilIdle()
+
+        val restored = fixture(savedStateHandle = handle).viewModel
+
+        assertTrue(restored.uiState.first().form.isEmpty)
     }
 }

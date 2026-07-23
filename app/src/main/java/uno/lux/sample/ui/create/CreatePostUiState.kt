@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.create
 
+import kotlinx.serialization.Serializable
 import uno.lux.sample.data.file.FileUpload
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
@@ -24,12 +25,17 @@ const val CreatePostMaxVideoBytes = 25L * 1024 * 1024
  * 25 MB clip, and holding that in memory for the length of the composing session would be wasteful
  * when the thumbnails render straight from the URI. They are read into [FileUpload]s once, at
  * publish (see `CreatePostViewModel.publish`).
+ *
+ * [Serializable] because a picked selection is part of the draft that survives process death.
  */
+@Serializable
 sealed interface CreatePostMedia {
 
     /** Nothing attached — the only state from which either kind can still be chosen. */
+    @Serializable
     data object None : CreatePostMedia
 
+    @Serializable
     data class Images(val uris: List<String>) : CreatePostMedia {
         val canAddMore: Boolean
             get() = uris.size < CreatePostMaxImages
@@ -39,6 +45,7 @@ sealed interface CreatePostMedia {
      * A single clip. [durationSeconds] is read from the file when it is picked, because the server
      * has no way to extract it — see `PostsService.create`.
      */
+    @Serializable
     data class Video(val uri: String, val durationSeconds: Int) : CreatePostMedia
 }
 
@@ -48,7 +55,10 @@ sealed interface CreatePostMedia {
  *
  * [toNewPost] takes the already-loaded [media] as a parameter rather than producing it, since
  * reading the picked files needs a suspending `FileLoader` the form has no business holding.
+ *
+ * [Serializable] so a part-written post survives process death — see [uno.lux.sample.util.saveDraft].
  */
+@Serializable
 data class CreatePostForm(
     val title: String = "",
     val body: String = "",

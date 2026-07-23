@@ -1,5 +1,6 @@
 package uno.lux.sample.ui.editprofile
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -7,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import uno.lux.sample.data.user.UserId
@@ -17,6 +19,8 @@ import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
 import uno.lux.sample.util.launchIfIdle
+import uno.lux.sample.util.restoreDraft
+import uno.lux.sample.util.saveDraft
 import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 
@@ -33,10 +37,12 @@ class EditProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val fileLoader: FileLoader,
     private val navigator: Navigator,
+    private val savedStateHandle: SavedStateHandle,
     @param:CurrentUserId private val userId: UserId,
 ) : ViewModel(), EditProfileActions {
 
-    private val _form = MutableStateFlow<EditProfileForm?>(null)
+    // Edits in progress are the one thing here that can't be fetched again, so they are saved.
+    private val _form = MutableStateFlow(savedStateHandle.restoreDraft<EditProfileForm>(DraftKey))
     private val _initialForm = MutableStateFlow<EditProfileForm?>(null)
     private val _loadError = MutableStateFlow<AppError?>(null)
     private val _isSaving = MutableStateFlow(false)
@@ -82,6 +88,7 @@ class EditProfileViewModel @Inject constructor(
     private var saveJob: Job? = null
 
     init {
+        savedStateHandle.saveDraft(viewModelScope, DraftKey, _form.filterNotNull())
         retry()
     }
 
@@ -100,9 +107,12 @@ class EditProfileViewModel @Inject constructor(
                 "Signed-in user '$userId' not found"
             }
 
-            val form = EditProfileForm.from(user)
-            _form.value = form
-            _initialForm.value = form
+            // The pristine snapshot always comes from the server, so the dirty check compares
+            // against what is actually stored — but restored edits win over it, or a restart
+            // would quietly undo them.
+            val stored = EditProfileForm.from(user)
+            _initialForm.value = stored
+            if (_form.value == null) _form.value = stored
         }
     }
 
@@ -160,3 +170,6 @@ class EditProfileViewModel @Inject constructor(
         _form.update { form -> form?.let(transform) }
     }
 }
+
+/** Where in-progress edits are kept in the entry's saved state. */
+private const val DraftKey = "edit_profile_draft"

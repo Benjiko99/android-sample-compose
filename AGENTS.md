@@ -83,7 +83,11 @@ Both endpoints that answer with a *single* post send the full projection, author
 
 `BackStackRestorationTest` (instrumented) pins the first half with `StateRestorationTester.emulateSavedInstanceStateRestore()`, which saves the registry, throws the composition away and rebuilds it — the same round trip the platform performs. It walks one of every `Screen` through a restore, so a key that quietly stops being serializable fails there rather than in a user's hands. It cannot emulate the empty stores, which is why the cold-start loading is covered by ViewModel unit tests instead.
 
-Two things are deliberately *not* restored: a part-written post in the composer (`CreatePostViewModel` holds the draft in a plain `MutableStateFlow`, so a kill loses it) and video playback position. Both would need a `SavedStateHandle`; neither is wired to one today.
+**What the user typed is the one thing that has to be *saved*, not re-derived.** A fetch can be repeated; a half-written post cannot, so `CreatePostViewModel` and `EditProfileViewModel` persist their form through the `SavedStateHandle` Hilt injects — per back-stack entry, riding in the same instance state as the `Screen` keys. `util/SavedDraft.kt` is the seam: `restoreDraft` reads what the killed process left, `saveDraft` mirrors the form flow back into the handle. Only the *form* is saved; an in-flight publish and the errors of a process that no longer exists are not, so a restored composer is idle and holds exactly what was typed. The editor's pristine snapshot is still re-read from the server, so restored edits keep reading as unsaved rather than silently becoming the new baseline.
+
+The draft is stored as **JSON in one string** rather than through `encodeToSavedState`, because `SavedState` is a `Bundle` and a Bundle can't be driven from a plain-JVM unit test. A string keeps the whole round trip — type a draft, rebuild the ViewModel from the same handle, get the draft back — provable without Robolectric, which is the same trade the rest of this codebase makes. Note what the unit tests *can't* prove: that the platform hands the entry's handle back at all. That half was verified by killing the app with `adb shell am kill` on both screens.
+
+Video playback position is still deliberately not restored.
 
 ## Compose performance — keeping recomposition tight
 
