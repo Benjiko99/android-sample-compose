@@ -81,6 +81,8 @@ dependencies {
     implementation(libs.mappie.api)
     ksp(libs.hilt.android.compiler)
     testImplementation(libs.junit)
+    // Asserts the package rules in AGENTS.md against the real import graph (ArchitectureTest).
+    testImplementation(libs.konsist)
     testImplementation(libs.kotlinx.coroutines.test)
     // Drives the real Retrofit stack over loopback, so the multipart wire format the backend
     // parses is asserted rather than assumed (see MosaicApiMultipartTest).

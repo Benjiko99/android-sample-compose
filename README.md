@@ -118,7 +118,9 @@ The app talks to a Rails backend at `https://mosaic.tree-among-shrubs.com/api/`,
 
 ## Testing
 
-Tests are the primary consumer of this codebase — the architecture is shaped by what a test needs to drive. 350 JVM unit tests cover repositories, ViewModels and formatters with hand-written fakes; instrumented tests cover the two things a JVM test cannot reach, saved-state restoration and process death.
+Tests are the primary consumer of this codebase — the architecture is shaped by what a test needs to drive. 354 JVM unit tests cover repositories, ViewModels and formatters with hand-written fakes; instrumented tests cover the two things a JVM test cannot reach, saved-state restoration and process death.
+
+Four of those are **architecture tests**. `ArchitectureTest` (Konsist) reads every import in the project and fails the build if one crosses a line the layout forbids — the foundation reaching into a slice, an aggregate importing a feature, HTTP escaping the network layer, or a repository picking up an Android dependency. Kotlin has no package-private and `internal` is module-scoped, so in a single-module project a package layout is a convention until something checks it. This is that something.
 
 ```bash
 ./gradlew testDebugUnitTest

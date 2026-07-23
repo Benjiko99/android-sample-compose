@@ -80,6 +80,8 @@ Inside a slice, `data/` holds the repository and its `DataSource` interface, and
 
 **There is one Retrofit service per slice** (`FeedApi`, `PostApi`, `CommentApi`, `UserApi`, `ProfileApi`), all created from the one `Retrofit` instance in `app/di/NetworkModule.kt`. Do not reintroduce a single app-wide API interface: the previous one spanned five slices, so it fit in none of them, and its 338-line fake had to be implemented in full by every test that needed one endpoint.
 
+**These rules are executable, not advisory** — `architecture/ArchitectureTest.kt` (Konsist) asserts four of them against the real import graph and fails the build on a violation: the foundation depends on no slice, aggregates depend on no feature, Retrofit/OkHttp stay in a `data/network` package (plus `app/core/network` and `app/di`), and repositories outside `settings` carry no Android import. Kotlin has no package-private and `internal` is module-scoped, so nothing else in a single-module project checks this. Adding a rule means adding a test; if a violation is *intended*, widen the rule and say why in its message rather than deleting it.
+
 ## Architecture
 
 Single-activity, 100% Jetpack Compose app — there are no Fragments and no XML view layouts (XML under `res/` is only resources: themes, colors, vector icons, backup rules). The entire UI tree is built in Kotlin.
