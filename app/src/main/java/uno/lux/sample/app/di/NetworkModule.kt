@@ -5,8 +5,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -43,7 +45,7 @@ object NetworkModule {
             }
             .apply {
                 if (BuildConfig.DEBUG) {
-                    addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+                    addInterceptor(BodyLoggingInterceptor)
                 }
             }
             .build()
@@ -80,4 +82,27 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideProfileApi(retrofit: Retrofit): ProfileApi = retrofit.create(ProfileApi::class.java)
+}
+
+/**
+ * Full-body request/response logging, except for multipart uploads, which log headers only.
+ *
+ * `HttpLoggingInterceptor` at [BODY][HttpLoggingInterceptor.Level.BODY] buffers the whole entity
+ * and prints it whenever the first bytes look like UTF-8. A multipart body opens with its boundary
+ * and part headers — plain text — so the check passes and the *entire* body is dumped, video bytes
+ * and all, flooding logcat on a clip upload. Multipart in this app is only ever a file upload
+ * (post media, the avatar), so keying on it downgrades exactly the binary requests to
+ * [HEADERS][HttpLoggingInterceptor.Level.HEADERS] and leaves every JSON call logging in full.
+ */
+private object BodyLoggingInterceptor : Interceptor {
+
+    private val full = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+    private val headersOnly =
+        HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.HEADERS }
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val isMultipart = chain.request().body?.contentType()?.type == "multipart"
+
+        return (if (isMultipart) headersOnly else full).intercept(chain)
+    }
 }
