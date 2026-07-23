@@ -14,7 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import uno.lux.sample.design.components.rememberDebounced
+import uno.lux.sample.app.util.rememberDebounced
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -41,9 +41,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.settings.AppLanguage
 import uno.lux.sample.settings.ThemeMode
-import uno.lux.sample.design.theme.LocalMosaicColors
-import uno.lux.sample.design.theme.MosaicTheme
-import uno.lux.sample.util.createActionsProxy
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.util.createActionsProxy
 
 /**
  * The settings screen's ViewModel-backed intents — picking a theme, toggling video auto-play,

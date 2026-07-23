@@ -3,7 +3,7 @@ package uno.lux.sample.app.navigation
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import uno.lux.sample.post.PostId
-import uno.lux.sample.post.Video
+import uno.lux.sample.video.Video
 import uno.lux.sample.user.UserId
 
 /**

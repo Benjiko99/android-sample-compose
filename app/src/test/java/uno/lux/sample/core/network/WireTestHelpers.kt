@@ -4,6 +4,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
 import retrofit2.Response
+import uno.lux.sample.app.core.network.CursorPageDto
 
 internal val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
 

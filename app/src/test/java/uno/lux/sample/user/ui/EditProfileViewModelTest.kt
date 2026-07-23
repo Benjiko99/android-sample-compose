@@ -13,7 +13,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.testing.ViewModelTest
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
@@ -22,7 +22,7 @@ import uno.lux.sample.core.files.FakeFileLoader
 import androidx.lifecycle.SavedStateHandle
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditProfileViewModelTest : ViewModelTest() {

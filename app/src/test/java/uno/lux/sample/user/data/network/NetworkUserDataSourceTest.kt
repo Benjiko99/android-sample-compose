@@ -6,7 +6,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 

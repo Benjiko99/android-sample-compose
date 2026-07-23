@@ -16,11 +16,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import uno.lux.sample.design.components.MosaicGradients
-import uno.lux.sample.design.theme.Manrope
+import uno.lux.sample.app.theme.MosaicGradients
+import uno.lux.sample.app.theme.Manrope
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
-import uno.lux.sample.util.initials
+import uno.lux.sample.app.format.initials
 
 /**
  * A circular avatar for a [user].

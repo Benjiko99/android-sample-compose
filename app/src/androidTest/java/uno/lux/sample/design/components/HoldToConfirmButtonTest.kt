@@ -14,7 +14,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import uno.lux.sample.design.theme.MosaicTheme
+import uno.lux.sample.app.common.ui.HoldToConfirmButton
+import uno.lux.sample.app.theme.MosaicTheme
 
 /**
  * Pins the button's accessibility escape hatch. Holding is a motor-skill barrier, so a service

@@ -1,7 +1,7 @@
 package uno.lux.sample.feed.ui
 
 import uno.lux.sample.post.ui.PostCardData
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 
 /**
  * Exhaustive state for the feed screen, rendered by a stateless `HomeScreen`. Modeled as

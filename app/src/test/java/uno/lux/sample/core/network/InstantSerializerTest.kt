@@ -4,6 +4,7 @@ import java.time.Instant
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.app.core.network.InstantSerializer
 import uno.lux.sample.post.data.network.PostFeedItemDto
 
 class InstantSerializerTest {

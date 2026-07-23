@@ -13,14 +13,14 @@ import kotlinx.coroutines.flow.update
 import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.di.CurrentUserId
-import uno.lux.sample.core.files.FileLoader
+import uno.lux.sample.app.core.files.FileLoader
 import uno.lux.sample.app.navigation.Navigator
-import uno.lux.sample.util.AppError
-import uno.lux.sample.util.ignoreErrors
-import uno.lux.sample.util.launchIfIdle
-import uno.lux.sample.core.state.restoreDraft
-import uno.lux.sample.core.state.saveDraft
-import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.app.util.AppError
+import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.launchIfIdle
+import uno.lux.sample.app.core.state.restoreDraft
+import uno.lux.sample.app.core.state.saveDraft
+import uno.lux.sample.app.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**

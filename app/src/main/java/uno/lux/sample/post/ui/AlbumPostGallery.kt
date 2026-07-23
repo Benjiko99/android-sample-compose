@@ -20,10 +20,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
-import uno.lux.sample.post.Album
-import uno.lux.sample.design.components.MediaBadge
-import uno.lux.sample.design.components.MosaicGradients
-import uno.lux.sample.design.components.debouncedClickable
+import uno.lux.sample.album.Album
+import uno.lux.sample.app.common.ui.MediaBadge
+import uno.lux.sample.app.theme.MosaicGradients
+import uno.lux.sample.app.util.debouncedClickable
 
 /**
  * An album post's media: its [Album.images] laid out in a horizontally scrolling row, each photo

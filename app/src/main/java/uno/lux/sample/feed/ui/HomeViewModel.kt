@@ -13,7 +13,7 @@ import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.feed.data.FeedState
 import uno.lux.sample.post.PostId
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.Video
+import uno.lux.sample.video.Video
 import uno.lux.sample.settings.data.DefaultAutoPlayVideos
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.user.UserId
@@ -22,11 +22,11 @@ import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.util.AppError
-import uno.lux.sample.util.ignoreErrors
-import uno.lux.sample.util.launchIfIdle
-import uno.lux.sample.util.launchRefresh
-import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.app.util.AppError
+import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.launchIfIdle
+import uno.lux.sample.app.util.launchRefresh
+import uno.lux.sample.app.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**

@@ -36,8 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.post.ReportReason
-import uno.lux.sample.design.format.asText
-import uno.lux.sample.design.theme.MosaicTheme
+import uno.lux.sample.app.format.asText
+import uno.lux.sample.app.theme.MosaicTheme
 
 /**
  * The report-a-post dialog: a single-choice list of [ReportReason]s plus an optional free-text

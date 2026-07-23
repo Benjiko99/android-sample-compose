@@ -1,6 +1,6 @@
 package uno.lux.sample.profile.ui
 
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 
 /** The profile screen's state: loading, the loaded profile data, or an unknown user. */
 sealed interface ProfileUiState {

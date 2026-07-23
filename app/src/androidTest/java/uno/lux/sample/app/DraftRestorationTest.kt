@@ -20,7 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.feed.data.FeedRepository
@@ -39,8 +39,8 @@ import uno.lux.sample.composer.ui.CreatePostMedia
 import uno.lux.sample.composer.ui.CreatePostViewModel
 import uno.lux.sample.user.ui.EditProfileUiState
 import uno.lux.sample.user.ui.EditProfileViewModel
-import uno.lux.sample.core.files.FileLoader
-import uno.lux.sample.core.files.VideoMetadataReader
+import uno.lux.sample.app.core.files.FileLoader
+import uno.lux.sample.app.core.files.VideoMetadataReader
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 

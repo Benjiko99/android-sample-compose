@@ -29,7 +29,7 @@ import uno.lux.sample.user.User
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 import uno.lux.sample.testing.testPostUrl
 import java.net.UnknownHostException
 import java.time.Instant

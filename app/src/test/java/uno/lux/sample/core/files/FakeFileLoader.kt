@@ -1,8 +1,12 @@
 package uno.lux.sample.core.files
 
+import uno.lux.sample.app.core.files.FileLoader
+import uno.lux.sample.app.core.files.FileUpload
+import uno.lux.sample.app.core.files.VideoMetadataReader
+
 
 /**
- * Shared [FileLoader] double. [read] records the URI it was asked for and returns a payload naming
+ * Shared [uno.lux.sample.app.core.files.FileLoader] double. [read] records the URI it was asked for and returns a payload naming
  * it, so a test can assert *which* files were uploaded; [error] and [size] drive the failure and
  * size-limit paths.
  */

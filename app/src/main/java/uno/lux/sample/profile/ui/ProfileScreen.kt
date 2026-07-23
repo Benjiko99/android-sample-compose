@@ -9,8 +9,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import uno.lux.sample.design.components.debouncedClickable
-import uno.lux.sample.design.components.rememberDebounced
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.rememberDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,29 +74,29 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.fixtures.SamplePosts
-import uno.lux.sample.fixtures.SampleUsers
+import uno.lux.sample.app.fixtures.SamplePosts
+import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
 import uno.lux.sample.post.PostId
-import uno.lux.sample.post.Video
+import uno.lux.sample.video.Video
 import uno.lux.sample.profile.Profile
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.design.components.FullScreenError
-import uno.lux.sample.design.components.FullScreenProgress
-import uno.lux.sample.design.components.LoadMoreEffect
-import uno.lux.sample.design.components.LoadingMoreFooter
+import uno.lux.sample.app.common.ui.FullScreenError
+import uno.lux.sample.app.common.ui.FullScreenProgress
+import uno.lux.sample.app.common.ui.LoadMoreEffect
+import uno.lux.sample.app.common.ui.LoadingMoreFooter
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData
-import uno.lux.sample.design.components.MosaicGradients
-import uno.lux.sample.design.components.ScrimIconButton
-import uno.lux.sample.design.format.asText
-import uno.lux.sample.design.theme.LocalMosaicColors
-import uno.lux.sample.design.theme.MosaicElevations
-import uno.lux.sample.design.theme.MosaicTheme
-import uno.lux.sample.util.compactCount
-import uno.lux.sample.util.createActionsProxy
+import uno.lux.sample.app.theme.MosaicGradients
+import uno.lux.sample.app.common.ui.ScrimIconButton
+import uno.lux.sample.app.format.asText
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.theme.MosaicElevations
+import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.util.compactCount
+import uno.lux.sample.app.util.createActionsProxy
 
 /**
  * The profile's ViewModel-backed intents — liking / bookmarking the viewed user's posts, plus

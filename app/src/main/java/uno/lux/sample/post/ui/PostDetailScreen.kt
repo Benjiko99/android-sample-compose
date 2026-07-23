@@ -67,26 +67,26 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
-import uno.lux.sample.fixtures.SampleComments
-import uno.lux.sample.fixtures.SamplePosts
-import uno.lux.sample.fixtures.SampleUsers
+import uno.lux.sample.app.common.ui.FullScreenError
+import uno.lux.sample.app.common.ui.FullScreenProgress
+import uno.lux.sample.app.fixtures.SampleComments
+import uno.lux.sample.app.fixtures.SamplePosts
+import uno.lux.sample.app.fixtures.SampleUsers
+import uno.lux.sample.app.format.asText
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.util.AppError
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.relativeTime
+import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.CommentId
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
-import uno.lux.sample.post.Video
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.design.components.FullScreenError
-import uno.lux.sample.design.components.FullScreenProgress
-import uno.lux.sample.design.components.debouncedClickable
-import uno.lux.sample.design.components.rememberDebounced
-import uno.lux.sample.design.format.asText
-import uno.lux.sample.design.theme.LocalMosaicColors
-import uno.lux.sample.design.theme.MosaicTheme
-import uno.lux.sample.util.AppError
-import uno.lux.sample.util.relativeTime
+import uno.lux.sample.video.Video
 
 /**
  * Stateful entry point: binds the [PostDetailViewModel] (keyed by [postId]) and forwards

@@ -21,7 +21,7 @@ import uno.lux.sample.core.files.FakeVideoMetadataReader
 import androidx.lifecycle.SavedStateHandle
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 import java.io.IOException
 
 class CreatePostViewModelTest : ViewModelTest() {

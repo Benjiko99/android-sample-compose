@@ -3,11 +3,11 @@ package uno.lux.sample.user.ui
 import androidx.annotation.StringRes
 import kotlinx.serialization.Serializable
 import uno.lux.sample.R
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 
 /**
  * The gender choices the profile editor offers. [storedValue] is the canonical value the

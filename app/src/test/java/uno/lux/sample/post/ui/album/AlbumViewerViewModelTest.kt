@@ -3,6 +3,7 @@ package uno.lux.sample.post.ui.album
 import androidx.navigation3.runtime.NavKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.album.ui.AlbumViewerViewModel
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 

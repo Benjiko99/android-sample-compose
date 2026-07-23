@@ -40,8 +40,8 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
 import uno.lux.sample.user.UserId
-import uno.lux.sample.post.ui.album.AlbumViewerScreen
-import uno.lux.sample.design.components.DividedNavigationSuiteScaffold
+import uno.lux.sample.album.ui.AlbumViewerScreen
+import uno.lux.sample.app.common.ui.DividedNavigationSuiteScaffold
 import uno.lux.sample.composer.ui.CreatePostScreen
 import uno.lux.sample.user.ui.EditProfileScreen
 import uno.lux.sample.feed.ui.HomeScreen
@@ -50,11 +50,11 @@ import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.post.ui.PostDetailScreen
 import uno.lux.sample.profile.ui.ProfileScreen
 import uno.lux.sample.settings.ui.SettingsScreen
-import uno.lux.sample.design.theme.LocalMosaicColors
-import uno.lux.sample.post.ui.video.FullscreenVideoScreen
-import uno.lux.sample.post.ui.video.LocalVideoPlayback
-import uno.lux.sample.post.ui.video.VideoPlaybackViewModel
-import uno.lux.sample.util.findActivity
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.video.ui.FullscreenVideoScreen
+import uno.lux.sample.video.ui.LocalVideoPlayback
+import uno.lux.sample.video.ui.VideoPlaybackViewModel
+import uno.lux.sample.app.util.findActivity
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberNavBackStack] back

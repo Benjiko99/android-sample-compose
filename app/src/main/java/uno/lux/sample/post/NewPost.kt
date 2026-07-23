@@ -1,6 +1,6 @@
 package uno.lux.sample.post
 
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 
 /**
  * The media a draft carries. A post has photos *or* a video, never both — the server rejects the
@@ -24,7 +24,7 @@ sealed interface NewPostMedia {
 /**
  * A post the signed-in user is about to publish. The author is derived server-side from the
  * caller, so a draft carries only what the composer collects: the text plus its [media], which the
- * server stores and hands back as the post's [Album] or [Video].
+ * server stores and hands back as the post's [uno.lux.sample.album.Album] or [uno.lux.sample.video.Video].
  */
 data class NewPost(
     val title: String,

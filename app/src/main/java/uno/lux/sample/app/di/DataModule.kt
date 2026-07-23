@@ -10,8 +10,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import uno.lux.sample.fixtures.LoggedInUserId
-import uno.lux.sample.fixtures.SampleUsers
+import uno.lux.sample.app.fixtures.LoggedInUserId
+import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.comment.data.network.CommentApi
 import uno.lux.sample.feed.data.network.FeedApi
 import uno.lux.sample.post.data.network.PostApi
@@ -38,10 +38,10 @@ import uno.lux.sample.user.User
 import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.core.files.AndroidFileLoader
-import uno.lux.sample.core.files.AndroidVideoMetadataReader
-import uno.lux.sample.core.files.FileLoader
-import uno.lux.sample.core.files.VideoMetadataReader
+import uno.lux.sample.app.core.files.AndroidFileLoader
+import uno.lux.sample.app.core.files.AndroidVideoMetadataReader
+import uno.lux.sample.app.core.files.FileLoader
+import uno.lux.sample.app.core.files.VideoMetadataReader
 import javax.inject.Singleton
 
 @Module

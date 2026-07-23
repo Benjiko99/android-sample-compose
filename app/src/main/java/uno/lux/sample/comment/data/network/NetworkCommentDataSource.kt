@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.data.CommentDataSource
 import uno.lux.sample.post.PostId
-import uno.lux.sample.core.network.EmptyBody
+import uno.lux.sample.app.core.network.EmptyBody
 
 class NetworkCommentDataSource(
     private val api: CommentApi,

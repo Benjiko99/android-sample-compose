@@ -1,7 +1,7 @@
 package uno.lux.sample.comment.data.network
 
 import kotlinx.serialization.Serializable
-import uno.lux.sample.core.network.CursorPageDto
+import uno.lux.sample.app.core.network.CursorPageDto
 
 @Serializable
 data class CommentListResponse(

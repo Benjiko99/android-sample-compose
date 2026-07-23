@@ -11,15 +11,15 @@ import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.NewPostMedia
-import uno.lux.sample.core.files.FileLoader
-import uno.lux.sample.core.files.VideoMetadataReader
+import uno.lux.sample.app.core.files.FileLoader
+import uno.lux.sample.app.core.files.VideoMetadataReader
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.util.ignoreErrors
-import uno.lux.sample.core.state.restoreDraft
-import uno.lux.sample.core.state.saveDraft
-import uno.lux.sample.util.launchIfIdle
-import uno.lux.sample.util.toAppError
+import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.core.state.restoreDraft
+import uno.lux.sample.app.core.state.saveDraft
+import uno.lux.sample.app.util.launchIfIdle
+import uno.lux.sample.app.util.toAppError
 import javax.inject.Inject
 
 /**

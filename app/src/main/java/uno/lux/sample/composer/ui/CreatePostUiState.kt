@@ -1,10 +1,10 @@
 package uno.lux.sample.composer.ui
 
 import kotlinx.serialization.Serializable
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 
 /** Field limits the composer enforces; they mirror the backend's so errors surface before a publish. */
 const val CreatePostTitleMaxLength = 120

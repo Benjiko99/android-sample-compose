@@ -38,24 +38,24 @@ import androidx.compose.ui.unit.em
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.fixtures.SamplePosts
-import uno.lux.sample.fixtures.SampleUsers
+import uno.lux.sample.app.fixtures.SamplePosts
+import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.post.PostId
-import uno.lux.sample.post.Video
+import uno.lux.sample.video.Video
 import uno.lux.sample.user.UserId
-import uno.lux.sample.design.components.FullScreenError
-import uno.lux.sample.design.components.FullScreenProgress
-import uno.lux.sample.design.components.LoadMoreEffect
-import uno.lux.sample.design.format.asText
-import uno.lux.sample.design.components.LoadingMoreFooter
-import uno.lux.sample.design.components.MosaicWordmark
-import uno.lux.sample.design.components.SettingsAction
+import uno.lux.sample.app.common.ui.FullScreenError
+import uno.lux.sample.app.common.ui.FullScreenProgress
+import uno.lux.sample.app.common.ui.LoadMoreEffect
+import uno.lux.sample.app.format.asText
+import uno.lux.sample.app.common.ui.LoadingMoreFooter
+import uno.lux.sample.app.common.ui.MosaicWordmark
+import uno.lux.sample.app.common.ui.SettingsAction
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData
-import uno.lux.sample.design.theme.LocalMosaicColors
-import uno.lux.sample.design.theme.MosaicTheme
-import uno.lux.sample.post.ui.video.LocalVideoPlayback
-import uno.lux.sample.util.createActionsProxy
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.video.ui.LocalVideoPlayback
+import uno.lux.sample.app.util.createActionsProxy
 
 /**
  * The feed's ViewModel-backed intents, as one [Stable] seam the stateless [HomeScreen] depends

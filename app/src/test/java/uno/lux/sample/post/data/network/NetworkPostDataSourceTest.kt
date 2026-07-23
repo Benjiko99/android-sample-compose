@@ -9,8 +9,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.core.files.FileUpload
-import uno.lux.sample.core.network.LikeToggleDto
+import uno.lux.sample.app.core.files.FileUpload
+import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.post.Post

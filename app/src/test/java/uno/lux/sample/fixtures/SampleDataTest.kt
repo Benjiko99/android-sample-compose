@@ -3,6 +3,7 @@ package uno.lux.sample.fixtures
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.app.fixtures.SamplePosts
 
 class SampleDataTest {
 

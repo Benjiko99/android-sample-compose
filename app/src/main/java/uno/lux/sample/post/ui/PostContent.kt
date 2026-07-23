@@ -40,16 +40,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
+import uno.lux.sample.app.format.asText
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.util.compactCount
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.relativeTime
 import uno.lux.sample.post.Post
-import uno.lux.sample.post.Video
 import uno.lux.sample.user.User
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.design.components.debouncedClickable
-import uno.lux.sample.design.format.asText
-import uno.lux.sample.design.theme.LocalMosaicColors
-import uno.lux.sample.post.ui.video.VideoPostPlayer
-import uno.lux.sample.util.compactCount
-import uno.lux.sample.util.relativeTime
+import uno.lux.sample.video.Video
+import uno.lux.sample.video.ui.VideoPostPlayer
 
 /**
  * The shared anatomy of a post — header, body, media, actions — composed both by [PostCard]

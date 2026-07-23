@@ -2,16 +2,16 @@ package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.core.network.asPart
-import uno.lux.sample.core.network.asTextPart
-import uno.lux.sample.core.network.notFoundAsNull
+import uno.lux.sample.app.core.network.asPart
+import uno.lux.sample.app.core.network.asTextPart
+import uno.lux.sample.app.core.network.notFoundAsNull
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
 import uno.lux.sample.post.PostWithAuthor
 import uno.lux.sample.post.data.PostDataSource
-import uno.lux.sample.core.network.EmptyBody
+import uno.lux.sample.app.core.network.EmptyBody
 
 class NetworkPostDataSource(
     private val api: PostApi,

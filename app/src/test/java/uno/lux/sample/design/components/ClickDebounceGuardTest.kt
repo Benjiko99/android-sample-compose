@@ -2,6 +2,7 @@ package uno.lux.sample.design.components
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.app.util.ClickDebounceGuard
 
 class ClickDebounceGuardTest {
 

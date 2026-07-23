@@ -2,9 +2,9 @@ package uno.lux.sample.user.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.core.network.asPart
-import uno.lux.sample.core.network.asTextPart
-import uno.lux.sample.core.network.notFoundAsNull
+import uno.lux.sample.app.core.network.asPart
+import uno.lux.sample.app.core.network.asTextPart
+import uno.lux.sample.app.core.network.notFoundAsNull
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId

@@ -3,11 +3,10 @@ package uno.lux.sample.comment.data.network
 import java.time.Instant
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.comment.Comment
-import uno.lux.sample.core.network.LikeToggleDto
+import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.user.User
 
 class NetworkCommentDataSourceTest {

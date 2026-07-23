@@ -42,9 +42,9 @@ import uno.lux.sample.R
 import uno.lux.sample.post.Post
 import uno.lux.sample.user.User
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.design.components.debouncedClickable
-import uno.lux.sample.design.components.rememberDebounced
-import uno.lux.sample.design.theme.LocalMosaicColors
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.app.theme.LocalMosaicColors
 
 /**
  * The post's "⋮" affordance and everything behind it: a bottom sheet of save / share / copy-link /

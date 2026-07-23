@@ -20,7 +20,7 @@ import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.Video
+import uno.lux.sample.video.Video
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.user.data.FakeUserDataSource

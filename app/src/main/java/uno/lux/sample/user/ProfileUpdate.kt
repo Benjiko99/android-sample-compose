@@ -1,6 +1,6 @@
 package uno.lux.sample.user
 
-import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.user.data.UserRepository
 
 /**

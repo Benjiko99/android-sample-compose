@@ -47,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -57,15 +56,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.fixtures.SampleUsers
+import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.user.UserId
-import uno.lux.sample.design.components.DiscardChangesDialog
-import uno.lux.sample.design.components.FullScreenError
-import uno.lux.sample.design.components.FullScreenProgress
-import uno.lux.sample.design.components.rememberDebounced
-import uno.lux.sample.design.format.asText
-import uno.lux.sample.design.theme.MosaicTheme
-import uno.lux.sample.util.createActionsProxy
+import uno.lux.sample.app.common.ui.DiscardChangesDialog
+import uno.lux.sample.app.common.ui.FullScreenError
+import uno.lux.sample.app.common.ui.FullScreenProgress
+import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.app.format.asText
+import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.util.createActionsProxy
 
 /**
  * The editor's ViewModel-backed intents as one [Stable] seam the stateless

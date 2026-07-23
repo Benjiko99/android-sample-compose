@@ -9,7 +9,7 @@ import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.user.UserId
 import uno.lux.sample.app.di.CurrentUserId
-import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.app.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**

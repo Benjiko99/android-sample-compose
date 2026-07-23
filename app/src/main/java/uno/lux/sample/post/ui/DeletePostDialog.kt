@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import uno.lux.sample.R
-import uno.lux.sample.design.theme.MosaicTheme
+import uno.lux.sample.app.theme.MosaicTheme
 
 /**
  * Confirms deleting a post. Deletion is irreversible and the affordance sits one tap inside an

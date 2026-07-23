@@ -11,10 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import uno.lux.sample.fixtures.SamplePosts
-import uno.lux.sample.fixtures.SampleUsers
-import uno.lux.sample.post.Video
-import uno.lux.sample.design.theme.MosaicTheme
+import uno.lux.sample.app.fixtures.SamplePosts
+import uno.lux.sample.app.fixtures.SampleUsers
+import uno.lux.sample.video.Video
+import uno.lux.sample.app.theme.MosaicTheme
 
 /** In the feed the body is a perex — clipped to this many lines, with a "Show more" affordance. */
 private const val FeedBodyMaxLines = 5

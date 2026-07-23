@@ -3,7 +3,7 @@ package uno.lux.sample.composer.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import uno.lux.sample.R
-import uno.lux.sample.design.format.asText
+import uno.lux.sample.app.format.asText
 
 /** Maps a [CreatePostError] to its localized message, filling in any limit it names. */
 @Composable

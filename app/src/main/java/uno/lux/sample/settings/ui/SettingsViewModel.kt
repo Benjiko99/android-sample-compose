@@ -11,7 +11,7 @@ import uno.lux.sample.settings.data.DefaultAutoPlayVideos
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.app.navigation.Navigator
-import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.app.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**

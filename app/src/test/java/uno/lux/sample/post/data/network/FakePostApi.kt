@@ -4,9 +4,9 @@ import java.time.Instant
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
-import uno.lux.sample.core.network.EmptyBody
-import uno.lux.sample.core.network.LikeToggleDto
-import uno.lux.sample.core.network.LikeToggleResponse
+import uno.lux.sample.app.core.network.EmptyBody
+import uno.lux.sample.app.common.data.network.LikeToggleDto
+import uno.lux.sample.app.common.data.network.LikeToggleResponse
 import uno.lux.sample.core.network.notFoundException
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.UserDto

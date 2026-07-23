@@ -3,7 +3,7 @@ package uno.lux.sample.post.ui
 import uno.lux.sample.user.User
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.post.Post
-import uno.lux.sample.util.AppError
+import uno.lux.sample.app.util.AppError
 
 sealed interface PostDetailUiState {
     data object Loading : PostDetailUiState

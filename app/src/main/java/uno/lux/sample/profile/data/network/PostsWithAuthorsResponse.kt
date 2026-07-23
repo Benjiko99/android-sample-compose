@@ -1,7 +1,7 @@
 package uno.lux.sample.profile.data.network
 
 import kotlinx.serialization.Serializable
-import uno.lux.sample.core.network.CursorPageDto
+import uno.lux.sample.app.core.network.CursorPageDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.post.data.network.PostFeedItemDto
 
