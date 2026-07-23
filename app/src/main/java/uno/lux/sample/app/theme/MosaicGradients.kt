@@ -2,7 +2,6 @@ package uno.lux.sample.app.theme
 
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import uno.lux.sample.user.UserId
 
 /**
  * Mosaic's duotone gradient stand-ins for imagery, keyed deterministically by a string so a
@@ -28,8 +27,8 @@ object MosaicGradients {
 
     private const val AVATAR_PALETTE_SIZE = 6
 
-    /** A brush for an avatar, keyed by [userId] over the avatar hue set. */
-    fun avatarBrush(userId: UserId): Brush = brushes[userId.hashCode().mod(brushes.size)]
+    /** A brush for an avatar, keyed by [id] over the avatar hue set. */
+    fun avatarBrush(id: String): Brush = brushes[id.hashCode().mod(brushes.size)]
 
     /** A brush for cover / media imagery, keyed by [key] over the full hue set. */
     fun mediaBrush(key: String): Brush = brushes[key.hashCode().mod(brushes.size)]
