@@ -1,6 +1,5 @@
 package uno.lux.sample.ui.components
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -30,12 +29,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -144,6 +146,7 @@ fun HoldToConfirmButton(
     val state = remember(holdMillis, hintMillis) { HoldToConfirmState(holdMillis, hintMillis) }
     val progress = remember { Animatable(0f) }
     val scale = remember { Animatable(1f) }
+    val hintAlpha = remember { Animatable(0f) }
 
     // Kept current so the gesture isn't torn down and rebuilt every time the caller recomposes.
     val currentConfirm by rememberUpdatedState(onConfirm)
@@ -156,8 +159,10 @@ fun HoldToConfirmButton(
 
     LaunchedEffect(state.phase) {
         val holding = state.phase == HoldPhase.HOLDING
+        val hinting = state.phase == HoldPhase.HINT
 
         launch { scale.animateTo(if (holding) PressedScale else 1f, tween(PressResponseMillis)) }
+        launch { hintAlpha.animateTo(if (hinting) 1f else 0f, tween(LabelSwapMillis)) }
 
         if (holding) {
             // Matching the hold means the sweep lands exactly as the action fires.
@@ -209,6 +214,9 @@ fun HoldToConfirmButton(
             }
             .semantics(mergeDescendants = true) {
                 role = Role.Button
+                // Named here rather than merged up from the labels, since both of them are always
+                // in the tree and a screen reader would otherwise read the pair back to back.
+                contentDescription = text
                 if (!active) disabled()
                 onClick(label = text) {
                     if (active) currentConfirm()
@@ -224,24 +232,46 @@ fun HoldToConfirmButton(
                 modifier = Modifier.size(20.dp),
             )
         } else {
-            Crossfade(
-                targetState = if (state.phase == HoldPhase.HINT) hintText else text,
-                label = "hold-to-confirm-label",
-            ) { label ->
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = contentColor,
-                    textAlign = TextAlign.Center,
-                )
+            // The two labels are stacked and both stay in the layout for good — only their alpha
+            // moves. Swapping which one is *composed* would resize the box to whichever label is
+            // showing, so the shorter one would drift off centre as the other faded in.
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.clearAndSetSemantics {},
+            ) {
+                HoldLabel(text = text, color = contentColor) { 1f - hintAlpha.value }
+
+                HoldLabel(text = hintText, color = contentColor) { hintAlpha.value }
             }
         }
     }
 }
 
+/**
+ * One of the button's two stacked labels. [alpha] is passed as a lambda and read inside
+ * [graphicsLayer], so a frame of the swap re-runs the layer rather than recomposing the button.
+ */
+@Composable
+private fun HoldLabel(
+    text: String,
+    color: Color,
+    alpha: () -> Float,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = color,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.graphicsLayer { this.alpha = alpha() },
+    )
+}
+
 /** How far the button sinks under the finger, the usual press feedback a filled button gives. */
 private const val PressedScale = 0.97f
 private const val PressResponseMillis = 120
+
+/** How long the label and the nudge take to trade places. */
+private const val LabelSwapMillis = 180
 
 /** Alphas over the container, so the sweep tracks the theme instead of pinning its own colour. */
 private const val FillAlpha = 0.24f
