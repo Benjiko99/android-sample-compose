@@ -18,12 +18,13 @@ import javax.inject.Inject
  * the full-screen page without being recreated — the position lives in the player, so reusing
  * the instance is what preserves it.
  *
- * Exactly one video plays at a time. [activeVideoId], [isFullscreen] and [player] are Compose
+ * Exactly one video plays at a time. [activeVideoUrl], [isFullscreen] and [player] are Compose
  * state, so the inline player and the full-screen page recompose as playback moves between them.
  * [ownedByInline] records whether an inline post started the playback: if so, leaving full
  * screen returns to that post and keeps playing; if a profile thumbnail opened it straight into
- * full screen, leaving releases it. Keying the player by video id (not URL) keeps two posts that
- * happen to share the sample stream independent.
+ * full screen, leaving releases it. The URL is the player's identity — every uploaded video has
+ * its own, and a clip picked in the composer brings a content URI — so one keying serves posts
+ * and local previews alike, with no id a local file wouldn't have.
  *
  * The player is an Android component with no logic to unit test, so this is a plain holder built
  * on [Context] rather than a constructor-injected, JVM-testable unit.
@@ -32,7 +33,7 @@ import javax.inject.Inject
 class VideoPlaybackController(private val appContext: Context) {
 
     /** The video currently loaded into [player], or null when nothing is playing. */
-    var activeVideoId by mutableStateOf<String?>(null)
+    var activeVideoUrl by mutableStateOf<String?>(null)
         private set
 
     /** True while playback is showing on the full-screen page rather than inline. */
@@ -45,9 +46,9 @@ class VideoPlaybackController(private val appContext: Context) {
 
     private var ownedByInline = false
 
-    /** Starts (or resumes) inline playback of [videoId], the feed/profile-post entry point. */
-    fun playInline(videoId: String, url: String) {
-        ensurePlayer(videoId, url)
+    /** Starts (or resumes) inline playback of [url], the feed/profile-post entry point. */
+    fun playInline(url: String) {
+        ensurePlayer(url)
         ownedByInline = true
     }
 
@@ -57,13 +58,13 @@ class VideoPlaybackController(private val appContext: Context) {
     }
 
     /**
-     * Shows [videoId] on the full-screen page. If it is already the active video (an inline post
+     * Shows [url] on the full-screen page. If it is already the active video (an inline post
      * promoted it) the running player is reused untouched; otherwise it is loaded fresh with no
      * inline owner, so [exitFullscreen] will release it.
      */
-    fun openFullscreen(videoId: String, url: String) {
-        if (activeVideoId != videoId) {
-            ensurePlayer(videoId, url)
+    fun openFullscreen(url: String) {
+        if (activeVideoUrl != url) {
+            ensurePlayer(url)
             ownedByInline = false
         }
         isFullscreen = true
@@ -84,20 +85,20 @@ class VideoPlaybackController(private val appContext: Context) {
     fun stop() {
         player?.release()
         player = null
-        activeVideoId = null
+        activeVideoUrl = null
         ownedByInline = false
         isFullscreen = false
     }
 
-    private fun ensurePlayer(videoId: String, url: String) {
-        if (activeVideoId == videoId && player != null) return
+    private fun ensurePlayer(url: String) {
+        if (activeVideoUrl == url && player != null) return
         player?.release()
         player = ExoPlayer.Builder(appContext).build().apply {
             setMediaItem(MediaItem.fromUri(url))
             playWhenReady = true
             prepare()
         }
-        activeVideoId = videoId
+        activeVideoUrl = url
     }
 }
 

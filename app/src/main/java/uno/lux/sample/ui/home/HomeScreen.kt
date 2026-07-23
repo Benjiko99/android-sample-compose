@@ -206,7 +206,7 @@ private fun FeedList(
         snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
             if (playback == null || playback.isFullscreen) return@collect
             val video = autoPlayVideo(layoutInfo, currentPosts)
-            if (video != null) playback.playInline(video.id, video.videoUrl) else playback.stop()
+            if (video != null) playback.playInline(video.videoUrl) else playback.stop()
         }
     }
 

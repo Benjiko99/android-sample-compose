@@ -10,7 +10,7 @@ class FullscreenVideoViewModelTest {
 
     private val backStack = mutableListOf<NavKey>(
         Screen.Shell,
-        Screen.FullscreenVideo("v1", "https://example.test/v1.mp4", "Talk"),
+        Screen.FullscreenVideo(url = "https://example.test/v1.mp4", title = "Talk"),
     )
     private val navigator = Navigator().apply { attach(backStack) }
 

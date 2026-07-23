@@ -129,6 +129,14 @@ class CreatePostViewModel @Inject constructor(
         if (form.media is CreatePostMedia.Video) form.copy(media = CreatePostMedia.None) else form
     }
 
+    /** Opens the picked photos in the album viewer, starting at the tapped one. */
+    override fun openImages(media: CreatePostMedia.Images, initialIndex: Int) =
+        navigator.goTo(Screen.AlbumViewer(media.uris, initialIndex))
+
+    /** Plays the picked clip on the full-screen video page, straight from its content URI. */
+    override fun openVideo(media: CreatePostMedia.Video) =
+        navigator.goTo(Screen.FullscreenVideo(media.uri))
+
     override fun publish() {
         if (!_uiState.value.form.canPublish) return
 

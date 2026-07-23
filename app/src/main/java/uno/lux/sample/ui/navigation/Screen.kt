@@ -2,10 +2,8 @@ package uno.lux.sample.ui.navigation
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import uno.lux.sample.data.post.AlbumId
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.Video
-import uno.lux.sample.data.post.VideoId
 import uno.lux.sample.data.user.UserId
 
 /**
@@ -46,13 +44,16 @@ sealed interface Screen : NavKey {
     data object CreatePost : Screen
 
     /**
-     * The full-screen video page. Opened by a profile-grid video (which it loads itself) or by
-     * an inline post player's fullscreen control (whose running player it reuses). [videoId]
-     * keys the shared player so the inline → full-screen hand-off keeps the same instance.
+     * The full-screen video page. Opened by a profile-grid video (which it loads itself), by an
+     * inline post player's fullscreen control (whose running player it reuses), or by the
+     * composer previewing a picked clip. [url] — a post video's stream URL or a picked clip's
+     * content URI — is the player's identity, keying the shared player so the inline →
+     * full-screen hand-off keeps the same instance. [title] describes the video for
+     * accessibility; a clip picked from disk has none.
      */
     @Serializable
-    data class FullscreenVideo(val videoId: VideoId, val url: String, val title: String) : Screen {
-        constructor(video: Video) : this(video.id, video.videoUrl, video.title)
+    data class FullscreenVideo(val url: String, val title: String? = null) : Screen {
+        constructor(video: Video) : this(video.videoUrl, video.title)
     }
 
     /** A post's detail page: full content, media, and the comment thread. */
@@ -60,8 +61,9 @@ sealed interface Screen : NavKey {
     data class PostDetail(val postId: PostId) : Screen
 
     /**
-     * Full-screen album image viewer with a horizontal pager. [images] is the subset carried by
-     * the feed post's [Album]; [initialIndex] opens the pager at the image the user tapped.
+     * Full-screen album image viewer with a horizontal pager. [images] holds what to show — a
+     * post's album image URLs or the composer's picked photo URIs; [initialIndex] opens the
+     * pager at the image the user tapped.
      */
     @Serializable
     data class AlbumViewer(

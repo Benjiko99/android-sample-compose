@@ -251,7 +251,7 @@ class HomeViewModelTest : ViewModelTest() {
         viewModel().openVideo(video)
 
         assertEquals(
-            Screen.FullscreenVideo("v1", "https://example.test/v1.mp4", "Talk"),
+            Screen.FullscreenVideo(url = "https://example.test/v1.mp4", title = "Talk"),
             backStack.last(),
         )
     }

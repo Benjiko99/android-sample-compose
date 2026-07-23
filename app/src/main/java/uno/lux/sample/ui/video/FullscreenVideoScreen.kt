@@ -25,14 +25,12 @@ import uno.lux.sample.util.findActivity
  */
 @Composable
 fun FullscreenVideoScreen(
-    videoId: String,
     url: String,
-    title: String,
+    title: String?,
     modifier: Modifier = Modifier,
     viewModel: FullscreenVideoViewModel = hiltViewModel(),
 ) {
     FullscreenVideoScreen(
-        videoId = videoId,
         url = url,
         title = title,
         onBack = viewModel::goBack,
@@ -51,16 +49,15 @@ fun FullscreenVideoScreen(
 @OptIn(UnstableApi::class)
 @Composable
 internal fun FullscreenVideoScreen(
-    videoId: String,
     url: String,
-    title: String,
+    title: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val playback = LocalVideoPlayback.current
 
-    LaunchedEffect(playback, videoId, url) {
-        playback?.openFullscreen(videoId, url)
+    LaunchedEffect(playback, url) {
+        playback?.openFullscreen(url)
     }
 
     // Exit only on a real pop, not a configuration change — a rotation must keep playing.

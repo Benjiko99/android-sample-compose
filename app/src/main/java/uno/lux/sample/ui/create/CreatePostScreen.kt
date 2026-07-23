@@ -19,9 +19,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,10 +66,10 @@ import uno.lux.sample.util.formatVideoDuration
 
 /**
  * The composer's ViewModel-backed intents, as one [Stable] seam the stateless
- * [CreatePostScreen] depends on — the field edits plus publishing and opening settings, both of
- * which the ViewModel routes through the injected `Navigator`. [CreatePostViewModel] implements
- * it, so the binder passes the ViewModel directly and a preview passes a no-op
- * [createActionsProxy].
+ * [CreatePostScreen] depends on — the field edits, the media add/remove/preview intents, and
+ * publishing and leaving, the navigating ones routed through the injected `Navigator`.
+ * [CreatePostViewModel] implements it, so the binder passes the ViewModel directly and a
+ * preview passes a no-op [createActionsProxy].
  */
 @Stable
 interface CreatePostActions {
@@ -80,6 +79,8 @@ interface CreatePostActions {
     fun onRemoveImage(uri: String)
     fun onVideoPicked(uri: String)
     fun onRemoveVideo()
+    fun openImages(media: CreatePostMedia.Images, initialIndex: Int)
+    fun openVideo(media: CreatePostMedia.Video)
     fun publish()
     fun goBack()
     fun dismissDiscardConfirmation()
@@ -287,6 +288,7 @@ private fun PostMediaPicker(
                 media = media,
                 enabled = enabled,
                 onPickImages = onPickImages,
+                onOpenImage = { index -> actions.openImages(media, index) },
                 onRemoveImage = actions::onRemoveImage,
             )
 
@@ -294,6 +296,7 @@ private fun PostMediaPicker(
                 uri = media.uri,
                 removeDescription = stringResource(R.string.create_post_remove_video),
                 enabled = enabled,
+                onOpen = { actions.openVideo(media) },
                 onRemove = actions::onRemoveVideo,
             ) {
                 MediaBadge(
@@ -338,6 +341,7 @@ private fun PickedImages(
     media: CreatePostMedia.Images,
     enabled: Boolean,
     onPickImages: () -> Unit,
+    onOpenImage: (index: Int) -> Unit,
     onRemoveImage: (uri: String) -> Unit,
 ) {
     LazyRow(
@@ -345,11 +349,12 @@ private fun PickedImages(
         modifier = Modifier.fillMaxWidth(),
     ) {
         // Keyed by URI so removing one thumbnail doesn't recompose (or re-fetch) the rest.
-        items(media.uris, key = { it }) { uri ->
+        itemsIndexed(media.uris, key = { _, uri -> uri }) { index, uri ->
             PickedMediaThumbnail(
                 uri = uri,
                 removeDescription = stringResource(R.string.create_post_remove_photo),
                 enabled = enabled,
+                onOpen = { onOpenImage(index) },
                 onRemove = { onRemoveImage(uri) },
                 modifier = Modifier.animateItem(),
             )
@@ -377,14 +382,17 @@ private fun PickedImages(
 
 /**
  * One picked file: a preview of it with a remove affordance. Coil renders both kinds from the
- * content URI — a still directly, a video via the frame decoder `MosaicApp` registers. [overlay]
- * carries whatever else the kind needs on top, which today is the video's duration badge.
+ * content URI — a still directly, a video via the frame decoder `MosaicApp` registers. Tapping
+ * the thumbnail opens the file full screen through [onOpen] — photos in the album viewer, the
+ * clip on the video page. [overlay] carries whatever else the kind needs on top, which today is
+ * the video's duration badge.
  */
 @Composable
 private fun PickedMediaThumbnail(
     uri: String,
     removeDescription: String,
     enabled: Boolean,
+    onOpen: () -> Unit,
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
     overlay: @Composable BoxScope.() -> Unit = {},
@@ -397,7 +405,8 @@ private fun PickedMediaThumbnail(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .debouncedClickable(enabled = enabled, onClick = onOpen),
         )
 
         overlay()

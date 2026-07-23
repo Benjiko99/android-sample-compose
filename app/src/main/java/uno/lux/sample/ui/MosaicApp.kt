@@ -127,11 +127,7 @@ fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
                     CreatePostScreen()
                 }
                 entry<Screen.FullscreenVideo> { video ->
-                    FullscreenVideoScreen(
-                        videoId = video.videoId,
-                        url = video.url,
-                        title = video.title,
-                    )
+                    FullscreenVideoScreen(url = video.url, title = video.title)
                 }
                 entry<Screen.PostDetail> { detail ->
                     PostDetailScreen(postId = detail.postId)

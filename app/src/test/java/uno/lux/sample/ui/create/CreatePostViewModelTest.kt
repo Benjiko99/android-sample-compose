@@ -277,6 +277,25 @@ class CreatePostViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `openImages pushes the album viewer at the tapped photo`() = runTest {
+        val viewModel = fixture().viewModel
+
+        viewModel.openImages(CreatePostMedia.Images(listOf("uri-a", "uri-b")), initialIndex = 1)
+
+        assertEquals(Screen.AlbumViewer(listOf("uri-a", "uri-b"), initialIndex = 1), backStack.last())
+    }
+
+    @Test
+    fun `openVideo pushes the fullscreen player for the picked clip`() = runTest {
+        val viewModel = fixture().viewModel
+
+        viewModel.openVideo(CreatePostMedia.Video(uri = "clip", durationSeconds = 12))
+
+        // The key carries no title — a clip picked from disk has none.
+        assertEquals(Screen.FullscreenVideo(url = "clip"), backStack.last())
+    }
+
+    @Test
     fun `publish uploads the video and its duration with the draft`() = runTest {
         val (viewModel, dataSource) = fixture(videoDuration = 7)
         viewModel.fillIn()

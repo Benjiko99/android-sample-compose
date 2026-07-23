@@ -60,7 +60,7 @@ class BackStackRestorationTest {
         Screen.EditProfile,
         Screen.CreatePost,
         Screen.PostDetail(postId = "p1"),
-        Screen.FullscreenVideo(videoId = "v1", url = "https://example.test/v.mp4", title = "Clip"),
+        Screen.FullscreenVideo(url = "https://example.test/v.mp4", title = "Clip"),
         Screen.AlbumViewer(images = listOf("https://example.test/1.jpg"), initialIndex = 0),
     )
 

@@ -40,7 +40,7 @@ internal fun VideoPostPlayer(
     modifier: Modifier = Modifier,
 ) {
     val playback = LocalVideoPlayback.current
-    val isActive = playback != null && playback.activeVideoId == video.id && playback.player != null
+    val isActive = playback != null && playback.activeVideoUrl == video.videoUrl && playback.player != null
 
     Box(
         modifier = modifier
@@ -76,7 +76,7 @@ internal fun VideoPostPlayer(
         } else {
             VideoThumbnail(
                 video = video,
-                onPlay = { playback?.playInline(video.id, video.videoUrl) },
+                onPlay = { playback?.playInline(video.videoUrl) },
             )
         }
     }
