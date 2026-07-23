@@ -1,7 +1,6 @@
-package uno.lux.sample.core.network
+package uno.lux.sample.profile.data.network
 
 import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -10,10 +9,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import uno.lux.sample.app.di.NetworkModule
-import uno.lux.sample.profile.data.network.NetworkProfileDataSource
+import uno.lux.sample.core.network.createApi
 import uno.lux.sample.profile.data.network.NetworkProfileDataSourceTest
 
 /**
@@ -21,12 +17,12 @@ import uno.lux.sample.profile.data.network.NetworkProfileDataSourceTest
  * `GET /users/:id/likes`, which share one response shape — by driving the real Retrofit stack
  * over loopback against a body captured verbatim from the Rails backend.
  *
- * [NetworkProfileDataSourceTest] fakes [MosaicApi], which proves what the data source does with a
+ * [NetworkProfileDataSourceTest] fakes [ProfileApi], which proves what the data source does with a
  * response but not that the response parses. The parts client and server have to agree on live
  * here: the request paths, the snake_case `page` keys next to the camelCase item fields, and the
  * `included.users` sideload neither tab can render without.
  */
-class MosaicApiProfileTabsTest {
+class ProfileApiTabsTest {
 
     private lateinit var server: MockWebServer
     private lateinit var dataSource: NetworkProfileDataSource
@@ -63,16 +59,7 @@ class MosaicApiProfileTabsTest {
         server.start()
         server.enqueue(MockResponse().setResponseCode(200).setBody(bookmarksJson))
 
-        // Production's own Json, not a copy of its settings — a test that pins the wire format
-        // against a config nobody ships would keep passing while the real one drifted.
-        val api = Retrofit.Builder()
-            .baseUrl(server.url("/api/"))
-            .addConverterFactory(
-                NetworkModule.provideJson()
-                    .asConverterFactory("application/json; charset=UTF-8".toMediaType())
-            )
-            .build()
-            .create(MosaicApi::class.java)
+        val api = server.createApi(ProfileApi::class.java)
 
         dataSource = NetworkProfileDataSource(api)
     }

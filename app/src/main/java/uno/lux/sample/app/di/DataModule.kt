@@ -12,7 +12,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import uno.lux.sample.fixtures.LoggedInUserId
 import uno.lux.sample.fixtures.SampleUsers
-import uno.lux.sample.core.network.MosaicApi
+import uno.lux.sample.comment.data.network.CommentApi
+import uno.lux.sample.feed.data.network.FeedApi
+import uno.lux.sample.post.data.network.PostApi
+import uno.lux.sample.profile.data.network.ProfileApi
+import uno.lux.sample.user.data.network.UserApi
 import uno.lux.sample.comment.data.network.NetworkCommentDataSource
 import uno.lux.sample.feed.data.network.NetworkFeedDataSource
 import uno.lux.sample.post.data.network.NetworkPostDataSource
@@ -45,7 +49,7 @@ import javax.inject.Singleton
 object DataModule {
 
     @Provides
-    fun providePostDataSource(api: MosaicApi): PostDataSource = NetworkPostDataSource(api)
+    fun providePostDataSource(api: PostApi): PostDataSource = NetworkPostDataSource(api)
 
     @Provides
     @Singleton
@@ -55,10 +59,10 @@ object DataModule {
     ): PostRepository = PostRepository(dataSource, userRepository)
 
     @Provides
-    fun provideFeedDataSource(api: MosaicApi): FeedDataSource = NetworkFeedDataSource(api)
+    fun provideFeedDataSource(api: FeedApi): FeedDataSource = NetworkFeedDataSource(api)
 
     @Provides
-    fun provideUserDataSource(api: MosaicApi): UserDataSource = NetworkUserDataSource(api)
+    fun provideUserDataSource(api: UserApi): UserDataSource = NetworkUserDataSource(api)
 
     @Provides
     @Singleton
@@ -74,7 +78,7 @@ object DataModule {
     ): FeedRepository = FeedRepository(dataSource, postRepository, userRepository)
 
     @Provides
-    fun provideProfileDataSource(api: MosaicApi): ProfileDataSource = NetworkProfileDataSource(api)
+    fun provideProfileDataSource(api: ProfileApi): ProfileDataSource = NetworkProfileDataSource(api)
 
     @Provides
     @Singleton
@@ -87,7 +91,7 @@ object DataModule {
         ProfileRepository(dataSource, postRepository, userRepository, currentUserId)
 
     @Provides
-    fun provideCommentDataSource(api: MosaicApi): CommentDataSource = NetworkCommentDataSource(api)
+    fun provideCommentDataSource(api: CommentApi): CommentDataSource = NetworkCommentDataSource(api)
 
     @Provides
     @Singleton

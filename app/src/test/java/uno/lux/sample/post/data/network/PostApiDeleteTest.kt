@@ -1,28 +1,24 @@
-package uno.lux.sample.core.network
+package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import uno.lux.sample.app.di.NetworkModule
-import uno.lux.sample.post.data.network.NetworkPostDataSource
+import uno.lux.sample.core.network.createApi
 
 /**
  * Pins the `DELETE /posts/:id` **wire contract** by driving the real Retrofit stack over loopback.
  *
- * A faked [MosaicApi] proves the data source asks to delete the right ID, but not the two things
+ * A faked [PostApi] proves the data source asks to delete the right ID, but not the two things
  * the client and the Rails backend have to agree on: that the request goes out as a `DELETE` to
  * that path, and that the server's empty `204 No Content` is accepted. The latter is why
- * [MosaicApi.deletePost] returns `Unit` rather than a response envelope — a `@GET`-shaped
+ * [PostApi.deletePost] returns `Unit` rather than a response envelope — a `@GET`-shaped
  * signature expecting a body would fail only against a real server.
  */
-class MosaicApiDeleteTest {
+class PostApiDeleteTest {
 
     private lateinit var server: MockWebServer
     private lateinit var dataSource: NetworkPostDataSource
@@ -32,14 +28,7 @@ class MosaicApiDeleteTest {
         server = MockWebServer()
         server.start()
 
-        val api = Retrofit.Builder()
-            .baseUrl(server.url("/api/"))
-            .addConverterFactory(
-                NetworkModule.provideJson()
-                    .asConverterFactory("application/json; charset=UTF-8".toMediaType())
-            )
-            .build()
-            .create(MosaicApi::class.java)
+        val api = server.createApi(PostApi::class.java)
 
         dataSource = NetworkPostDataSource(api)
     }

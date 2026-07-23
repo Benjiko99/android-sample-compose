@@ -1,7 +1,6 @@
-package uno.lux.sample.core.network
+package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -10,24 +9,21 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import uno.lux.sample.app.di.NetworkModule
 import uno.lux.sample.core.files.FileUpload
+import uno.lux.sample.core.network.createApi
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
-import uno.lux.sample.post.data.network.NetworkPostDataSource
 
 /**
  * Pins the `POST /posts` **wire format** by driving the real Retrofit stack over loopback.
  *
- * The other data-source tests swap in a fake [MosaicApi], which proves what the data source asks
+ * The other data-source tests swap in a fake [PostApi], which proves what the data source asks
  * for but not what Retrofit actually serializes — and the multipart details are exactly where the
  * client and the Rails backend have to agree: the `images[]` part name Rack needs to build an
  * array, and the omission (rather than empty encoding) of the optional video parts. Both are
  * invisible to a faked API and would only surface as a failed upload against a real server.
  */
-class MosaicApiMultipartTest {
+class PostApiMultipartTest {
 
     private lateinit var server: MockWebServer
     private lateinit var dataSource: NetworkPostDataSource
@@ -46,16 +42,7 @@ class MosaicApiMultipartTest {
         server.start()
         server.enqueue(MockResponse().setResponseCode(201).setBody(createdPostJson))
 
-        // Production's own Json, not a copy of its settings — a test that pins the wire format
-        // against a config nobody ships would keep passing while the real one drifted.
-        val api = Retrofit.Builder()
-            .baseUrl(server.url("/api/"))
-            .addConverterFactory(
-                NetworkModule.provideJson()
-                    .asConverterFactory("application/json; charset=UTF-8".toMediaType())
-            )
-            .build()
-            .create(MosaicApi::class.java)
+        val api = server.createApi(PostApi::class.java)
 
         dataSource = NetworkPostDataSource(api)
     }

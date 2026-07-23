@@ -9,6 +9,7 @@ import org.junit.Test
 import uno.lux.sample.core.files.FileUpload
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
+import uno.lux.sample.user.data.network.UPLOADED_AVATAR_URL
 
 class UserRepositoryTest {
 

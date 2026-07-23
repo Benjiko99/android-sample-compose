@@ -6,10 +6,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.core.network.CursorPageDto
-import uno.lux.sample.core.network.FakeMosaicApi
 import uno.lux.sample.core.network.emptyPage
-import uno.lux.sample.core.network.feedItemDto
-import uno.lux.sample.core.network.userDto
+import uno.lux.sample.post.data.network.feedItemDto
+import uno.lux.sample.user.data.network.userDto
 import uno.lux.sample.feed.data.network.FeedIncluded
 import uno.lux.sample.post.data.network.PostFeedItemDto
 import uno.lux.sample.user.data.network.UserDto
@@ -30,7 +29,7 @@ class NetworkProfileDataSourceTest {
 
     @Test
     fun `bookmarks maps post DTOs to domain posts`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeProfileApi(
             bookmarksResponse = bookmarksResponse(
                 data = listOf(feedItemDto("p2", "u2"), feedItemDto("p4", "u4")),
             ),
@@ -44,7 +43,7 @@ class NetworkProfileDataSourceTest {
     // has no other way to render the card.
     @Test
     fun `bookmarks maps the sideloaded authors to domain users`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeProfileApi(
             bookmarksResponse = bookmarksResponse(
                 data = listOf(feedItemDto("p2", "u2")),
                 users = listOf(userDto("u2", "Grace", isFollowing = true)),
@@ -60,7 +59,7 @@ class NetworkProfileDataSourceTest {
 
     @Test
     fun `bookmarks requests the given user and cursor`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakeProfileApi()
 
         NetworkProfileDataSource(api).bookmarks("u1", cursor = "c2")
 
@@ -69,7 +68,7 @@ class NetworkProfileDataSourceTest {
 
     @Test
     fun `bookmarks propagates cursor and hasMore from the page`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeProfileApi(
             bookmarksResponse = bookmarksResponse(
                 data = listOf(feedItemDto("p2", "u2")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),
@@ -83,7 +82,7 @@ class NetworkProfileDataSourceTest {
 
     @Test
     fun `bookmarks with an empty page yields no posts and no cursor`() = runTest {
-        val result = NetworkProfileDataSource(FakeMosaicApi()).bookmarks("u1", cursor = null)
+        val result = NetworkProfileDataSource(FakeProfileApi()).bookmarks("u1", cursor = null)
 
         assertTrue(result.posts.isEmpty())
         assertNull(result.cursor)
@@ -93,7 +92,7 @@ class NetworkProfileDataSourceTest {
 
     @Test
     fun `likes maps post DTOs and their sideloaded authors`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeProfileApi(
             likesResponse = postsResponse(
                 data = listOf(feedItemDto("p3", "u3"), feedItemDto("p4", "u4")),
                 users = listOf(userDto("u3", "Alan"), userDto("u4", "Margaret")),
@@ -109,7 +108,7 @@ class NetworkProfileDataSourceTest {
     // must not touch the other.
     @Test
     fun `likes requests the likes endpoint, not bookmarks`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakeProfileApi()
 
         NetworkProfileDataSource(api).likes("u2", cursor = "c3")
 
@@ -119,7 +118,7 @@ class NetworkProfileDataSourceTest {
 
     @Test
     fun `likes propagates cursor and hasMore from the page`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeProfileApi(
             likesResponse = postsResponse(
                 data = listOf(feedItemDto("p3", "u3")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),

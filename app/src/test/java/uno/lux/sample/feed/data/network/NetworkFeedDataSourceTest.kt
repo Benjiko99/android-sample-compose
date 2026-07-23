@@ -7,16 +7,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.core.network.CursorPageDto
-import uno.lux.sample.core.network.FakeMosaicApi
 import uno.lux.sample.core.network.emptyPage
-import uno.lux.sample.core.network.feedItemDto
-import uno.lux.sample.core.network.userDto
+import uno.lux.sample.post.data.network.feedItemDto
+import uno.lux.sample.user.data.network.userDto
 
 class NetworkFeedDataSourceTest {
 
     @Test
     fun `fetch maps post DTOs to domain posts`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1"), feedItemDto("p2", "u1")),
                 page = emptyPage,
@@ -29,7 +28,7 @@ class NetworkFeedDataSourceTest {
 
     @Test
     fun `fetch maps sideloaded authors to domain users`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
                 included = FeedIncluded(users = listOf(userDto("u1", "Ada"), userDto("u2", "Grace"))),
@@ -44,7 +43,7 @@ class NetworkFeedDataSourceTest {
 
     @Test
     fun `fetch maps the isFollowing flag on sideloaded authors`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
                 included = FeedIncluded(users = listOf(userDto("u1", "Ada", isFollowing = true))),
@@ -58,7 +57,7 @@ class NetworkFeedDataSourceTest {
 
     @Test
     fun `fetch returns empty users when sideload is absent`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
                 included = null,
@@ -72,7 +71,7 @@ class NetworkFeedDataSourceTest {
 
     @Test
     fun `fetch propagates cursor and hasMore from the page`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeFeedApi(
             feedResponse = FeedResponse(
                 data = listOf(feedItemDto("p1", "u1")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),
@@ -86,7 +85,7 @@ class NetworkFeedDataSourceTest {
 
     @Test
     fun `fetch with no more pages returns null cursor and hasMore false`() = runTest {
-        val api = FakeMosaicApi(feedResponse = FeedResponse(data = emptyList(), page = emptyPage))
+        val api = FakeFeedApi(feedResponse = FeedResponse(data = emptyList(), page = emptyPage))
         val result = NetworkFeedDataSource(api).fetch(cursor = null)
 
         assertNull(result.nextCursor)

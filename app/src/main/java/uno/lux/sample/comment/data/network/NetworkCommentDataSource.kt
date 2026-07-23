@@ -4,12 +4,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.data.CommentDataSource
-import uno.lux.sample.core.network.MosaicApi
 import uno.lux.sample.post.PostId
 import uno.lux.sample.core.network.EmptyBody
 
 class NetworkCommentDataSource(
-    private val api: MosaicApi,
+    private val api: CommentApi,
 ) : CommentDataSource {
 
     override suspend fun loadComments(postId: PostId): List<Comment> = withContext(Dispatchers.IO) {

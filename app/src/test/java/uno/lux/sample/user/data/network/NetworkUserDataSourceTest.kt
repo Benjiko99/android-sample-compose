@@ -7,9 +7,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.core.files.FileUpload
-import uno.lux.sample.core.network.FakeMosaicApi
-import uno.lux.sample.core.network.UPLOADED_AVATAR_URL
-import uno.lux.sample.core.network.userDto
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 
@@ -17,7 +14,7 @@ class NetworkUserDataSourceTest {
 
     @Test
     fun `fetch returns the user mapped from the API response`() = runTest {
-        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada")))
+        val api = FakeUserApi(userById = mapOf("u1" to userDto("u1", "Ada")))
         val dataSource = NetworkUserDataSource(api)
 
         val user = dataSource.fetch("u1")!!
@@ -38,7 +35,7 @@ class NetworkUserDataSourceTest {
             followerCount = 500,
             followingCount = 10,
         )
-        val api = FakeMosaicApi(userById = mapOf("u1" to dto))
+        val api = FakeUserApi(userById = mapOf("u1" to dto))
         val dataSource = NetworkUserDataSource(api)
 
         val user = dataSource.fetch("u1")!!
@@ -55,7 +52,7 @@ class NetworkUserDataSourceTest {
 
     @Test
     fun `fetch maps the isFollowing flag`() = runTest {
-        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada", isFollowing = true)))
+        val api = FakeUserApi(userById = mapOf("u1" to userDto("u1", "Ada", isFollowing = true)))
         val dataSource = NetworkUserDataSource(api)
 
         assertTrue(dataSource.fetch("u1")!!.isFollowing)
@@ -63,7 +60,7 @@ class NetworkUserDataSourceTest {
 
     @Test
     fun `update sends text fields as multipart parts and returns the updated user`() = runTest {
-        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada")))
+        val api = FakeUserApi(userById = mapOf("u1" to userDto("u1", "Ada")))
         val dataSource = NetworkUserDataSource(api)
 
         val user = dataSource.update(
@@ -86,7 +83,7 @@ class NetworkUserDataSourceTest {
 
     @Test
     fun `update uploads the avatar as a file part`() = runTest {
-        val api = FakeMosaicApi(userById = mapOf("u1" to userDto("u1", "Ada")))
+        val api = FakeUserApi(userById = mapOf("u1" to userDto("u1", "Ada")))
         val dataSource = NetworkUserDataSource(api)
 
         val user = dataSource.update(
@@ -110,7 +107,7 @@ class NetworkUserDataSourceTest {
 
     @Test
     fun `toggleFollow posts to the user's follow endpoint`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakeUserApi()
         val dataSource = NetworkUserDataSource(api)
 
         dataSource.toggleFollow(User(id = "u2", nickname = "Grace", handle = "@grace"))
@@ -120,7 +117,7 @@ class NetworkUserDataSourceTest {
 
     @Test
     fun `toggleFollow applies the server's follow state and follower count`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakeUserApi(
             followResult = FollowToggleDto(isFollowing = true, followerCount = 128401),
         )
         val dataSource = NetworkUserDataSource(api)

@@ -10,13 +10,12 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.core.files.FileUpload
-import uno.lux.sample.core.network.FakeMosaicApi
-import uno.lux.sample.core.network.fullPostDto
-import uno.lux.sample.core.network.userDto
+import uno.lux.sample.core.network.LikeToggleDto
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.post.Post
 import uno.lux.sample.testing.testPostUrl
+import uno.lux.sample.user.data.network.userDto
 
 class NetworkPostDataSourceTest {
 
@@ -24,7 +23,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `fetch maps the full projection with its author flattened to an id`() = runTest {
-        val api = FakeMosaicApi(
+        val api = FakePostApi(
             postById = mapOf("p1" to fullPostDto("p1", author = userDto("u7", "Grace"))),
         )
         val dataSource = NetworkPostDataSource(api)
@@ -41,14 +40,14 @@ class NetworkPostDataSourceTest {
     // render, not as the exception every other failure raises — the two mean different screens.
     @Test
     fun `fetch returns null for a post the server does not have`() = runTest {
-        val dataSource = NetworkPostDataSource(FakeMosaicApi())
+        val dataSource = NetworkPostDataSource(FakePostApi())
 
         assertNull(dataSource.fetch("gone"))
     }
 
     @Test
     fun `fetch lets any other failure through`() = runTest {
-        val api = FakeMosaicApi().apply { getPostError = UnknownHostException("offline") }
+        val api = FakePostApi().apply { getPostError = UnknownHostException("offline") }
         val dataSource = NetworkPostDataSource(api)
 
         assertThrows(UnknownHostException::class.java) {
@@ -58,7 +57,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `create sends the draft and maps the created post with its author flattened to an id`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakePostApi()
         val dataSource = NetworkPostDataSource(api)
 
         val created = dataSource.create(NewPost(title = "Title", body = "Body"))
@@ -66,7 +65,7 @@ class NetworkPostDataSourceTest {
         val parts = api.lastCreatePostParts
         assertEquals("Title", parts?.title)
         assertEquals("Body", parts?.body)
-        assertEquals(emptyList<FakeMosaicApi.UploadedPart>(), parts?.images)
+        assertEquals(emptyList<FakePostApi.UploadedPart>(), parts?.images)
         assertEquals("p-new", created.post.id)
         assertEquals("Title", created.post.title)
         assertEquals("Body", created.post.body)
@@ -76,7 +75,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `create uploads each image as its own part, in order`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakePostApi()
         val dataSource = NetworkPostDataSource(api)
         val images = listOf(
             FileUpload(bytes = byteArrayOf(1, 2), mimeType = "image/png", filename = "one.png"),
@@ -90,8 +89,8 @@ class NetworkPostDataSourceTest {
         val parts = api.lastCreatePostParts
         assertEquals(
             listOf(
-                FakeMosaicApi.UploadedPart(filename = "one.png", bytes = byteArrayOf(1, 2)),
-                FakeMosaicApi.UploadedPart(filename = "two.jpg", bytes = byteArrayOf(3, 4)),
+                FakePostApi.UploadedPart(filename = "one.png", bytes = byteArrayOf(1, 2)),
+                FakePostApi.UploadedPart(filename = "two.jpg", bytes = byteArrayOf(3, 4)),
             ),
             parts?.images,
         )
@@ -102,7 +101,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `create uploads a video as a single part carrying its duration`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakePostApi()
         val dataSource = NetworkPostDataSource(api)
         val clip = FileUpload(bytes = byteArrayOf(9), mimeType = "video/mp4", filename = "clip.mp4")
 
@@ -116,16 +115,16 @@ class NetworkPostDataSourceTest {
 
         val parts = api.lastCreatePostParts
         assertEquals(
-            FakeMosaicApi.UploadedPart(filename = "clip.mp4", bytes = byteArrayOf(9)),
+            FakePostApi.UploadedPart(filename = "clip.mp4", bytes = byteArrayOf(9)),
             parts?.video,
         )
         assertEquals("42", parts?.videoDurationSeconds)
-        assertEquals(emptyList<FakeMosaicApi.UploadedPart>(), parts?.images)
+        assertEquals(emptyList<FakePostApi.UploadedPart>(), parts?.images)
     }
 
     @Test
     fun `create returns the embedded author as a domain user`() = runTest {
-        val dataSource = NetworkPostDataSource(FakeMosaicApi())
+        val dataSource = NetworkPostDataSource(FakePostApi())
 
         val created = dataSource.create(NewPost(title = "Title", body = "Body"))
 
@@ -135,7 +134,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `delete asks the API to remove that post`() = runTest {
-        val api = FakeMosaicApi()
+        val api = FakePostApi()
         val dataSource = NetworkPostDataSource(api)
 
         dataSource.delete("p1")
@@ -145,7 +144,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `toggleLike returns post with updated isLiked and likeCount from the server response`() = runTest {
-        val api = FakeMosaicApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 6))
+        val api = FakePostApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 6))
         val dataSource = NetworkPostDataSource(api)
 
         val result = dataSource.toggleLike(stubPost.copy(isLiked = false, likeCount = 5))
@@ -156,7 +155,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `toggleBookmark returns post with updated isBookmarked from the server response`() = runTest {
-        val api = FakeMosaicApi(bookmarkResult = BookmarkToggleDto(isBookmarked = true))
+        val api = FakePostApi(bookmarkResult = BookmarkToggleDto(isBookmarked = true))
         val dataSource = NetworkPostDataSource(api)
 
         val result = dataSource.toggleBookmark(stubPost.copy(isBookmarked = false))
@@ -166,7 +165,7 @@ class NetworkPostDataSourceTest {
 
     @Test
     fun `toggleLike preserves all other fields on the post`() = runTest {
-        val api = FakeMosaicApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 1))
+        val api = FakePostApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 1))
         val dataSource = NetworkPostDataSource(api)
         val original = stubPost.copy(isLiked = false, likeCount = 0)
 

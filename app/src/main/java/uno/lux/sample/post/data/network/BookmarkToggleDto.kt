@@ -3,4 +3,6 @@ package uno.lux.sample.post.data.network
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LikeToggleResponse(val data: LikeToggleDto)
+data class BookmarkToggleDto(
+    val isBookmarked: Boolean,
+)

@@ -7,9 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.comment.Comment
-import uno.lux.sample.core.network.FakeMosaicApi
-import uno.lux.sample.core.network.commentDto
-import uno.lux.sample.post.data.network.LikeToggleDto
+import uno.lux.sample.core.network.LikeToggleDto
 import uno.lux.sample.user.User
 
 class NetworkCommentDataSourceTest {
@@ -25,7 +23,7 @@ class NetworkCommentDataSourceTest {
 
     @Test
     fun `loadComments fetches from the API`() = runTest {
-        val api = FakeMosaicApi(comments = listOf(commentDto("c1", "Hello")))
+        val api = FakeCommentApi(comments = listOf(commentDto("c1", "Hello")))
         val dataSource = NetworkCommentDataSource(api)
 
         val loaded = dataSource.loadComments("p1")
@@ -37,7 +35,7 @@ class NetworkCommentDataSourceTest {
 
     @Test
     fun `loadComments returns empty list when the API returns none`() = runTest {
-        val dataSource = NetworkCommentDataSource(FakeMosaicApi(comments = emptyList()))
+        val dataSource = NetworkCommentDataSource(FakeCommentApi(comments = emptyList()))
 
         val loaded = dataSource.loadComments("p1")
 
@@ -46,7 +44,7 @@ class NetworkCommentDataSourceTest {
 
     @Test
     fun `addComment returns the server-created comment`() = runTest {
-        val dataSource = NetworkCommentDataSource(FakeMosaicApi())
+        val dataSource = NetworkCommentDataSource(FakeCommentApi())
 
         val comment = dataSource.addComment("p1", "New thought")
 
@@ -56,7 +54,7 @@ class NetworkCommentDataSourceTest {
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
-        val api = FakeMosaicApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 3))
+        val api = FakeCommentApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 3))
         val dataSource = NetworkCommentDataSource(api)
 
         val updated = dataSource.toggleLike("p1", stubComment)
@@ -67,7 +65,7 @@ class NetworkCommentDataSourceTest {
 
     @Test
     fun `toggleLike preserves all other fields on the comment`() = runTest {
-        val dataSource = NetworkCommentDataSource(FakeMosaicApi())
+        val dataSource = NetworkCommentDataSource(FakeCommentApi())
 
         val updated = dataSource.toggleLike("p1", stubComment)
 

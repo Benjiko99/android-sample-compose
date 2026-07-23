@@ -2,7 +2,6 @@ package uno.lux.sample.user.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.core.network.MosaicApi
 import uno.lux.sample.core.network.asPart
 import uno.lux.sample.core.network.asTextPart
 import uno.lux.sample.core.network.notFoundAsNull
@@ -12,7 +11,7 @@ import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.UserDataSource
 
 class NetworkUserDataSource(
-    private val api: MosaicApi,
+    private val api: UserApi,
 ) : UserDataSource {
 
     override suspend fun fetch(userId: UserId): User? = withContext(Dispatchers.IO) {
