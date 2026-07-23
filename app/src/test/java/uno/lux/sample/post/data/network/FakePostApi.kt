@@ -7,7 +7,7 @@ import okio.Buffer
 import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
-import uno.lux.sample.core.network.notFoundException
+import uno.lux.sample.app.core.network.notFoundException
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.UserDto
 import uno.lux.sample.user.data.network.stubAuthor

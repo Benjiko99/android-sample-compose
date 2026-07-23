@@ -1,6 +1,6 @@
 package uno.lux.sample.feed.data.network
 
-import uno.lux.sample.core.network.emptyPage
+import uno.lux.sample.app.core.network.emptyPage
 
 class FakeFeedApi(
     private val feedResponse: FeedResponse = FeedResponse(data = emptyList(), page = emptyPage),

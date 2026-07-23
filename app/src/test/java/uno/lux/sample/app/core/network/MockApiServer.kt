@@ -1,4 +1,4 @@
-package uno.lux.sample.core.network
+package uno.lux.sample.app.core.network
 
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.mockwebserver.MockWebServer

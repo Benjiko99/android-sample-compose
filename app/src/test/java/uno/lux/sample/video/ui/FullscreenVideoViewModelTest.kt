@@ -1,11 +1,10 @@
-package uno.lux.sample.post.ui.video
+package uno.lux.sample.video.ui
 
 import androidx.navigation3.runtime.NavKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.video.ui.FullscreenVideoViewModel
 
 class FullscreenVideoViewModelTest {
 

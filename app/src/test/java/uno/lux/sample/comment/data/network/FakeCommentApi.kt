@@ -4,7 +4,7 @@ import java.time.Instant
 import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
-import uno.lux.sample.core.network.emptyPage
+import uno.lux.sample.app.core.network.emptyPage
 import uno.lux.sample.user.data.network.stubAuthor
 
 class FakeCommentApi(

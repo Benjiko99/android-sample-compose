@@ -18,7 +18,7 @@ import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.core.files.FakeFileLoader
+import uno.lux.sample.app.core.files.FakeFileLoader
 import androidx.lifecycle.SavedStateHandle
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen

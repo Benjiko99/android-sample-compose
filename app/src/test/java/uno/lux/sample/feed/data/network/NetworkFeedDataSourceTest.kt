@@ -7,7 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.app.core.network.CursorPageDto
-import uno.lux.sample.core.network.emptyPage
+import uno.lux.sample.app.core.network.emptyPage
 import uno.lux.sample.post.data.network.feedItemDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.user.data.network.userDto

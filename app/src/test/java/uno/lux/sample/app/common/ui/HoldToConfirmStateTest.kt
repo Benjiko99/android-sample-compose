@@ -1,4 +1,4 @@
-package uno.lux.sample.design.components
+package uno.lux.sample.app.common.ui
 
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -8,8 +8,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import uno.lux.sample.app.common.ui.HoldPhase
-import uno.lux.sample.app.common.ui.HoldToConfirmState
 
 private const val HoldMillis = 1_500L
 private const val HintMillis = 1_000L

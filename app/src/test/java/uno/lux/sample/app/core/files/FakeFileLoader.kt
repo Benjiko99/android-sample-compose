@@ -1,8 +1,5 @@
-package uno.lux.sample.core.files
+package uno.lux.sample.app.core.files
 
-import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.files.FileUpload
-import uno.lux.sample.app.core.files.VideoMetadataReader
 
 
 /**

@@ -1,4 +1,4 @@
-package uno.lux.sample.design.components
+package uno.lux.sample.app.common.ui
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
@@ -14,7 +14,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import uno.lux.sample.app.common.ui.HoldToConfirmButton
 import uno.lux.sample.app.theme.MosaicTheme
 
 /**
