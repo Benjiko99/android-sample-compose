@@ -170,6 +170,9 @@ internal fun CreatePostScreen(
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // The page colour belongs to the container, which spans the window — a background on the
+        // form would stop at the content padding and leave the inset strips showing through.
+        containerColor = MaterialTheme.colorScheme.surface,
         // Includes the IME, so the keyboard arrives as content padding — consumed below, unlike
         // an `imePadding()` that would re-apply the navigation bar inset already spent there.
         contentWindowInsets = WindowInsets.safeDrawing,
@@ -213,7 +216,6 @@ private fun CreatePostForm(
 ) {
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
