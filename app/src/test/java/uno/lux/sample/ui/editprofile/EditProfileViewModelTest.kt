@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -288,57 +287,5 @@ class EditProfileViewModelTest : ViewModelTest() {
         viewModel.goBack()
 
         assertEquals(listOf<NavKey>(Screen.Shell), backStack)
-    }
-
-    // ── surviving process death ───────────────────────────────────────────────
-
-    @Test
-    fun `in-progress edits survive being rebuilt from the same saved state`() = runTest {
-        val handle = SavedStateHandle()
-        val killed = fixture(savedStateHandle = handle).viewModel
-        collecting(killed)
-        killed.onNicknameChange("Ada L.")
-        killed.onBioChange("Rewritten.")
-        advanceUntilIdle()
-
-        val restored = fixture(savedStateHandle = handle).viewModel
-        collecting(restored)
-        advanceUntilIdle()
-
-        val form = restored.form()
-        assertEquals("Ada L.", form.nickname)
-        assertEquals("Rewritten.", form.bio)
-    }
-
-    // The seeded snapshot is re-read from the server, so the restored edits still read as unsaved
-    // — which is what keeps the discard prompt and the Save button honest after a restart.
-    @Test
-    fun `restored edits are still dirty`() = runTest {
-        val handle = SavedStateHandle()
-        val killed = fixture(savedStateHandle = handle).viewModel
-        collecting(killed)
-        killed.onNicknameChange("Ada L.")
-        advanceUntilIdle()
-
-        val restored = fixture(savedStateHandle = handle).viewModel
-        collecting(restored)
-        advanceUntilIdle()
-
-        assertTrue(restored.editing().isDirty)
-    }
-
-    @Test
-    fun `an untouched editor restores seeded from the user, not from a draft`() = runTest {
-        val handle = SavedStateHandle()
-        val killed = fixture(savedStateHandle = handle).viewModel
-        collecting(killed)
-        advanceUntilIdle()
-
-        val restored = fixture(savedStateHandle = handle).viewModel
-        collecting(restored)
-        advanceUntilIdle()
-
-        assertEquals("Ada Lovelace", restored.form().nickname)
-        assertFalse(restored.editing().isDirty)
     }
 }

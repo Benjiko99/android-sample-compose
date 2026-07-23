@@ -8,7 +8,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import uno.lux.sample.data.post.FeedRepository
@@ -54,7 +53,7 @@ class CreatePostViewModel @Inject constructor(
     private var pickVideoJob: Job? = null
 
     init {
-        savedStateHandle.saveDraft(viewModelScope, DraftKey, uiState.map { it.form })
+        savedStateHandle.saveDraft(DraftKey) { _uiState.value.form }
     }
 
     override fun onTitleChange(value: String) = updateForm {
