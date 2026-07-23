@@ -8,6 +8,7 @@ import uno.lux.sample.data.network.dto.CommentDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
+import uno.lux.sample.data.post.testPostUrl
 import java.time.Instant
 
 /**
@@ -24,7 +25,7 @@ class NetworkMappersTest {
         val post = PostMapper.map(postDto(createdAt = createdAt))
 
         assertEquals("p1", post.id)
-        assertEquals("https://mosaic.test/p/p1", post.url)
+        assertEquals(testPostUrl("p1"), post.url)
         assertEquals("u1", post.authorId)
         assertEquals("Title", post.title)
         assertEquals("Body", post.body)
@@ -102,7 +103,7 @@ class NetworkMappersTest {
         video: VideoDto? = null,
     ) = PostFeedItemDto(
         id = "p1",
-        url = "https://mosaic.test/p/p1",
+        url = testPostUrl("p1"),
         title = "Title",
         body = "Body",
         createdAt = createdAt,

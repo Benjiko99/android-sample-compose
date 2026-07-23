@@ -21,6 +21,7 @@ import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.post.testPostUrl
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
@@ -36,7 +37,7 @@ class HomeViewModelTest : ViewModelTest() {
     private val author2 = User(id = "u2", nickname = "Bob", handle = "@bob")
     private val post = Post(
         id = "p1",
-        url = "https://mosaic.test/p/p1",
+        url = testPostUrl("p1"),
         authorId = "u1",
         title = "Title",
         body = "Body",
@@ -46,7 +47,7 @@ class HomeViewModelTest : ViewModelTest() {
     )
     private val post2 = Post(
         id = "p2",
-        url = "https://mosaic.test/p/p2",
+        url = testPostUrl("p2"),
         authorId = "u2",
         title = "Title 2",
         body = "Body 2",

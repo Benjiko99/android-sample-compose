@@ -11,6 +11,7 @@ import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
+import uno.lux.sample.data.post.testPostUrl
 import java.time.Instant
 
 class NetworkPostDataSourceTest {
@@ -142,7 +143,7 @@ class NetworkPostDataSourceTest {
 
 private fun post(id: String) = Post(
     id = id,
-    url = "https://mosaic.test/p/$id",
+    url = testPostUrl(id),
     authorId = "u1",
     title = "Title $id",
     body = "Body $id",

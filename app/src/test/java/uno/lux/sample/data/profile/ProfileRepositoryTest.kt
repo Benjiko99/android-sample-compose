@@ -10,6 +10,7 @@ import org.junit.Test
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.testPostUrl
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
@@ -489,7 +490,7 @@ private fun post(
     isBookmarked: Boolean = false,
 ) = Post(
     id = id,
-    url = "https://mosaic.test/p/$id",
+    url = testPostUrl(id),
     authorId = authorId,
     title = "Title $id",
     body = "Body $id",

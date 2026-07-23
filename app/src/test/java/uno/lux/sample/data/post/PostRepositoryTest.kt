@@ -145,7 +145,7 @@ private fun post(
     isBookmarked: Boolean = false,
 ) = Post(
     id = id,
-    url = "https://mosaic.test/p/$id",
+    url = testPostUrl(id),
     authorId = "u-$id",
     title = "Title $id",
     body = "Body $id",

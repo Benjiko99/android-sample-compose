@@ -23,6 +23,7 @@ import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.testPostUrl
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
@@ -38,7 +39,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
     private val post = Post(
         id = "p1",
-        url = "https://mosaic.test/p/p1",
+        url = testPostUrl("p1"),
         authorId = "u2",
         title = "The Title",
         body = "The body.",

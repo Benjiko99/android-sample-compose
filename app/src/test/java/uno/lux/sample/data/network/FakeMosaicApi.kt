@@ -29,6 +29,7 @@ import uno.lux.sample.data.network.response.PostResponse
 import uno.lux.sample.data.network.response.ProfileStatsResponse
 import uno.lux.sample.data.network.response.UserPostsResponse
 import uno.lux.sample.data.network.response.UserResponse
+import uno.lux.sample.data.post.testPostUrl
 
 internal val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
 
@@ -188,7 +189,7 @@ class FakeMosaicApi(
         return PostResponse(
             PostDto(
                 id = "p-new",
-                url = "https://mosaic.test/p/p-new",
+                url = testPostUrl("p-new"),
                 title = titleText,
                 body = bodyText,
                 createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
@@ -255,7 +256,7 @@ fun feedItemDto(
     video: VideoDto? = null,
 ) = PostFeedItemDto(
     id = id,
-    url = "https://mosaic.test/p/$id",
+    url = testPostUrl(id),
     title = "Title $id",
     body = "Body $id",
     createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
