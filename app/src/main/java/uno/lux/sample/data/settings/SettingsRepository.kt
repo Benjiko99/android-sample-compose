@@ -5,6 +5,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
+ * Video auto-play is on until the user turns it off. Every layer that has to name that default —
+ * the persisted flow when the key is absent, the in-memory double, and the `StateFlow` each
+ * ViewModel starts from before the stored choice arrives — reads it from here, so the default is
+ * one edit rather than four literals that have to agree.
+ */
+const val DefaultAutoPlayVideos = true
+
+/**
  * Stores user settings. Exposes [themeMode] and [autoPlayVideos] reactively and updates them on
  * request.
  *
@@ -14,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 interface SettingsRepository {
     val themeMode: Flow<ThemeMode>
 
-    /** Whether the feed starts a video on its own as it scrolls into view. On unless turned off. */
+    /** Whether the feed starts a video on its own as it scrolls into view. [DefaultAutoPlayVideos] unless set. */
     val autoPlayVideos: Flow<Boolean>
 
     suspend fun setThemeMode(mode: ThemeMode)
@@ -23,7 +31,7 @@ interface SettingsRepository {
 
 class InMemorySettingsRepository(
     initialThemeMode: ThemeMode = ThemeMode.SYSTEM,
-    initialAutoPlayVideos: Boolean = true,
+    initialAutoPlayVideos: Boolean = DefaultAutoPlayVideos,
 ) : SettingsRepository {
 
     private val theme = MutableStateFlow(initialThemeMode)

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import uno.lux.sample.data.settings.AppLanguage
 import uno.lux.sample.data.settings.AppLocaleRepository
+import uno.lux.sample.data.settings.DefaultAutoPlayVideos
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
 import uno.lux.sample.ui.navigation.Navigator
@@ -30,7 +31,7 @@ class SettingsViewModel @Inject constructor(
         .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
 
     val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
-        .stateInWhileSubscribed(viewModelScope, initialValue = true)
+        .stateInWhileSubscribed(viewModelScope, DefaultAutoPlayVideos)
 
     /** Already hot state on the repository — a language is always in effect — so it passes straight through. */
     val language: StateFlow<AppLanguage> = appLocaleRepository.language

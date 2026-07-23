@@ -119,6 +119,15 @@ internal fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
+            SettingsSection(title = stringResource(R.string.settings_language)) {
+                SingleChoiceRow(
+                    options = AppLanguage.entries,
+                    selected = language,
+                    onSelected = actions::setLanguage,
+                    label = { stringResource(it.labelRes()) },
+                )
+            }
+
             SettingsSection(title = stringResource(R.string.settings_appearance)) {
                 SingleChoiceRow(
                     options = ThemeMode.entries,
@@ -134,15 +143,6 @@ internal fun SettingsScreen(
                     supportingText = stringResource(R.string.settings_autoplay_videos_description),
                     checked = autoPlayVideos,
                     onCheckedChange = actions::setAutoPlayVideos,
-                )
-            }
-
-            SettingsSection(title = stringResource(R.string.settings_language)) {
-                SingleChoiceRow(
-                    options = AppLanguage.entries,
-                    selected = language,
-                    onSelected = actions::setLanguage,
-                    label = { stringResource(it.labelRes()) },
                 )
             }
         }

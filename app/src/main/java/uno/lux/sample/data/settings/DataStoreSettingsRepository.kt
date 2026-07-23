@@ -29,9 +29,9 @@ class DataStoreSettingsRepository(
     override val themeMode: Flow<ThemeMode> = preferences
         .map { ThemeMode.fromName(it[KEY_THEME_MODE]) }
 
-    // Absent means the user never opted out, which is the on state — not `false`.
+    // Absent means the user never opted out, which is the default — not `false`.
     override val autoPlayVideos: Flow<Boolean> = preferences
-        .map { it[KEY_AUTO_PLAY_VIDEOS] ?: true }
+        .map { it[KEY_AUTO_PLAY_VIDEOS] ?: DefaultAutoPlayVideos }
 
     override suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { preferences -> preferences[KEY_THEME_MODE] = mode.name }

@@ -14,6 +14,7 @@ import uno.lux.sample.data.post.FeedState
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.settings.DefaultAutoPlayVideos
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
@@ -89,12 +90,12 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Whether the feed may start a video on its own as it scrolls into view. The stored preference
-     * arrives asynchronously, so this starts from the default (on) rather than from `false` —
+     * arrives asynchronously, so this starts from [DefaultAutoPlayVideos] rather than from `false` —
      * otherwise every launch would pass through a state that suppresses playback before the user's
      * actual choice lands.
      */
     val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
-        .stateInWhileSubscribed(viewModelScope, initialValue = true)
+        .stateInWhileSubscribed(viewModelScope, DefaultAutoPlayVideos)
 
     private var loadJob: Job? = null
     private var loadMoreJob: Job? = null

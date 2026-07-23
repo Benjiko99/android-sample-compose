@@ -293,28 +293,18 @@ class HomeViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `autoPlayVideos reflects the user's setting`() = runTest {
-        val viewModel = viewModel(
-            settingsRepository = InMemorySettingsRepository(initialAutoPlayVideos = false),
-        )
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.autoPlayVideos.collect {}
-        }
-
-        assertFalse(viewModel.autoPlayVideos.value)
-    }
-
-    @Test
-    fun `autoPlayVideos follows a change made while the feed is open`() = runTest {
-        val settings = InMemorySettingsRepository()
+    fun `autoPlayVideos follows the user's setting, including a change made while the feed is open`() = runTest {
+        val settings = InMemorySettingsRepository(initialAutoPlayVideos = false)
         val viewModel = viewModel(settingsRepository = settings)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.autoPlayVideos.collect {}
         }
 
-        settings.setAutoPlayVideos(false)
-
         assertFalse(viewModel.autoPlayVideos.value)
+
+        settings.setAutoPlayVideos(true)
+
+        assertTrue(viewModel.autoPlayVideos.value)
     }
 }
 

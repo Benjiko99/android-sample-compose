@@ -213,17 +213,16 @@ private fun FeedList(
     LaunchedEffect(listState, playback, autoPlayVideos) {
         snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
             if (playback == null || playback.isFullscreen) return@collect
-            val video = autoPlayVideo(layoutInfo, currentPosts)
+            // With auto-play off and nothing playing there is neither a video to start nor one to
+            // stop, so the per-frame visibility scan below would be pure waste.
+            if (!autoPlayVideos && playback.activeVideoUrl == null) return@collect
 
-            when {
-                // Whatever is running has scrolled out of the way. With auto-play off that is the
-                // only thing the feed does to playback: a video the user tapped keeps playing
-                // until it stops being the on-screen winner, exactly as an auto-played one would.
-                video == null || (!autoPlayVideos && video.videoUrl != playback.activeVideoUrl) ->
-                    playback.stop()
-
-                autoPlayVideos -> playback.playInline(video.videoUrl)
-            }
+            val url = videoToPlay(
+                mostVisibleUrl = mostVisibleVideo(layoutInfo, currentPosts)?.videoUrl,
+                activeUrl = playback.activeVideoUrl,
+                autoPlayVideos = autoPlayVideos,
+            )
+            if (url != null) playback.playInline(url) else playback.stop()
         }
     }
 
@@ -287,13 +286,29 @@ private fun CaughtUpFooter(modifier: Modifier = Modifier) {
 }
 
 /**
- * Returns the [Video] that should auto-play — the video post with the greatest on-screen fraction
- * that meets the 50 % visibility threshold — or null when no video qualifies.
+ * The URL the feed should have playing, or null to stop.
+ *
+ * With auto-play on that is simply the on-screen winner ([mostVisibleUrl]). With it off nothing
+ * ever starts on its own, so the only URL that may play is one already playing ([activeUrl]) —
+ * i.e. one the user tapped — and only while it is still the winner, which is what stops it when it
+ * scrolls out of the way rather than letting its audio outlive the post on screen.
+ *
+ * Pure, so the whole rule is unit-testable without a composition or a layout.
+ */
+internal fun videoToPlay(
+    mostVisibleUrl: String?,
+    activeUrl: String?,
+    autoPlayVideos: Boolean,
+): String? = mostVisibleUrl?.takeIf { autoPlayVideos || it == activeUrl }
+
+/**
+ * Returns the on-screen winner — the video post with the greatest visible fraction that meets the
+ * 50 % threshold — or null when no video qualifies. Deciding what to do with it is [videoToPlay]'s.
  *
  * [LazyListItemInfo.index] maps 1:1 to [posts] because [FeedList] emits posts first (indices
  * 0..lastIndex) then optionally a footer item at [posts.size].
  */
-private fun autoPlayVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardData>): Video? {
+private fun mostVisibleVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardData>): Video? {
     val viewportStart = layoutInfo.viewportStartOffset
     val viewportEnd = layoutInfo.viewportEndOffset
     fun visibleFraction(offset: Int, size: Int): Float {

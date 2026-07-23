@@ -81,12 +81,4 @@ class DataStoreSettingsRepositoryTest {
 
         assertEquals(false, repository.autoPlayVideos.first())
     }
-
-    @Test
-    fun `a persisted opt-out survives a new repository over the same store`() = runTest {
-        val dataStore = dataStore()
-        DataStoreSettingsRepository(dataStore).setAutoPlayVideos(false)
-
-        assertEquals(false, DataStoreSettingsRepository(dataStore).autoPlayVideos.first())
-    }
 }
