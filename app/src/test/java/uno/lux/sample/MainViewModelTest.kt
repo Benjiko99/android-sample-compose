@@ -6,15 +6,23 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.data.settings.AppLanguage
+import uno.lux.sample.data.settings.AppLocaleRepository
+import uno.lux.sample.data.settings.InMemoryAppLocaleRepository
 import uno.lux.sample.data.settings.InMemorySettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest : ViewModelTest() {
 
+    private fun viewModel(
+        settingsRepository: InMemorySettingsRepository = InMemorySettingsRepository(ThemeMode.DARK),
+        appLocaleRepository: AppLocaleRepository = InMemoryAppLocaleRepository(),
+    ) = MainViewModel(settingsRepository, appLocaleRepository, currentUserId = "u1")
+
     @Test
     fun `themeMode is null until the flow is collected`() {
-        val viewModel = MainViewModel(InMemorySettingsRepository(ThemeMode.DARK), currentUserId = "u1")
+        val viewModel = viewModel()
 
         assertEquals(null, viewModel.themeMode.value)
     }
@@ -22,7 +30,7 @@ class MainViewModelTest : ViewModelTest() {
     @Test
     fun `themeMode reflects the repository`() = runTest {
         val repository = InMemorySettingsRepository(ThemeMode.DARK)
-        val viewModel = MainViewModel(repository, currentUserId = "u1")
+        val viewModel = viewModel(settingsRepository = repository)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.themeMode.collect {}
         }
@@ -32,5 +40,28 @@ class MainViewModelTest : ViewModelTest() {
         repository.setThemeMode(ThemeMode.LIGHT)
 
         assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
+    }
+
+    @Test
+    fun `resolveInitialLanguage pins the device language on a first launch`() {
+        val locales = InMemoryAppLocaleRepository(systemLanguageTags = "cs-CZ,en-US")
+        val viewModel = viewModel(appLocaleRepository = locales)
+
+        viewModel.resolveInitialLanguage()
+
+        assertEquals(AppLanguage.CZECH, locales.language.value)
+    }
+
+    @Test
+    fun `resolveInitialLanguage leaves a stored language alone`() {
+        val locales = InMemoryAppLocaleRepository(
+            storedLanguage = AppLanguage.ENGLISH,
+            systemLanguageTags = "cs-CZ",
+        )
+        val viewModel = viewModel(appLocaleRepository = locales)
+
+        viewModel.resolveInitialLanguage()
+
+        assertEquals(AppLanguage.ENGLISH, locales.language.value)
     }
 }

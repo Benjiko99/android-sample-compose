@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import uno.lux.sample.data.settings.AppLocaleRepository
 import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.settings.ThemeMode
 import uno.lux.sample.data.user.UserId
@@ -12,17 +13,24 @@ import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**
- * State for the app root: the [themeMode] preference [MainActivity] resolves into the
- * light/dark choice, and the [currentUserId] of the signed-in user (used to open their own
- * profile from the Profile tab). Kept in a ViewModel so the values survive configuration
- * changes and the activity stays a thin shell around [SampleApp].
+ * Root state for the app.
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
+    private val appLocaleRepository: AppLocaleRepository,
     @param:CurrentUserId val currentUserId: UserId,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode?> = settingsRepository.themeMode
         .stateInWhileSubscribed(viewModelScope, initialValue = null)
+
+    /**
+     * First launch only: adopts the device's language if we ship it, else English. Called from
+     * [MainActivity] rather than from `init`, because the locale APIs need AppCompat's delegate to
+     * have attached — which is only guaranteed once `super.onCreate` has run.
+     */
+    fun resolveInitialLanguage() {
+        appLocaleRepository.resolveInitialLanguage()
+    }
 }
