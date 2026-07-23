@@ -170,13 +170,8 @@ internal fun CreatePostScreen(
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        // The form paints no background of its own, so the container is what fills the inset
-        // strips the content padding keeps clear — leaving it at the default `background` would
-        // show a grey band under the navigation bar.
-        containerColor = MaterialTheme.colorScheme.surface,
-        // Includes the IME, so the keyboard arrives as content padding. Padding the form with
-        // `imePadding()` instead would re-apply the navigation bar inset the content padding has
-        // already spent, and park that much unpainted container just above the keyboard.
+        // Includes the IME, so the keyboard arrives as content padding — consumed below, unlike
+        // an `imePadding()` that would re-apply the navigation bar inset already spent there.
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
@@ -218,6 +213,7 @@ private fun CreatePostForm(
 ) {
     Column(
         modifier = modifier
+            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
