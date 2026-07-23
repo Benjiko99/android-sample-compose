@@ -81,8 +81,11 @@ const val LoggedInUserId = "u1"
  * The stand-in stream each sample [Video] points at — a short, freely hosted MP4, one per video.
  * Sharing a stream between two videos is what to avoid here: the shared player keys playback on
  * the URL, so two videos pointing at the same file are one playback and cannot play independently.
+ *
+ * They have to *look* different too. The host's `sample-3.mp4` and `sample-5.mp4` are the same
+ * clip under two names, which leaves a playback bug indistinguishable from correct behaviour.
  */
-private const val ImitationGameVideoUrl = "https://getsamplefiles.com/download/mp4/sample-3.mp4"
+private const val ImitationGameVideoUrl = "https://getsamplefiles.com/download/mp4/sample-2.mp4"
 private const val KernelBootVideoUrl = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
 
 /** The stand-in photos the "Engine sketches" album shows, as freely hosted JPEGs. */
