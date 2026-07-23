@@ -56,14 +56,13 @@ import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.app.common.ui.DiscardChangesDialog
 import uno.lux.sample.app.common.ui.HoldToConfirmButton
-import uno.lux.sample.app.common.ui.MediaBadge
 import uno.lux.sample.app.common.ui.MediaRemoveButton
+import uno.lux.sample.app.common.ui.PlayBadge
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
-import uno.lux.sample.app.format.formatVideoDuration
 
 /**
  * The composer's ViewModel-backed intents, as one [Stable] seam the stateless
@@ -305,12 +304,11 @@ private fun PostMediaPicker(
                 onOpen = { actions.openVideo(media) },
                 onRemove = actions::onRemoveVideo,
             ) {
-                MediaBadge(
-                    text = formatVideoDuration(media.durationSeconds),
-                    iconRes = R.drawable.ic_play_arrow,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(4.dp),
+                PlayBadge(
+                    contentDescription = stringResource(R.string.video_play),
+                    size = 32.dp,
+                    iconSize = 18.dp,
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
         }
@@ -391,7 +389,7 @@ private fun PickedImages(
  * content URI — a still directly, a video via the frame decoder `MosaicApp` registers. Tapping
  * the thumbnail opens the file full screen through [onOpen] — photos in the album viewer, the
  * clip on the video page. [overlay] carries whatever else the kind needs on top, which today is
- * the video's duration badge.
+ * the video's play badge.
  */
 @Composable
 private fun PickedMediaThumbnail(
@@ -516,7 +514,7 @@ private fun CreatePostScreenVideoPreview() {
                 form = CreatePostForm(
                     title = "The engine, running",
                     body = "Forty seconds of the carry mechanism in motion.",
-                    media = CreatePostMedia.Video(uri = "", durationSeconds = 42),
+                    media = CreatePostMedia.Video(uri = ""),
                 ),
             ),
             actions = createActionsProxy(),
@@ -536,7 +534,7 @@ private fun CreatePostScreenPublishingPreview() {
                 form = CreatePostForm(
                     title = "The engine, running",
                     body = "Forty seconds of the carry mechanism in motion.",
-                    media = CreatePostMedia.Video(uri = "", durationSeconds = 42),
+                    media = CreatePostMedia.Video(uri = ""),
                 ),
                 isPublishing = true,
             ),

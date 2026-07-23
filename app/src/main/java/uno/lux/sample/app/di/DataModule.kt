@@ -39,9 +39,7 @@ import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.core.files.AndroidFileLoader
-import uno.lux.sample.app.core.files.AndroidVideoMetadataReader
 import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.files.VideoMetadataReader
 import javax.inject.Singleton
 
 @Module
@@ -115,10 +113,6 @@ object DataModule {
     @Provides
     fun provideFileLoader(@ApplicationContext context: Context): FileLoader =
         AndroidFileLoader(context)
-
-    @Provides
-    fun provideVideoMetadataReader(@ApplicationContext context: Context): VideoMetadataReader =
-        AndroidVideoMetadataReader(context)
 
     @Provides
     @CurrentUserId

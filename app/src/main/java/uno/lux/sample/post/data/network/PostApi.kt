@@ -24,9 +24,9 @@ interface PostApi {
     // Publishes a post authored by the current user (the X-User-Id header). Sent as
     // multipart/form-data — like the avatar upload — so the post's media rides along with the
     // text in one request. Media is exclusive: either [images] is non-empty or [video] is
-    // present, never both (the server 422s the combination). [videoDurationSeconds] accompanies a
-    // video because the server cannot extract it. The response is the full projection, so the
-    // created post arrives with its author and stored album or video embedded.
+    // present, never both (the server 422s the combination). The response is the full projection,
+    // so the created post arrives with its author and stored album or video embedded — the
+    // video's duration among it, which the server derives from the uploaded file.
     @Multipart
     @POST("posts")
     suspend fun createPost(
@@ -34,7 +34,6 @@ interface PostApi {
         @Part("body") body: RequestBody,
         @Part images: List<MultipartBody.Part>,
         @Part video: MultipartBody.Part?,
-        @Part("videoDurationSeconds") videoDurationSeconds: RequestBody?,
     ): PostResponse
 
     // Deletes a post authored by the current user (the X-User-Id header). 403 when the caller is

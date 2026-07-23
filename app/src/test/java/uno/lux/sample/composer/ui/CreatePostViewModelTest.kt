@@ -17,7 +17,6 @@ import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.core.files.FakeFileLoader
-import uno.lux.sample.app.core.files.FakeVideoMetadataReader
 import androidx.lifecycle.SavedStateHandle
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
@@ -39,7 +38,6 @@ class CreatePostViewModelTest : ViewModelTest() {
         createError: Exception? = null,
         fileError: Exception? = null,
         videoSize: Long? = 1_000,
-        videoDuration: Int = 12,
         savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ): Fixture {
         val postDataSource = FakePostDataSource().apply { this.createError = createError }
@@ -54,7 +52,6 @@ class CreatePostViewModelTest : ViewModelTest() {
             CreatePostViewModel(
                 feedRepository,
                 FakeFileLoader(error = fileError, size = videoSize),
-                FakeVideoMetadataReader(videoDuration),
                 navigator,
                 savedStateHandle,
             ),
@@ -223,15 +220,12 @@ class CreatePostViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `a picked video is attached with the duration read from the file`() = runTest {
-        val viewModel = fixture(videoDuration = 42).viewModel
+    fun `a picked video is attached as the draft's media`() = runTest {
+        val viewModel = fixture().viewModel
 
         viewModel.onVideoPicked("clip")
 
-        assertEquals(
-            CreatePostMedia.Video(uri = "clip", durationSeconds = 42),
-            viewModel.uiState.first().form.media,
-        )
+        assertEquals(CreatePostMedia.Video("clip"), viewModel.uiState.first().form.media)
     }
 
     @Test
@@ -289,15 +283,15 @@ class CreatePostViewModelTest : ViewModelTest() {
     fun `openVideo pushes the fullscreen player for the picked clip`() = runTest {
         val viewModel = fixture().viewModel
 
-        viewModel.openVideo(CreatePostMedia.Video(uri = "clip", durationSeconds = 12))
+        viewModel.openVideo(CreatePostMedia.Video("clip"))
 
         // The key carries no title — a clip picked from disk has none.
         assertEquals(Screen.FullscreenVideo(url = "clip"), backStack.last())
     }
 
     @Test
-    fun `publish uploads the video and its duration with the draft`() = runTest {
-        val (viewModel, dataSource) = fixture(videoDuration = 7)
+    fun `publish uploads the video with the draft`() = runTest {
+        val (viewModel, dataSource) = fixture()
         viewModel.fillIn()
         viewModel.onVideoPicked("clip")
 
@@ -305,7 +299,6 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         val media = dataSource.lastDraft?.media as NewPostMedia.Video
         assertEquals("clip", media.file.filename)
-        assertEquals(7, media.durationSeconds)
     }
 
     @Test

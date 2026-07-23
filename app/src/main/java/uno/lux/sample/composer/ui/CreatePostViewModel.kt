@@ -12,7 +12,6 @@ import timber.log.Timber
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.files.VideoMetadataReader
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.ignoreErrors
@@ -36,7 +35,6 @@ import javax.inject.Inject
 class CreatePostViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
     private val fileLoader: FileLoader,
-    private val videoMetadataReader: VideoMetadataReader,
     private val navigator: Navigator,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel(), CreatePostActions {
@@ -92,9 +90,8 @@ class CreatePostViewModel @Inject constructor(
 
     /**
      * Attaches a picked clip, rejecting one over [CreatePostMaxVideoBytes] before its bytes are
-     * ever read. Duration is read here, at pick time, because it is cheap (metadata only) and the
-     * thumbnail shows it; a provider that reports no size is allowed through and left to the
-     * server, since refusing an unknown-size file would block legitimate ones.
+     * ever read. A provider that reports no size is allowed through and left to the server, since
+     * refusing an unknown-size file would block legitimate ones.
      */
     override fun onVideoPicked(uri: String) {
         launchIfIdle(::pickVideoJob) {
@@ -111,12 +108,9 @@ class CreatePostViewModel @Inject constructor(
                     return@ignoreErrors
                 }
 
-                val duration = videoMetadataReader.durationSeconds(uri)
                 _uiState.update { state ->
                     state.copy(
-                        form = state.form.copy(
-                            media = CreatePostMedia.Video(uri = uri, durationSeconds = duration),
-                        ),
+                        form = state.form.copy(media = CreatePostMedia.Video(uri)),
                         error = null,
                     )
                 }
@@ -184,10 +178,7 @@ class CreatePostViewModel @Inject constructor(
         is CreatePostMedia.Images ->
             NewPostMedia.Images(media.uris.map { fileLoader.read(it) })
 
-        is CreatePostMedia.Video -> NewPostMedia.Video(
-            file = fileLoader.read(media.uri),
-            durationSeconds = media.durationSeconds,
-        )
+        is CreatePostMedia.Video -> NewPostMedia.Video(fileLoader.read(media.uri))
     }
 
     private fun updateForm(transform: (CreatePostForm) -> CreatePostForm) {

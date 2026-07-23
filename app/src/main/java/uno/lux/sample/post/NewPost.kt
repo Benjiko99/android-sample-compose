@@ -13,12 +13,7 @@ sealed interface NewPostMedia {
 
     data class Images(val files: List<FileUpload>) : NewPostMedia
 
-    /**
-     * [durationSeconds] travels with the file because the server cannot extract it: reading video
-     * metadata server-side would mean shipping ffmpeg in the image for one display field, so the
-     * client — which already has the file open — reports it instead.
-     */
-    data class Video(val file: FileUpload, val durationSeconds: Int) : NewPostMedia
+    data class Video(val file: FileUpload) : NewPostMedia
 }
 
 /**

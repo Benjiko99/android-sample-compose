@@ -41,12 +41,9 @@ sealed interface CreatePostMedia {
             get() = uris.size < CreatePostMaxImages
     }
 
-    /**
-     * A single clip. [durationSeconds] is read from the file when it is picked, because the server
-     * has no way to extract it — see `PostsService.create`.
-     */
+    /** A single clip. */
     @Serializable
-    data class Video(val uri: String, val durationSeconds: Int) : CreatePostMedia
+    data class Video(val uri: String) : CreatePostMedia
 }
 
 /**

@@ -96,11 +96,10 @@ class NetworkPostDataSourceTest {
         )
         // Media is exclusive on the wire, not just in the model.
         assertNull(parts?.video)
-        assertNull(parts?.videoDurationSeconds)
     }
 
     @Test
-    fun `create uploads a video as a single part carrying its duration`() = runTest {
+    fun `create uploads a video as a single part`() = runTest {
         val api = FakePostApi()
         val dataSource = NetworkPostDataSource(api)
         val clip = FileUpload(bytes = byteArrayOf(9), mimeType = "video/mp4", filename = "clip.mp4")
@@ -109,7 +108,7 @@ class NetworkPostDataSourceTest {
             NewPost(
                 title = "Title",
                 body = "Body",
-                media = NewPostMedia.Video(file = clip, durationSeconds = 42),
+                media = NewPostMedia.Video(clip),
             )
         )
 
@@ -118,7 +117,6 @@ class NetworkPostDataSourceTest {
             FakePostApi.UploadedPart(filename = "clip.mp4", bytes = byteArrayOf(9)),
             parts?.video,
         )
-        assertEquals("42", parts?.videoDurationSeconds)
         assertEquals(emptyList<FakePostApi.UploadedPart>(), parts?.images)
     }
 

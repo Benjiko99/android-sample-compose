@@ -76,16 +76,15 @@ class PostApiMultipartTest {
         // Omitted entirely rather than sent empty — an empty part would reach the server as a
         // present-but-blank video and trip the media-conflict check.
         assertFalse(body.contains("""name="video""""))
-        assertFalse(body.contains("videoDurationSeconds"))
     }
 
     @Test
-    fun `a video is sent as a single part alongside its duration, with no image parts`() = runTest {
+    fun `a video is sent as a single part, with no image parts`() = runTest {
         dataSource.create(
             NewPost(
                 title = "T",
                 body = "B",
-                media = NewPostMedia.Video(upload("clip.mp4", "video/mp4"), durationSeconds = 42),
+                media = NewPostMedia.Video(upload("clip.mp4", "video/mp4")),
             )
         )
 
@@ -94,8 +93,6 @@ class PostApiMultipartTest {
         assertEquals(1, Regex("""name="video"""").findAll(body).count())
         assertTrue(body.contains("""filename="clip.mp4""""))
         assertTrue(body.contains("Content-Type: video/mp4"))
-        assertTrue(body.contains("""name="videoDurationSeconds""""))
-        assertTrue(body.contains("42"))
         assertFalse(body.contains("images["))
     }
 

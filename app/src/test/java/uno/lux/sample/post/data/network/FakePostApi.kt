@@ -43,7 +43,6 @@ class FakePostApi(
         val body: String,
         val images: List<UploadedPart>,
         val video: UploadedPart? = null,
-        val videoDurationSeconds: String? = null,
     )
 
     /** One `images[]` part: the filename it declared and the bytes it carried. */
@@ -63,7 +62,6 @@ class FakePostApi(
         body: RequestBody,
         images: List<MultipartBody.Part>,
         video: MultipartBody.Part?,
-        videoDurationSeconds: RequestBody?,
     ): PostResponse {
         val titleText = title.readText()
         val bodyText = body.readText()
@@ -76,7 +74,6 @@ class FakePostApi(
             video = video?.let {
                 UploadedPart(filename = it.filename(), bytes = it.body.readBytes())
             },
-            videoDurationSeconds = videoDurationSeconds?.readText(),
         )
 
         return PostResponse(fullPostDto("p-new").copy(title = titleText, body = bodyText))

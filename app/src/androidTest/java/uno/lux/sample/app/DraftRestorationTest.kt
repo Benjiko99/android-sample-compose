@@ -40,7 +40,6 @@ import uno.lux.sample.composer.ui.CreatePostViewModel
 import uno.lux.sample.user.ui.EditProfileUiState
 import uno.lux.sample.user.ui.EditProfileViewModel
 import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.files.VideoMetadataReader
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 
@@ -89,7 +88,6 @@ class DraftRestorationTest {
     private fun composer(handle: SavedStateHandle) = CreatePostViewModel(
         feedRepository = FeedRepository(UnusedFeedDataSource, postRepository(), userRepository()),
         fileLoader = PickingFileLoader,
-        videoMetadataReader = PickedClipMetadataReader,
         navigator = Navigator().apply { attach(mutableListOf<NavKey>(Screen.CreatePost)) },
         savedStateHandle = handle,
     )
@@ -115,17 +113,17 @@ class DraftRestorationTest {
 
     /**
      * The media hierarchy is what flattening a draft into loose keys would have lost: which
-     * variant it is, and the duration only the client can read, both have to come back.
+     * variant it is has to come back, not merely the URI it holds.
      */
     @Test
-    fun anAttachedVideoComesBackWithItsDuration() = runTest {
+    fun anAttachedVideoComesBackAsAVideo() = runTest {
         val handle = SavedStateHandle()
         composer(handle).onVideoPicked("content://pick/clip")
 
         val restored = composer(handle.killAndRestore())
 
         assertEquals(
-            CreatePostMedia.Video(uri = "content://pick/clip", durationSeconds = PickedClipSeconds),
+            CreatePostMedia.Video("content://pick/clip"),
             restored.uiState.value.form.media,
         )
     }
@@ -260,14 +258,7 @@ class DraftRestorationTest {
         override suspend fun read(uri: String): FileUpload = unused()
         override suspend fun sizeOf(uri: String): Long = 1_000L
     }
-
-    private object PickedClipMetadataReader : VideoMetadataReader {
-        override suspend fun durationSeconds(uri: String): Int = PickedClipSeconds
-    }
 }
-
-/** What [PickedClipMetadataReader] reports for the picked clip. */
-private const val PickedClipSeconds = 42
 
 /** Reached only if a draft test starts doing something a draft test has no business doing. */
 private fun unused(): Nothing =

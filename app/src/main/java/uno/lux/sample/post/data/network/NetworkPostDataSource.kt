@@ -24,7 +24,6 @@ class NetworkPostDataSource(
 
     override suspend fun create(draft: NewPost): PostWithAuthor = withContext(Dispatchers.IO) {
         val media = draft.media
-        val video = media as? NewPostMedia.Video
 
         val dto = api.createPost(
             title = draft.title.asTextPart(),
@@ -32,8 +31,7 @@ class NetworkPostDataSource(
             // The trailing brackets are what make Rack collect the repeated parts into one
             // `images` array; a plain "images" name would let each part overwrite the last.
             images = (media as? NewPostMedia.Images)?.files.orEmpty().map { it.asPart("images[]") },
-            video = video?.file?.asPart("video"),
-            videoDurationSeconds = video?.durationSeconds?.toString()?.asTextPart(),
+            video = (media as? NewPostMedia.Video)?.file?.asPart("video"),
         ).data
 
         PostWithAuthorMapper.toPostWithAuthor(dto)
