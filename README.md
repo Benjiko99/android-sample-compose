@@ -42,7 +42,8 @@ graph BT
     composer -.->|publish prepends to the feed| feed
     post --> user
     comment --> user
-    post <--> comment
+    post -->|detail screen renders comments| comment
+    comment -->|a comment needs a PostId| post
 
     classDef agg fill:#2d6a4f,stroke:#1b4332,color:#fff
     classDef rm fill:#264653,stroke:#1d3557,color:#fff
