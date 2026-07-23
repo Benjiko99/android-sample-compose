@@ -93,6 +93,9 @@ class PostApiMultipartTest {
         assertEquals(1, Regex("""name="video"""").findAll(body).count())
         assertTrue(body.contains("""filename="clip.mp4""""))
         assertTrue(body.contains("Content-Type: video/mp4"))
+        // The file travels alone: the server derives the duration from it, and the composer's own
+        // reading of it is for its thumbnail badge only.
+        assertFalse(body.contains("videoDurationSeconds"))
         assertFalse(body.contains("images["))
     }
 

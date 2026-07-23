@@ -27,3 +27,8 @@ internal class FakeFileLoader(
 
     override suspend fun sizeOf(uri: String): Long? = size
 }
+
+/** Reports a fixed duration for any video URI. */
+internal class FakeVideoMetadataReader(private val duration: Int = 12) : VideoMetadataReader {
+    override suspend fun durationSeconds(uri: String): Int = duration
+}

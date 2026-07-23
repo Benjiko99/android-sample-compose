@@ -41,9 +41,14 @@ sealed interface CreatePostMedia {
             get() = uris.size < CreatePostMaxImages
     }
 
-    /** A single clip. */
+    /**
+     * A single clip. [durationSeconds] is read off the file when it is picked, purely to badge the
+     * composer's own thumbnail: the clip has not been uploaded yet, so the server's derived
+     * duration — the one a published post shows — does not exist for it. It is not sent with the
+     * upload; see `NewPostMedia.Video`.
+     */
     @Serializable
-    data class Video(val uri: String) : CreatePostMedia
+    data class Video(val uri: String, val durationSeconds: Int) : CreatePostMedia
 }
 
 /**
