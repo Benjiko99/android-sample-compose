@@ -49,6 +49,33 @@ class SettingsViewModelTest : ViewModelTest() {
     }
 
     @Test
+    fun `autoPlayVideos reflects the repository`() = runTest {
+        val viewModel = viewModel(InMemorySettingsRepository(initialAutoPlayVideos = false))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.autoPlayVideos.collect {}
+        }
+
+        assertEquals(false, viewModel.autoPlayVideos.value)
+    }
+
+    @Test
+    fun `autoPlayVideos is on before anything is collected`() {
+        assertEquals(true, viewModel(InMemorySettingsRepository()).autoPlayVideos.value)
+    }
+
+    @Test
+    fun `setAutoPlayVideos updates the exposed preference`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.autoPlayVideos.collect {}
+        }
+
+        viewModel.setAutoPlayVideos(false)
+
+        assertEquals(false, viewModel.autoPlayVideos.value)
+    }
+
+    @Test
     fun `language reflects the repository`() {
         val viewModel = viewModel(localeRepository = InMemoryAppLocaleRepository(AppLanguage.CZECH))
 

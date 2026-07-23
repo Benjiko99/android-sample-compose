@@ -65,4 +65,28 @@ class DataStoreSettingsRepositoryTest {
         // file used the same key), so a rename would silently drop every user's saved choice.
         assertEquals("LIGHT", dataStore.data.first()[stringPreferencesKey("theme_mode")])
     }
+
+    @Test
+    fun `autoPlayVideos defaults to on when nothing is persisted`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+
+        assertEquals(true, repository.autoPlayVideos.first())
+    }
+
+    @Test
+    fun `setAutoPlayVideos persists the choice the flow then emits`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+
+        repository.setAutoPlayVideos(false)
+
+        assertEquals(false, repository.autoPlayVideos.first())
+    }
+
+    @Test
+    fun `a persisted opt-out survives a new repository over the same store`() = runTest {
+        val dataStore = dataStore()
+        DataStoreSettingsRepository(dataStore).setAutoPlayVideos(false)
+
+        assertEquals(false, DataStoreSettingsRepository(dataStore).autoPlayVideos.first())
+    }
 }

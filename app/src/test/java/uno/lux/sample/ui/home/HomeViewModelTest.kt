@@ -21,6 +21,8 @@ import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video
+import uno.lux.sample.data.settings.InMemorySettingsRepository
+import uno.lux.sample.data.settings.SettingsRepository
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
@@ -63,11 +65,12 @@ class HomeViewModelTest : ViewModelTest() {
     private fun viewModel(
         feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
         currentUserId: UserId = "u1",
+        settingsRepository: SettingsRepository = InMemorySettingsRepository(),
     ): HomeViewModel {
         val userRepo = UserRepository(FakeUserDataSource())
         val postRepo = PostRepository(FakePostDataSource(), userRepo)
         val feedRepo = FeedRepository(feedDataSource, postRepo, userRepo)
-        return HomeViewModel(feedRepo, postRepo, userRepo, navigator, currentUserId)
+        return HomeViewModel(feedRepo, postRepo, userRepo, settingsRepository, navigator, currentUserId)
     }
 
     @Test
@@ -276,6 +279,42 @@ class HomeViewModelTest : ViewModelTest() {
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
         assertFalse(feed.endReached)
+    }
+
+    // The stored preference arrives asynchronously; starting from the default keeps a feed opened
+    // with auto-play on from flickering through a stopped state on every launch.
+    @Test
+    fun `autoPlayVideos is on before anything is collected`() {
+        val viewModel = viewModel(
+            settingsRepository = InMemorySettingsRepository(initialAutoPlayVideos = false),
+        )
+
+        assertTrue(viewModel.autoPlayVideos.value)
+    }
+
+    @Test
+    fun `autoPlayVideos reflects the user's setting`() = runTest {
+        val viewModel = viewModel(
+            settingsRepository = InMemorySettingsRepository(initialAutoPlayVideos = false),
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.autoPlayVideos.collect {}
+        }
+
+        assertFalse(viewModel.autoPlayVideos.value)
+    }
+
+    @Test
+    fun `autoPlayVideos follows a change made while the feed is open`() = runTest {
+        val settings = InMemorySettingsRepository()
+        val viewModel = viewModel(settingsRepository = settings)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.autoPlayVideos.collect {}
+        }
+
+        settings.setAutoPlayVideos(false)
+
+        assertFalse(viewModel.autoPlayVideos.value)
     }
 }
 

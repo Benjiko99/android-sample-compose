@@ -14,10 +14,10 @@ import uno.lux.sample.util.stateInWhileSubscribed
 import javax.inject.Inject
 
 /**
- * Exposes the current [themeMode] and [language] and applies the user's selection through the
- * [SettingsRepository] and [AppLocaleRepository]; the up button pops the page through the injected
- * [Navigator]. All three are constructor dependencies so the ViewModel can be unit tested against
- * fake repositories and a navigator attached to a plain list.
+ * Exposes the current [themeMode], [autoPlayVideos] and [language] and applies the user's selection
+ * through the [SettingsRepository] and [AppLocaleRepository]; the up button pops the page through
+ * the injected [Navigator]. All three are constructor dependencies so the ViewModel can be unit
+ * tested against fake repositories and a navigator attached to a plain list.
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -29,11 +29,18 @@ class SettingsViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
         .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
 
+    val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
+        .stateInWhileSubscribed(viewModelScope, initialValue = true)
+
     /** Already hot state on the repository — a language is always in effect — so it passes straight through. */
     val language: StateFlow<AppLanguage> = appLocaleRepository.language
 
     override fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }
+    }
+
+    override fun setAutoPlayVideos(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setAutoPlayVideos(enabled) }
     }
 
     override fun setLanguage(language: AppLanguage) = appLocaleRepository.setLanguage(language)

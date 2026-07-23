@@ -133,6 +133,9 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
+    <string name="settings_preferences">Preferences</string>
+    <string name="settings_autoplay_videos">Auto-play videos</string>
+    <string name="settings_autoplay_videos_description">Start videos as you scroll past them in the feed.</string>
     <string name="settings_language">Language</string>
     <!-- Languages are named in their own language, so these read the same in every locale. -->
     <string name="language_english" translatable="false">English</string>

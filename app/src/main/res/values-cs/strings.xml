@@ -137,6 +137,9 @@
     <string name="theme_light">Světlý</string>
     <string name="theme_dark">Tmavý</string>
     <string name="theme_system">Systém</string>
+    <string name="settings_preferences">Předvolby</string>
+    <string name="settings_autoplay_videos">Automaticky přehrávat videa</string>
+    <string name="settings_autoplay_videos_description">Spouštět videa, když je ve feedu míjíte.</string>
     <string name="settings_language">Jazyk</string>
 
     <!-- Hold-to-confirm button: replaces the label from the moment the button is pressed, and

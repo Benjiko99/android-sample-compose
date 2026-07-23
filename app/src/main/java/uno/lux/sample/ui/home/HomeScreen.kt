@@ -90,10 +90,12 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val autoPlayVideos by viewModel.autoPlayVideos.collectAsStateWithLifecycle()
 
     HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
+        autoPlayVideos = autoPlayVideos,
         actions = viewModel,
         modifier = modifier,
     )
@@ -108,6 +110,7 @@ fun HomeScreen(
 internal fun HomeScreen(
     uiState: HomeUiState,
     isRefreshing: Boolean,
+    autoPlayVideos: Boolean,
     actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
@@ -146,6 +149,7 @@ internal fun HomeScreen(
                         FeedList(
                             posts = uiState.posts,
                             endReached = uiState.endReached,
+                            autoPlayVideos = autoPlayVideos,
                             listState = listState,
                             actions = actions,
                         )
@@ -191,6 +195,7 @@ private val TopBarElevation = 4.dp
 private fun FeedList(
     posts: List<PostCardData>,
     endReached: Boolean,
+    autoPlayVideos: Boolean,
     listState: LazyListState,
     actions: HomeActions,
     modifier: Modifier = Modifier,
@@ -202,11 +207,23 @@ private fun FeedList(
     // change that actually matters (scroll, refresh) re-lays out the list and re-emits layoutInfo.
     val currentPosts by rememberUpdatedState(posts)
 
-    LaunchedEffect(listState, playback) {
+    // autoPlayVideos *is* a key: it changes only when the user flips the setting, and restarting
+    // the collector re-reads the current layout, so turning auto-play on plays the video already
+    // on screen instead of waiting for the next scroll.
+    LaunchedEffect(listState, playback, autoPlayVideos) {
         snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
             if (playback == null || playback.isFullscreen) return@collect
             val video = autoPlayVideo(layoutInfo, currentPosts)
-            if (video != null) playback.playInline(video.videoUrl) else playback.stop()
+
+            when {
+                // Whatever is running has scrolled out of the way. With auto-play off that is the
+                // only thing the feed does to playback: a video the user tapped keeps playing
+                // until it stops being the on-screen winner, exactly as an auto-played one would.
+                video == null || (!autoPlayVideos && video.videoUrl != playback.activeVideoUrl) ->
+                    playback.stop()
+
+                autoPlayVideos -> playback.playInline(video.videoUrl)
+            }
         }
     }
 
@@ -306,6 +323,7 @@ private fun HomeFeedPreview() {
         HomeScreen(
             uiState = HomeUiState.Feed(feed, endReached = true),
             isRefreshing = false,
+            autoPlayVideos = true,
             actions = createActionsProxy(),
         )
     }
@@ -318,6 +336,7 @@ private fun HomeEmptyPreview() {
         HomeScreen(
             uiState = HomeUiState.Feed(posts = emptyList(), endReached = true),
             isRefreshing = false,
+            autoPlayVideos = true,
             actions = createActionsProxy(),
         )
     }

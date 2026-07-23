@@ -20,4 +20,18 @@ class InMemorySettingsRepositoryTest {
 
         assertEquals(ThemeMode.DARK, repository.themeMode.first())
     }
+
+    @Test
+    fun `auto-play is on by default`() = runTest {
+        assertEquals(true, InMemorySettingsRepository().autoPlayVideos.first())
+    }
+
+    @Test
+    fun `setAutoPlayVideos updates the exposed preference`() = runTest {
+        val repository = InMemorySettingsRepository()
+
+        repository.setAutoPlayVideos(false)
+
+        assertEquals(false, repository.autoPlayVideos.first())
+    }
 }

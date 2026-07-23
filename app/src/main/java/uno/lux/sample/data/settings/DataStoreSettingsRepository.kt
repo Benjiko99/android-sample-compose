@@ -2,6 +2,7 @@ package uno.lux.sample.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 /**
- * [SettingsRepository] backed by a Preferences [DataStore], so the theme choice survives
+ * [SettingsRepository] backed by a Preferences [DataStore], so the stored choices survive
  * process death and restarts. The store is a constructor dependency: production supplies the
  * app's store (with a one-time migration from the legacy SharedPreferences file), tests a
  * store over a temp file — which keeps this class plain-JVM testable, unlike its
@@ -21,17 +22,28 @@ class DataStoreSettingsRepository(
     private val dataStore: DataStore<Preferences>,
 ) : SettingsRepository {
 
-    override val themeMode: Flow<ThemeMode> = dataStore.data
-        // A failed disk read shouldn't crash collectors; treat it as "nothing persisted".
+    // A failed disk read shouldn't crash collectors; treat it as "nothing persisted".
+    private val preferences: Flow<Preferences> = dataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-        .map { preferences -> ThemeMode.fromName(preferences[KEY_THEME_MODE]) }
+
+    override val themeMode: Flow<ThemeMode> = preferences
+        .map { ThemeMode.fromName(it[KEY_THEME_MODE]) }
+
+    // Absent means the user never opted out, which is the on state — not `false`.
+    override val autoPlayVideos: Flow<Boolean> = preferences
+        .map { it[KEY_AUTO_PLAY_VIDEOS] ?: true }
 
     override suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { preferences -> preferences[KEY_THEME_MODE] = mode.name }
     }
 
+    override suspend fun setAutoPlayVideos(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[KEY_AUTO_PLAY_VIDEOS] = enabled }
+    }
+
     private companion object {
         // Also the key the SharedPreferences migration carries values over from — don't rename.
         val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        val KEY_AUTO_PLAY_VIDEOS = booleanPreferencesKey("auto_play_videos")
     }
 }
