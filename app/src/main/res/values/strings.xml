@@ -138,7 +138,8 @@
     <string name="language_english" translatable="false">English</string>
     <string name="language_czech" translatable="false">Čeština</string>
 
-    <!-- Hold-to-confirm button: shown in place of the label when a press was too short -->
+    <!-- Hold-to-confirm button: replaces the label from the moment the button is pressed, and
+         lingers briefly after a press too short to confirm -->
     <string name="hold_to_confirm_hint">Press &amp; hold</string>
 
     <!-- Discard confirmation dialog -->

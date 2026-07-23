@@ -110,7 +110,7 @@ object HoldToConfirmDefaults {
     /** How long the finger must stay down before the action fires. */
     const val HoldMillis = 1_500L
 
-    /** How long the "press & hold" nudge replaces the label after too short a press. */
+    /** How long the "press & hold" nudge stays up after too short a press before the label returns. */
     const val HintMillis = 1_500L
 
     val MinHeight = 52.dp
@@ -119,8 +119,12 @@ object HoldToConfirmDefaults {
 /**
  * A filled button that commits only after the user has held it for [holdMillis] — the guard rail
  * for an action worth a moment's thought, like publishing a post. The fill sweeps left to right as
- * the hold progresses, so the remaining time is legible rather than a wait in the dark; letting go
- * early drains it and swaps the label for a nudge to press *and hold* before restoring [text].
+ * the hold progresses, so the remaining time is legible rather than a wait in the dark.
+ *
+ * [text] names the button only while it sits untouched. The moment a finger lands, the label
+ * becomes [hintText]: a user who does not yet know this button has to be *held* learns it while
+ * there is still time to act on it, rather than after having already let go too soon. Releasing
+ * early leaves the nudge up for [hintMillis] before [text] returns.
  *
  * Holding is a motor-skill barrier, so an accessibility service activating the button confirms
  * immediately through the semantics [onClick] instead of being asked to sustain a gesture.
@@ -159,10 +163,12 @@ fun HoldToConfirmButton(
 
     LaunchedEffect(state.phase) {
         val holding = state.phase == HoldPhase.HOLDING
-        val hinting = state.phase == HoldPhase.HINT
+        // The nudge is up for the whole interaction, not just after a release: it is what tells a
+        // user mid-hold that the finger has to stay put. Only an untouched button reads [text].
+        val nudging = state.phase != HoldPhase.IDLE
 
         launch { scale.animateTo(if (holding) PressedScale else 1f, tween(PressResponseMillis)) }
-        launch { hintAlpha.animateTo(if (hinting) 1f else 0f, tween(LabelSwapMillis)) }
+        launch { hintAlpha.animateTo(if (nudging) 1f else 0f, tween(LabelSwapMillis)) }
 
         if (holding) {
             // Matching the hold means the sweep lands exactly as the action fires, whatever

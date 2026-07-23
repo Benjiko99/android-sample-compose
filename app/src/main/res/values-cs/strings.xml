@@ -139,7 +139,8 @@
     <string name="theme_system">Systém</string>
     <string name="settings_language">Jazyk</string>
 
-    <!-- Hold-to-confirm button: shown in place of the label when a press was too short -->
+    <!-- Hold-to-confirm button: replaces the label from the moment the button is pressed, and
+         lingers briefly after a press too short to confirm -->
     <string name="hold_to_confirm_hint">Stiskněte a podržte</string>
 
     <!-- Discard confirmation dialog -->
