@@ -33,6 +33,7 @@ class ProfileViewModelTest : ViewModelTest() {
     private val grace = User(id = "u2", nickname = "Grace", handle = "@grace")
     private val post = Post(
         id = "p1",
+        url = "https://mosaic.test/p/p1",
         authorId = "u1",
         title = "Title",
         body = "Body",
@@ -48,6 +49,7 @@ class ProfileViewModelTest : ViewModelTest() {
     /** A post by someone else that u1 saved — the Saved tab's defining case. */
     private val savedPost = Post(
         id = "p2",
+        url = "https://mosaic.test/p/p2",
         authorId = "u2",
         title = "Saved",
         body = "Body",
@@ -60,6 +62,7 @@ class ProfileViewModelTest : ViewModelTest() {
     /** A post by someone else that u1 liked — a self-like is impossible, so it is never u1's. */
     private val likedPost = Post(
         id = "p3",
+        url = "https://mosaic.test/p/p3",
         authorId = "u2",
         title = "Liked",
         body = "Body",

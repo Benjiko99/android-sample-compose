@@ -6,6 +6,7 @@ import java.time.Instant
 @Serializable
 data class PostFeedItemDto(
     val id: String,
+    val url: String,
     val title: String,
     val body: String,
     @Serializable(with = InstantSerializer::class)
@@ -26,6 +27,7 @@ data class PostFeedItemDto(
 @Serializable
 data class PostDto(
     val id: String,
+    val url: String,
     val title: String,
     val body: String,
     @Serializable(with = InstantSerializer::class)

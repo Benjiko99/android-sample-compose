@@ -38,6 +38,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
     private val post = Post(
         id = "p1",
+        url = "https://mosaic.test/p/p1",
         authorId = "u2",
         title = "The Title",
         body = "The body.",

@@ -87,11 +87,18 @@ val SampleAlbumImages = listOf(
     "https://getsamplefiles.com/download/jpg/sample-5.jpg",
 )
 
+/**
+ * Sample posts stand in for server payloads, so they carry the shareable link the way the server
+ * would send it rather than leaving the app to assemble one.
+ */
+private fun samplePostUrl(id: PostId) = "https://mosaic.tree-among-shrubs.com/p/$id"
+
 internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
 
 private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     Post(
         id = "p1",
+        url = samplePostUrl("p1"),
         authorId = SampleUsers[0].id,
         title = "The engine weaves algebraic patterns",
         body = "Just like the Jacquard loom weaves flowers and leaves. A machine need not " +
@@ -109,6 +116,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p2",
+        url = samplePostUrl("p2"),
         authorId = SampleUsers[1].id,
         title = "Found the bug",
         body = "It was an actual moth, taped into the logbook at 15:45. First recorded " +
@@ -121,6 +129,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p3",
+        url = samplePostUrl("p3"),
         authorId = SampleUsers[2].id,
         title = "Can machines think?",
         body = "The question is too meaningless to deserve discussion. So replace it: can a " +
@@ -137,6 +146,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p4",
+        url = samplePostUrl("p4"),
         authorId = SampleUsers[3].id,
         title = "Priority scheduling saved the landing",
         body = "Three minutes before touchdown the computer flashed a 1202 alarm. Because we " +
@@ -157,6 +167,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p5",
+        url = samplePostUrl("p5"),
         authorId = SampleUsers[4].id,
         title = "Just a hobby, won't be big",
         body = "I'm doing a (free) operating system — nothing professional like GNU — for " +
@@ -174,6 +185,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
     ),
     Post(
         id = "p6",
+        url = samplePostUrl("p6"),
         authorId = SampleUsers[0].id,
         title = "On numbers and music",
         body = "Supposing the relations of pitched sounds could be expressed by the engine, it " +

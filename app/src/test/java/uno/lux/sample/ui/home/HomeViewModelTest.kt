@@ -36,6 +36,7 @@ class HomeViewModelTest : ViewModelTest() {
     private val author2 = User(id = "u2", nickname = "Bob", handle = "@bob")
     private val post = Post(
         id = "p1",
+        url = "https://mosaic.test/p/p1",
         authorId = "u1",
         title = "Title",
         body = "Body",
@@ -45,6 +46,7 @@ class HomeViewModelTest : ViewModelTest() {
     )
     private val post2 = Post(
         id = "p2",
+        url = "https://mosaic.test/p/p2",
         authorId = "u2",
         title = "Title 2",
         body = "Body 2",

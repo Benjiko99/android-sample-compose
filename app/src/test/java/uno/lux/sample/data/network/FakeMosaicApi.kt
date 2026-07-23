@@ -188,6 +188,7 @@ class FakeMosaicApi(
         return PostResponse(
             PostDto(
                 id = "p-new",
+                url = "https://mosaic.test/p/p-new",
                 title = titleText,
                 body = bodyText,
                 createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
@@ -254,6 +255,7 @@ fun feedItemDto(
     video: VideoDto? = null,
 ) = PostFeedItemDto(
     id = id,
+    url = "https://mosaic.test/p/$id",
     title = "Title $id",
     body = "Body $id",
     createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),

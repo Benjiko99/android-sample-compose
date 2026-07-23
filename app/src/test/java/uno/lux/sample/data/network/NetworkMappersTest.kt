@@ -24,6 +24,7 @@ class NetworkMappersTest {
         val post = PostMapper.map(postDto(createdAt = createdAt))
 
         assertEquals("p1", post.id)
+        assertEquals("https://mosaic.test/p/p1", post.url)
         assertEquals("u1", post.authorId)
         assertEquals("Title", post.title)
         assertEquals("Body", post.body)
@@ -101,6 +102,7 @@ class NetworkMappersTest {
         video: VideoDto? = null,
     ) = PostFeedItemDto(
         id = "p1",
+        url = "https://mosaic.test/p/p1",
         title = "Title",
         body = "Body",
         createdAt = createdAt,

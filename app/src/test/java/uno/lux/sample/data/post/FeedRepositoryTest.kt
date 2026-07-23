@@ -204,6 +204,7 @@ class FeedRepositoryTest {
 
 private fun post(id: String) = Post(
     id = id,
+    url = "https://mosaic.test/p/$id",
     authorId = "u1",
     title = "Title $id",
     body = "Body $id",

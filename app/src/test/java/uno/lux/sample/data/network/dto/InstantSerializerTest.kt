@@ -9,7 +9,7 @@ class InstantSerializerTest {
 
     @Test
     fun `decodes an ISO-8601 timestamp field into an Instant`() {
-        val json = """{"id":"p1","title":"T","body":"B","createdAt":"2025-01-01T00:00:00.000Z","authorId":"u1","likeCount":0,"commentCount":0,"isLiked":false,"isBookmarked":false}"""
+        val json = """{"id":"p1","url":"https://mosaic.test/p/p1","title":"T","body":"B","createdAt":"2025-01-01T00:00:00.000Z","authorId":"u1","likeCount":0,"commentCount":0,"isLiked":false,"isBookmarked":false}"""
 
         val dto = Json.decodeFromString<PostFeedItemDto>(json)
 

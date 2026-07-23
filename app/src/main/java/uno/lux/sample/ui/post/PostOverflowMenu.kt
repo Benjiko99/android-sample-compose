@@ -45,7 +45,6 @@ import uno.lux.sample.ui.components.Avatar
 import uno.lux.sample.ui.components.debouncedClickable
 import uno.lux.sample.ui.components.rememberDebounced
 import uno.lux.sample.ui.theme.LocalMosaicColors
-import uno.lux.sample.util.postLink
 
 /**
  * The post's "⋮" affordance and everything behind it: a bottom sheet of save / share / copy-link /
@@ -201,14 +200,15 @@ private fun PostOverflowSheet(
 }
 
 /**
- * Hands the post's link to the system share sheet. The link is a placeholder until the app has
- * real deep links; the post title rides along as the subject for targets that use one (e.g. email).
+ * Hands the post's link to the system share sheet. The link comes from the server as [Post.url],
+ * so the app never assembles one; the post title rides along as the subject for targets that use
+ * one (e.g. email).
  */
 private fun sharePostLink(context: Context, post: Post) {
     ShareCompat.IntentBuilder(context)
         .setType("text/plain")
         .setSubject(post.title)
-        .setText(postLink(post.id))
+        .setText(post.url)
         .setChooserTitle(R.string.post_share_chooser)
         .startChooser()
 }
@@ -220,7 +220,7 @@ private fun sharePostLink(context: Context, post: Post) {
 private fun copyPostLink(context: Context, post: Post) {
     val clipboard = context.getSystemService<ClipboardManager>()!!
     val label = context.getString(R.string.post_link_clip_label)
-    clipboard.setPrimaryClip(ClipData.newPlainText(label, postLink(post.id)))
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, post.url))
 
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         context.toast(R.string.post_link_copied)

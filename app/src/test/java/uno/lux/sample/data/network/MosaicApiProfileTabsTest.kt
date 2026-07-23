@@ -32,10 +32,12 @@ class MosaicApiProfileTabsTest {
     // Captured from the running backend: GET /api/users/u1/bookmarks as u1.
     private val bookmarksJson = """
         {"data":[
-          {"id":"p2","title":"Found the bug","body":"It was an actual moth.",
+          {"id":"p2","url":"https://mosaic.test/p/p2",
+           "title":"Found the bug","body":"It was an actual moth.",
            "createdAt":"2026-07-20T11:34:00Z","likeCount":342,"commentCount":51,
            "isLiked":false,"isBookmarked":true,"album":null,"video":null,"authorId":"u2"},
-          {"id":"p4","title":"Priority scheduling saved the landing","body":"A 1202 alarm.",
+          {"id":"p4","url":"https://mosaic.test/p/p4",
+           "title":"Priority scheduling saved the landing","body":"A 1202 alarm.",
            "createdAt":"2026-07-20T06:12:00Z","likeCount":1543,"commentCount":88,
            "isLiked":true,"isBookmarked":true,
            "album":{"id":"pa4","title":"Launch room","itemCount":1,

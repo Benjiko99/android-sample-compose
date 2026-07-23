@@ -489,6 +489,7 @@ private fun post(
     isBookmarked: Boolean = false,
 ) = Post(
     id = id,
+    url = "https://mosaic.test/p/$id",
     authorId = authorId,
     title = "Title $id",
     body = "Body $id",

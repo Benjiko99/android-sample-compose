@@ -7,6 +7,8 @@ typealias PostId = String
 
 data class Post(
     val id: PostId,
+    /** The canonical shareable link, built by the server — never assembled from [id] here. */
+    val url: String,
     val authorId: UserId,
     val title: String,
     val body: String,

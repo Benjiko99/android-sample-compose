@@ -19,6 +19,7 @@ internal class FakePostDataSource : PostDataSource {
         return CreatedPost(
             post = Post(
                 id = "p-new",
+                url = "https://mosaic.test/p/p-new",
                 authorId = "u1",
                 title = draft.title,
                 body = draft.body,
