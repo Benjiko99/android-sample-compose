@@ -12,9 +12,7 @@ import uno.lux.sample.comment.data.network.AddCommentRequestDto
 import uno.lux.sample.post.data.network.AlbumDto
 import uno.lux.sample.post.data.network.BookmarkToggleDto
 import uno.lux.sample.comment.data.network.CommentDto
-import uno.lux.sample.core.network.CursorPageDto
-import uno.lux.sample.post.data.network.EmptyBody
-import uno.lux.sample.post.data.network.FollowToggleDto
+import uno.lux.sample.user.data.network.FollowToggleDto
 import uno.lux.sample.post.data.network.LikeToggleDto
 import uno.lux.sample.post.data.network.PostDto
 import uno.lux.sample.post.data.network.PostFeedItemDto

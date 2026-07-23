@@ -3,7 +3,7 @@ package uno.lux.sample.core.files
 /**
  * A file to upload, as the raw [bytes] plus the metadata a multipart file part needs. Reading
  * the platform file into this payload is the UI layer's job (see
- * `uno.lux.sample.ui.file.FileLoader`), keeping the data layer free of Android
+ * `uno.lux.sample.core.files.FileLoader`), keeping the data layer free of Android
  * URI/`ContentResolver` types.
  */
 class FileUpload(

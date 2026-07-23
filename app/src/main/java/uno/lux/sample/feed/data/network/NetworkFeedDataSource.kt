@@ -6,7 +6,7 @@ import uno.lux.sample.core.network.MosaicApi
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.post.data.network.PostMapper
-import uno.lux.sample.post.data.network.toDomain
+import uno.lux.sample.user.data.network.toDomain
 
 class NetworkFeedDataSource(
     private val api: MosaicApi,

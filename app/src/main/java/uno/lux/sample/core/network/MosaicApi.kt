@@ -12,7 +12,6 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import uno.lux.sample.comment.data.network.AddCommentRequestDto
-import uno.lux.sample.post.data.network.EmptyBody
 import uno.lux.sample.post.data.network.BookmarkToggleResponse
 import uno.lux.sample.profile.data.network.PostsWithAuthorsResponse
 import uno.lux.sample.comment.data.network.CommentListResponse

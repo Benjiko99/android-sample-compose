@@ -2,12 +2,6 @@ package uno.lux.sample.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import uno.lux.sample.util.CompactCount
-import uno.lux.sample.util.RelativeTime
-import uno.lux.sample.util.compactCount
-import uno.lux.sample.util.formatVideoDuration
-import uno.lux.sample.util.initials
-import uno.lux.sample.util.relativeTime
 import java.time.Duration
 import java.time.Instant
 

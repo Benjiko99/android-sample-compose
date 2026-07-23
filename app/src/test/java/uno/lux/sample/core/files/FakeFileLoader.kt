@@ -1,6 +1,5 @@
 package uno.lux.sample.core.files
 
-import uno.lux.sample.core.files.FileUpload
 
 /**
  * Shared [FileLoader] double. [read] records the URI it was asked for and returns a payload naming

@@ -13,7 +13,7 @@ import uno.lux.sample.design.theme.MosaicTheme
 /**
  * Confirms deleting a post. Deletion is irreversible and the affordance sits one tap inside an
  * overflow sheet, so the destructive button is the one tinted with the error color while dismiss
- * stays neutral — the reverse of the emphasis [uno.lux.sample.ui.components.DiscardChangesDialog]
+ * stays neutral — the reverse of the emphasis [uno.lux.sample.design.components.DiscardChangesDialog]
  * gives its (recoverable) discard.
  */
 @Composable

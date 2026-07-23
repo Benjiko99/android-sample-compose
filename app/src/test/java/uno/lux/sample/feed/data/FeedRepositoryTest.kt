@@ -7,10 +7,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.feed.data.FeedDataSource
-import uno.lux.sample.feed.data.FeedPage
-import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.feed.data.FeedState
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.data.FakePostDataSource

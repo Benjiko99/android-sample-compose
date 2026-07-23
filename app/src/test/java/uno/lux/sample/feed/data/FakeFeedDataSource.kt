@@ -1,7 +1,5 @@
 package uno.lux.sample.feed.data
 
-import uno.lux.sample.feed.data.FeedDataSource
-import uno.lux.sample.feed.data.FeedPage
 
 internal class FakeFeedDataSource(
     private val pages: List<FeedPage> = emptyList(),

@@ -5,12 +5,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import uno.lux.sample.core.network.MosaicApi
 import uno.lux.sample.post.data.network.PostMapper
-import uno.lux.sample.post.data.network.toDomain
+import uno.lux.sample.user.data.network.toDomain
 import uno.lux.sample.profile.data.PostsPage
 import uno.lux.sample.profile.data.PostsWithAuthorsPage
 import uno.lux.sample.profile.data.ProfileDataSource
 import uno.lux.sample.profile.data.ProfileRefreshData
-import uno.lux.sample.profile.data.network.PostsWithAuthorsResponse
 import uno.lux.sample.user.UserId
 
 class NetworkProfileDataSource(

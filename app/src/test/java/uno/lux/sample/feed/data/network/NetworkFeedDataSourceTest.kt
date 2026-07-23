@@ -11,8 +11,6 @@ import uno.lux.sample.core.network.FakeMosaicApi
 import uno.lux.sample.core.network.emptyPage
 import uno.lux.sample.core.network.feedItemDto
 import uno.lux.sample.core.network.userDto
-import uno.lux.sample.feed.data.network.FeedIncluded
-import uno.lux.sample.feed.data.network.FeedResponse
 
 class NetworkFeedDataSourceTest {
 

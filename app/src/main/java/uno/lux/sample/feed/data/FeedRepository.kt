@@ -27,7 +27,7 @@ sealed interface FeedState {
  * Source of truth for the home feed's ordered post IDs.
  *
  * [feedState] carries the IDs in display order plus the pagination flag; consumers resolve IDs to
- * [uno.lux.sample.data.post.Post] objects via [uno.lux.sample.data.post.PostRepository.entities] so mutations (likes, bookmarks) propagate automatically
+ * [uno.lux.sample.post.Post] objects via [uno.lux.sample.post.data.PostRepository.entities] so mutations (likes, bookmarks) propagate automatically
  * without re-fetching. [refresh] re-fetches the first page. [loadMore] appends the next page.
  * [publish] creates a post and puts it at the head of the feed.
  *

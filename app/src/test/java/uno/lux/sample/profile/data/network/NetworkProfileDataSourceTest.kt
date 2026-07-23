@@ -12,7 +12,6 @@ import uno.lux.sample.core.network.feedItemDto
 import uno.lux.sample.core.network.userDto
 import uno.lux.sample.feed.data.network.FeedIncluded
 import uno.lux.sample.post.data.network.PostFeedItemDto
-import uno.lux.sample.profile.data.network.PostsWithAuthorsResponse
 import uno.lux.sample.user.data.network.UserDto
 
 class NetworkProfileDataSourceTest {

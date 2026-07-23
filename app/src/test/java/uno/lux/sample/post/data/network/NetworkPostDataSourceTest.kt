@@ -16,8 +16,6 @@ import uno.lux.sample.core.network.userDto
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.post.Post
-import uno.lux.sample.post.data.network.BookmarkToggleDto
-import uno.lux.sample.post.data.network.LikeToggleDto
 import uno.lux.sample.testing.testPostUrl
 
 class NetworkPostDataSourceTest {

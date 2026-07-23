@@ -12,7 +12,7 @@ import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
 import uno.lux.sample.post.PostWithAuthor
 import uno.lux.sample.post.data.PostDataSource
-import uno.lux.sample.post.data.network.EmptyBody
+import uno.lux.sample.core.network.EmptyBody
 
 class NetworkPostDataSource(
     private val api: MosaicApi,

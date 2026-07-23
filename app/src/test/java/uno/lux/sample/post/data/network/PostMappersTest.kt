@@ -1,22 +1,17 @@
 package uno.lux.sample.post.data.network
 
+import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import uno.lux.sample.post.data.network.AlbumDto
-import uno.lux.sample.comment.data.network.CommentDto
-import uno.lux.sample.post.data.network.PostFeedItemDto
-import uno.lux.sample.user.data.network.UserDto
-import uno.lux.sample.post.data.network.VideoDto
 import uno.lux.sample.testing.testPostUrl
-import java.time.Instant
 
 /**
- * Covers what Mappie can't verify structurally on its own — the nested album/video mapping and the
- * author routed through the manual UserDto mapper. (The createdAt timestamp arrives already parsed
- * from the DTO layer; its parsing is covered by [uno.lux.sample.data.network.dto.InstantSerializerTest].)
+ * Covers what Mappie can't verify structurally on its own — the nested album/video mapping.
+ * (The createdAt timestamp arrives already parsed from the DTO layer; its parsing is covered by
+ * [uno.lux.sample.core.network.InstantSerializerTest].)
  */
-class NetworkMappersTest {
+class PostMappersTest {
 
     @Test
     fun `PostMapper carries scalar fields across unchanged`() {
@@ -69,32 +64,6 @@ class NetworkMappersTest {
 
         assertNull(post.album)
         assertNull(post.video)
-    }
-
-    @Test
-    fun `CommentMapper maps the author through the manual UserDto mapper`() {
-        val dto = CommentDto(
-            id = "c1",
-            text = "Hello",
-            createdAt = Instant.parse("2025-06-01T12:00:00Z"),
-            likeCount = 2,
-            isLiked = true,
-            author = UserDto(
-                id = "u1",
-                nickname = "Ada",
-                handle = "@ada",
-                followerCount = 5,
-                followingCount = 1,
-                isFollowing = true,
-            ),
-        )
-
-        val comment = CommentMapper.map(dto)
-
-        assertEquals("u1", comment.author.id)
-        assertEquals("Ada", comment.author.nickname)
-        assertEquals(true, comment.author.isFollowing)
-        assertEquals(dto.createdAt, comment.createdAt)
     }
 
     private fun postDto(

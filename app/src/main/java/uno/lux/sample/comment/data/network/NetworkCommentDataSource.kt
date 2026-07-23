@@ -4,11 +4,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.data.CommentDataSource
-import uno.lux.sample.comment.data.network.AddCommentRequestDto
 import uno.lux.sample.core.network.MosaicApi
 import uno.lux.sample.post.PostId
-import uno.lux.sample.post.data.network.CommentMapper
-import uno.lux.sample.post.data.network.EmptyBody
+import uno.lux.sample.core.network.EmptyBody
 
 class NetworkCommentDataSource(
     private val api: MosaicApi,

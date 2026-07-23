@@ -59,7 +59,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.fixtures.SampleUsers
 import uno.lux.sample.user.UserId
-import uno.lux.sample.user.ui.Avatar
 import uno.lux.sample.design.components.DiscardChangesDialog
 import uno.lux.sample.design.components.FullScreenError
 import uno.lux.sample.design.components.FullScreenProgress

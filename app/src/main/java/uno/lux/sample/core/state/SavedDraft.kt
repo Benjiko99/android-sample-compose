@@ -14,7 +14,7 @@ import kotlinx.serialization.serializer
  * scratch. A page that fetches can simply re-fetch (see `PostDetailViewModel`), but nobody can
  * re-derive a half-written post, so a form's own state is the one thing that has to be *saved*.
  * [SavedStateHandle] is the mechanism: each back-stack entry has its own, tied to the same
- * instance state the [uno.lux.sample.ui.navigation.Screen] keys ride in.
+ * instance state the [uno.lux.sample.app.navigation.Screen] keys ride in.
  *
  * [saveDraft] registers where to *read* the draft from rather than pushing every edit into the
  * handle: the platform pulls it at most once per save, so typing costs nothing and there is no

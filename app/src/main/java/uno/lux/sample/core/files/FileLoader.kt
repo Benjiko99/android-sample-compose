@@ -6,7 +6,6 @@ import android.webkit.MimeTypeMap
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.core.files.FileUpload
 import java.io.IOException
 
 /**

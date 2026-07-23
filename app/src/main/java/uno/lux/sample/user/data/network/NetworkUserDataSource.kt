@@ -6,7 +6,6 @@ import uno.lux.sample.core.network.MosaicApi
 import uno.lux.sample.core.network.asPart
 import uno.lux.sample.core.network.asTextPart
 import uno.lux.sample.core.network.notFoundAsNull
-import uno.lux.sample.post.data.network.toDomain
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId

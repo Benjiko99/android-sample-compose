@@ -10,7 +10,6 @@ import uno.lux.sample.core.files.FileUpload
 import uno.lux.sample.core.network.FakeMosaicApi
 import uno.lux.sample.core.network.UPLOADED_AVATAR_URL
 import uno.lux.sample.core.network.userDto
-import uno.lux.sample.post.data.network.FollowToggleDto
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 
