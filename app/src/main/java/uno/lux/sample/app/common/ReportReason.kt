@@ -1,7 +1,7 @@
-package uno.lux.sample.post
+package uno.lux.sample.app.common
 
 /**
- * Why a user is reporting a post.
+ * Why a user is reporting a piece of content.
  */
 enum class ReportReason {
     SPAM,
