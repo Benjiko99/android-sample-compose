@@ -8,7 +8,7 @@ import uno.lux.sample.data.network.dto.CommentDto
 import uno.lux.sample.data.network.dto.PostFeedItemDto
 import uno.lux.sample.data.network.dto.UserDto
 import uno.lux.sample.data.network.dto.VideoDto
-import uno.lux.sample.data.post.testPostUrl
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 /**

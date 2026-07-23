@@ -14,7 +14,6 @@ import uno.lux.sample.ViewModelTest
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.post.testPostUrl
 import uno.lux.sample.data.profile.PostsWithAuthorsPage
 import uno.lux.sample.data.profile.FakeProfileDataSource
 import uno.lux.sample.data.profile.ProfileRefreshData
@@ -25,6 +24,7 @@ import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)

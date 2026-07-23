@@ -23,12 +23,12 @@ import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.post.testPostUrl
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)

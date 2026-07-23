@@ -9,6 +9,7 @@ import org.junit.Test
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 class FeedRepositoryTest {

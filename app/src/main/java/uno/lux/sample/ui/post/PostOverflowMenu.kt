@@ -201,8 +201,7 @@ private fun PostOverflowSheet(
 
 /**
  * Hands the post's link to the system share sheet. The link comes from the server as [Post.url],
- * so the app never assembles one; the post title rides along as the subject for targets that use
- * one (e.g. email).
+ * the post title rides along as the subject for targets that use one (e.g. email).
  */
 private fun sharePostLink(context: Context, post: Post) {
     ShareCompat.IntentBuilder(context)

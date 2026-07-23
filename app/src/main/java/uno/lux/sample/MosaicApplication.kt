@@ -9,11 +9,7 @@ import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
 /**
- * [HiltAndroidApp] root of the dependency graph. App-wide singletons (the repositories) are
- * declared in [uno.lux.sample.di.DataModule] rather than held here, so this class stays thin.
- *
- * It also supplies Coil's singleton [ImageLoader], which is the one piece of image loading that
- * can't be configured at the call site: decoders are a loader-wide concern.
+ * [HiltAndroidApp] root of the dependency graph.
  */
 @HiltAndroidApp
 class MosaicApplication : Application(), SingletonImageLoader.Factory {

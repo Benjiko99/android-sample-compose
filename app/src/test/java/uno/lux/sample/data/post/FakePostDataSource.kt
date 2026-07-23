@@ -1,6 +1,7 @@
 package uno.lux.sample.data.post
 
 import uno.lux.sample.data.user.User
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 internal class FakePostDataSource : PostDataSource {

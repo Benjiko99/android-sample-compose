@@ -10,11 +10,11 @@ import org.junit.Test
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.PostRepository
-import uno.lux.sample.data.post.testPostUrl
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.data.user.UserRepository
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 class ProfileRepositoryTest {

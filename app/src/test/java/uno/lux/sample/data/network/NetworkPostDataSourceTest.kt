@@ -11,7 +11,7 @@ import uno.lux.sample.data.network.dto.LikeToggleDto
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
-import uno.lux.sample.data.post.testPostUrl
+import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
 class NetworkPostDataSourceTest {

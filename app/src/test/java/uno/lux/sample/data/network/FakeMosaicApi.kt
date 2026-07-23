@@ -29,7 +29,7 @@ import uno.lux.sample.data.network.response.PostResponse
 import uno.lux.sample.data.network.response.ProfileStatsResponse
 import uno.lux.sample.data.network.response.UserPostsResponse
 import uno.lux.sample.data.network.response.UserResponse
-import uno.lux.sample.data.post.testPostUrl
+import uno.lux.sample.utils.testPostUrl
 
 internal val emptyPage = CursorPageDto(nextCursor = null, hasMore = false)
 
