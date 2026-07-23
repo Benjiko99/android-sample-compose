@@ -150,11 +150,13 @@ private const val CounterTag = "counter"
 private fun TestNavHost(navigator: Navigator, onBackStack: (List<NavKey>) -> Unit) {
     val backStack = rememberNavBackStack(Screen.Shell)
 
+    // Handing the stack out from the effect, not the composition body, so the test reads the
+    // instance that is actually attached — a restore brings a new one, and re-runs this.
     DisposableEffect(navigator, backStack) {
         navigator.attach(backStack)
+        onBackStack(backStack)
         onDispose { navigator.detach(backStack) }
     }
-    onBackStack(backStack)
 
     NavDisplay(
         backStack = backStack,
