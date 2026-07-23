@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -168,6 +170,14 @@ internal fun CreatePostScreen(
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // The form paints no background of its own, so the container is what fills the inset
+        // strips the content padding keeps clear — leaving it at the default `background` would
+        // show a grey band under the navigation bar.
+        containerColor = MaterialTheme.colorScheme.surface,
+        // Includes the IME, so the keyboard arrives as content padding. Padding the form with
+        // `imePadding()` instead would re-apply the navigation bar inset the content padding has
+        // already spent, and park that much unpainted container just above the keyboard.
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.create_post_title)) },
@@ -192,7 +202,7 @@ internal fun CreatePostScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .imePadding(),
+                .consumeWindowInsets(contentPadding),
         )
     }
 }
@@ -208,7 +218,6 @@ private fun CreatePostForm(
 ) {
     Column(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surface)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
