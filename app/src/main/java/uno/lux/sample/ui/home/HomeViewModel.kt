@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import uno.lux.sample.data.post.FeedRepository
-import uno.lux.sample.data.post.FeedState
+import uno.lux.sample.data.feed.FeedRepository
+import uno.lux.sample.data.feed.FeedState
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.post.Video

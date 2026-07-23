@@ -2,7 +2,6 @@ package uno.lux.sample.ui.create
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
-import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.feed.FeedRepository
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.ui.file.FileLoader
 import uno.lux.sample.ui.file.VideoMetadataReader

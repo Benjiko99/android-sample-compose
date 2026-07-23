@@ -2,8 +2,8 @@ package uno.lux.sample.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.data.post.FeedDataSource
-import uno.lux.sample.data.post.FeedPage
+import uno.lux.sample.data.feed.FeedDataSource
+import uno.lux.sample.data.feed.FeedPage
 
 class NetworkFeedDataSource(
     private val api: MosaicApi,

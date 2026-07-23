@@ -11,7 +11,7 @@ import org.junit.Test
 import uno.lux.sample.ViewModelTest
 import uno.lux.sample.data.post.FakeFeedDataSource
 import uno.lux.sample.data.post.FakePostDataSource
-import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.feed.FeedRepository
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.post.NewPostMedia

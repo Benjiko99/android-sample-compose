@@ -16,7 +16,7 @@ import uno.lux.sample.data.user.UserRepository
  * so every observer sees the update in the same emission.
  *
  * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
- * [FeedRepository] or [ProfileRepository]; this store owns only the entity data.
+ * [uno.lux.sample.data.feed.FeedRepository] or [ProfileRepository]; this store owns only the entity data.
  *
  * The two endpoints that answer with a *single* post embed its author, so [load] and [create]
  * seed [userRepository] with it — the same thing [ProfileRepository] does for the authors that
@@ -47,7 +47,7 @@ class PostRepository(
 
     /**
      * Publishes [draft] and stores the resulting entity, so any screen already resolving that ID
-     * renders it without a re-fetch. Placing the post in an ordered list is [FeedRepository]'s
+     * renders it without a re-fetch. Placing the post in an ordered list is [uno.lux.sample.data.feed.FeedRepository]'s
      * job, not this store's.
      */
     suspend fun create(draft: NewPost): Post = store(dataSource.create(draft))
@@ -61,7 +61,7 @@ class PostRepository(
     }
 
     /**
-     * Deletes [postId] and drops it from the store. The ordered ID lists in [FeedRepository] and
+     * Deletes [postId] and drops it from the store. The ordered ID lists in [uno.lux.sample.data.feed.FeedRepository] and
      * [ProfileRepository] are deliberately left alone: they resolve IDs through [entities], so a
      * removed entity disappears from every screen showing it in the same emission — the same
      * propagation a like toggle relies on, rather than a second place that has to be kept in step.

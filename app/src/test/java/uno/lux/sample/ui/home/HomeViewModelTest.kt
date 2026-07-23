@@ -14,9 +14,9 @@ import org.junit.Test
 import uno.lux.sample.ViewModelTest
 import uno.lux.sample.ui.post.PostCardData
 import uno.lux.sample.data.post.FakeFeedDataSource
-import uno.lux.sample.data.post.FeedDataSource
-import uno.lux.sample.data.post.FeedPage
-import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.feed.FeedDataSource
+import uno.lux.sample.data.feed.FeedPage
+import uno.lux.sample.data.feed.FeedRepository
 import uno.lux.sample.data.post.FakePostDataSource
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostRepository

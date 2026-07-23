@@ -6,6 +6,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.feed.FeedDataSource
+import uno.lux.sample.data.feed.FeedPage
+import uno.lux.sample.data.feed.FeedRepository
+import uno.lux.sample.data.feed.FeedState
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
@@ -31,7 +35,14 @@ class FeedRepositoryTest {
 
     @Test
     fun `reset returns feedState to NotLoaded after a successful refresh`() = runTest {
-        val repo = feedRepo(FakeFeedDataSource(listOf(FeedPage(listOf(post("p1")), emptyList(), null, false))))
+        val repo = feedRepo(FakeFeedDataSource(listOf(
+            FeedPage(
+                listOf(post("p1")),
+                emptyList(),
+                null,
+                false
+            )
+        )))
         repo.refresh()
 
         repo.reset()

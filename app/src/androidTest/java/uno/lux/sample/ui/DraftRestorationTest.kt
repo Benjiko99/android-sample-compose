@@ -21,9 +21,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import uno.lux.sample.data.file.FileUpload
-import uno.lux.sample.data.post.FeedDataSource
-import uno.lux.sample.data.post.FeedPage
-import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.feed.FeedDataSource
+import uno.lux.sample.data.feed.FeedPage
+import uno.lux.sample.data.feed.FeedRepository
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostDataSource

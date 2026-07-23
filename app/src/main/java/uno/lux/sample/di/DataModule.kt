@@ -20,8 +20,8 @@ import uno.lux.sample.data.network.NetworkProfileDataSource
 import uno.lux.sample.data.network.NetworkUserDataSource
 import uno.lux.sample.data.post.CommentDataSource
 import uno.lux.sample.data.post.CommentRepository
-import uno.lux.sample.data.post.FeedDataSource
-import uno.lux.sample.data.post.FeedRepository
+import uno.lux.sample.data.feed.FeedDataSource
+import uno.lux.sample.data.feed.FeedRepository
 import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostRepository
 import uno.lux.sample.data.profile.ProfileDataSource

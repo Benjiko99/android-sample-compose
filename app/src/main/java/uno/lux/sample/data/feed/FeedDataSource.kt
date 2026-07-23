@@ -1,5 +1,6 @@
-package uno.lux.sample.data.post
+package uno.lux.sample.data.feed
 
+import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.user.User
 
 interface FeedDataSource {
