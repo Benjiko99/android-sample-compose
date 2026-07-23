@@ -865,7 +865,7 @@ private fun sampleProfileData(): ProfileScreenData {
     )
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "My user")
 @Composable
 private fun ProfileScreenPreview() {
     MosaicTheme {
@@ -879,7 +879,7 @@ private fun ProfileScreenPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Another user (Follow)")
+@Preview(showBackground = true, name = "Another user")
 @Composable
 private fun ProfileScreenOtherUserPreview() {
     MosaicTheme {

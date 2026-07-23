@@ -46,8 +46,6 @@
     <string name="post_share_chooser">Sdílet příspěvek</string>
     <string name="post_link_clip_label">Odkaz na příspěvek</string>
     <string name="post_link_copied">Odkaz zkopírován</string>
-    <!-- Shown for sheet actions that aren't wired up yet -->
-    <string name="action_not_implemented">Akce zatím není k dispozici</string>
     <!-- Report -->
     <string name="report_dialog_title">Nahlásit příspěvek</string>
     <string name="report_dialog_prompt">Proč tento příspěvek nahlašujete?</string>
