@@ -14,17 +14,25 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
- * Owns the app's single video [ExoPlayer] so one playback can move between an inline post and
- * the full-screen page without being recreated — the position lives in the player, so reusing
- * the instance is what preserves it.
+ * Owns the app's single video [ExoPlayer]. The instance is built once and **reused** for every
+ * video: moving between clips is a [setMediaItem][ExoPlayer.setMediaItem] + [prepare][ExoPlayer.prepare]
+ * on the same player, never a rebuild. That keeps the renderer threads and codec pipeline warm, so
+ * a new clip starts fast instead of paying to allocate a fresh player — which is what a feed scroll
+ * past a run of videos would otherwise cost on every item. It is torn down only in [release], when
+ * playback is done for good. The same reuse lets one playback move between an inline post and the
+ * full-screen page without being recreated — the position lives in the player, so keeping the
+ * instance is what preserves it.
  *
  * Exactly one video plays at a time. [activeVideoUrl], [isFullscreen] and [player] are Compose
  * state, so the inline player and the full-screen page recompose as playback moves between them.
- * [ownedByInline] records whether an inline post started the playback: if so, leaving full
- * screen returns to that post and keeps playing; if a profile thumbnail opened it straight into
- * full screen, leaving releases it. The URL is the player's identity — every uploaded video has
- * its own, and a clip picked in the composer brings a content URI — so one keying serves posts
- * and local previews alike, with no id a local file wouldn't have.
+ * The player instance outlives any single clip, so [activeVideoUrl] — not `player != null` — is
+ * what says whether something is on screen: [stopPlayback] clears it (reverting inline views to
+ * their thumbnail) while keeping the warm player around for the next clip. [ownedByInline] records
+ * whether an inline post started the playback: if so, leaving full screen returns to that post and
+ * keeps playing; if a profile thumbnail opened it straight into full screen, leaving stops it. The
+ * URL is the player's identity — every uploaded video has its own, and a clip picked in the composer
+ * brings a content URI — so one keying serves posts and local previews alike, with no id a local
+ * file wouldn't have.
  *
  * The player is an Android component with no logic to unit test, so this is a plain holder built
  * on [Context] rather than a constructor-injected, JVM-testable unit.
@@ -70,10 +78,10 @@ class VideoPlaybackController(private val appContext: Context) {
         isFullscreen = true
     }
 
-    /** Leaves the full-screen page, releasing the player unless an inline post still owns it. */
+    /** Leaves the full-screen page, stopping playback unless an inline post still owns it. */
     fun exitFullscreen() {
         isFullscreen = false
-        if (!ownedByInline) stop()
+        if (!ownedByInline) stopPlayback()
     }
 
     /** Pauses playback without tearing the player down (e.g. when the app is backgrounded). */
@@ -81,8 +89,20 @@ class VideoPlaybackController(private val appContext: Context) {
         player?.pause()
     }
 
-    /** Releases the player and clears all playback state. */
-    fun stop() {
+    /**
+     * Stops the current video but keeps the player instance warm for the next one. Clearing
+     * [activeVideoUrl] reverts inline posts to their thumbnail; the player itself is only ever
+     * released in [release]. This is the feed's "nothing on screen should play" path, so a scroll
+     * from one video to the next reuses the same player instead of rebuilding it.
+     */
+    fun stopPlayback() {
+        player?.pause()
+        activeVideoUrl = null
+        ownedByInline = false
+    }
+
+    /** Releases the player and clears all playback state; call when playback is done for good. */
+    fun release() {
         player?.release()
         player = null
         activeVideoUrl = null
@@ -92,8 +112,8 @@ class VideoPlaybackController(private val appContext: Context) {
 
     private fun ensurePlayer(url: String) {
         if (activeVideoUrl == url && player != null) return
-        player?.release()
-        player = ExoPlayer.Builder(appContext).build().apply {
+        val exo = player ?: ExoPlayer.Builder(appContext).build().also { player = it }
+        exo.apply {
             setMediaItem(MediaItem.fromUri(url))
             playWhenReady = true
             prepare()
@@ -114,7 +134,7 @@ class VideoPlaybackViewModel @Inject constructor(
     val controller = VideoPlaybackController(context)
 
     override fun onCleared() {
-        controller.stop()
+        controller.release()
     }
 }
 

@@ -222,7 +222,7 @@ private fun FeedList(
                 activeUrl = playback.activeVideoUrl,
                 autoPlayVideos = autoPlayVideos,
             )
-            if (url != null) playback.playInline(url) else playback.stop()
+            if (url != null) playback.playInline(url) else playback.stopPlayback()
         }
     }
 
