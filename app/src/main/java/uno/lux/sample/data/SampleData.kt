@@ -77,12 +77,27 @@ internal val SampleUsers = listOf(
 /** The sample user signed in as "me" — their own profile shows the Edit-profile action. */
 const val LoggedInUserId = "u1"
 
-/** The stand-in stream every sample [Video] points at — a short, freely hosted MP4. */
-const val SampleVideoUrl = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
+/**
+ * The stand-in stream each sample [Video] points at — a short, freely hosted MP4, one per video.
+ * Sharing a stream between two videos is what to avoid here: the shared player keys playback on
+ * the URL, so two videos pointing at the same file are one playback and cannot play independently.
+ */
+private const val ImitationGameVideoUrl = "https://getsamplefiles.com/download/mp4/sample-3.mp4"
+private const val KernelBootVideoUrl = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
 
-/** The stand-in photos every feed album post shows, as freely hosted JPEGs. */
-val SampleAlbumImages = listOf(
+/** The stand-in photos the "Engine sketches" album shows, as freely hosted JPEGs. */
+private val EngineSketchImages = listOf(
+    "https://getsamplefiles.com/download/jpg/sample-1.jpg",
     "https://getsamplefiles.com/download/jpg/sample-2.jpg",
+    "https://getsamplefiles.com/download/jpg/sample-3.jpg",
+)
+
+/**
+ * The "Launch room" album's photos. Deliberately its own set, and a different count from
+ * [EngineSketchImages], so the two albums are told apart at a glance and the pager and item-count
+ * badge are exercised at more than one length.
+ */
+private val LaunchRoomImages = listOf(
     "https://getsamplefiles.com/download/jpg/sample-4.jpg",
     "https://getsamplefiles.com/download/jpg/sample-5.jpg",
 )
@@ -110,8 +125,8 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         album = Album(
             id = "pa1",
             title = "Engine sketches",
-            itemCount = SampleAlbumImages.size,
-            images = SampleAlbumImages,
+            itemCount = EngineSketchImages.size,
+            images = EngineSketchImages,
         ),
     ),
     Post(
@@ -141,7 +156,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
             id = "pv3",
             title = "The imitation game, in five seconds",
             durationSeconds = 5,
-            videoUrl = SampleVideoUrl,
+            videoUrl = ImitationGameVideoUrl,
         ),
     ),
     Post(
@@ -161,8 +176,8 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
         album = Album(
             id = "pa4",
             title = "Launch room",
-            itemCount = SampleAlbumImages.size,
-            images = SampleAlbumImages,
+            itemCount = LaunchRoomImages.size,
+            images = LaunchRoomImages,
         ),
     ),
     Post(
@@ -180,7 +195,7 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
             id = "pv5",
             title = "Booting the kernel",
             durationSeconds = 5,
-            videoUrl = SampleVideoUrl,
+            videoUrl = KernelBootVideoUrl,
         ),
     ),
     Post(

@@ -7,29 +7,34 @@ import org.junit.Test
 class SampleDataTest {
 
     @Test
-    fun `sample video posts carry a video streaming from the sample url`() {
-        val videoPosts = SamplePosts.mapNotNull { it.video }
+    fun `each sample video streams from a url of its own`() {
+        val videoUrls = SamplePosts.mapNotNull { it.video?.videoUrl }
 
-        assertTrue("expected at least one video post", videoPosts.isNotEmpty())
-        videoPosts.forEach { video ->
-            assertEquals(
-                "post video ${video.id} should use the sample stream",
-                SampleVideoUrl,
-                video.videoUrl,
-            )
-        }
+        assertTrue("expected at least two video posts", videoUrls.size >= 2)
+        // The shared player keys playback on the URL, so a repeated one would make two distinct
+        // videos the same playback — they could not then be played independently.
+        assertEquals("sample videos should not share a stream", videoUrls.distinct(), videoUrls)
     }
 
     @Test
-    fun `sample album posts show the sample album images`() {
-        val albumPosts = SamplePosts.mapNotNull { it.album }
+    fun `sample albums each show photos of their own`() {
+        val albums = SamplePosts.mapNotNull { it.album }
+        val images = albums.flatMap { it.images }
 
-        assertTrue("expected at least one album post", albumPosts.isNotEmpty())
-        albumPosts.forEach { album ->
+        assertTrue("expected at least two album posts", albums.size >= 2)
+        assertEquals("sample albums should not share a photo", images.distinct(), images)
+    }
+
+    @Test
+    fun `a sample album counts the images it carries`() {
+        val albums = SamplePosts.mapNotNull { it.album }
+
+        assertTrue("expected at least one album post", albums.isNotEmpty())
+        albums.forEach { album ->
             assertEquals(
-                "album ${album.id} should show the sample images",
-                SampleAlbumImages,
-                album.images,
+                "album ${album.id} should count its own images",
+                album.images.size,
+                album.itemCount,
             )
         }
     }
