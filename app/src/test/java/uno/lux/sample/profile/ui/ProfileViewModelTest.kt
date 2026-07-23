@@ -1,0 +1,504 @@
+package uno.lux.sample.profile.ui
+
+import androidx.navigation3.runtime.NavKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.post.data.FakePostDataSource
+import uno.lux.sample.post.Post
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.profile.data.PostsWithAuthorsPage
+import uno.lux.sample.profile.data.FakeProfileDataSource
+import uno.lux.sample.profile.data.ProfileRefreshData
+import uno.lux.sample.profile.data.ProfileRepository
+import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.user.User
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.app.navigation.Navigator
+import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.testing.testPostUrl
+import java.time.Instant
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ProfileViewModelTest : ViewModelTest() {
+
+    private val ada = User(id = "u1", nickname = "Ada", handle = "@ada")
+    private val grace = User(id = "u2", nickname = "Grace", handle = "@grace")
+    private val post = Post(
+        id = "p1",
+        url = testPostUrl("p1"),
+        authorId = "u1",
+        title = "Title",
+        body = "Body",
+        createdAt = Instant.EPOCH,
+        likeCount = 10,
+        commentCount = 2,
+    )
+
+    // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
+    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.Profile("u1"))
+    private val navigator = Navigator().apply { attach(backStack) }
+
+    /** A post by someone else that u1 saved — the Saved tab's defining case. */
+    private val savedPost = Post(
+        id = "p2",
+        url = testPostUrl("p2"),
+        authorId = "u2",
+        title = "Saved",
+        body = "Body",
+        createdAt = Instant.EPOCH,
+        likeCount = 3,
+        commentCount = 0,
+        isBookmarked = true,
+    )
+
+    /** A post by someone else that u1 liked — a self-like is impossible, so it is never u1's. */
+    private val likedPost = Post(
+        id = "p3",
+        url = testPostUrl("p3"),
+        authorId = "u2",
+        title = "Liked",
+        body = "Body",
+        createdAt = Instant.EPOCH,
+        likeCount = 7,
+        commentCount = 0,
+        isLiked = true,
+    )
+
+    /** The data source the last [viewModel] built, for asserting on what was fetched. */
+    private lateinit var profileDataSource: FakeProfileDataSource
+
+    private fun viewModel(
+        userId: UserId = "u1",
+        currentUserId: UserId = "u1",
+        bookmarks: List<Post> = listOf(savedPost),
+        likes: List<Post> = listOf(likedPost),
+    ): ProfileViewModel {
+        val userRepo = UserRepository(
+            FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
+        )
+        val postRepo = PostRepository(FakePostDataSource(), userRepo)
+        profileDataSource = FakeProfileDataSource(
+            refreshData = mapOf(
+                "u1" to ProfileRefreshData(
+                    postsCount = 1,
+                    posts = listOf(post),
+                    postCursor = null, postHasMore = false,
+                ),
+                "u2" to ProfileRefreshData(
+                    postsCount = 0,
+                    posts = emptyList(), postCursor = null, postHasMore = false,
+                ),
+            ),
+            bookmarks = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(bookmarks, listOf(grace), null, false)),
+            ),
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(likes, listOf(grace), null, false)),
+            ),
+        )
+        val profileRepo = ProfileRepository(
+            profileDataSource,
+            postRepo,
+            userRepo,
+            currentUserId,
+        )
+        return ProfileViewModel(
+            profileRepository = profileRepo,
+            postRepository = postRepo,
+            userRepository = userRepo,
+            navigator = navigator,
+            currentUserId = currentUserId,
+            userId = userId,
+        )
+    }
+
+    @Test
+    fun `onDeletePost drops the post from the profile`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onDeletePost("p1")
+
+        val loaded = viewModel.uiState.value as ProfileUiState.Loaded
+        assertTrue(loaded.data.posts.isEmpty())
+    }
+
+    @Test
+    fun `goBack pops the profile page`() {
+        viewModel().goBack()
+
+        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+    }
+
+    @Test
+    fun `openEditProfile pushes the profile editor`() {
+        viewModel().openEditProfile()
+
+        assertEquals(Screen.EditProfile, backStack.last())
+    }
+
+    @Test
+    fun `openEditProfile does not stack a second editor`() {
+        val viewModel = viewModel()
+
+        viewModel.openEditProfile()
+        viewModel.openEditProfile()
+
+        assertEquals(listOf(Screen.Shell, Screen.Profile("u1"), Screen.EditProfile), backStack)
+    }
+
+    @Test
+    fun `openPost pushes the post's detail page`() {
+        viewModel().openPost("p1")
+
+        assertEquals(Screen.PostDetail("p1"), backStack.last())
+    }
+
+    @Test
+    fun `openAvatar pushes a single-image album viewer`() {
+        viewModel().openAvatar("https://example.test/avatar.jpg")
+
+        assertEquals(
+            Screen.AlbumViewer(listOf("https://example.test/avatar.jpg"), initialIndex = 0),
+            backStack.last(),
+        )
+    }
+
+    @Test
+    fun `uiState is Loading until something collects it`() {
+        assertEquals(ProfileUiState.Loading, viewModel().uiState.value)
+    }
+
+    @Test
+    fun `uiState exposes the loaded profile once collected`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        val loaded = viewModel.uiState.value as ProfileUiState.Loaded
+        assertEquals(ada, loaded.data.user)
+        assertEquals(listOf(post), loaded.data.posts)
+        assertEquals(1, loaded.data.profile.postsCount)
+    }
+
+    @Test
+    fun `uiState marks the signed-in user's own profile as current`() = runTest {
+        val viewModel = viewModel(userId = "u1", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertTrue((viewModel.uiState.value as ProfileUiState.Loaded).isCurrentUser)
+    }
+
+    @Test
+    fun `uiState marks another user's profile as not current`() = runTest {
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertFalse((viewModel.uiState.value as ProfileUiState.Loaded).isCurrentUser)
+    }
+
+    @Test
+    fun `uiState is NotFound for an unknown user`() = runTest {
+        val viewModel = viewModel(userId = "nobody")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertEquals(ProfileUiState.NotFound, viewModel.uiState.value)
+    }
+
+    @Test
+    fun `onToggleLike likes the post through the shared entity store`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onToggleLike("p1")
+
+        val liked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
+        assertTrue(liked.isLiked)
+        assertEquals(11, liked.likeCount)
+    }
+
+    @Test
+    fun `onToggleBookmark bookmarks the post through the shared entity store`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onToggleBookmark("p1")
+
+        val bookmarked = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts.single()
+        assertTrue(bookmarked.isBookmarked)
+    }
+
+    // ── The Saved tab ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `bookmarks are absent until the Saved tab is shown`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertNull((viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks)
+        assertTrue(profileDataSource.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `onSavedTabShown loads the saved posts with their authors`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onSavedTabShown()
+
+        val saved = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!
+        val card = saved.posts.single()
+        assertEquals("p2", card.post.id)
+        // A saved post is usually someone else's, so the card carries that author, not the profile's.
+        assertEquals(grace, card.author)
+        assertFalse(card.isOwn)
+        assertTrue(saved.endReached)
+    }
+
+    @Test
+    fun `onSavedTabShown fetches only once across repeat visits`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onSavedTabShown()
+        viewModel.onSavedTabShown()
+
+        assertEquals(1, profileDataSource.bookmarkCalls.size)
+    }
+
+    @Test
+    fun `an empty Saved tab is loaded, not pending`() = runTest {
+        val viewModel = viewModel(bookmarks = emptyList())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onSavedTabShown()
+
+        val saved = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks
+        assertEquals(emptyList<Any>(), saved?.posts)
+    }
+
+    // The saved posts resolve through the shared entity store, so liking one from the Saved tab
+    // is reflected on its card without a re-fetch. (Clearing the *bookmark* instead removes the
+    // row outright — that is the tab's defining flag, asserted further down.)
+    @Test
+    fun `liking a saved post updates it in place`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.onToggleLike("p2")
+
+        val card = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!.posts.single()
+        assertTrue(card.post.isLiked)
+        assertEquals(4, card.post.likeCount)
+    }
+
+    @Test
+    fun `refresh leaves an unopened Saved tab unfetched`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.refresh()
+
+        assertTrue(profileDataSource.bookmarkCalls.isEmpty())
+    }
+
+    @Test
+    fun `refresh re-fetches the Saved tab once it has been opened`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.refresh()
+
+        assertEquals(2, profileDataSource.bookmarkCalls.size)
+    }
+
+    // ── The Likes tab ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `likes are absent until the Likes tab is shown`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertNull((viewModel.uiState.value as ProfileUiState.Loaded).data.likes)
+        assertTrue(profileDataSource.likeCalls.isEmpty())
+    }
+
+    @Test
+    fun `onLikesTabShown loads the liked posts with their authors`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onLikesTabShown()
+
+        val card = (viewModel.uiState.value as ProfileUiState.Loaded).data.likes!!.posts.single()
+        assertEquals("p3", card.post.id)
+        assertEquals(grace, card.author)
+    }
+
+    // Likes are public, so the tab loads on someone else's profile exactly as on your own —
+    // the one behavioural difference from Saved.
+    @Test
+    fun `onLikesTabShown loads on another user's profile too`() = runTest {
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onLikesTabShown()
+
+        assertEquals(listOf("u2" to null), profileDataSource.likeCalls)
+    }
+
+    @Test
+    fun `onLikesTabShown fetches only once across repeat visits`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onLikesTabShown()
+        viewModel.onLikesTabShown()
+
+        assertEquals(1, profileDataSource.likeCalls.size)
+    }
+
+    // Opening one on-demand tab must not fetch the other.
+    @Test
+    fun `opening the Likes tab leaves the Saved tab unfetched`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onLikesTabShown()
+
+        assertTrue(profileDataSource.bookmarkCalls.isEmpty())
+        assertNull((viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks)
+    }
+
+    @Test
+    fun `refresh re-fetches the Likes tab once it has been opened`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onLikesTabShown()
+
+        viewModel.refresh()
+
+        assertEquals(2, profileDataSource.likeCalls.size)
+    }
+
+    // ── The on-demand tabs narrow as their defining flag clears ─────────────────
+
+    @Test
+    fun `un-bookmarking from the Saved tab removes the row`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.onToggleBookmark("p2")
+
+        val bookmarks = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!
+        assertTrue(bookmarks.posts.isEmpty())
+    }
+
+    // The Saved tab is only ever your own, but a *liked* post can also be saved — clearing one
+    // flag must not disturb the list the other flag defines.
+    @Test
+    fun `unliking a post leaves it on the Saved tab`() = runTest {
+        val alsoSaved = savedPost.copy(isLiked = true)
+        val viewModel = viewModel(bookmarks = listOf(alsoSaved), likes = listOf(alsoSaved))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onSavedTabShown()
+
+        viewModel.onToggleLike("p2")
+
+        val bookmarks = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!
+        assertEquals(listOf("p2"), bookmarks.posts.map { it.post.id })
+    }
+
+    // Liking a post from the Posts tab puts it on the Likes tab immediately — the tabs read the
+    // same entity store, so neither a re-fetch nor a prior visit to the post is needed.
+    @Test
+    fun `liking a post from the Posts tab adds it to the Likes tab`() = runTest {
+        val viewModel = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onLikesTabShown()
+
+        viewModel.onToggleLike("p1")
+
+        val likes = (viewModel.uiState.value as ProfileUiState.Loaded).data.likes!!
+        assertTrue(likes.posts.any { it.post.id == "p1" })
+    }
+
+    @Test
+    fun `openProfile pushes the saved post's author`() {
+        viewModel().openProfile("u2")
+
+        assertEquals(Screen.Profile("u2"), backStack.last())
+    }
+
+    @Test
+    fun `onToggleFollow follows the viewed user and updates the follower count`() = runTest {
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onToggleFollow()
+
+        val user = (viewModel.uiState.value as ProfileUiState.Loaded).data.user
+        assertTrue(user.isFollowing)
+        assertEquals(1, user.followerCount)
+    }
+}
+

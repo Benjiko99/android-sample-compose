@@ -1,0 +1,358 @@
+package uno.lux.sample.feed.ui
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import uno.lux.sample.R
+import uno.lux.sample.fixtures.SamplePosts
+import uno.lux.sample.fixtures.SampleUsers
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.Video
+import uno.lux.sample.user.UserId
+import uno.lux.sample.design.components.FullScreenError
+import uno.lux.sample.design.components.FullScreenProgress
+import uno.lux.sample.design.components.LoadMoreEffect
+import uno.lux.sample.design.format.asText
+import uno.lux.sample.design.components.LoadingMoreFooter
+import uno.lux.sample.design.components.MosaicWordmark
+import uno.lux.sample.design.components.SettingsAction
+import uno.lux.sample.post.ui.PostCard
+import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.design.theme.LocalMosaicColors
+import uno.lux.sample.design.theme.MosaicTheme
+import uno.lux.sample.post.ui.video.LocalVideoPlayback
+import uno.lux.sample.util.createActionsProxy
+
+/**
+ * The feed's ViewModel-backed intents, as one [Stable] seam the stateless [HomeScreen] depends
+ * on — repository mutations (likes, bookmarks) and navigation (opening a post, profile, viewer
+ * or settings) alike, since the ViewModel forwards the latter to the injected `Navigator`.
+ * [HomeViewModel] implements it, so the binder passes the ViewModel directly and a preview
+ * passes a no-op [createActionsProxy].
+ */
+@Stable
+interface HomeActions {
+    fun refresh()
+    fun retry()
+    fun loadMore()
+    fun onToggleLike(postId: PostId)
+    fun onToggleBookmark(postId: PostId)
+    fun onDeletePost(postId: PostId)
+    fun openSettings()
+    fun openProfile(userId: UserId)
+    fun openPost(postId: PostId)
+    fun openVideo(video: Video)
+    fun openAlbum(imageUrls: List<String>, initialIndex: Int)
+}
+
+/**
+ * Stateful entry point: binds the [HomeViewModel] and forwards state and intent to the
+ * stateless overload below.
+ */
+@Composable
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val autoPlayVideos by viewModel.autoPlayVideos.collectAsStateWithLifecycle()
+
+    HomeScreen(
+        uiState = uiState,
+        isRefreshing = isRefreshing,
+        autoPlayVideos = autoPlayVideos,
+        actions = viewModel,
+        modifier = modifier,
+    )
+}
+
+/**
+ * Stateless feed screen — renders [uiState] and reports interactions through the
+ * callbacks. Holding no ViewModel makes it directly previewable and testable.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun HomeScreen(
+    uiState: HomeUiState,
+    isRefreshing: Boolean,
+    autoPlayVideos: Boolean,
+    actions: HomeActions,
+    modifier: Modifier = Modifier,
+) {
+    val listState = rememberLazyListState()
+    // The bar is pinned; its shadow fades in whenever the list content is scrolled and clears at
+    // the very top. canScrollBackward is already a coalesced boolean snapshot — it only changes
+    // when crossing the top — so reading it directly needs no derivedStateOf wrapper.
+    val elevated = listState.canScrollBackward
+
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            FeedTopBar(
+                elevated = elevated,
+                onOpenSettings = actions::openSettings,
+            )
+        },
+    ) { contentPadding ->
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = actions::refresh,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding),
+        ) {
+            when (uiState) {
+                HomeUiState.Loading -> FullScreenProgress()
+                is HomeUiState.Error -> FullScreenError(
+                    message = uiState.error.asText(),
+                    onRetry = actions::retry,
+                )
+                is HomeUiState.Feed ->
+                    if (uiState.posts.isEmpty()) {
+                        EmptyState()
+                    } else {
+                        FeedList(
+                            posts = uiState.posts,
+                            endReached = uiState.endReached,
+                            autoPlayVideos = autoPlayVideos,
+                            listState = listState,
+                            actions = actions,
+                        )
+                    }
+            }
+        }
+    }
+}
+
+/**
+ * The feed's pinned top bar — it stays in place while the feed scrolls and fades in a drop shadow
+ * whenever the list content is scrolled away from the top ([elevated]), so the shadow is a stable
+ * indicator of scroll position rather than something that rides the bar.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeedTopBar(
+    elevated: Boolean,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val elevationPx = with(LocalDensity.current) { TopBarElevation.toPx() }
+    val shadowElevation = remember { Animatable(0f) }
+
+    LaunchedEffect(elevated, elevationPx) {
+        shadowElevation.animateTo(if (elevated) elevationPx else 0f)
+    }
+
+    TopAppBar(
+        title = { MosaicWordmark() },
+        actions = { SettingsAction(onOpenSettings) },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        modifier = modifier.graphicsLayer { this.shadowElevation = shadowElevation.value },
+    )
+}
+
+/** Resting shadow depth of the pinned feed bar once the list is scrolled. */
+private val TopBarElevation = 4.dp
+
+@Composable
+private fun FeedList(
+    posts: List<PostCardData>,
+    endReached: Boolean,
+    autoPlayVideos: Boolean,
+    listState: LazyListState,
+    actions: HomeActions,
+    modifier: Modifier = Modifier,
+) {
+    val playback = LocalVideoPlayback.current
+    // Read the latest posts inside the collector without keying the effect on them: a like or
+    // bookmark toggle replaces the list instance but never changes which posts carry a video or
+    // where they sit, so restarting the autoplay collector on every toggle is wasted work. A
+    // change that actually matters (scroll, refresh) re-lays out the list and re-emits layoutInfo.
+    val currentPosts by rememberUpdatedState(posts)
+
+    // autoPlayVideos *is* a key: it changes only when the user flips the setting, and restarting
+    // the collector re-reads the current layout, so turning auto-play on plays the video already
+    // on screen instead of waiting for the next scroll.
+    LaunchedEffect(listState, playback, autoPlayVideos) {
+        snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
+            if (playback == null || playback.isFullscreen) return@collect
+            // With auto-play off and nothing playing there is neither a video to start nor one to
+            // stop, so the per-frame visibility scan below would be pure waste.
+            if (!autoPlayVideos && playback.activeVideoUrl == null) return@collect
+
+            val url = videoToPlay(
+                mostVisibleUrl = mostVisibleVideo(layoutInfo, currentPosts)?.videoUrl,
+                activeUrl = playback.activeVideoUrl,
+                autoPlayVideos = autoPlayVideos,
+            )
+            if (url != null) playback.playInline(url) else playback.stop()
+        }
+    }
+
+    LoadMoreEffect(listState, endReached, actions::loadMore)
+
+    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
+        items(posts, key = { it.post.id }) { data ->
+            PostCard(
+                data = data,
+                onToggleLike = { actions.onToggleLike(data.post.id) },
+                onToggleBookmark = { actions.onToggleBookmark(data.post.id) },
+                onOpenProfile = { actions.openProfile(data.author.id) },
+                onOpenVideo = actions::openVideo,
+                onOpenAlbum = actions::openAlbum,
+                onOpenPost = { actions.openPost(data.post.id) },
+                onDelete = if (data.isOwn) ({ actions.onDeletePost(data.post.id) }) else null,
+            )
+        }
+        if (endReached) {
+            item(key = "caught_up") {
+                CaughtUpFooter()
+            }
+        } else {
+            item(key = "loading_more") {
+                LoadingMoreFooter()
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.feed_empty),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+
+/** End-of-feed marker shown as the last list item once there are no more posts to load. */
+@Composable
+private fun CaughtUpFooter(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.feed_caught_up),
+        style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.02.em),
+        color = LocalMosaicColors.current.textTertiary,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+    )
+}
+
+/**
+ * The URL the feed should have playing, or null to stop.
+ *
+ * With auto-play on that is simply the on-screen winner ([mostVisibleUrl]). With it off nothing
+ * ever starts on its own, so the only URL that may play is one already playing ([activeUrl]) —
+ * i.e. one the user tapped — and only while it is still the winner, which is what stops it when it
+ * scrolls out of the way rather than letting its audio outlive the post on screen.
+ *
+ * Pure, so the whole rule is unit-testable without a composition or a layout.
+ */
+internal fun videoToPlay(
+    mostVisibleUrl: String?,
+    activeUrl: String?,
+    autoPlayVideos: Boolean,
+): String? = mostVisibleUrl?.takeIf { autoPlayVideos || it == activeUrl }
+
+/**
+ * Returns the on-screen winner — the video post with the greatest visible fraction that meets the
+ * 50 % threshold — or null when no video qualifies. Deciding what to do with it is [videoToPlay]'s.
+ *
+ * [LazyListItemInfo.index] maps 1:1 to [posts] because [FeedList] emits posts first (indices
+ * 0..lastIndex) then optionally a footer item at [posts.size].
+ */
+private fun mostVisibleVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardData>): Video? {
+    val viewportStart = layoutInfo.viewportStartOffset
+    val viewportEnd = layoutInfo.viewportEndOffset
+    fun visibleFraction(offset: Int, size: Int): Float {
+        val visibleTop = maxOf(offset, viewportStart)
+        val visibleBottom = minOf(offset + size, viewportEnd)
+        return maxOf(0, visibleBottom - visibleTop).toFloat() / size
+    }
+
+    val (winner, fraction) = layoutInfo.visibleItemsInfo
+        .filter { it.index < posts.size && posts[it.index].post.video != null }
+        .map { it to visibleFraction(it.offset, it.size) }
+        .maxByOrNull { (_, f) -> f }
+        ?: return null
+
+    return posts[winner.index].post.video.takeIf { fraction >= 0.5f }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeFeedPreview() {
+    val users = SampleUsers.associateBy { it.id }
+    val feed = SamplePosts.mapNotNull { post ->
+        PostCardData(post, users[post.authorId] ?: return@mapNotNull null)
+    }
+
+    MosaicTheme {
+        HomeScreen(
+            uiState = HomeUiState.Feed(feed, endReached = true),
+            isRefreshing = false,
+            autoPlayVideos = true,
+            actions = createActionsProxy(),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeEmptyPreview() {
+    MosaicTheme {
+        HomeScreen(
+            uiState = HomeUiState.Feed(posts = emptyList(), endReached = true),
+            isRefreshing = false,
+            autoPlayVideos = true,
+            actions = createActionsProxy(),
+        )
+    }
+}
