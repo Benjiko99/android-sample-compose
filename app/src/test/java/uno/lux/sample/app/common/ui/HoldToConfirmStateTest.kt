@@ -1,5 +1,6 @@
 package uno.lux.sample.app.common.ui
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -12,6 +13,7 @@ import org.junit.Test
 private const val HoldMillis = 1_500L
 private const val HintMillis = 1_000L
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HoldToConfirmStateTest {
 
     @Test

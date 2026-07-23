@@ -32,11 +32,11 @@ The shell is Windows PowerShell; invoke the wrapper as `.\gradlew.bat`.
 
 ## Toolchain / build setup
 
-- **Kotlin 2.3.21**, **AGP 9.2.1**, **Gradle 9.4.1**, Compose BOM **2025.12.00**.
-- `compileSdk` is **36.1**, expressed with the newer AGP DSL `release(36) { minorApiLevel = 1 }`; `minSdk = 26`, `targetSdk = 36`.
+- **Kotlin 2.4.10**, **AGP 9.3.1**, **Gradle 9.6.1**, Compose BOM **2026.06.01**.
+- `compileSdk` is **37**, expressed with the newer AGP DSL `release(37)`; `minSdk = 26`, `targetSdk = 36`. `core-ktx` 1.19, `lifecycle` 2.11 and `androidx.hilt` 1.4 all *require* compiling against 37, which is why it moved ahead of `targetSdk` — raising `compileSdk` only widens the APIs available at compile time, while `targetSdk` is what opts the app into new runtime behaviour, so the two are bumped separately. Lint's `OldTargetApi` warning is the expected cost of that gap.
 - Source/target compatibility is **Java 11**, but the Gradle daemon runs on **JDK 21** (`gradle/gradle-daemon-jvm.properties`, auto-provisioned via foojay).
 - AGP 9's **built-in Kotlin** is in use — there is no standalone `org.jetbrains.kotlin.android` plugin. Annotation processing runs through **KSP** (kapt is incompatible with built-in Kotlin); Hilt's codegen rides on it.
-- AGP 9.2.1 *bundles* Kotlin 2.2.10; the root `build.gradle.kts` puts a newer `kotlin-gradle-plugin` on the **buildscript classpath** (the documented override) to lift the compiler to **2.3.21**. Every compiler plugin is version-locked to that Kotlin and must move with it: the Compose compiler and kotlinx-serialization plugins (`version.ref = "kotlin"`), KSP (`<kotlin>-<ksp>`), and **Mappie** (`<kotlin>-<mappie>`, used for DTO → domain mapping in `post/data/network/PostMappers.kt`).
+- AGP 9.3.1 still *bundles* Kotlin 2.2.10; the root `build.gradle.kts` puts a newer `kotlin-gradle-plugin` on the **buildscript classpath** (the documented override) to lift the compiler to **2.4.10**. The Compose compiler and kotlinx-serialization plugins are version-locked to that Kotlin (`version.ref = "kotlin"`) and must move with it, as must **Mappie** (`<kotlin>-<mappie>`, used for DTO → domain mapping in `post/data/network/PostMappers.kt`) — a Kotlin bump is blocked until Mappie publishes a matching build. **KSP is no longer locked to Kotlin**: KSP2 versions independently (`2.3.10`, not `<kotlin>-<ksp>`) and spans a range of compiler versions, so it moves on its own schedule.
 - Dependencies are managed through the **version catalog** at `gradle/libs.versions.toml`. Add or bump dependencies there and reference them via the generated `libs.*` accessors in `app/build.gradle.kts` — do not hardcode versions in the build script.
 
 ## Backend
@@ -152,7 +152,7 @@ Video playback position is still deliberately not restored.
 
 ## Compose performance — keeping recomposition tight
 
-Holding recomposition to what actually changed is part of "idiomatic Compose" here, but it leans on the compiler rather than hand-tuning. The built-in Compose compiler (Kotlin 2.3.21) runs with **strong skipping on**, which shapes what's worth doing:
+Holding recomposition to what actually changed is part of "idiomatic Compose" here, but it leans on the compiler rather than hand-tuning. The built-in Compose compiler (Kotlin 2.4.10) runs with **strong skipping on**, which shapes what's worth doing:
 
 - **Don't reflexively wrap lambdas in `remember` or chase `@Stable`/`@Immutable` on every model.** Strong skipping auto-remembers lambdas (even ones capturing unstable values) and lets composables with *unstable* parameters still skip via instance equality. The domain models are technically unstable — `Post` carries a `java.time.Instant` and `List<…>` is an unstable type — yet feed and profile rows skip fine because each `LazyColumn` item is compared by instance.
 - **Skipping is by instance, so a mutation must preserve identity for everything that didn't change.** `PostRepository` keeps its store as a `Map<PostId, Post>` and mutates with `_entities.update { it + (postId to updated) }`, which hands back the *same* `Post` instance for every entry except the toggled one — so a like/bookmark recomposes only that one `PostCard`. Mapping `copy()` over the whole collection (or otherwise producing fresh instances for unchanged entries) would recompose every visible row — avoid it.

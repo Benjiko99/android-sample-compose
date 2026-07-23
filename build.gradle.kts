@@ -2,7 +2,7 @@
 
 // AGP 9's built-in Kotlin bundles compiler 2.2.10; putting a newer Kotlin Gradle plugin on the
 // buildscript classpath is the documented way to lift the whole toolchain (compiler + Compose/
-// serialization/KSP/Mappie plugins, all version-locked to it) to 2.3.21.
+// serialization/Mappie plugins, all version-locked to it) to 2.4.10.
 buildscript {
     dependencies {
         classpath(libs.kotlin.gradle.plugin)
