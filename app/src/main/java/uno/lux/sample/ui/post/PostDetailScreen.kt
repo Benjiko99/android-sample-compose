@@ -78,6 +78,7 @@ import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
 import uno.lux.sample.ui.components.Avatar
+import uno.lux.sample.ui.components.FullScreenError
 import uno.lux.sample.ui.components.FullScreenProgress
 import uno.lux.sample.ui.components.debouncedClickable
 import uno.lux.sample.ui.components.rememberDebounced
@@ -114,6 +115,7 @@ fun PostDetailScreen(
         onToggleCommentLike = viewModel::onToggleCommentLike,
         onAddComment = viewModel::addComment,
         onRetryComments = viewModel::retryComments,
+        onRetry = viewModel::retry,
         onDelete = viewModel::onDelete,
         modifier = modifier,
     )
@@ -138,6 +140,7 @@ internal fun PostDetailScreen(
     onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
     onRetryComments: () -> Unit,
+    onRetry: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -213,6 +216,12 @@ internal fun PostDetailScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
+            is PostDetailUiState.Error -> FullScreenError(
+                message = uiState.error.asText(),
+                onRetry = onRetry,
+                modifier = Modifier.padding(contentPadding),
+            )
 
             is PostDetailUiState.Loaded -> PostDetailContent(
                 post = uiState.post,
@@ -586,6 +595,29 @@ private fun PostDetailLoadedPreview() {
             onToggleCommentLike = {},
             onAddComment = {},
             onRetryComments = {},
+            onRetry = {},
+            onDelete = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PostDetailErrorPreview() {
+    MosaicTheme {
+        PostDetailScreen(
+            uiState = PostDetailUiState.Error(AppError.NoConnection),
+            composerUser = SampleUsers.first(),
+            onBack = {},
+            onOpenProfile = {},
+            onOpenVideo = {},
+            onOpenAlbum = { _, _ -> },
+            onToggleLike = {},
+            onToggleBookmark = {},
+            onToggleCommentLike = {},
+            onAddComment = {},
+            onRetryComments = {},
+            onRetry = {},
             onDelete = {},
         )
     }
@@ -607,6 +639,7 @@ private fun PostDetailLoadingPreview() {
             onToggleCommentLike = {},
             onAddComment = {},
             onRetryComments = {},
+            onRetry = {},
             onDelete = {},
         )
     }

@@ -1,9 +1,13 @@
 package uno.lux.sample.data.network
 
 import java.time.Instant
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
+import retrofit2.HttpException
+import retrofit2.Response
 import uno.lux.sample.data.network.dto.AddCommentRequestDto
 import uno.lux.sample.data.network.dto.AlbumDto
 import uno.lux.sample.data.network.dto.BookmarkToggleDto
@@ -49,6 +53,8 @@ class FakeMosaicApi(
     /** Overrides [feedResponse] for specific cursor values, allowing multi-page feed tests. */
     private val feedResponseByCursor: Map<String?, FeedResponse> = emptyMap(),
     private val userById: Map<String, UserDto> = emptyMap(),
+    /** What [getPost] serves; an id that isn't here 404s, the way the real API does. */
+    private val postById: Map<String, PostDto> = emptyMap(),
     private val profileStats: Map<String, ProfileStatsDto> = emptyMap(),
     private val userPosts: List<PostFeedItemDto> = emptyList(),
     private val bookmarksResponse: PostsWithAuthorsResponse = emptyPostsWithAuthors,
@@ -135,6 +141,20 @@ class FakeMosaicApi(
     ): PostsWithAuthorsResponse {
         likeCalls += id to cursor
         return likesResponse
+    }
+
+    /** IDs passed to [getPost], in call order, for test assertions. */
+    val fetchedPostIds = mutableListOf<String>()
+
+    /** Thrown by [getPost] instead of answering, so tests can drive the failure path. */
+    var getPostError: Exception? = null
+
+    override suspend fun getPost(postId: String): PostResponse {
+        fetchedPostIds += postId
+        getPostError?.let { throw it }
+
+        val dto = postById[postId] ?: throw notFoundException("Post '$postId' was not found")
+        return PostResponse(dto)
     }
 
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
@@ -267,6 +287,42 @@ fun feedItemDto(
     isBookmarked = isBookmarked,
     album = album,
     video = video,
+)
+
+/** The full projection — [feedItemDto]'s counterpart with the author embedded. */
+fun postDto(
+    id: String,
+    author: UserDto = stubAuthor,
+    isLiked: Boolean = false,
+    isBookmarked: Boolean = false,
+    likeCount: Int = 0,
+    album: AlbumDto? = null,
+    video: VideoDto? = null,
+) = PostDto(
+    id = id,
+    url = testPostUrl(id),
+    title = "Title $id",
+    body = "Body $id",
+    createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
+    author = author,
+    likeCount = likeCount,
+    commentCount = 0,
+    isLiked = isLiked,
+    isBookmarked = isBookmarked,
+    album = album,
+    video = video,
+)
+
+/**
+ * The 404 Retrofit raises for an unknown id, error envelope and all — what a data source has to
+ * turn back into a "there is no such thing" answer.
+ */
+fun notFoundException(message: String) = HttpException(
+    Response.error<Any>(
+        404,
+        """{"error":{"code":"NOT_FOUND","message":"$message"}}"""
+            .toResponseBody("application/json".toMediaType()),
+    )
 )
 
 fun userDto(id: String, nickname: String, isFollowing: Boolean = false) = UserDto(

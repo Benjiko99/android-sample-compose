@@ -23,12 +23,15 @@ import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.PostWithAuthor
 import uno.lux.sample.data.user.FakeUserDataSource
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserRepository
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
+import uno.lux.sample.util.AppError
 import uno.lux.sample.utils.testPostUrl
+import java.net.UnknownHostException
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -63,13 +66,15 @@ class PostDetailViewModelTest : ViewModelTest() {
     private fun viewModel(
         postId: String = "p1",
         posts: List<Post> = listOf(post),
+        users: List<User> = listOf(currentUser, otherUser),
         comments: Map<String, List<Comment>> = mapOf("p1" to listOf(seedComment)),
         commentDataSource: CommentDataSource = FakeCommentDataSource(currentUser, comments),
+        postDataSource: FakePostDataSource = FakePostDataSource(),
     ): PostDetailViewModel {
-        val postRepo = PostRepository(FakePostDataSource())
+        val postRepo = PostRepository(postDataSource)
         postRepo.ingest(posts)
         val userRepo = UserRepository(FakeUserDataSource())
-        userRepo.ingest(listOf(currentUser, otherUser))
+        userRepo.ingest(users)
         return PostDetailViewModel(
             postRepository = postRepo,
             commentRepository = CommentRepository(commentDataSource),
@@ -177,12 +182,80 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(listOf(seedComment), loaded.comments)
     }
 
+    // ── cold start (restored after process death) ──────────────────────────────
+    //
+    // The stores are empty when the app is restarted straight onto this page, so the ViewModel
+    // has to fetch the post its back-stack key names. Whether that fetch is still running, came
+    // back empty, or failed outright are three different screens.
+
     @Test
-    fun `uiState is NotFound when the postId is absent from the repository`() = runTest {
-        val vm = viewModel(postId = "missing")
+    fun `a page restored with empty stores fetches the post it was given the id for`() = runTest {
+        val dataSource = FakePostDataSource().apply {
+            fetchable["p1"] = PostWithAuthor(post, otherUser)
+        }
+        val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(post, state.post)
+        // The author rides along with the post, so the header resolves without a second request.
+        assertEquals(otherUser, state.author)
+    }
+
+    @Test
+    fun `a post the stores already hold is not re-fetched`() = runTest {
+        val dataSource = FakePostDataSource()
+        val vm = viewModel(postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(emptyList<PostId>(), dataSource.fetchedPostIds)
+        assertTrue(vm.uiState.value is PostDetailUiState.Loaded)
+    }
+
+    @Test
+    fun `uiState stays Loading while the fetch is in flight`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = viewModel(posts = emptyList(), users = emptyList())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
+        assertEquals(PostDetailUiState.Loading, vm.uiState.value)
+    }
+
+    @Test
+    fun `uiState is NotFound when the server no longer has the post`() = runTest {
+        val vm = viewModel(postId = "missing")
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
         assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
+    }
+
+    // A failed request says nothing about whether the post exists, so it must not read as "gone".
+    @Test
+    fun `uiState is a retryable Error when the fetch fails`() = runTest {
+        val dataSource = FakePostDataSource().apply { fetchError = UnknownHostException("offline") }
+        val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(PostDetailUiState.Error(AppError.NoConnection), vm.uiState.value)
+    }
+
+    @Test
+    fun `retry after a failed fetch loads the post`() = runTest {
+        val dataSource = FakePostDataSource().apply { fetchError = UnknownHostException("offline") }
+        val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        dataSource.fetchError = null
+        dataSource.fetchable["p1"] = PostWithAuthor(post, otherUser)
+        vm.retry()
+        advanceUntilIdle()
+
+        assertEquals(post, (vm.uiState.value as PostDetailUiState.Loaded).post)
     }
 
     // ── composerUser ──────────────────────────────────────────────────────────

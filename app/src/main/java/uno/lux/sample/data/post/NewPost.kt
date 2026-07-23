@@ -1,7 +1,6 @@
 package uno.lux.sample.data.post
 
 import uno.lux.sample.data.file.FileUpload
-import uno.lux.sample.data.user.User
 
 /**
  * The media a draft carries. A post has photos *or* a video, never both — the server rejects the
@@ -31,14 +30,4 @@ data class NewPost(
     val title: String,
     val body: String,
     val media: NewPostMedia = NewPostMedia.None,
-)
-
-/**
- * The server's answer to publishing a [NewPost]: the stored [post] plus its [author], which the
- * create response embeds in full. Both are returned together so the caller can seed the post and
- * user stores in one step — a freshly launched app may hold neither yet.
- */
-data class CreatedPost(
-    val post: Post,
-    val author: User,
 )

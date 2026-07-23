@@ -1,8 +1,10 @@
 package uno.lux.sample.data.network
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.data.file.FileUpload
@@ -12,11 +14,44 @@ import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.utils.testPostUrl
+import java.net.UnknownHostException
 import java.time.Instant
 
 class NetworkPostDataSourceTest {
 
     private val stubPost = post("p1")
+
+    @Test
+    fun `fetch maps the full projection with its author flattened to an id`() = runTest {
+        val api = FakeMosaicApi(postById = mapOf("p1" to postDto("p1", author = userDto("u7", "Grace"))))
+        val dataSource = NetworkPostDataSource(api)
+
+        val fetched = dataSource.fetch("p1")!!
+
+        assertEquals(listOf("p1"), api.fetchedPostIds)
+        assertEquals("p1", fetched.post.id)
+        assertEquals("u7", fetched.post.authorId)
+        assertEquals("Grace", fetched.author.nickname)
+    }
+
+    // A 404 is the server saying the post is gone. It has to arrive as an answer the caller can
+    // render, not as the exception every other failure raises — the two mean different screens.
+    @Test
+    fun `fetch returns null for a post the server does not have`() = runTest {
+        val dataSource = NetworkPostDataSource(FakeMosaicApi())
+
+        assertNull(dataSource.fetch("gone"))
+    }
+
+    @Test
+    fun `fetch lets any other failure through`() = runTest {
+        val api = FakeMosaicApi().apply { getPostError = UnknownHostException("offline") }
+        val dataSource = NetworkPostDataSource(api)
+
+        assertThrows(UnknownHostException::class.java) {
+            runBlocking { dataSource.fetch("p1") }
+        }
+    }
 
     @Test
     fun `create sends the draft and maps the created post with its author flattened to an id`() = runTest {

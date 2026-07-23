@@ -88,6 +88,13 @@ interface MosaicApi {
         @Query("limit") limit: Int = 20,
     ): PostsWithAuthorsResponse
 
+    // One post in the full projection — the same shape [createPost] answers with, author embedded.
+    // 404 when the post is unknown or has been deleted, which callers read as "gone" rather than
+    // as a failure. Only a client that doesn't already hold the post asks for it (a detail page
+    // restored after process death).
+    @GET("posts/{id}")
+    suspend fun getPost(@Path("id") postId: String): PostResponse
+
     @GET("posts/{id}/comments")
     suspend fun getComments(
         @Path("id") postId: String,

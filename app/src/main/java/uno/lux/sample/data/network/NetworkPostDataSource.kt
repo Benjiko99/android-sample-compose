@@ -3,18 +3,24 @@ package uno.lux.sample.data.network
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uno.lux.sample.data.network.dto.EmptyBody
-import uno.lux.sample.data.post.CreatedPost
 import uno.lux.sample.data.post.NewPost
 import uno.lux.sample.data.post.NewPostMedia
 import uno.lux.sample.data.post.Post
 import uno.lux.sample.data.post.PostDataSource
 import uno.lux.sample.data.post.PostId
+import uno.lux.sample.data.post.PostWithAuthor
 
 class NetworkPostDataSource(
     private val api: MosaicApi,
 ) : PostDataSource {
 
-    override suspend fun create(draft: NewPost): CreatedPost = withContext(Dispatchers.IO) {
+    override suspend fun fetch(postId: PostId): PostWithAuthor? = withContext(Dispatchers.IO) {
+        val response = notFoundAsNull { api.getPost(postId) } ?: return@withContext null
+
+        PostWithAuthorMapper.toPostWithAuthor(response.data)
+    }
+
+    override suspend fun create(draft: NewPost): PostWithAuthor = withContext(Dispatchers.IO) {
         val media = draft.media
         val video = media as? NewPostMedia.Video
 
@@ -28,7 +34,7 @@ class NetworkPostDataSource(
             videoDurationSeconds = video?.durationSeconds?.toString()?.asTextPart(),
         ).data
 
-        CreatedPostMapper.toCreatedPost(dto)
+        PostWithAuthorMapper.toPostWithAuthor(dto)
     }
 
     override suspend fun delete(postId: PostId) = withContext(Dispatchers.IO) {

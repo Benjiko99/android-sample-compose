@@ -4,8 +4,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.data.user.User
 import uno.lux.sample.utils.testPostUrl
 import java.time.Instant
 
@@ -14,6 +16,7 @@ class PostRepositoryTest {
     private val unliked = post(id = "unliked", likeCount = 4, isLiked = false)
     private val liked = post(id = "liked", likeCount = 10, isLiked = true)
     private val bookmarked = post(id = "bookmarked", isBookmarked = true)
+    private val author = User(id = "u-unliked", nickname = "Ada", handle = "@ada")
 
     private fun repository(dataSource: PostDataSource = FakePostDataSource()) =
         PostRepository(dataSource)
@@ -30,6 +33,40 @@ class PostRepositoryTest {
         repo.ingest(listOf(unliked))
 
         assertEquals(unliked, repo.entities.first()["unliked"])
+    }
+
+    // load() is what a screen with nothing but a post ID falls back on — a detail page restored
+    // after process death, whose stores start empty.
+    @Test
+    fun `load stores the fetched post and returns it with its author`() = runTest {
+        val dataSource = FakePostDataSource()
+        dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
+        val repo = repository(dataSource)
+
+        val loaded = repo.load("unliked")!!
+
+        assertEquals(unliked, repo.entities.first()["unliked"])
+        assertEquals(author, loaded.author)
+    }
+
+    @Test
+    fun `load returns null for a post the source no longer has`() = runTest {
+        val repo = repository()
+
+        assertNull(repo.load("gone"))
+        assertTrue(repo.entities.first().isEmpty())
+    }
+
+    @Test
+    fun `load leaves previously ingested posts in place`() = runTest {
+        val dataSource = FakePostDataSource()
+        dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
+        val repo = repository(dataSource)
+        repo.ingest(listOf(liked))
+
+        repo.load("unliked")
+
+        assertEquals(liked, repo.entities.first()["liked"])
     }
 
     @Test

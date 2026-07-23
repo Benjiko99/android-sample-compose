@@ -6,17 +6,22 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import uno.lux.sample.data.post.Comment
 import uno.lux.sample.data.post.CommentId
 import uno.lux.sample.data.post.CommentRepository
 import uno.lux.sample.data.post.PostId
 import uno.lux.sample.data.post.PostRepository
+import uno.lux.sample.data.post.PostWithAuthor
 import uno.lux.sample.data.post.Video
 import uno.lux.sample.data.user.User
 import uno.lux.sample.data.user.UserId
@@ -26,7 +31,9 @@ import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.navigation.Screen
 import uno.lux.sample.util.AppError
 import uno.lux.sample.util.ignoreErrors
+import uno.lux.sample.util.launchIfIdle
 import uno.lux.sample.util.stateInWhileSubscribed
+import uno.lux.sample.util.toAppError
 
 /**
  * Holds the state for a single post's detail view. The post itself comes from the shared
@@ -35,6 +42,13 @@ import uno.lux.sample.util.stateInWhileSubscribed
  * [addComment] and [onToggleCommentLike], then discarded when the ViewModel is cleared. This
  * avoids the cross-post keying and memory-retention problems that a shared comment store would
  * introduce.
+ *
+ * The entity store normally already holds the post — this page is reached from a feed or profile
+ * that fetched it. It does not when the page is restored after **process death**, where the back
+ * stack comes back but every in-memory store starts empty, so [load] fetches the post it was
+ * given the ID for. That fetch is why an absent post can't simply mean [PostDetailUiState.NotFound]:
+ * "not asked yet", "the server says it's gone" and "the request failed" are three different
+ * screens, and [PostLoad] is what tells them apart.
  *
  * Navigation intents (going back, opening the author or a media viewer) are pushes and pops on
  * the injected [Navigator]. [postId] is a runtime argument wired through [Factory] / assisted
@@ -55,38 +69,95 @@ class PostDetailViewModel @AssistedInject constructor(
         fun create(postId: PostId): PostDetailViewModel
     }
 
+    /**
+     * How the fetch for a post the stores don't hold resolved. Only consulted while the stores
+     * can't answer — once the post is resolved it is the post that is shown, whatever happened
+     * to a request beforehand.
+     */
+    private sealed interface PostLoad {
+        data object Pending : PostLoad
+        data object Missing : PostLoad
+        data class Failed(val error: AppError) : PostLoad
+    }
+
+    private val _postLoad = MutableStateFlow<PostLoad>(PostLoad.Pending)
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     private val _commentsError = MutableStateFlow<AppError?>(null)
     private val _commentsLoading = MutableStateFlow(true)
 
+    /** The post and its author, resolved together — one is no use without the other. */
+    private val postWithAuthor: Flow<PostWithAuthor?> =
+        combine(postRepository.entities, userRepository.users) { entities, users ->
+            val post = entities[postId] ?: return@combine null
+            val author = users[post.authorId] ?: return@combine null
+
+            PostWithAuthor(post, author)
+        }
+
     val uiState: StateFlow<PostDetailUiState> = combine(
-        postRepository.entities.map { it[postId] },
+        postWithAuthor,
         _comments,
-        userRepository.users,
         _commentsError,
         _commentsLoading,
-    ) { post, comments, users, commentsError, commentsLoading ->
-        if (post == null) return@combine PostDetailUiState.NotFound
-        val author = users[post.authorId] ?: return@combine PostDetailUiState.NotFound
-        PostDetailUiState.Loaded(
-            post = post,
-            author = author,
-            comments = comments,
-            commentsError = commentsError,
-            commentsLoading = commentsLoading,
-            isOwn = post.authorId == currentUser.id,
-        )
+        _postLoad,
+    ) { resolved, comments, commentsError, commentsLoading, postLoad ->
+        when {
+            resolved != null -> PostDetailUiState.Loaded(
+                post = resolved.post,
+                author = resolved.author,
+                comments = comments,
+                commentsError = commentsError,
+                commentsLoading = commentsLoading,
+                isOwn = resolved.post.authorId == currentUser.id,
+            )
+            postLoad is PostLoad.Missing -> PostDetailUiState.NotFound
+            postLoad is PostLoad.Failed -> PostDetailUiState.Error(postLoad.error)
+            else -> PostDetailUiState.Loading
+        }
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
 
     /** The signed-in user, drawn as the composer's avatar. */
     val composerUser: User = currentUser
 
+    private var loadJob: Job? = null
+
     init {
-        retryComments()
+        retry()
+    }
+
+    /** Reloads everything the page failed to get — the post itself included. */
+    fun retry() = launchIfIdle(::loadJob) {
+        coroutineScope {
+            launch { loadPost() }
+            launch { loadComments() }
+        }
     }
 
     fun retryComments() {
         viewModelScope.launch { loadComments() }
+    }
+
+    /**
+     * Fetches the post unless the stores already hold it with its author, which they do whenever
+     * this page was opened from a feed or profile. The fetch is for the cold start: a detail page
+     * restored after process death, where this ViewModel is the first thing to ask for the post.
+     */
+    private suspend fun loadPost() {
+        if (postWithAuthor.first() != null) return
+
+        _postLoad.value = PostLoad.Pending
+        ignoreErrors(
+            onError = { e ->
+                Timber.w(e)
+                _postLoad.value = PostLoad.Failed(e.toAppError())
+            },
+        ) {
+            val loaded = postRepository.load(postId)
+
+            // A 404 is the server saying the post is gone — an answer, not a failure to retry.
+            if (loaded == null) _postLoad.value = PostLoad.Missing
+            else userRepository.ingest(listOf(loaded.author))
+        }
     }
 
     private suspend fun loadComments() {
@@ -123,6 +194,9 @@ class PostDetailViewModel @AssistedInject constructor(
         viewModelScope.launch {
             ignoreErrors {
                 postRepository.delete(postId)
+                // The post is gone for certain now, so say so rather than letting the emptied
+                // store read as "not loaded yet" and flash a spinner behind the pop.
+                _postLoad.value = PostLoad.Missing
                 navigator.goBack()
             }
         }

@@ -6,6 +6,25 @@ import java.time.Instant
 
 internal class FakePostDataSource : PostDataSource {
 
+    /**
+     * What [fetch] serves, keyed by post ID. An ID that isn't here answers null — the fake's
+     * stand-in for the server's 404.
+     */
+    val fetchable = mutableMapOf<PostId, PostWithAuthor>()
+
+    /** IDs passed to [fetch], in call order, so a test can assert a fetch was (or wasn't) made. */
+    val fetchedPostIds = mutableListOf<PostId>()
+
+    /** Thrown by [fetch] instead of returning, so tests can drive the failure path. */
+    var fetchError: Exception? = null
+
+    override suspend fun fetch(postId: PostId): PostWithAuthor? {
+        fetchedPostIds += postId
+        fetchError?.let { throw it }
+
+        return fetchable[postId]
+    }
+
     /** The draft passed to the most recent [create] call, for test assertions. */
     var lastDraft: NewPost? = null
         private set
@@ -13,11 +32,11 @@ internal class FakePostDataSource : PostDataSource {
     /** Thrown by [create] instead of returning, so tests can drive the failure path. */
     var createError: Exception? = null
 
-    override suspend fun create(draft: NewPost): CreatedPost {
+    override suspend fun create(draft: NewPost): PostWithAuthor {
         lastDraft = draft
         createError?.let { throw it }
 
-        return CreatedPost(
+        return PostWithAuthor(
             post = Post(
                 id = "p-new",
                 url = testPostUrl("p-new"),

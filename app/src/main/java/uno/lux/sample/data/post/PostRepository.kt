@@ -28,11 +28,28 @@ class PostRepository(
     }
 
     /**
+     * Fetches a single post into the store, returning it with its author — or null when the server
+     * says there is no such post, so a caller can render "gone" rather than a retryable failure.
+     * As with [create], the author travels back to the caller to ingest rather than being written
+     * here: this store owns post entities only.
+     *
+     * A screen reached the ordinary way never needs this — it opens from a feed or profile whose
+     * fetch already filled the store. It exists for the screen that is the *first* thing to ask
+     * for a post: a post detail page restored after process death, whose stores start empty.
+     */
+    suspend fun load(postId: PostId): PostWithAuthor? {
+        val loaded = dataSource.fetch(postId) ?: return null
+        _entities.update { it + (loaded.post.id to loaded.post) }
+
+        return loaded
+    }
+
+    /**
      * Publishes [draft] and stores the resulting entity, so any screen already resolving that ID
      * renders it without a re-fetch. The author travels back with it for the caller to ingest —
      * placing the post in an ordered list is [FeedRepository]'s job, not this store's.
      */
-    suspend fun create(draft: NewPost): CreatedPost {
+    suspend fun create(draft: NewPost): PostWithAuthor {
         val created = dataSource.create(draft)
         _entities.update { it + (created.post.id to created.post) }
 
