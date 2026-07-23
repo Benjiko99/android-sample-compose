@@ -474,7 +474,7 @@ private val ThumbnailSize = 88.dp
 /** Stable list key for the trailing add tile, so it isn't confused with an image URI. */
 private const val AddPhotosTileKey = "add-photos"
 
-@Preview(name = "No media", showBackground = true)
+@Preview(name = "Prefilled form", showBackground = true)
 @Composable
 private fun CreatePostScreenPreview() {
     MosaicTheme {
@@ -492,9 +492,9 @@ private fun CreatePostScreenPreview() {
     }
 }
 
-@Preview(name = "With a video", showBackground = true)
+@Preview(name = "Publishing progress", showBackground = true)
 @Composable
-private fun CreatePostScreenVideoPreview() {
+private fun CreatePostScreenPublishingPreview() {
     MosaicTheme {
         CreatePostScreen(
             uiState = CreatePostUiState(
@@ -503,6 +503,7 @@ private fun CreatePostScreenVideoPreview() {
                     body = "Forty seconds of the carry mechanism in motion.",
                     media = CreatePostMedia.Video(uri = "", durationSeconds = 42),
                 ),
+                isPublishing = true,
             ),
             actions = createActionsProxy(),
             onPickImages = {},

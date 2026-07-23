@@ -1,8 +1,8 @@
 package uno.lux.sample.ui.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -165,8 +165,9 @@ fun HoldToConfirmButton(
         launch { hintAlpha.animateTo(if (hinting) 1f else 0f, tween(LabelSwapMillis)) }
 
         if (holding) {
-            // Matching the hold means the sweep lands exactly as the action fires.
-            progress.animateTo(1f, tween(holdMillis.toInt(), easing = LinearEasing))
+            // Matching the hold means the sweep lands exactly as the action fires, whatever
+            // shape [SweepEasing] gives the travel in between.
+            progress.animateTo(1f, tween(holdMillis.toInt(), easing = SweepEasing))
         } else {
             progress.animateTo(0f, tween(DrainMillis, easing = FastOutSlowInEasing))
         }
@@ -278,6 +279,15 @@ private const val FillAlpha = 0.24f
 private const val LeadingEdgeAlpha = 0.85f
 
 private val LeadingEdgeWidth = 2.dp
+
+/**
+ * The sweep breaks away quickly and eases down as it lands — roughly 40% of the bar in the first
+ * quarter of the hold, so the press registers at a glance, then a decelerating glide. The end
+ * control point stops short of 1 deliberately: easing all the way to a standstill would leave the
+ * last stretch looking finished while the hold still had time to run, inviting a release just
+ * before it fires.
+ */
+private val SweepEasing = CubicBezierEasing(0.25f, 0.45f, 0.55f, 0.9f)
 
 /** Time the fill takes to drain once the finger lifts or the action fires. */
 private const val DrainMillis = 220
