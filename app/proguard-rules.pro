@@ -1,21 +1,16 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# R8 rules for the minified release build (see `release` in app/build.gradle.kts).
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Almost nothing belongs here. Every library this app depends on ships its own consumer rules
+# inside its artifact, and R8 merges them automatically: Retrofit, OkHttp, kotlinx.serialization
+# (which contributes R8-full-mode-specific rules of its own), coroutines, Hilt/Dagger, DataStore,
+# Media3 and the whole of Compose. The merged result is written to
+# build/outputs/mapping/release/configuration.txt — read that before adding anything below, since
+# a hand-written -keep almost always duplicates a rule that is already there and only costs size.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Retrace production crashes through mapping.txt.
+#
+# R8 discards both attributes unless asked, and AGP's proguard-android-optimize.txt preset does not
+# ask, so without this a release stack trace arrives with no line numbers. Renaming the source file
+# attribute keeps the original .kt names out of the shipped APK while leaving the trace retraceable.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
