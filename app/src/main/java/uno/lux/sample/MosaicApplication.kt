@@ -16,7 +16,7 @@ import timber.log.Timber
  * can't be configured at the call site: decoders are a loader-wide concern.
  */
 @HiltAndroidApp
-class MosaicApp : Application(), SingletonImageLoader.Factory {
+class MosaicApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()

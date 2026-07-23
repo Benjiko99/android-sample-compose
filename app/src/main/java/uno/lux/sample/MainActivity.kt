@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import uno.lux.sample.ui.SampleApp
+import uno.lux.sample.ui.MosaicApp
 import uno.lux.sample.ui.navigation.Navigator
 import uno.lux.sample.ui.theme.MosaicDarkNavBarScrim
 import uno.lux.sample.ui.theme.MosaicLightNavBarScrim
@@ -36,13 +36,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
+        // The call to enableEdgeToEdge() in setContent() is gated on a theme we don't have yet,
+        // so lay the window out edge-to-edge from the first frame — splash is on screen until then.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // First launch only: adopt the device's language if we ship it, else English. Recreates
+        // First launch only: adopt the device's language if we ship it. Recreates
         // this Activity once as the pinned locale takes effect, behind the splash screen.
         viewModel.resolveInitialLanguage()
 
+        // Waiting for user preferences to load before showing the app.
         splashScreen.setKeepOnScreenCondition { viewModel.themeMode.value == null }
 
         setContent {
@@ -67,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             MosaicTheme(darkTheme = darkTheme) {
-                SampleApp(
+                MosaicApp(
                     currentUserId = viewModel.currentUserId,
                     navigator = navigator
                 )

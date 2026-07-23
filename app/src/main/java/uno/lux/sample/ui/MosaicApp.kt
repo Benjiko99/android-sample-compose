@@ -73,7 +73,7 @@ import uno.lux.sample.util.findActivity
  * ViewModel, so this shell wires no navigation lambdas at all; it only builds the [Screen] keys.
  */
 @Composable
-fun SampleApp(currentUserId: UserId, navigator: Navigator) {
+fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
     val backStack = rememberNavBackStack(Screen.Shell)
 
     DisposableEffect(navigator, backStack) {

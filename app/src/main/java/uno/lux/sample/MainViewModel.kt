@@ -26,8 +26,8 @@ class MainViewModel @Inject constructor(
         .stateInWhileSubscribed(viewModelScope, initialValue = null)
 
     /**
-     * First launch only: adopts the device's language if we ship it, else English. Called from
-     * [MainActivity] rather than from `init`, because the locale APIs need AppCompat's delegate to
+     * First launch only: adopts the device's language if we ship it. Called from
+     * the Activity because the locale APIs need AppCompat's delegate to
      * have attached — which is only guaranteed once `super.onCreate` has run.
      */
     fun resolveInitialLanguage() {
