@@ -123,14 +123,17 @@ class HomeViewModel @Inject constructor(
         ignoreErrors(_loadError) { feedRepository.refresh() }
     }
 
-    override fun onToggleLike(postId: PostId) =
-        launchCatching { postRepository.toggleLike(postId) }
+    override fun onToggleLike(postId: PostId) = launchCatching {
+        postRepository.toggleLike(postId)
+    }
 
-    override fun onToggleBookmark(postId: PostId) =
-        launchCatching { postRepository.toggleBookmark(postId) }
+    override fun onToggleBookmark(postId: PostId) = launchCatching {
+        postRepository.toggleBookmark(postId)
+    }
 
-    override fun onDeletePost(postId: PostId) =
-        launchCatching { postRepository.delete(postId) }
+    override fun onDeletePost(postId: PostId) = launchCatching {
+        postRepository.delete(postId)
+    }
 
     override fun openSettings() = navigator.goToSingleTop(Screen.Settings)
 

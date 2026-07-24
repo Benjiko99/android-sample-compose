@@ -195,9 +195,13 @@ class PostDetailViewModel @AssistedInject constructor(
         }
     }
 
-    fun onToggleLike() = launchCatching { postRepository.toggleLike(postId) }
+    fun onToggleLike() = launchCatching {
+        postRepository.toggleLike(postId)
+    }
 
-    fun onToggleBookmark() = launchCatching { postRepository.toggleBookmark(postId) }
+    fun onToggleBookmark() = launchCatching {
+        postRepository.toggleBookmark(postId)
+    }
 
     /**
      * Deletes the post and pops this screen. Backing out is part of the outcome, not the caller's

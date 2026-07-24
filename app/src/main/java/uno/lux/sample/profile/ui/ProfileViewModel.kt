@@ -178,17 +178,21 @@ class ProfileViewModel @AssistedInject constructor(
         _hasLoaded.value = true
     }
 
-    override fun onToggleLike(postId: PostId) =
-        launchCatching { postRepository.toggleLike(postId) }
+    override fun onToggleLike(postId: PostId) = launchCatching {
+        postRepository.toggleLike(postId)
+    }
 
-    override fun onToggleBookmark(postId: PostId) =
-        launchCatching { postRepository.toggleBookmark(postId) }
+    override fun onToggleBookmark(postId: PostId) = launchCatching {
+        postRepository.toggleBookmark(postId)
+    }
 
-    override fun onDeletePost(postId: PostId) =
-        launchCatching { postRepository.delete(postId) }
+    override fun onDeletePost(postId: PostId) = launchCatching {
+        postRepository.delete(postId)
+    }
 
-    override fun onToggleFollow() =
-        launchCatching { userRepository.toggleFollow(userId) }
+    override fun onToggleFollow() = launchCatching {
+        userRepository.toggleFollow(userId)
+    }
 
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
         ignoreErrors { profileRepository.loadMorePosts(userId) }

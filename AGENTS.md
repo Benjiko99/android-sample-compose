@@ -214,6 +214,30 @@ fun HomeScreen(
 )
 ```
 
+**An expression body that ends in a trailing lambda keeps the brace on the declaration line.** Never break after the `=` and push the whole call onto the next line — break *inside* the lambda instead. The declaration line then reads as a signature plus what it delegates to, and the body sits where a block body's would.
+
+```kotlin
+// Yes — the brace closes the declaration line, the work is indented under it.
+override fun onToggleLike(postId: PostId) = launchCatching {
+    postRepository.toggleLike(postId)
+}
+
+// No — a continuation line that has to be read backwards to find what it belongs to.
+override fun onToggleLike(postId: PostId) =
+    launchCatching { postRepository.toggleLike(postId) }
+```
+
+What the lambda *is* decides whether it stays inline when it fits. A **block of work** — anything launched, a coroutine body, a test body — always takes its own lines, so the whole family of actions in a ViewModel reads as one shape rather than splitting on which ones happened to fit in the line budget. A **small value expression** stays inline until it no longer fits:
+
+```kotlin
+// Value expressions — inline, and only the one that overflows expands.
+override fun onNicknameChange(value: String) = updateForm { it.copy(nickname = value) }
+
+override fun onAgeChange(value: String) = updateForm { form ->
+    form.copy(age = value.filter { it.isDigit() }.take(3))
+}
+```
+
 **Use named arguments at call sites when the value doesn't self-document its role.** A single-argument call is almost always clear; a multi-argument call where some values are bare literals, same-typed, or opaque without context should use names. Two specific cases that always warrant names:
 
 - *Lambda type parameters* — when a function type has a non-obvious parameter, name it at the type declaration so every call site is self-explanatory without back-tracking to the definition. E.g. `(Album, initialIndex: Int) -> Unit`, not `(Album, Int) -> Unit`.
