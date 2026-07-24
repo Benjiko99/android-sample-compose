@@ -48,6 +48,19 @@ fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () ->
 }
 
 /**
+ * Launches [block] in [viewModelScope], logging and discarding any failure. The shape of a
+ * fire-and-forget user action with nowhere to report a failure to — a like toggle, a delete —
+ * where the alternative is spelling out `launch { ignoreErrors { … } }` at every call site.
+ * Returns [Unit] rather than the [Job], as [launchRefresh] and [launchIfIdle] do, so an action
+ * declared to return [Unit] can be written as an expression body.
+ */
+fun ViewModel.launchCatching(block: suspend () -> Unit) {
+    viewModelScope.launch {
+        ignoreErrors(onError = { Timber.w(it) }, block = block)
+    }
+}
+
+/**
  * Runs [block], discarding any non-[CancellationException] thrown. Calls [onError] before
  * discarding so callers can update error state without repeating the rethrow boilerplate.
  */

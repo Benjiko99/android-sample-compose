@@ -26,6 +26,7 @@ import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
@@ -177,29 +178,17 @@ class ProfileViewModel @AssistedInject constructor(
         _hasLoaded.value = true
     }
 
-    override fun onToggleLike(postId: PostId) {
-        viewModelScope.launch {
-            ignoreErrors { postRepository.toggleLike(postId) }
-        }
-    }
+    override fun onToggleLike(postId: PostId) =
+        launchCatching { postRepository.toggleLike(postId) }
 
-    override fun onToggleBookmark(postId: PostId) {
-        viewModelScope.launch {
-            ignoreErrors { postRepository.toggleBookmark(postId) }
-        }
-    }
+    override fun onToggleBookmark(postId: PostId) =
+        launchCatching { postRepository.toggleBookmark(postId) }
 
-    override fun onDeletePost(postId: PostId) {
-        viewModelScope.launch {
-            ignoreErrors { postRepository.delete(postId) }
-        }
-    }
+    override fun onDeletePost(postId: PostId) =
+        launchCatching { postRepository.delete(postId) }
 
-    override fun onToggleFollow() {
-        viewModelScope.launch {
-            ignoreErrors { userRepository.toggleFollow(userId) }
-        }
-    }
+    override fun onToggleFollow() =
+        launchCatching { userRepository.toggleFollow(userId) }
 
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
         ignoreErrors { profileRepository.loadMorePosts(userId) }

@@ -33,6 +33,7 @@ import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.app.util.toAppError
@@ -198,51 +199,32 @@ class PostDetailViewModel @AssistedInject constructor(
         }
     }
 
-    fun onToggleLike() {
-        viewModelScope.launch {
-            ignoreErrors { postRepository.toggleLike(postId) }
-        }
-    }
+    fun onToggleLike() = launchCatching { postRepository.toggleLike(postId) }
 
-    fun onToggleBookmark() {
-        viewModelScope.launch {
-            ignoreErrors { postRepository.toggleBookmark(postId) }
-        }
-    }
+    fun onToggleBookmark() = launchCatching { postRepository.toggleBookmark(postId) }
 
     /**
      * Deletes the post and pops this screen. Backing out is part of the outcome, not the caller's
      * follow-up: once the entity is gone the detail view has nothing left to show, and the feed or
      * profile underneath has already dropped the post through the shared entity store.
      */
-    fun onDelete() {
-        viewModelScope.launch {
-            ignoreErrors {
-                // The store marks the deletion, and [postLoad] reads NotFound from it — the same
-                // path a deletion performed on any other screen takes.
-                postRepository.delete(postId)
-                navigator.goBack()
-            }
-        }
+    fun onDelete() = launchCatching {
+        // The store marks the deletion, and [postLoad] reads NotFound from it — the same
+        // path a deletion performed on any other screen takes.
+        postRepository.delete(postId)
+        navigator.goBack()
     }
 
-    fun onToggleCommentLike(commentId: CommentId) {
-        viewModelScope.launch {
-            val comment = _comments.value.find { it.id == commentId } ?: return@launch
-            ignoreErrors {
-                val updated = commentRepository.toggleLike(postId, comment)
-                _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
-            }
-        }
+    fun onToggleCommentLike(commentId: CommentId) = launchCatching {
+        val comment = _comments.value.find { it.id == commentId } ?: return@launchCatching
+
+        val updated = commentRepository.toggleLike(postId, comment)
+        _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
     }
 
-    fun addComment(text: String) {
-        viewModelScope.launch {
-            ignoreErrors {
-                val comment = commentRepository.addComment(postId, text)
-                _comments.update { listOf(comment) + it }
-            }
-        }
+    fun addComment(text: String) = launchCatching {
+        val comment = commentRepository.addComment(postId, text)
+        _comments.update { listOf(comment) + it }
     }
 
     fun goBack() = navigator.goBack()
