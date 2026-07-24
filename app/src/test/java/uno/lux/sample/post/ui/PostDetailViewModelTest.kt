@@ -63,6 +63,9 @@ class PostDetailViewModelTest : ViewModelTest() {
     private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.PostDetail("p1"))
     private val navigator = Navigator().apply { attach(backStack) }
 
+    /** The entity store the last [viewModel] was built on, for driving it from outside. */
+    private lateinit var postRepository: PostRepository
+
     private fun viewModel(
         postId: String = "p1",
         posts: List<Post> = listOf(post),
@@ -75,6 +78,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         userRepo.ingest(users)
         val postRepo = PostRepository(postDataSource, userRepo)
         postRepo.ingest(posts)
+        postRepository = postRepo
         return PostDetailViewModel(
             postRepository = postRepo,
             commentRepository = CommentRepository(commentDataSource),
@@ -126,22 +130,11 @@ class PostDetailViewModelTest : ViewModelTest() {
     // emptied store that reads as "not loaded yet" and spins forever.
     @Test
     fun `a post deleted from another screen reads as gone, not loading`() = runTest {
-        val userRepo = UserRepository(FakeUserDataSource())
-        userRepo.ingest(listOf(currentUser, otherUser))
-        val postRepo = PostRepository(FakePostDataSource(), userRepo)
-        postRepo.ingest(listOf(post))
-        val vm = PostDetailViewModel(
-            postRepository = postRepo,
-            commentRepository = CommentRepository(FakeCommentDataSource(currentUser, emptyMap())),
-            userRepository = userRepo,
-            navigator = navigator,
-            currentUser = currentUser,
-            postId = "p1",
-        )
+        val vm = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertTrue(vm.uiState.value is PostDetailUiState.Loaded)
 
-        postRepo.delete("p1")
+        postRepository.delete("p1")
 
         assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
     }

@@ -60,6 +60,9 @@ class ProfileViewModel @AssistedInject constructor(
 
     private val _loadError = MutableStateFlow<AppError?>(null)
 
+    /** Whether a load has run at all, which is what makes an absent user mean "no such user". */
+    private val _hasLoaded = MutableStateFlow(false)
+
     /**
      * Resolves one on-demand tab's post IDs into cards, staying null until that tab's first load
      * lands. Each call captures its own cache, which preserves [PostCardData] instances across
@@ -124,11 +127,16 @@ class ProfileViewModel @AssistedInject constructor(
             )
         },
         _loadError,
-    ) { state, loadError ->
+        _hasLoaded,
+    ) { state, loadError, hasLoaded ->
         when {
             state != null -> state
             loadError != null -> ProfileUiState.Error(loadError)
-            else -> ProfileUiState.NotFound
+            // Absent from the stores means "no such user" only once a fetch has actually run.
+            // Before that it means nothing has asked yet — which is every cold start, since a
+            // profile restored after process death begins with empty stores.
+            hasLoaded -> ProfileUiState.NotFound
+            else -> ProfileUiState.Loading
         }
     }.stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)
 
@@ -165,6 +173,8 @@ class ProfileViewModel @AssistedInject constructor(
                 }
             }
         }
+
+        _hasLoaded.value = true
     }
 
     override fun onToggleLike(postId: PostId) {

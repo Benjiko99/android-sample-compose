@@ -1,9 +1,11 @@
 package uno.lux.sample.profile.ui
 
 import androidx.navigation3.runtime.NavKey
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -21,6 +23,8 @@ import uno.lux.sample.profile.data.ProfileRepository
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
+import uno.lux.sample.user.ProfileUpdate
+import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
@@ -81,10 +85,9 @@ class ProfileViewModelTest : ViewModelTest() {
         currentUserId: UserId = "u1",
         bookmarks: List<Post> = listOf(savedPost),
         likes: List<Post> = listOf(likedPost),
+        userDataSource: UserDataSource = FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
     ): ProfileViewModel {
-        val userRepo = UserRepository(
-            FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
-        )
+        val userRepo = UserRepository(userDataSource)
         val postRepo = PostRepository(FakePostDataSource(), userRepo)
         profileDataSource = FakeProfileDataSource(
             refreshData = mapOf(
@@ -211,6 +214,26 @@ class ProfileViewModelTest : ViewModelTest() {
         }
 
         assertFalse((viewModel.uiState.value as ProfileUiState.Loaded).isCurrentUser)
+    }
+
+    // The same three-state distinction the post detail page makes. A profile restored after
+    // process death starts with empty stores, so "the store has no such user" says nothing until
+    // the fetch has actually run — reading it as NotFound flashes "profile not found" over the
+    // whole of every cold start.
+    @Test
+    fun `uiState is Loading while the cold-start fetch is still in flight`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val viewModel = viewModel(userDataSource = GatedUserDataSource(gate, ada))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        assertEquals(ProfileUiState.Loading, viewModel.uiState.value)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ProfileUiState.Loaded)
     }
 
     @Test
@@ -502,3 +525,19 @@ class ProfileViewModelTest : ViewModelTest() {
     }
 }
 
+/** A [UserDataSource] whose fetch suspends on [gate], so a test can observe the in-flight state. */
+private class GatedUserDataSource(
+    private val gate: CompletableDeferred<Unit>,
+    private val user: User,
+) : UserDataSource {
+
+    override suspend fun fetch(userId: UserId): User? {
+        gate.await()
+        return user.takeIf { it.id == userId }
+    }
+
+    override suspend fun update(userId: UserId, update: ProfileUpdate): User =
+        throw UnsupportedOperationException()
+
+    override suspend fun toggleFollow(user: User): User = throw UnsupportedOperationException()
+}

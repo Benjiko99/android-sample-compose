@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -81,17 +82,22 @@ class PostDetailViewModel @AssistedInject constructor(
         data class Failed(val error: AppError) : PostLoad
     }
 
-    private val _postLoad = MutableStateFlow<PostLoad>(PostLoad.Pending)
+    private val _fetchOutcome = MutableStateFlow<PostLoad>(PostLoad.Pending)
+
+    /** Whether the store has been told this post is gone, narrowed to the one id this page shows. */
+    private val isDeleted: Flow<Boolean> = postRepository.deletedIds
+        .map { postId in it }
+        .distinctUntilChanged()
 
     /**
-     * [_postLoad], overridden to [PostLoad.Missing] once the store says the post was deleted —
-     * whichever screen deleted it. This page may be sitting under the profile that removed the
-     * post, and without the override the emptied store would read as "not loaded yet" and leave
-     * this page spinning on a fetch nobody is going to make.
+     * The fetch outcome, overridden to [PostLoad.Missing] once the store says the post was
+     * deleted — whichever screen deleted it. This page may be sitting under the profile that
+     * removed the post, and without the override the emptied store would read as "not loaded
+     * yet" and leave this page spinning on a fetch nobody is going to make.
      */
     private val postLoad: Flow<PostLoad> =
-        combine(_postLoad, postRepository.deletedIds) { load, deleted ->
-            if (postId in deleted) PostLoad.Missing else load
+        combine(_fetchOutcome, isDeleted) { outcome, deleted ->
+            if (deleted) PostLoad.Missing else outcome
         }
 
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
@@ -159,15 +165,15 @@ class PostDetailViewModel @AssistedInject constructor(
     private suspend fun loadPost() {
         if (resolve(postRepository.entities.value, userRepository.users.value) != null) return
 
-        _postLoad.value = PostLoad.Pending
+        _fetchOutcome.value = PostLoad.Pending
         ignoreErrors(
             onError = { e ->
                 Timber.w(e)
-                _postLoad.value = PostLoad.Failed(e.toAppError())
+                _fetchOutcome.value = PostLoad.Failed(e.toAppError())
             },
         ) {
             // A 404 is the server saying the post is gone — an answer, not a failure to retry.
-            if (postRepository.load(postId) == null) _postLoad.value = PostLoad.Missing
+            if (postRepository.load(postId) == null) _fetchOutcome.value = PostLoad.Missing
         }
     }
 

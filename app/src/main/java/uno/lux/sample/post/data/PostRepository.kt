@@ -57,7 +57,8 @@ class PostRepository(
      * which is also why the embedded author is seeded here rather than fetched separately.
      */
     suspend fun load(postId: PostId): Post? {
-        // A deletion this session performed is an answer the store already has — no request.
+        // The store already knows this one is gone, and must not resurrect it into [entities]
+        // whoever asks. No caller can reach this today; it guards the invariant, not a screen.
         if (postId in _deletedIds.value) return null
 
         return dataSource.fetch(postId)?.let(::store)
