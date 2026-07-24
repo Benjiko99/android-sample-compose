@@ -94,6 +94,10 @@ internal fun VideoPostPlayer(
  * The pre-playback poster: the server-extracted frame if there is one, a centered play button and
  * a duration badge. The gradient behind is drawn by the caller, so it is what shows through while
  * the frame loads, if it fails, and for a clip that never got one.
+ *
+ * The frame is fitted rather than cropped, so a clip that is not 16:9 keeps its whole first
+ * impression and lets the gradient fill the bars. That also matches what happens on play:
+ * `PlayerView` fits by default, so cropping here made the image jump the moment it started.
  */
 @Composable
 private fun VideoThumbnail(
@@ -111,7 +115,7 @@ private fun VideoThumbnail(
             AsyncImage(
                 model = rememberThumbnailRequest(video),
                 contentDescription = video.title,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
         }
