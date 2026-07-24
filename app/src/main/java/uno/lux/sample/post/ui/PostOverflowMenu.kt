@@ -182,7 +182,6 @@ private fun PostOverflowSheet(
         SheetRow(
             iconRes = R.drawable.ic_flag,
             label = stringResource(R.string.post_menu_report),
-            danger = true,
             onClick = { onReport(); dismiss() },
         )
         if (onDelete != null) {
