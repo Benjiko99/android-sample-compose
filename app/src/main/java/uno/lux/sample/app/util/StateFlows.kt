@@ -48,21 +48,25 @@ fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () ->
 }
 
 /**
- * Launches [block] in [viewModelScope], logging and discarding any failure. The shape of a
- * fire-and-forget user action with nowhere to report a failure to — a like toggle, a delete —
- * where the alternative is spelling out `launch { ignoreErrors { … } }` at every call site.
+ * Launches [block] in [viewModelScope], logging and discarding any failure ([ignoreErrors] does
+ * both). The shape of a fire-and-forget user action with nowhere to report a failure to — a like
+ * toggle, a delete — where the alternative is spelling out `launch { ignoreErrors { … } }` at
+ * every call site.
  * Returns [Unit] rather than the [Job], as [launchRefresh] and [launchIfIdle] do, so an action
  * declared to return [Unit] can be written as an expression body.
  */
 fun ViewModel.launchCatching(block: suspend () -> Unit) {
-    viewModelScope.launch {
-        ignoreErrors(onError = { Timber.w(it) }, block = block)
-    }
+    viewModelScope.launch { ignoreErrors(block = block) }
 }
 
 /**
  * Runs [block], discarding any non-[CancellationException] thrown. Calls [onError] before
  * discarding so callers can update error state without repeating the rethrow boilerplate.
+ *
+ * The failure is always logged, whether or not [onError] is given — a swallowed exception that
+ * left no trace is the one failure mode this function must not have, and leaving the logging to
+ * each caller means the callers with nothing else to do about the error are the ones that go
+ * quiet.
  */
 suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () -> Unit) {
     try {
@@ -70,6 +74,7 @@ suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () ->
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
+        Timber.w(e)
         onError(e)
     }
 }
@@ -81,9 +86,6 @@ suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () ->
  */
 suspend fun ignoreErrors(errorSink: MutableStateFlow<AppError?>, block: suspend () -> Unit) =
     ignoreErrors(
-        onError = { e ->
-            Timber.w(e)
-            errorSink.value = e.toAppError()
-        },
+        onError = { e -> errorSink.value = e.toAppError() },
         block = block,
     )

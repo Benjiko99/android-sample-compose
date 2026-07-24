@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import timber.log.Timber
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.app.core.files.FileLoader
@@ -102,7 +101,6 @@ class CreatePostViewModel @Inject constructor(
         launchIfIdle(::pickVideoJob) {
             ignoreErrors(
                 onError = { e ->
-                    Timber.w(e)
                     _uiState.update { it.copy(error = CreatePostError.Failed(e.toAppError())) }
                 },
             ) {
@@ -147,7 +145,6 @@ class CreatePostViewModel @Inject constructor(
 
             ignoreErrors(
                 onError = { e ->
-                    Timber.w(e)
                     _uiState.update {
                         it.copy(isPublishing = false, error = CreatePostError.Failed(e.toAppError()))
                     }

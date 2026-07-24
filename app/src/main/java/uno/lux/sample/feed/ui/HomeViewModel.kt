@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.feed.data.FeedState
 import uno.lux.sample.post.PostId
@@ -107,10 +106,11 @@ class HomeViewModel @Inject constructor(
 
     override fun refresh() = launchRefresh(_isRefreshing) { load() }
 
-    override fun retry() {
-        if (loadJob?.isActive == true) return
+    override fun retry() = launchIfIdle(::loadJob) {
+        // Back to NotLoaded first, so a retry after a loaded feed shows the spinner rather than
+        // the stale list it is replacing.
         feedRepository.reset()
-        loadJob = viewModelScope.launch { load() }
+        load()
     }
 
     override fun loadMore() = launchIfIdle(::loadMoreJob) {

@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.CommentId
 import uno.lux.sample.comment.data.CommentRepository
@@ -168,10 +167,7 @@ class PostDetailViewModel @AssistedInject constructor(
 
         _fetchOutcome.value = PostLoad.Pending
         ignoreErrors(
-            onError = { e ->
-                Timber.w(e)
-                _fetchOutcome.value = PostLoad.Failed(e.toAppError())
-            },
+            onError = { e -> _fetchOutcome.value = PostLoad.Failed(e.toAppError()) },
         ) {
             // A 404 is the server saying the post is gone — an answer, not a failure to retry.
             if (postRepository.load(postId) == null) _fetchOutcome.value = PostLoad.Missing
