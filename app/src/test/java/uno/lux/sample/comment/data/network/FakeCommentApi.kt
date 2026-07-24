@@ -1,11 +1,11 @@
 package uno.lux.sample.comment.data.network
 
-import java.time.Instant
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
+import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.core.network.emptyPage
 import uno.lux.sample.user.data.network.stubAuthor
+import java.time.Instant
 
 class FakeCommentApi(
     private val comments: List<CommentDto> = emptyList(),
@@ -24,7 +24,7 @@ class FakeCommentApi(
                 likeCount = 0,
                 isLiked = false,
                 author = stubAuthor,
-            )
+            ),
         )
 
     override suspend fun toggleCommentLike(

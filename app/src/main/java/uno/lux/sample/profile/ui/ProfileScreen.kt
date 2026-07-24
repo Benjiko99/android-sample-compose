@@ -3,14 +3,8 @@ package uno.lux.sample.profile.ui
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import uno.lux.sample.app.util.debouncedClickable
-import uno.lux.sample.app.util.rememberDebounced
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,13 +41,14 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.FloatState
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,41 +57,46 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.app.fixtures.SamplePosts
-import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
-import uno.lux.sample.post.PostId
-import uno.lux.sample.video.Video
-import uno.lux.sample.profile.Profile
-import uno.lux.sample.user.ui.Avatar
 import uno.lux.sample.app.common.ui.FullScreenError
 import uno.lux.sample.app.common.ui.FullScreenProgress
 import uno.lux.sample.app.common.ui.LoadMoreEffect
 import uno.lux.sample.app.common.ui.LoadingMoreFooter
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import uno.lux.sample.post.ui.PostCard
-import uno.lux.sample.post.ui.PostCardData
-import uno.lux.sample.app.theme.MosaicGradients
 import uno.lux.sample.app.common.ui.ScrimIconButton
+import uno.lux.sample.app.fixtures.SamplePosts
+import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicElevations
+import uno.lux.sample.app.theme.MosaicGradients
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.compactCount
 import uno.lux.sample.app.util.createActionsProxy
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.ui.PostCard
+import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.profile.Profile
+import uno.lux.sample.user.User
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.ui.Avatar
+import uno.lux.sample.video.Video
+import kotlin.math.roundToInt
 
 /**
  * The profile's ViewModel-backed intents — liking / bookmarking the viewed user's posts, plus
@@ -108,20 +108,35 @@ import uno.lux.sample.app.util.createActionsProxy
 @Stable
 interface ProfileActions {
     fun onToggleLike(postId: PostId)
+
     fun onToggleBookmark(postId: PostId)
+
     fun onDeletePost(postId: PostId)
+
     fun onToggleFollow()
+
     fun loadMorePosts()
+
     fun onSavedTabShown()
+
     fun loadMoreBookmarks()
+
     fun onLikesTabShown()
+
     fun loadMoreLikes()
+
     fun goBack()
+
     fun openEditProfile()
+
     fun openPost(postId: PostId)
+
     fun openProfile(userId: UserId)
+
     fun openVideo(video: Video)
+
     fun openAlbum(imageUrls: List<String>, initialIndex: Int)
+
     fun openAvatar(avatarUrl: String)
 }
 
@@ -731,7 +746,9 @@ private fun LazyListScope.onDemandTabItems(
 }
 
 @Composable
-private fun EmptyTab(@StringRes messageRes: Int) {
+private fun EmptyTab(
+    @StringRes messageRes: Int,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -768,13 +785,13 @@ private fun PlainBackButton(onBack: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /** How far into the header's collapse the bar has finished filling to the surface color. */
-private const val BarFillFraction = 0.5f
+private const val BAR_FILL_FRACTION = 0.5f
 
 /**
  * A transparent app bar over the cover that fills to the surface color as the header collapses. Its
  * buttons carry a gray circular scrim with a white icon over the cover, and fade that to a bare
  * on-surface icon once the bar fills — both driven by the same [progress], so bar and buttons move
- * in lockstep, reaching opaque [BarFillFraction] of the way through the collapse rather than at the
+ * in lockstep, reaching opaque [BAR_FILL_FRACTION] of the way through the collapse rather than at the
  * very end, so the chrome settles while the cover is still on its way out.
  *
  * Once the tab row pins flush beneath it the bar drops its shadow: the bar and the tabs are
@@ -797,7 +814,7 @@ private fun ProfileTopBar(
     } else {
         0f
     }
-    val progress = (collapsed / BarFillFraction).coerceIn(0f, 1f)
+    val progress = (collapsed / BAR_FILL_FRACTION).coerceIn(0f, 1f)
     // `collapsed` is clamped to [0, 1] and reaches exactly 1f at full collapse, so this is the true
     // pinned state. Animated with the same default spec as the tab row's shadow, easing in step.
     val pinned by animateFloatAsState(if (collapsed >= 1f) 1f else 0f, label = "appBarPinned")
@@ -848,7 +865,6 @@ private fun CenteredMessage(message: String) {
         )
     }
 }
-
 
 // endregion
 

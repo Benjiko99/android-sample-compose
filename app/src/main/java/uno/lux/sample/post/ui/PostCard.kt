@@ -13,11 +13,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.video.Video
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.video.Video
 
 /** In the feed the body is a perex — clipped to this many lines, with a "Show more" affordance. */
-private const val FeedBodyMaxLines = 5
+private const val FEED_BODY_MAX_LINES = 5
 
 /**
  * A single feed post (Mosaic design): an edge-to-edge surface item separated by a bottom
@@ -63,7 +63,7 @@ internal fun PostCard(
         PostBody(
             title = post.title,
             body = post.body,
-            maxBodyLines = FeedBodyMaxLines,
+            maxBodyLines = FEED_BODY_MAX_LINES,
             onClick = onOpenPost,
         )
         PostMedia(post = post, onOpenVideo = onOpenVideo, onOpenAlbum = onOpenAlbum)

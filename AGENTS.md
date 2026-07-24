@@ -245,6 +245,8 @@ override fun onAgeChange(value: String) = updateForm { form ->
 
 Exception: enum constructor entries (`HOME(R.string.nav_home, R.drawable.ic_home)`) — Kotlin does not allow named arguments for enum constructors, so positional is the only option.
 
+**A file-level overview comment is a block comment (`/* ... */`), not a KDoc (`/** ... */`).** Kotlin has no formal file-level KDoc target, and a KDoc immediately followed by another KDoc — the first declaration's own — is never allowed by ktlint's `no-consecutive-comments`, even with a blank line between them. A block comment never collides with it, and it costs nothing: a floating KDoc above another KDoc was never rendered as attached to the declaration below it anyway.
+
 ## Localization
 
 All user-facing text lives in `app/src/main/res/values/strings.xml` and is read with `stringResource(...)` — never hardcode display strings in Kotlin. Exception: strings that contain no actual words — only numbers, punctuation, or symbols (e.g. `"${page} / $total"`) — are fine as plain Kotlin interpolation; there is nothing for a translator to change. Navigation labels are `@StringRes` IDs on the `AppDestinations` enum.

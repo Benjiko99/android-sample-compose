@@ -41,7 +41,11 @@ fun ViewModel.launchRefresh(
 ) {
     launchIfIdle(jobRef) {
         refreshing.value = true
-        try { block() } finally { refreshing.value = false }
+        try {
+            block()
+        } finally {
+            refreshing.value = false
+        }
     }
 }
 

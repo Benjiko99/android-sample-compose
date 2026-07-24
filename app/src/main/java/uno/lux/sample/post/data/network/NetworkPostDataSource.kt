@@ -2,6 +2,7 @@ package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.core.network.asPart
 import uno.lux.sample.app.core.network.asTextPart
 import uno.lux.sample.app.core.network.notFoundAsNull
@@ -11,7 +12,6 @@ import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
 import uno.lux.sample.post.PostWithAuthor
 import uno.lux.sample.post.data.PostDataSource
-import uno.lux.sample.app.core.network.EmptyBody
 
 class NetworkPostDataSource(
     private val api: PostApi,
@@ -25,14 +25,15 @@ class NetworkPostDataSource(
     override suspend fun create(draft: NewPost): PostWithAuthor = withContext(Dispatchers.IO) {
         val media = draft.media
 
-        val dto = api.createPost(
-            title = draft.title.asTextPart(),
-            body = draft.body.asTextPart(),
-            // The trailing brackets are what make Rack collect the repeated parts into one
-            // `images` array; a plain "images" name would let each part overwrite the last.
-            images = (media as? NewPostMedia.Images)?.files.orEmpty().map { it.asPart("images[]") },
-            video = (media as? NewPostMedia.Video)?.file?.asPart("video"),
-        ).data
+        val dto = api
+            .createPost(
+                title = draft.title.asTextPart(),
+                body = draft.body.asTextPart(),
+                // The trailing brackets are what make Rack collect the repeated parts into one
+                // `images` array; a plain "images" name would let each part overwrite the last.
+                images = (media as? NewPostMedia.Images)?.files.orEmpty().map { it.asPart("images[]") },
+                video = (media as? NewPostMedia.Video)?.file?.asPart("video"),
+            ).data
 
         PostWithAuthorMapper.toPostWithAuthor(dto)
     }

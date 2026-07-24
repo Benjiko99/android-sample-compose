@@ -4,7 +4,8 @@ package uno.lux.sample.settings
 enum class ThemeMode {
     LIGHT,
     DARK,
-    SYSTEM;
+    SYSTEM,
+    ;
 
     /** Resolves whether dark colors should apply, given the current [systemInDark] state. */
     fun isDark(systemInDark: Boolean): Boolean = when (this) {

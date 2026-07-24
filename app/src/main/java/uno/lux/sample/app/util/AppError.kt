@@ -11,7 +11,9 @@ import java.net.UnknownHostException
  */
 sealed interface AppError {
     data object NoConnection : AppError
+
     data object Timeout : AppError
+
     data object Unknown : AppError
 }
 

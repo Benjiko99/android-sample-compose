@@ -12,11 +12,12 @@ import uno.lux.sample.app.di.NetworkModule
  * ships would keep passing while the real one drifted.
  */
 fun <T> MockWebServer.createApi(service: Class<T>): T =
-    Retrofit.Builder()
+    Retrofit
+        .Builder()
         .baseUrl(url("/api/"))
         .addConverterFactory(
-            NetworkModule.provideJson()
-                .asConverterFactory("application/json; charset=UTF-8".toMediaType())
-        )
-        .build()
+            NetworkModule
+                .provideJson()
+                .asConverterFactory("application/json; charset=UTF-8".toMediaType()),
+        ).build()
         .create(service)

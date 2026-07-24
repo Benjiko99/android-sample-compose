@@ -56,15 +56,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.user.UserId
 import uno.lux.sample.app.common.ui.DiscardChangesDialog
 import uno.lux.sample.app.common.ui.FullScreenError
 import uno.lux.sample.app.common.ui.FullScreenProgress
-import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
+import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.user.UserId
 
 /**
  * The editor's ViewModel-backed intents as one [Stable] seam the stateless
@@ -77,14 +77,23 @@ import uno.lux.sample.app.util.createActionsProxy
 @Stable
 interface EditProfileActions {
     fun onNicknameChange(value: String)
+
     fun onAgeChange(value: String)
+
     fun onGenderChange(gender: GenderOption)
+
     fun onBioChange(value: String)
+
     fun onAvatarChange(uri: String)
+
     fun save()
+
     fun retry()
+
     fun goBack()
+
     fun dismissDiscardConfirmation()
+
     fun confirmDiscard()
 }
 
@@ -100,7 +109,7 @@ fun EditProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val pickAvatar = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
+        ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         // The picker's session-scoped read grant is enough — the image bytes are read and
         // uploaded on save, so no persistable permission is needed.
@@ -116,7 +125,7 @@ fun EditProfileScreen(
         actions = viewModel,
         onPickAvatar = {
             pickAvatar.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
             )
         },
         modifier = modifier,
@@ -272,7 +281,7 @@ private fun EditProfileContent(
                 enabled = !isSaving,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Next
+                    imeAction = ImeAction.Next,
                 ),
                 isError = !form.isAgeValid,
                 supportingText = {

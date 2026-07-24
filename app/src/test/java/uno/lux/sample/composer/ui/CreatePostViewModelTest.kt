@@ -1,5 +1,6 @@
 package uno.lux.sample.composer.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -8,20 +9,19 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.testing.ViewModelTest
-import uno.lux.sample.feed.data.FakeFeedDataSource
-import uno.lux.sample.post.data.FakePostDataSource
-import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.user.data.FakeUserDataSource
-import uno.lux.sample.post.NewPostMedia
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.core.files.FakeFileLoader
 import uno.lux.sample.app.core.files.FakeVideoMetadataReader
-import androidx.lifecycle.SavedStateHandle
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
+import uno.lux.sample.feed.data.FakeFeedDataSource
+import uno.lux.sample.feed.data.FeedRepository
+import uno.lux.sample.post.NewPostMedia
+import uno.lux.sample.post.data.FakePostDataSource
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.user.data.UserRepository
 import java.io.IOException
 
 class CreatePostViewModelTest : ViewModelTest() {
@@ -98,16 +98,25 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.fillIn(title = "   ", body = "Body")
 
-        assertFalse(viewModel.uiState.first().form.canPublish)
+        assertFalse(
+            viewModel.uiState
+                .first()
+                .form.canPublish,
+        )
     }
 
     @Test
     fun `the fields are capped at the backend's limits`() = runTest {
         val viewModel = fixture().viewModel
 
-        viewModel.fillIn(title = "t".repeat(CreatePostTitleMaxLength + 10), body = "b")
+        viewModel.fillIn(title = "t".repeat(CREATE_POST_TITLE_MAX_LENGTH + 10), body = "b")
 
-        assertEquals(CreatePostTitleMaxLength, viewModel.uiState.first().form.title.length)
+        assertEquals(
+            CREATE_POST_TITLE_MAX_LENGTH,
+            viewModel.uiState
+                .first()
+                .form.title.length,
+        )
     }
 
     @Test
@@ -128,7 +137,11 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.publish()
 
-        assertTrue(viewModel.uiState.first().form.isEmpty)
+        assertTrue(
+            viewModel.uiState
+                .first()
+                .form.isEmpty,
+        )
         assertFalse(viewModel.uiState.first().isPublishing)
         // Replaced, not stacked: backing out of the new post must not land on the composer.
         assertEquals(listOf(Screen.Shell, Screen.PostDetail("p-new")), backStack)
@@ -166,7 +179,12 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.onImagesPicked(listOf("uri-a", "uri-b"))
         viewModel.onImagesPicked(listOf("uri-c"))
 
-        assertEquals(listOf("uri-a", "uri-b", "uri-c"), viewModel.uiState.first().form.imageUris)
+        assertEquals(
+            listOf("uri-a", "uri-b", "uri-c"),
+            viewModel.uiState
+                .first()
+                .form.imageUris,
+        )
     }
 
     @Test
@@ -176,17 +194,24 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.onImagesPicked(listOf("uri-a", "uri-b"))
         viewModel.onImagesPicked(listOf("uri-a", "uri-c"))
 
-        assertEquals(listOf("uri-a", "uri-b", "uri-c"), viewModel.uiState.first().form.imageUris)
+        assertEquals(
+            listOf("uri-a", "uri-b", "uri-c"),
+            viewModel.uiState
+                .first()
+                .form.imageUris,
+        )
     }
 
     @Test
     fun `the selection is capped at the album limit`() = runTest {
         val viewModel = fixture().viewModel
 
-        viewModel.onImagesPicked(List(CreatePostMaxImages + 5) { "uri-$it" })
+        viewModel.onImagesPicked(List(CREATE_POST_MAX_IMAGES + 5) { "uri-$it" })
 
-        val media = viewModel.uiState.first().form.media as CreatePostMedia.Images
-        assertEquals(CreatePostMaxImages, media.uris.size)
+        val media = viewModel.uiState
+            .first()
+            .form.media as CreatePostMedia.Images
+        assertEquals(CREATE_POST_MAX_IMAGES, media.uris.size)
         assertFalse(media.canAddMore)
     }
 
@@ -197,7 +222,12 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.onRemoveImage("uri-b")
 
-        assertEquals(listOf("uri-a", "uri-c"), viewModel.uiState.first().form.imageUris)
+        assertEquals(
+            listOf("uri-a", "uri-c"),
+            viewModel.uiState
+                .first()
+                .form.imageUris,
+        )
     }
 
     @Test
@@ -207,7 +237,12 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.onRemoveImage("uri-a")
 
-        assertEquals(CreatePostMedia.None, viewModel.uiState.first().form.media)
+        assertEquals(
+            CreatePostMedia.None,
+            viewModel.uiState
+                .first()
+                .form.media,
+        )
     }
 
     @Test
@@ -231,13 +266,15 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         assertEquals(
             CreatePostMedia.Video(uri = "clip", durationSeconds = 42),
-            viewModel.uiState.first().form.media,
+            viewModel.uiState
+                .first()
+                .form.media,
         )
     }
 
     @Test
     fun `an oversized video is refused without being attached`() = runTest {
-        val viewModel = fixture(videoSize = CreatePostMaxVideoBytes + 1).viewModel
+        val viewModel = fixture(videoSize = CREATE_POST_MAX_VIDEO_BYTES + 1).viewModel
 
         viewModel.onVideoPicked("clip")
 
@@ -264,7 +301,11 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.onImagesPicked(listOf("uri-a"))
 
-        assertTrue(viewModel.uiState.first().form.media is CreatePostMedia.Video)
+        assertTrue(
+            viewModel.uiState
+                .first()
+                .form.media is CreatePostMedia.Video,
+        )
     }
 
     @Test
@@ -274,7 +315,12 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.onRemoveVideo()
 
-        assertEquals(CreatePostMedia.None, viewModel.uiState.first().form.media)
+        assertEquals(
+            CreatePostMedia.None,
+            viewModel.uiState
+                .first()
+                .form.media,
+        )
     }
 
     @Test

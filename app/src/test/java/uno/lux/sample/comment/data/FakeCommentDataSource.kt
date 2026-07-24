@@ -1,9 +1,9 @@
 package uno.lux.sample.comment.data
 
-import java.time.Instant
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.post.PostId
 import uno.lux.sample.user.User
+import java.time.Instant
 
 internal class FakeCommentDataSource(
     private val currentUser: User,

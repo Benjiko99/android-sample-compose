@@ -38,7 +38,9 @@ import javax.inject.Inject
  * on [Context] rather than a constructor-injected, JVM-testable unit.
  */
 @Stable
-class VideoPlaybackController(private val appContext: Context) {
+class VideoPlaybackController(
+    private val appContext: Context,
+) {
 
     /** The video currently loaded into [player], or null when nothing is playing. */
     var activeVideoUrl by mutableStateOf<String?>(null)

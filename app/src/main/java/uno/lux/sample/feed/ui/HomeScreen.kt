@@ -38,24 +38,24 @@ import androidx.compose.ui.unit.em
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.app.fixtures.SamplePosts
-import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.post.PostId
-import uno.lux.sample.video.Video
-import uno.lux.sample.user.UserId
 import uno.lux.sample.app.common.ui.FullScreenError
 import uno.lux.sample.app.common.ui.FullScreenProgress
 import uno.lux.sample.app.common.ui.LoadMoreEffect
-import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.common.ui.LoadingMoreFooter
 import uno.lux.sample.app.common.ui.MosaicWordmark
 import uno.lux.sample.app.common.ui.SettingsAction
-import uno.lux.sample.post.ui.PostCard
-import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.app.fixtures.SamplePosts
+import uno.lux.sample.app.fixtures.SampleUsers
+import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
-import uno.lux.sample.video.ui.LocalVideoPlayback
 import uno.lux.sample.app.util.createActionsProxy
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.ui.PostCard
+import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.user.UserId
+import uno.lux.sample.video.Video
+import uno.lux.sample.video.ui.LocalVideoPlayback
 
 /**
  * The feed's ViewModel-backed intents, as one [Stable] seam the stateless [HomeScreen] depends
@@ -67,15 +67,25 @@ import uno.lux.sample.app.util.createActionsProxy
 @Stable
 interface HomeActions {
     fun refresh()
+
     fun retry()
+
     fun loadMore()
+
     fun onToggleLike(postId: PostId)
+
     fun onToggleBookmark(postId: PostId)
+
     fun onDeletePost(postId: PostId)
+
     fun openSettings()
+
     fun openProfile(userId: UserId)
+
     fun openPost(postId: PostId)
+
     fun openVideo(video: Video)
+
     fun openAlbum(imageUrls: List<String>, initialIndex: Int)
 }
 
@@ -270,7 +280,6 @@ private fun EmptyState(modifier: Modifier = Modifier) {
     }
 }
 
-
 /** End-of-feed marker shown as the last list item once there are no more posts to load. */
 @Composable
 private fun CaughtUpFooter(modifier: Modifier = Modifier) {
@@ -311,6 +320,7 @@ internal fun videoToPlay(
 private fun mostVisibleVideo(layoutInfo: LazyListLayoutInfo, posts: List<PostCardData>): Video? {
     val viewportStart = layoutInfo.viewportStartOffset
     val viewportEnd = layoutInfo.viewportEndOffset
+
     fun visibleFraction(offset: Int, size: Int): Float {
         val visibleTop = maxOf(offset, viewportStart)
         val visibleBottom = minOf(offset + size, viewportEnd)

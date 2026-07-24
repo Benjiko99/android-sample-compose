@@ -12,7 +12,10 @@ import java.time.Instant
  * `ProfileRepository`'s Saved and Likes tabs) can place a newly flagged post exactly where a
  * refetch would have put it.
  */
-data class PostKey(val createdAt: Instant, val id: PostId) : Comparable<PostKey> {
+data class PostKey(
+    val createdAt: Instant,
+    val id: PostId,
+) : Comparable<PostKey> {
     override fun compareTo(other: PostKey): Int {
         val byRecency = createdAt.compareTo(other.createdAt)
 

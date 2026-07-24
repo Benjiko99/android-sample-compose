@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -58,12 +58,12 @@ import uno.lux.sample.app.common.ui.DiscardChangesDialog
 import uno.lux.sample.app.common.ui.HoldToConfirmButton
 import uno.lux.sample.app.common.ui.MediaBadge
 import uno.lux.sample.app.common.ui.MediaRemoveButton
-import uno.lux.sample.app.util.debouncedClickable
-import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.app.format.formatVideoDuration
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
-import uno.lux.sample.app.format.formatVideoDuration
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.rememberDebounced
 
 /**
  * The composer's ViewModel-backed intents, as one [Stable] seam the stateless
@@ -75,16 +75,27 @@ import uno.lux.sample.app.format.formatVideoDuration
 @Stable
 interface CreatePostActions {
     fun onTitleChange(value: String)
+
     fun onBodyChange(value: String)
+
     fun onImagesPicked(uris: List<String>)
+
     fun onRemoveImage(uri: String)
+
     fun onVideoPicked(uri: String)
+
     fun onRemoveVideo()
+
     fun openImages(media: CreatePostMedia.Images, initialIndex: Int)
+
     fun openVideo(media: CreatePostMedia.Video)
+
     fun publish()
+
     fun goBack()
+
     fun dismissDiscardConfirmation()
+
     fun confirmDiscard()
 }
 
@@ -103,7 +114,7 @@ fun CreatePostScreen(
     val pickImages = rememberLauncherForActivityResult(
         // The picker caps the selection itself, so the user can't overshoot the album limit;
         // the ViewModel still trims, since a second trip through the picker could push it over.
-        ActivityResultContracts.PickMultipleVisualMedia(CreatePostMaxImages)
+        ActivityResultContracts.PickMultipleVisualMedia(CREATE_POST_MAX_IMAGES),
     ) { uris ->
         // The picker's session-scoped read grant is enough — the bytes are read and uploaded
         // on publish, so no persistable permission is needed.
@@ -111,7 +122,7 @@ fun CreatePostScreen(
     }
 
     val pickVideo = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
+        ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         if (uri != null) viewModel.onVideoPicked(uri.toString())
     }
@@ -125,12 +136,12 @@ fun CreatePostScreen(
         actions = viewModel,
         onPickImages = {
             pickImages.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
             )
         },
         onPickVideo = {
             pickVideo.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly),
             )
         },
         modifier = modifier,
@@ -145,7 +156,7 @@ fun CreatePostScreen(
 }
 
 /**
- * Stateless post composer — a title, a body, and either up to [CreatePostMaxImages] photos or one
+ * Stateless post composer — a title, a body, and either up to [CREATE_POST_MAX_IMAGES] photos or one
  * video. It is pushed over the shell rather than being a tab, so the bar carries an
  * up-affordance. Holding no ViewModel makes it directly previewable and testable; the two pick
  * callbacks are passed in rather than living on [CreatePostActions] because launching the system
@@ -227,7 +238,7 @@ private fun CreatePostForm(
             singleLine = true,
             enabled = !isPublishing,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            supportingText = { Text("${form.title.length} / $CreatePostTitleMaxLength") },
+            supportingText = { Text("${form.title.length} / $CREATE_POST_TITLE_MAX_LENGTH") },
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -277,7 +288,7 @@ private fun PostMediaPicker(
                 when (media) {
                     is CreatePostMedia.Images -> R.string.create_post_photos_label
                     else -> R.string.create_post_media_label
-                }
+                },
             ),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -367,7 +378,7 @@ private fun PickedImages(
         }
 
         if (media.canAddMore) {
-            item(key = AddPhotosTileKey) {
+            item(key = ADD_PHOTOS_TILE_KEY) {
                 MediaTile(
                     iconRes = R.drawable.ic_add,
                     labelRes = R.string.create_post_add_photos,
@@ -380,7 +391,7 @@ private fun PickedImages(
     }
 
     Text(
-        text = "${media.uris.size} / $CreatePostMaxImages",
+        text = "${media.uris.size} / $CREATE_POST_MAX_IMAGES",
         style = MaterialTheme.typography.bodySmall,
         color = LocalMosaicColors.current.textTertiary,
     )
@@ -447,8 +458,7 @@ private fun MediaTile(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
                 shape = MaterialTheme.shapes.medium,
-            )
-            .debouncedClickable(enabled = enabled, onClick = onClick),
+            ).debouncedClickable(enabled = enabled, onClick = onClick),
     ) {
         Icon(
             painter = painterResource(iconRes),
@@ -487,7 +497,7 @@ private fun PublishButton(
 private val ThumbnailSize = 88.dp
 
 /** Stable list key for the trailing add tile, so it isn't confused with an image URI. */
-private const val AddPhotosTileKey = "add-photos"
+private const val ADD_PHOTOS_TILE_KEY = "add-photos"
 
 @Preview(name = "Prefilled form", showBackground = true)
 @Composable

@@ -9,4 +9,6 @@ import kotlinx.serialization.Serializable
  * ingesting it would blank the bio, identity chips and counts of a profile already loaded in full.
  */
 @Serializable
-data class SideloadedUsers(val users: List<UserDto>)
+data class SideloadedUsers(
+    val users: List<UserDto>,
+)

@@ -1,10 +1,10 @@
 package uno.lux.sample.post
 
 import uno.lux.sample.album.Album
-import java.time.Instant
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
 import uno.lux.sample.video.Video
+import java.time.Instant
 
 typealias PostId = String
 

@@ -1,5 +1,6 @@
 package uno.lux.sample.user.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -12,17 +13,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.testing.ViewModelTest
-import uno.lux.sample.app.core.files.FileUpload
-import uno.lux.sample.user.data.FakeUserDataSource
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.User
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.core.files.FakeFileLoader
-import androidx.lifecycle.SavedStateHandle
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
+import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.user.ProfileUpdate
+import uno.lux.sample.user.User
+import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.user.data.UserRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditProfileViewModelTest : ViewModelTest() {

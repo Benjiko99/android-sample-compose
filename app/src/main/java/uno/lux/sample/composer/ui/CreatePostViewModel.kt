@@ -8,17 +8,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.app.core.files.FileLoader
 import uno.lux.sample.app.core.files.VideoMetadataReader
+import uno.lux.sample.app.core.state.restoreDraft
+import uno.lux.sample.app.core.state.saveDraft
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.ignoreErrors
-import uno.lux.sample.app.core.state.restoreDraft
-import uno.lux.sample.app.core.state.saveDraft
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.toAppError
+import uno.lux.sample.feed.data.FeedRepository
+import uno.lux.sample.post.NewPostMedia
 import javax.inject.Inject
 
 /**
@@ -38,12 +38,13 @@ class CreatePostViewModel @Inject constructor(
     private val videoMetadataReader: VideoMetadataReader,
     private val navigator: Navigator,
     private val savedStateHandle: SavedStateHandle,
-) : ViewModel(), CreatePostActions {
+) : ViewModel(),
+    CreatePostActions {
 
     // Only the form is saved. Whether a publish is in flight, and anything that failed, belong to
     // the process that was killed — the restored composer is idle, holding what the user typed.
     private val _uiState = MutableStateFlow(
-        CreatePostUiState(form = savedStateHandle.restoreDraft(DraftKey) ?: CreatePostForm()),
+        CreatePostUiState(form = savedStateHandle.restoreDraft(DRAFT_KEY) ?: CreatePostForm()),
     )
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
 
@@ -51,19 +52,19 @@ class CreatePostViewModel @Inject constructor(
     private var pickVideoJob: Job? = null
 
     init {
-        savedStateHandle.saveDraft(DraftKey) { _uiState.value.form }
+        savedStateHandle.saveDraft(DRAFT_KEY) { _uiState.value.form }
     }
 
     override fun onTitleChange(value: String) = updateForm {
-        it.copy(title = value.take(CreatePostTitleMaxLength))
+        it.copy(title = value.take(CREATE_POST_TITLE_MAX_LENGTH))
     }
 
     override fun onBodyChange(value: String) = updateForm {
-        it.copy(body = value.take(CreatePostBodyMaxLength))
+        it.copy(body = value.take(CREATE_POST_BODY_MAX_LENGTH))
     }
 
     /**
-     * Adds a picked selection, keeping it within [CreatePostMaxImages]. Already-picked URIs are
+     * Adds a picked selection, keeping it within [CREATE_POST_MAX_IMAGES]. Already-picked URIs are
      * dropped rather than duplicated — the system picker re-reports every image chosen in a
      * session, so a second trip through it would otherwise repeat the earlier ones.
      *
@@ -78,7 +79,7 @@ class CreatePostViewModel @Inject constructor(
         }
 
         val added = uris.filterNot { it in current }
-        form.copy(media = CreatePostMedia.Images((current + added).take(CreatePostMaxImages)))
+        form.copy(media = CreatePostMedia.Images((current + added).take(CREATE_POST_MAX_IMAGES)))
     }
 
     /** Removing the last photo returns to [CreatePostMedia.None], re-offering the video option. */
@@ -90,7 +91,7 @@ class CreatePostViewModel @Inject constructor(
     }
 
     /**
-     * Attaches a picked clip, rejecting one over [CreatePostMaxVideoBytes] before its bytes are
+     * Attaches a picked clip, rejecting one over [CREATE_POST_MAX_VIDEO_BYTES] before its bytes are
      * ever read. A provider that reports no size is allowed through and left to the server, since
      * refusing an unknown-size file would block legitimate ones.
      *
@@ -106,7 +107,7 @@ class CreatePostViewModel @Inject constructor(
             ) {
                 val size = fileLoader.sizeOf(uri)
 
-                if (size != null && size > CreatePostMaxVideoBytes) {
+                if (size != null && size > CREATE_POST_MAX_VIDEO_BYTES) {
                     _uiState.update { it.copy(error = CreatePostError.VideoTooLarge) }
                     return@ignoreErrors
                 }
@@ -164,8 +165,11 @@ class CreatePostViewModel @Inject constructor(
     }
 
     override fun goBack() {
-        if (_uiState.value.form.isEmpty) navigator.goBack()
-        else _uiState.update { it.copy(showDiscardConfirmation = true) }
+        if (_uiState.value.form.isEmpty) {
+            navigator.goBack()
+        } else {
+            _uiState.update { it.copy(showDiscardConfirmation = true) }
+        }
     }
 
     override fun dismissDiscardConfirmation() {
@@ -192,4 +196,4 @@ class CreatePostViewModel @Inject constructor(
 }
 
 /** Where the in-progress draft is kept in the entry's saved state. */
-private const val DraftKey = "create_post_draft"
+private const val DRAFT_KEY = "create_post_draft"

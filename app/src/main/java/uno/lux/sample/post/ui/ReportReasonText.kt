@@ -15,5 +15,5 @@ fun ReportReason.asText(): String = stringResource(
         ReportReason.MISINFORMATION -> R.string.report_reason_misinformation
         ReportReason.VIOLENCE -> R.string.report_reason_violence
         ReportReason.OTHER -> R.string.report_reason_other
-    }
+    },
 )

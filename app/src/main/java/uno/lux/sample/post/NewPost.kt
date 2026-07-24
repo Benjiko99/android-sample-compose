@@ -11,13 +11,17 @@ sealed interface NewPostMedia {
 
     data object None : NewPostMedia
 
-    data class Images(val files: List<FileUpload>) : NewPostMedia
+    data class Images(
+        val files: List<FileUpload>,
+    ) : NewPostMedia
 
     /**
      * The file alone: the server derives the clip's duration from it, so nothing about the video
      * beyond its bytes travels with the upload.
      */
-    data class Video(val file: FileUpload) : NewPostMedia
+    data class Video(
+        val file: FileUpload,
+    ) : NewPostMedia
 }
 
 /**

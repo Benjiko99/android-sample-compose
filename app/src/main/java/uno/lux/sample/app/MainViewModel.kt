@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
-import uno.lux.sample.settings.data.AppLocaleRepository
-import uno.lux.sample.settings.data.SettingsRepository
-import uno.lux.sample.settings.ThemeMode
-import uno.lux.sample.user.UserId
 import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.AppLocaleRepository
+import uno.lux.sample.settings.data.SettingsRepository
+import uno.lux.sample.user.UserId
 import javax.inject.Inject
 
 /**

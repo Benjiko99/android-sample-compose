@@ -10,38 +10,38 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import uno.lux.sample.app.fixtures.LoggedInUserId
+import uno.lux.sample.app.core.files.AndroidFileLoader
+import uno.lux.sample.app.core.files.AndroidVideoMetadataReader
+import uno.lux.sample.app.core.files.FileLoader
+import uno.lux.sample.app.core.files.VideoMetadataReader
+import uno.lux.sample.app.fixtures.LOGGED_IN_USER_ID
 import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.comment.data.network.CommentApi
-import uno.lux.sample.feed.data.network.FeedApi
-import uno.lux.sample.post.data.network.PostApi
-import uno.lux.sample.profile.data.network.ProfileApi
-import uno.lux.sample.user.data.network.UserApi
-import uno.lux.sample.comment.data.network.NetworkCommentDataSource
-import uno.lux.sample.feed.data.network.NetworkFeedDataSource
-import uno.lux.sample.post.data.network.NetworkPostDataSource
-import uno.lux.sample.profile.data.network.NetworkProfileDataSource
-import uno.lux.sample.user.data.network.NetworkUserDataSource
 import uno.lux.sample.comment.data.CommentDataSource
 import uno.lux.sample.comment.data.CommentRepository
+import uno.lux.sample.comment.data.network.CommentApi
+import uno.lux.sample.comment.data.network.NetworkCommentDataSource
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedRepository
+import uno.lux.sample.feed.data.network.FeedApi
+import uno.lux.sample.feed.data.network.NetworkFeedDataSource
 import uno.lux.sample.post.data.PostDataSource
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.network.NetworkPostDataSource
+import uno.lux.sample.post.data.network.PostApi
 import uno.lux.sample.profile.data.ProfileDataSource
 import uno.lux.sample.profile.data.ProfileRepository
+import uno.lux.sample.profile.data.network.NetworkProfileDataSource
+import uno.lux.sample.profile.data.network.ProfileApi
 import uno.lux.sample.settings.data.AppCompatLocaleRepository
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.DataStoreSettingsRepository
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.user.User
-import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.app.core.files.AndroidFileLoader
-import uno.lux.sample.app.core.files.AndroidVideoMetadataReader
-import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.files.VideoMetadataReader
+import uno.lux.sample.user.data.network.NetworkUserDataSource
+import uno.lux.sample.user.data.network.UserApi
 import javax.inject.Singleton
 
 @Module
@@ -109,24 +109,32 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+    fun provideSettingsDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> =
         PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("settings") }
 
     @Provides
-    fun provideFileLoader(@ApplicationContext context: Context): FileLoader =
+    fun provideFileLoader(
+        @ApplicationContext context: Context,
+    ): FileLoader =
         AndroidFileLoader(context)
 
     @Provides
-    fun provideVideoMetadataReader(@ApplicationContext context: Context): VideoMetadataReader =
+    fun provideVideoMetadataReader(
+        @ApplicationContext context: Context,
+    ): VideoMetadataReader =
         AndroidVideoMetadataReader(context)
 
     @Provides
     @CurrentUserId
-    fun provideCurrentUserId(): String = LoggedInUserId
+    fun provideCurrentUserId(): String = LOGGED_IN_USER_ID
 
     @Provides
     @Singleton
     @CurrentUser
-    fun provideCurrentUser(@CurrentUserId currentUserId: UserId): User =
+    fun provideCurrentUser(
+        @CurrentUserId currentUserId: UserId,
+    ): User =
         SampleUsers.first { it.id == currentUserId }
 }

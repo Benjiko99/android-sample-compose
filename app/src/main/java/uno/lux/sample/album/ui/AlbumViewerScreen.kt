@@ -169,14 +169,21 @@ private fun ZoomableImage(
 
                                 val viewSize = Size(size.width.toFloat(), size.height.toFloat())
                                 val contentSize = if (imageSize.width > 0 && imageSize.height > 0) {
-                                    val s = min(viewSize.width / imageSize.width, viewSize.height / imageSize.height)
+                                    val s = min(
+                                        viewSize.width / imageSize.width,
+                                        viewSize.height / imageSize.height,
+                                    )
                                     Size(imageSize.width * s, imageSize.height * s)
                                 } else {
                                     viewSize
                                 }
 
-                                val maxX = (contentSize.width * newScale - viewSize.width).coerceAtLeast(0f) / 2f
-                                val maxY = (contentSize.height * newScale - viewSize.height).coerceAtLeast(0f) / 2f
+                                val maxX =
+                                    (contentSize.width * newScale - viewSize.width).coerceAtLeast(0f) /
+                                        2f
+                                val maxY =
+                                    (contentSize.height * newScale - viewSize.height).coerceAtLeast(0f) /
+                                        2f
 
                                 // Anchor the zoom to the centroid so the point under the fingers
                                 // stays fixed. Centroid is in composable coordinates; graphicsLayer
@@ -185,7 +192,7 @@ private fun ZoomableImage(
                                 val rawOffset = offset * dz - c * (dz - 1f) + pan
                                 offset = Offset(
                                     x = rawOffset.x.coerceIn(-maxX, maxX),
-                                    y = rawOffset.y.coerceIn(-maxY, maxY)
+                                    y = rawOffset.y.coerceIn(-maxY, maxY),
                                 )
                                 scale = newScale
                                 if (newScale <= 1f) offset = Offset.Zero

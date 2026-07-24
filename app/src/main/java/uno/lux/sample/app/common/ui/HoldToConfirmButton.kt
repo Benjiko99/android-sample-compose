@@ -154,15 +154,15 @@ fun HoldToConfirmButton(
         // user mid-hold that the finger has to stay put. Only an untouched button reads [text].
         val nudging = state.phase != HoldPhase.IDLE
 
-        launch { scale.animateTo(if (holding) PressedScale else 1f, tween(PressResponseMillis)) }
-        launch { hintAlpha.animateTo(if (nudging) 1f else 0f, tween(LabelSwapMillis)) }
+        launch { scale.animateTo(if (holding) PRESSED_SCALE else 1f, tween(PRESS_RESPONSE_MILLIS)) }
+        launch { hintAlpha.animateTo(if (nudging) 1f else 0f, tween(LABEL_SWAP_MILLIS)) }
 
         if (holding) {
             // Matching the hold means the sweep lands exactly as the action fires, whatever
             // shape [SweepEasing] gives the travel in between.
             progress.animateTo(1f, tween(holdMillis.toInt(), easing = SweepEasing))
         } else {
-            progress.animateTo(0f, tween(DrainMillis, easing = FastOutSlowInEasing))
+            progress.animateTo(0f, tween(DRAIN_MILLIS, easing = FastOutSlowInEasing))
         }
     }
 
@@ -177,8 +177,7 @@ fun HoldToConfirmButton(
                 scaleY = scale.value
                 this.shape = shape
                 clip = true
-            }
-            .defaultMinSize(minWidth = ButtonDefaults.MinWidth, minHeight = MinHeight)
+            }.defaultMinSize(minWidth = ButtonDefaults.MinWidth, minHeight = MinHeight)
             .background(containerColor)
             .drawBehind {
                 val fraction = progress.value
@@ -188,25 +187,25 @@ fun HoldToConfirmButton(
                 val edge = LeadingEdgeWidth.toPx()
 
                 drawRect(
-                    color = contentColor.copy(alpha = FillAlpha),
+                    color = contentColor.copy(alpha = FILL_ALPHA),
                     size = Size(width = width, height = size.height),
                 )
 
                 // A bright leading edge, so the sweep reads as a moving front rather than a stain.
                 drawRect(
-                    color = contentColor.copy(alpha = LeadingEdgeAlpha),
+                    color = contentColor.copy(alpha = LEADING_EDGE_ALPHA),
                     topLeft = Offset(x = width - edge, y = 0f),
                     size = Size(width = edge, height = size.height),
                 )
-            }
-            .pointerInput(active) {
+            }.pointerInput(active) {
                 if (!active) return@pointerInput
 
                 detectTapGestures(
-                    onPress = { state.press(awaitRelease = { tryAwaitRelease() }, onConfirm = confirm) }
+                    onPress = {
+                        state.press(awaitRelease = { tryAwaitRelease() }, onConfirm = confirm)
+                    },
                 )
-            }
-            .semantics(mergeDescendants = true) {
+            }.semantics(mergeDescendants = true) {
                 role = Role.Button
                 // Named here rather than merged up from the labels, since both of them are always
                 // in the tree and a screen reader would otherwise read the pair back to back.
@@ -218,8 +217,7 @@ fun HoldToConfirmButton(
                     if (active) confirm()
                     active
                 }
-            }
-            .padding(ButtonDefaults.ContentPadding),
+            }.padding(ButtonDefaults.ContentPadding),
     ) {
         if (isBusy) {
             CircularProgressIndicator(
@@ -265,15 +263,15 @@ private fun HoldLabel(
 private val MinHeight = 52.dp
 
 /** How far the button sinks under the finger, the usual press feedback a filled button gives. */
-private const val PressedScale = 0.97f
-private const val PressResponseMillis = 120
+private const val PRESSED_SCALE = 0.97f
+private const val PRESS_RESPONSE_MILLIS = 120
 
 /** How long the label and the nudge take to trade places. */
-private const val LabelSwapMillis = 180
+private const val LABEL_SWAP_MILLIS = 180
 
 /** Alphas over the container, so the sweep tracks the theme instead of pinning its own colour. */
-private const val FillAlpha = 0.24f
-private const val LeadingEdgeAlpha = 0.85f
+private const val FILL_ALPHA = 0.24f
+private const val LEADING_EDGE_ALPHA = 0.85f
 
 private val LeadingEdgeWidth = 2.dp
 
@@ -287,7 +285,7 @@ private val LeadingEdgeWidth = 2.dp
 private val SweepEasing = CubicBezierEasing(0.25f, 0.45f, 0.55f, 0.9f)
 
 /** Time the fill takes to drain once the finger lifts or the action fires. */
-private const val DrainMillis = 220
+private const val DRAIN_MILLIS = 220
 
 @Preview(showBackground = true)
 @Composable

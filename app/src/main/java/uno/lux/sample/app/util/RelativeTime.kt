@@ -10,10 +10,22 @@ import java.time.Instant
  */
 sealed interface RelativeTime {
     data object Now : RelativeTime
-    data class Minutes(val value: Long) : RelativeTime
-    data class Hours(val value: Long) : RelativeTime
-    data class Days(val value: Long) : RelativeTime
-    data class Weeks(val value: Long) : RelativeTime
+
+    data class Minutes(
+        val value: Long,
+    ) : RelativeTime
+
+    data class Hours(
+        val value: Long,
+    ) : RelativeTime
+
+    data class Days(
+        val value: Long,
+    ) : RelativeTime
+
+    data class Weeks(
+        val value: Long,
+    ) : RelativeTime
 }
 
 /** Buckets the gap between [createdAt] and [now]; [now] is injectable for deterministic tests. */

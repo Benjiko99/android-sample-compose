@@ -14,7 +14,7 @@ import uno.lux.sample.settings.ThemeMode
  * arrives — reads it from here, so the default is one edit rather than four literals that have to
  * agree.
  */
-const val DefaultAutoPlayVideos = false
+const val DEFAULT_AUTO_PLAY_VIDEOS = false
 
 /**
  * Stores user settings. Exposes [themeMode] and [autoPlayVideos] reactively and updates them on
@@ -26,16 +26,17 @@ const val DefaultAutoPlayVideos = false
 interface SettingsRepository {
     val themeMode: Flow<ThemeMode>
 
-    /** Whether the feed starts a video on its own as it scrolls into view. [DefaultAutoPlayVideos] unless set. */
+    /** Whether the feed starts a video on its own as it scrolls into view. [DEFAULT_AUTO_PLAY_VIDEOS] unless set. */
     val autoPlayVideos: Flow<Boolean>
 
     suspend fun setThemeMode(mode: ThemeMode)
+
     suspend fun setAutoPlayVideos(enabled: Boolean)
 }
 
 class InMemorySettingsRepository(
     initialThemeMode: ThemeMode = ThemeMode.SYSTEM,
-    initialAutoPlayVideos: Boolean = DefaultAutoPlayVideos,
+    initialAutoPlayVideos: Boolean = DEFAULT_AUTO_PLAY_VIDEOS,
 ) : SettingsRepository {
 
     private val theme = MutableStateFlow(initialThemeMode)

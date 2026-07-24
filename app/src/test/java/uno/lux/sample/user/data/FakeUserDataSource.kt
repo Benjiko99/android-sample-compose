@@ -1,10 +1,10 @@
 package uno.lux.sample.user.data
 
-import java.net.ConnectException
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.network.UPLOADED_AVATAR_URL
+import java.net.ConnectException
 
 internal class FakeUserDataSource(
     private val users: Map<UserId, User> = emptyMap(),

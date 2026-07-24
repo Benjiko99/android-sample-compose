@@ -57,7 +57,10 @@ class ProfileRepository(
     private val _profiles = MutableStateFlow<Map<UserId, Profile>>(emptyMap())
     private val _userPostIds = MutableStateFlow<Map<UserId, List<PostId>>>(emptyMap())
 
-    private data class PageState(val cursor: String?, val hasMore: Boolean)
+    private data class PageState(
+        val cursor: String?,
+        val hasMore: Boolean,
+    )
 
     /**
      * One on-demand tab's loaded window for one user: the IDs the server sent, where to continue
@@ -199,12 +202,14 @@ class ProfileRepository(
             val page = ingest(fetchPage(userId, null))
 
             _state.update {
-                it + (userId to TabState(
-                    ids = page.posts.map { post -> post.id },
-                    cursor = page.cursor,
-                    hasMore = page.hasMore,
-                    oldestLoaded = page.posts.lastOrNull()?.key,
-                ))
+                it + (
+                    userId to TabState(
+                        ids = page.posts.map { post -> post.id },
+                        cursor = page.cursor,
+                        hasMore = page.hasMore,
+                        oldestLoaded = page.posts.lastOrNull()?.key,
+                    )
+                )
             }
         }
 
@@ -215,13 +220,15 @@ class ProfileRepository(
             val page = ingest(fetchPage(userId, current.cursor))
 
             _state.update {
-                it + (userId to TabState(
-                    ids = current.ids + page.posts.map { post -> post.id },
-                    cursor = page.cursor,
-                    hasMore = page.hasMore,
-                    // An empty page moves the cursor but not the floor.
-                    oldestLoaded = page.posts.lastOrNull()?.key ?: current.oldestLoaded,
-                ))
+                it + (
+                    userId to TabState(
+                        ids = current.ids + page.posts.map { post -> post.id },
+                        cursor = page.cursor,
+                        hasMore = page.hasMore,
+                        // An empty page moves the cursor but not the floor.
+                        oldestLoaded = page.posts.lastOrNull()?.key ?: current.oldestLoaded,
+                    )
+                )
             }
         }
 

@@ -45,7 +45,7 @@ class FakeUserApi(
                 gender = gender.asString().ifEmpty { null },
                 bio = bio.asString().ifEmpty { null },
                 avatarUrl = if (avatar != null) UPLOADED_AVATAR_URL else base.avatarUrl,
-            )
+            ),
         )
     }
 

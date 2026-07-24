@@ -10,17 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.user.UserId
-import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.core.files.FileLoader
+import uno.lux.sample.app.core.state.restoreDraft
+import uno.lux.sample.app.core.state.saveDraft
+import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchIfIdle
-import uno.lux.sample.app.core.state.restoreDraft
-import uno.lux.sample.app.core.state.saveDraft
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserRepository
 import javax.inject.Inject
 
 /**
@@ -38,10 +38,11 @@ class EditProfileViewModel @Inject constructor(
     private val navigator: Navigator,
     private val savedStateHandle: SavedStateHandle,
     @param:CurrentUserId private val userId: UserId,
-) : ViewModel(), EditProfileActions {
+) : ViewModel(),
+    EditProfileActions {
 
     // Edits in progress are the one thing here that can't be fetched again, so they are saved.
-    private val _form = MutableStateFlow(savedStateHandle.restoreDraft<EditProfileForm>(DraftKey))
+    private val _form = MutableStateFlow(savedStateHandle.restoreDraft<EditProfileForm>(DRAFT_KEY))
     private val _initialForm = MutableStateFlow<EditProfileForm?>(null)
     private val _loadError = MutableStateFlow<AppError?>(null)
     private val _isSaving = MutableStateFlow(false)
@@ -76,7 +77,7 @@ class EditProfileViewModel @Inject constructor(
                 isDirty = form != initialForm,
                 isSaving = isSaving,
                 showDiscardConfirmation = showDiscardConfirmation,
-                saveError = saveError
+                saveError = saveError,
             )
             loadError != null -> EditProfileUiState.Error(loadError)
             else -> EditProfileUiState.Loading
@@ -87,7 +88,7 @@ class EditProfileViewModel @Inject constructor(
     private var saveJob: Job? = null
 
     init {
-        savedStateHandle.saveDraft(DraftKey) { _form.value }
+        savedStateHandle.saveDraft(DRAFT_KEY) { _form.value }
         retry()
     }
 
@@ -171,4 +172,4 @@ class EditProfileViewModel @Inject constructor(
 }
 
 /** Where in-progress edits are kept in the entry's saved state. */
-private const val DraftKey = "edit_profile_draft"
+private const val DRAFT_KEY = "edit_profile_draft"

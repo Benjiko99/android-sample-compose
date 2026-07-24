@@ -1,9 +1,9 @@
 package uno.lux.sample.profile.ui
 
 import uno.lux.sample.post.Post
+import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.profile.Profile
 import uno.lux.sample.user.User
-import uno.lux.sample.post.ui.PostCardData
 
 /**
  * ViewModel-level aggregate for the profile screen: the resolved user, their profile metadata,

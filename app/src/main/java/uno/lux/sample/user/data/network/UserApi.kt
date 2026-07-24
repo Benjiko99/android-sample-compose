@@ -2,17 +2,19 @@ package uno.lux.sample.user.data.network
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
-import retrofit2.http.GET
 
 interface UserApi {
 
     @GET("users/{id}")
-    suspend fun getUser(@Path("id") id: String): UserResponse
+    suspend fun getUser(
+        @Path("id") id: String,
+    ): UserResponse
 
     // Profile edits are sent as multipart/form-data so the avatar can ride along as an
     // uploaded file. Text fields are always present (empty string clears a nullable one);
@@ -33,5 +35,7 @@ interface UserApi {
     // carry an EmptyBody (see the TODO on PostApi.toggleLike) — this one deliberately sends no
     // body. 403 if [id] is the current user, 404 if [id] is unknown.
     @POST("users/{id}/follow")
-    suspend fun toggleFollow(@Path("id") id: String): FollowToggleResponse
+    suspend fun toggleFollow(
+        @Path("id") id: String,
+    ): FollowToggleResponse
 }

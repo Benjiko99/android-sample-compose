@@ -1,6 +1,5 @@
 package uno.lux.sample.comment.data
 
-import java.time.Instant
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.user.User
+import java.time.Instant
 
 class CommentRepositoryTest {
 
@@ -39,7 +39,14 @@ class CommentRepositoryTest {
     @Test
     fun `loadComments returns the seeded list for a known post`() = runTest {
         val c = comment("c1")
-        val repository = CommentRepository(FakeCommentDataSource(author, comments = mapOf("p1" to listOf(c))))
+        val repository = CommentRepository(
+            FakeCommentDataSource(
+                author,
+                comments = mapOf(
+                    "p1" to listOf(c),
+                ),
+            ),
+        )
 
         val comments = repository.loadComments("p1")
 
@@ -80,4 +87,3 @@ class CommentRepositoryTest {
         assertEquals(6, result.likeCount)
     }
 }
-

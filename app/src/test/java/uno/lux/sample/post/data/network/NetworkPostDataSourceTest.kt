@@ -1,7 +1,5 @@
 package uno.lux.sample.post.data.network
 
-import java.net.UnknownHostException
-import java.time.Instant
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -9,13 +7,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.app.common.data.network.LikeToggleDto
+import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.post.Post
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.userDto
+import java.net.UnknownHostException
+import java.time.Instant
 
 class NetworkPostDataSourceTest {
 
@@ -83,7 +83,7 @@ class NetworkPostDataSourceTest {
         )
 
         dataSource.create(
-            NewPost(title = "Title", body = "Body", media = NewPostMedia.Images(images))
+            NewPost(title = "Title", body = "Body", media = NewPostMedia.Images(images)),
         )
 
         val parts = api.lastCreatePostParts
@@ -109,7 +109,7 @@ class NetworkPostDataSourceTest {
                 title = "Title",
                 body = "Body",
                 media = NewPostMedia.Video(clip),
-            )
+            ),
         )
 
         val parts = api.lastCreatePostParts

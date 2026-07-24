@@ -9,8 +9,8 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
+import uno.lux.sample.app.core.network.EmptyBody
 
 interface PostApi {
 
@@ -19,7 +19,9 @@ interface PostApi {
     // as a failure. Only a client that doesn't already hold the post asks for it (a detail page
     // restored after process death).
     @GET("posts/{id}")
-    suspend fun getPost(@Path("id") postId: String): PostResponse
+    suspend fun getPost(
+        @Path("id") postId: String,
+    ): PostResponse
 
     // Publishes a post authored by the current user (the X-User-Id header). Sent as
     // multipart/form-data — like the avatar upload — so the post's media rides along with the
@@ -40,7 +42,9 @@ interface PostApi {
     // not the author, 404 when the post is unknown. The server answers 204, so there is no body
     // to parse — hence the Unit return rather than one of the response envelopes.
     @DELETE("posts/{id}")
-    suspend fun deletePost(@Path("id") postId: String)
+    suspend fun deletePost(
+        @Path("id") postId: String,
+    )
 
     @POST("posts/{id}/like")
     suspend fun toggleLike(

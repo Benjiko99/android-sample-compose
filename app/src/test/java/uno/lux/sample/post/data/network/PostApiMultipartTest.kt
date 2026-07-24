@@ -28,13 +28,14 @@ class PostApiMultipartTest {
     private lateinit var server: MockWebServer
     private lateinit var dataSource: NetworkPostDataSource
 
-    private val createdPostJson = """
+    private val createdPostJson =
+        """
         {"data":{"id":"p-new","url":"https://mosaic.test/p/p-new","title":"T","body":"B",
         "createdAt":"2025-01-01T00:00:00.000Z",
         "author":{"id":"u1","nickname":"Ada","handle":"@countess","followerCount":0,
                   "followingCount":0,"isFollowing":false},
         "likeCount":0,"commentCount":0,"isLiked":false,"isBookmarked":false}}
-    """.trimIndent()
+        """.trimIndent()
 
     @Before
     fun setUp() {
@@ -62,9 +63,9 @@ class PostApiMultipartTest {
                 title = "T",
                 body = "B",
                 media = NewPostMedia.Images(
-                    listOf(upload("one.png", "image/png"), upload("two.png", "image/png"))
+                    listOf(upload("one.png", "image/png"), upload("two.png", "image/png")),
                 ),
-            )
+            ),
         )
 
         val body = server.takeRequest().body.readUtf8()
@@ -85,7 +86,7 @@ class PostApiMultipartTest {
                 title = "T",
                 body = "B",
                 media = NewPostMedia.Video(upload("clip.mp4", "video/mp4")),
-            )
+            ),
         )
 
         val body = server.takeRequest().body.readUtf8()

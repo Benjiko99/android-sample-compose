@@ -1,9 +1,9 @@
 package uno.lux.sample.post.ui
 
-import uno.lux.sample.user.User
+import uno.lux.sample.app.util.AppError
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.post.Post
-import uno.lux.sample.app.util.AppError
+import uno.lux.sample.user.User
 
 sealed interface PostDetailUiState {
     data object Loading : PostDetailUiState
@@ -15,7 +15,9 @@ sealed interface PostDetailUiState {
      * The post could not be fetched. Distinct from [NotFound]: nothing is known about the post
      * yet, so the screen offers a retry rather than telling the user it is gone.
      */
-    data class Error(val error: AppError) : PostDetailUiState
+    data class Error(
+        val error: AppError,
+    ) : PostDetailUiState
 
     /** [isOwn] is the post being authored by the signed-in user; it gates the delete action. */
     data class Loaded(

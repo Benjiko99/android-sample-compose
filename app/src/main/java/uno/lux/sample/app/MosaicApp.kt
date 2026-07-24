@@ -39,22 +39,22 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
-import uno.lux.sample.user.UserId
 import uno.lux.sample.album.ui.AlbumViewerScreen
 import uno.lux.sample.app.common.ui.DividedNavigationSuiteScaffold
-import uno.lux.sample.composer.ui.CreatePostScreen
-import uno.lux.sample.user.ui.EditProfileScreen
-import uno.lux.sample.feed.ui.HomeScreen
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.util.findActivity
+import uno.lux.sample.composer.ui.CreatePostScreen
+import uno.lux.sample.feed.ui.HomeScreen
 import uno.lux.sample.post.ui.PostDetailScreen
 import uno.lux.sample.profile.ui.ProfileScreen
 import uno.lux.sample.settings.ui.SettingsScreen
-import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.ui.EditProfileScreen
 import uno.lux.sample.video.ui.FullscreenVideoScreen
 import uno.lux.sample.video.ui.LocalVideoPlayback
 import uno.lux.sample.video.ui.VideoPlaybackViewModel
-import uno.lux.sample.app.util.findActivity
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberNavBackStack] back
@@ -187,8 +187,11 @@ private fun HomeNavShell(
                     selected = destination == currentDestination,
                     onClick = {
                         val screen = destination.screen
-                        if (screen != null) viewModel.openDestination(screen)
-                        else currentDestination = destination
+                        if (screen != null) {
+                            viewModel.openDestination(screen)
+                        } else {
+                            currentDestination = destination
+                        }
                     },
                     colors = navItemColors,
                 )
@@ -198,8 +201,10 @@ private fun HomeNavShell(
         AnimatedContent(
             targetState = currentDestination,
             transitionSpec = {
-                (fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
-                    scaleIn(animationSpec = tween(durationMillis = 210, delayMillis = 90), initialScale = 0.94f)) togetherWith
+                (
+                    fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
+                        scaleIn(animationSpec = tween(durationMillis = 210, delayMillis = 90), initialScale = 0.94f)
+                ) togetherWith
                     fadeOut(tween(durationMillis = 90))
             },
             modifier = Modifier.fillMaxSize(),
@@ -240,20 +245,28 @@ enum class AppDestinations(
 }
 
 /** How long a push or pop between full-screen pages runs. */
-private const val PushPopDurationMillis = 320
+private const val PUSH_POP_DURATION_MILLIS = 320
 
 /** Push: the new page slides in from the right while the old one recedes a quarter-width. */
 private fun pushTransition(): ContentTransform {
-    val duration = PushPopDurationMillis
+    val duration = PUSH_POP_DURATION_MILLIS
 
-    return (slideInHorizontally(tween(duration)) { width -> width } + fadeIn(tween(duration))) togetherWith
+    return (
+        slideInHorizontally(tween(duration)) { width ->
+            width
+        } + fadeIn(tween(duration))
+    ) togetherWith
         (slideOutHorizontally(tween(duration)) { width -> -width / 4 } + fadeOut(tween(duration)))
 }
 
 /** Pop: the inverse of [pushTransition] — the leaving page slides back off to the right. */
 private fun popTransition(): ContentTransform {
-    val duration = PushPopDurationMillis
+    val duration = PUSH_POP_DURATION_MILLIS
 
-    return (slideInHorizontally(tween(duration)) { width -> -width / 4 } + fadeIn(tween(duration))) togetherWith
+    return (
+        slideInHorizontally(tween(duration)) { width ->
+            -width / 4
+        } + fadeIn(tween(duration))
+    ) togetherWith
         (slideOutHorizontally(tween(duration)) { width -> width } + fadeOut(tween(duration)))
 }

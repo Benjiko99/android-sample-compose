@@ -2,19 +2,19 @@ package uno.lux.sample.composer.ui
 
 import kotlinx.serialization.Serializable
 import uno.lux.sample.app.core.files.FileUpload
+import uno.lux.sample.app.util.AppError
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.NewPostMedia
-import uno.lux.sample.app.util.AppError
 
 /** Field limits the composer enforces; they mirror the backend's so errors surface before a publish. */
-const val CreatePostTitleMaxLength = 120
-const val CreatePostBodyMaxLength = 5000
+const val CREATE_POST_TITLE_MAX_LENGTH = 120
+const val CREATE_POST_BODY_MAX_LENGTH = 5000
 
 /** Mirrors the server's `Album::MAX_PHOTOS`, so an over-long selection is refused before uploading. */
-const val CreatePostMaxImages = 10
+const val CREATE_POST_MAX_IMAGES = 10
 
 /** Mirrors the server's `Video::MAX_BYTES`, so an oversized clip is refused before it is uploaded. */
-const val CreatePostMaxVideoBytes = 25L * 1024 * 1024
+const val CREATE_POST_MAX_VIDEO_BYTES = 25L * 1024 * 1024
 
 /**
  * The media attached to a draft. A post carries photos *or* a video, never both, so the states are
@@ -36,9 +36,11 @@ sealed interface CreatePostMedia {
     data object None : CreatePostMedia
 
     @Serializable
-    data class Images(val uris: List<String>) : CreatePostMedia {
+    data class Images(
+        val uris: List<String>,
+    ) : CreatePostMedia {
         val canAddMore: Boolean
-            get() = uris.size < CreatePostMaxImages
+            get() = uris.size < CREATE_POST_MAX_IMAGES
     }
 
     /**
@@ -48,7 +50,10 @@ sealed interface CreatePostMedia {
      * upload; see `NewPostMedia.Video`.
      */
     @Serializable
-    data class Video(val uri: String, val durationSeconds: Int) : CreatePostMedia
+    data class Video(
+        val uri: String,
+        val durationSeconds: Int,
+    ) : CreatePostMedia
 }
 
 /**
@@ -85,9 +90,11 @@ data class CreatePostForm(
 sealed interface CreatePostError {
 
     /** A publish, or reading a picked file, failed. */
-    data class Failed(val error: AppError) : CreatePostError
+    data class Failed(
+        val error: AppError,
+    ) : CreatePostError
 
-    /** The chosen clip is over [CreatePostMaxVideoBytes], which the server would reject anyway. */
+    /** The chosen clip is over [CREATE_POST_MAX_VIDEO_BYTES], which the server would reject anyway. */
     data object VideoTooLarge : CreatePostError
 }
 

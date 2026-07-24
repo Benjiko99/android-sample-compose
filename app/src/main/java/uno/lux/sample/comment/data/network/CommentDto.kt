@@ -1,9 +1,9 @@
 package uno.lux.sample.comment.data.network
 
-import java.time.Instant
 import kotlinx.serialization.Serializable
 import uno.lux.sample.app.core.network.InstantSerializer
 import uno.lux.sample.user.data.network.UserDto
+import java.time.Instant
 
 @Serializable
 data class CommentDto(
@@ -17,4 +17,6 @@ data class CommentDto(
 )
 
 @Serializable
-data class AddCommentRequestDto(val text: String)
+data class AddCommentRequestDto(
+    val text: String,
+)

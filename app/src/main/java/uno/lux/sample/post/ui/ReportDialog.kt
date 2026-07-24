@@ -26,7 +26,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,8 +35,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
-import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.common.ReportReason
+import uno.lux.sample.app.theme.MosaicTheme
 
 /**
  * The report-a-post dialog: a single-choice list of [ReportReason]s plus an optional free-text
@@ -100,7 +99,7 @@ private fun ReportPostDialogContent(
                     label = reason.asText(),
                     selected = reason == selectedReason,
                     onSelect = { onSelectReason(reason) },
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = 4.dp),
                 )
             }
             Spacer(Modifier.height(8.dp))
@@ -148,7 +147,6 @@ private fun ReasonRow(
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

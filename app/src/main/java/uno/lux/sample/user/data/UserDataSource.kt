@@ -3,6 +3,7 @@ package uno.lux.sample.user.data
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
+
 interface UserDataSource {
     suspend fun fetch(userId: UserId): User?
 

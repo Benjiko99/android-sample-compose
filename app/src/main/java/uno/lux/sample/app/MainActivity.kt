@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
             MosaicTheme(darkTheme = darkTheme) {
                 MosaicApp(
                     currentUserId = viewModel.currentUserId,
-                    navigator = navigator
+                    navigator = navigator,
                 )
             }
         }

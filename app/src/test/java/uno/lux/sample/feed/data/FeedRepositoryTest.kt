@@ -1,6 +1,5 @@
 package uno.lux.sample.feed.data
 
-import java.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -15,10 +14,12 @@ import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
+import java.time.Instant
 
 class FeedRepositoryTest {
 
     private fun userRepo() = UserRepository(FakeUserDataSource())
+
     private fun postRepo(userRepo: UserRepository = userRepo()) =
         PostRepository(FakePostDataSource(), userRepo)
 
@@ -35,14 +36,18 @@ class FeedRepositoryTest {
 
     @Test
     fun `reset returns feedState to NotLoaded after a successful refresh`() = runTest {
-        val repo = feedRepo(FakeFeedDataSource(listOf(
-            FeedPage(
-                listOf(post("p1")),
-                emptyList(),
-                null,
-                false
-            )
-        )))
+        val repo = feedRepo(
+            FakeFeedDataSource(
+                listOf(
+                    FeedPage(
+                        listOf(post("p1")),
+                        emptyList(),
+                        null,
+                        false,
+                    ),
+                ),
+            ),
+        )
         repo.refresh()
 
         repo.reset()

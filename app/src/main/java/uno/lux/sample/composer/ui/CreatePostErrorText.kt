@@ -11,6 +11,6 @@ fun CreatePostError.asText(): String = when (this) {
     is CreatePostError.Failed -> error.asText()
     CreatePostError.VideoTooLarge -> stringResource(
         R.string.create_post_video_too_large,
-        CreatePostMaxVideoBytes / (1024 * 1024),
+        CREATE_POST_MAX_VIDEO_BYTES / (1024 * 1024),
     )
 }

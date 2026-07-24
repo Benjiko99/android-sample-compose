@@ -6,11 +6,11 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import uno.lux.sample.settings.ThemeMode
+import java.io.IOException
 
 /**
  * [SettingsRepository] backed by a Preferences [DataStore], so the stored choices survive
@@ -32,7 +32,7 @@ class DataStoreSettingsRepository(
 
     // Absent means the user never opted out, which is the default — not `false`.
     override val autoPlayVideos: Flow<Boolean> = preferences
-        .map { it[KEY_AUTO_PLAY_VIDEOS] ?: DefaultAutoPlayVideos }
+        .map { it[KEY_AUTO_PLAY_VIDEOS] ?: DEFAULT_AUTO_PLAY_VIDEOS }
 
     override suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { preferences -> preferences[KEY_THEME_MODE] = mode.name }

@@ -15,7 +15,10 @@ class NetworkFeedDataSource(
         val response = api.getFeed(cursor = cursor, include = "author")
         FeedPage(
             posts = response.data.map { PostMapper.map(it) },
-            users = response.included?.users.orEmpty().map { it.toDomain() },
+            users = response.included
+                ?.users
+                .orEmpty()
+                .map { it.toDomain() },
             nextCursor = response.page.nextCursor,
             hasMore = response.page.hasMore,
         )

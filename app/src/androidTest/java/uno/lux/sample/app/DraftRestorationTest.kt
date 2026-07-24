@@ -20,29 +20,29 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import uno.lux.sample.app.core.files.FileLoader
 import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.app.core.files.VideoMetadataReader
+import uno.lux.sample.app.navigation.Navigator
+import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.composer.ui.CreatePostMedia
+import uno.lux.sample.composer.ui.CreatePostViewModel
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.Post
-import uno.lux.sample.post.data.PostDataSource
 import uno.lux.sample.post.PostId
-import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.post.data.PostDataSource
+import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
-import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.composer.ui.CreatePostMedia
-import uno.lux.sample.composer.ui.CreatePostViewModel
 import uno.lux.sample.user.ui.EditProfileUiState
 import uno.lux.sample.user.ui.EditProfileViewModel
-import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.navigation.Navigator
-import uno.lux.sample.app.navigation.Screen
 
 /**
  * The other half of surviving process death: [BackStackRestorationTest] pins that the *page* comes
@@ -125,7 +125,7 @@ class DraftRestorationTest {
         val restored = composer(handle.killAndRestore())
 
         assertEquals(
-            CreatePostMedia.Video(uri = "content://pick/clip", durationSeconds = PickedClipSeconds),
+            CreatePostMedia.Video(uri = "content://pick/clip", durationSeconds = PICKED_CLIP_SECONDS),
             restored.uiState.value.form.media,
         )
     }
@@ -237,9 +237,13 @@ class DraftRestorationTest {
     private fun userRepository() = UserRepository(StoredUserDataSource(ada))
 
     /** Serves the one user the editor loads, and refuses everything a draft test can't reach. */
-    private class StoredUserDataSource(private val user: User) : UserDataSource {
+    private class StoredUserDataSource(
+        private val user: User,
+    ) : UserDataSource {
         override suspend fun fetch(userId: UserId): User? = user.takeIf { it.id == userId }
+
         override suspend fun update(userId: UserId, update: ProfileUpdate): User = unused()
+
         override suspend fun toggleFollow(user: User): User = unused()
     }
 
@@ -249,25 +253,30 @@ class DraftRestorationTest {
 
     private object UnusedPostDataSource : PostDataSource {
         override suspend fun fetch(postId: PostId): PostWithAuthor? = unused()
+
         override suspend fun create(draft: NewPost): PostWithAuthor = unused()
+
         override suspend fun delete(postId: PostId) = unused()
+
         override suspend fun toggleLike(post: Post): Post = unused()
+
         override suspend fun toggleBookmark(post: Post): Post = unused()
     }
 
     /** Answers the size check a video pick makes; reading bytes only happens on publish. */
     private object PickingFileLoader : FileLoader {
         override suspend fun read(uri: String): FileUpload = unused()
+
         override suspend fun sizeOf(uri: String): Long = 1_000L
     }
 
     private object PickedClipMetadataReader : VideoMetadataReader {
-        override suspend fun durationSeconds(uri: String): Int = PickedClipSeconds
+        override suspend fun durationSeconds(uri: String): Int = PICKED_CLIP_SECONDS
     }
 }
 
 /** What [PickedClipMetadataReader] reports for the picked clip. */
-private const val PickedClipSeconds = 42
+private const val PICKED_CLIP_SECONDS = 42
 
 /** Reached only if a draft test starts doing something a draft test has no business doing. */
 private fun unused(): Nothing =

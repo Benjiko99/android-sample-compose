@@ -2,6 +2,7 @@ package uno.lux.sample.comment.data
 
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.post.PostId
+
 /**
  * Stateless data source for post comments.
  *
@@ -14,6 +15,11 @@ class CommentRepository(
     private val dataSource: CommentDataSource,
 ) {
     suspend fun loadComments(postId: PostId) = dataSource.loadComments(postId)
+
     suspend fun addComment(postId: PostId, text: String) = dataSource.addComment(postId, text)
-    suspend fun toggleLike(postId: PostId, comment: Comment) = dataSource.toggleLike(postId, comment)
+
+    suspend fun toggleLike(
+        postId: PostId,
+        comment: Comment,
+    ) = dataSource.toggleLike(postId, comment)
 }

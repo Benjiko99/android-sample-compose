@@ -8,18 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.feed.data.FeedState
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.video.Video
-import uno.lux.sample.settings.data.DefaultAutoPlayVideos
-import uno.lux.sample.settings.data.SettingsRepository
-import uno.lux.sample.user.UserId
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
-import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
@@ -27,6 +17,16 @@ import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.feed.data.FeedRepository
+import uno.lux.sample.feed.data.FeedState
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
+import uno.lux.sample.settings.data.SettingsRepository
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.video.Video
 import javax.inject.Inject
 
 /**
@@ -50,7 +50,8 @@ class HomeViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
     private val navigator: Navigator,
     @param:CurrentUserId private val currentUserId: UserId,
-) : ViewModel(), HomeActions {
+) : ViewModel(),
+    HomeActions {
 
     private val _loadError = MutableStateFlow<AppError?>(null)
 
@@ -72,12 +73,15 @@ class HomeViewModel @Inject constructor(
                     val post = entities[id] ?: return@mapNotNull null
                     val author = users[post.authorId] ?: return@mapNotNull null
                     val cached = cardCache[id]
-                    if (cached != null && cached.post === post && cached.author === author) cached
-                    else PostCardData(
-                        post = post,
-                        author = author,
-                        isOwn = post.authorId == currentUserId,
-                    )
+                    if (cached != null && cached.post === post && cached.author === author) {
+                        cached
+                    } else {
+                        PostCardData(
+                            post = post,
+                            author = author,
+                            isOwn = post.authorId == currentUserId,
+                        )
+                    }
                 }
                 cardCache = cards.associateBy { it.post.id }
                 HomeUiState.Feed(posts = cards, endReached = !feedState.hasMore)
@@ -90,12 +94,12 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Whether the feed may start a video on its own as it scrolls into view. The stored preference
-     * arrives asynchronously, so this starts from [DefaultAutoPlayVideos] rather than a literal of
+     * arrives asynchronously, so this starts from [DEFAULT_AUTO_PLAY_VIDEOS] rather than a literal of
      * its own — otherwise a launch would briefly disagree with the repository about what an
      * unset preference means, and the feed would flip playback as the stored choice landed.
      */
     val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
-        .stateInWhileSubscribed(viewModelScope, DefaultAutoPlayVideos)
+        .stateInWhileSubscribed(viewModelScope, DEFAULT_AUTO_PLAY_VIDEOS)
 
     private var loadJob: Job? = null
     private var loadMoreJob: Job? = null

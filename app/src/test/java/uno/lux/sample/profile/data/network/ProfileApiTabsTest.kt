@@ -27,7 +27,8 @@ class ProfileApiTabsTest {
     private lateinit var dataSource: NetworkProfileDataSource
 
     // Captured from the running backend: GET /api/users/u1/bookmarks as u1.
-    private val bookmarksJson = """
+    private val bookmarksJson =
+        """
         {"data":[
           {"id":"p2","url":"https://mosaic.test/p/p2",
            "title":"Found the bug","body":"It was an actual moth.",
@@ -50,7 +51,7 @@ class ProfileApiTabsTest {
             "gender":"Female","location":"Cambridge, MA",
             "bio":"I coined \"software engineering\".","avatarUrl":null,
             "followerCount":7310,"followingCount":15,"isFollowing":true}]}}
-    """.trimIndent()
+        """.trimIndent()
 
     @Before
     fun setUp() {

@@ -1,10 +1,10 @@
 package uno.lux.sample.post.data.network
 
-import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import uno.lux.sample.testing.testPostUrl
+import java.time.Instant
 
 /**
  * Covers what Mappie can't verify structurally on its own — the nested album/video mapping.

@@ -2,8 +2,8 @@ package uno.lux.sample.profile.data.network
 
 import kotlinx.serialization.Serializable
 import uno.lux.sample.app.core.network.CursorPageDto
-import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.post.data.network.PostFeedItemDto
+import uno.lux.sample.user.data.network.SideloadedUsers
 
 /**
  * `{ "data": [...], "included": { "users": [...] }, "page": { ... } }` — the profile's saved and

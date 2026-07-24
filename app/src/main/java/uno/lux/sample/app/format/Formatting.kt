@@ -32,7 +32,7 @@ fun AppError.asText(): String = stringResource(
         AppError.NoConnection -> R.string.error_no_connection
         AppError.Timeout -> R.string.error_timeout
         AppError.Unknown -> R.string.error_unknown
-    }
+    },
 )
 
 /**
@@ -59,7 +59,9 @@ fun formatVideoDuration(totalSeconds: Int): String {
  * "Ada Lovelace" -> "AL", "Linus" -> "L", "  grace  hopper " -> "GH". Blank input -> "".
  */
 fun initials(name: String): String =
-    name.trim().split(' ')
+    name
+        .trim()
+        .split(' ')
         .filter { it.isNotEmpty() }
         .take(2)
         .map { it.first().uppercaseChar() }

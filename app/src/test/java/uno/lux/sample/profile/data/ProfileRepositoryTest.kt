@@ -10,11 +10,11 @@ import org.junit.Test
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.testing.testPostUrl
 import java.time.Instant
 
 class ProfileRepositoryTest {
@@ -142,10 +142,12 @@ class ProfileRepositoryTest {
     fun `loadMorePosts appends post IDs`() = runTest {
         val p3 = post("p3", "u1")
         val dataSource = FakeProfileDataSource(
-            refreshData = mapOf("u1" to ProfileRefreshData(
-                postsCount = 1,
-                posts = listOf(adaPost), postCursor = "c2", postHasMore = true,
-            )),
+            refreshData = mapOf(
+                "u1" to ProfileRefreshData(
+                    postsCount = 1,
+                    posts = listOf(adaPost), postCursor = "c2", postHasMore = true,
+                ),
+            ),
             morePosts = mapOf("u1" to PostsPage(listOf(p3), null, false)),
         )
         val repo = repository(dataSource)
@@ -197,7 +199,8 @@ class ProfileRepositoryTest {
     fun `refreshBookmarks ingests the saved posts and their authors`() = runTest {
         val postRepo = postRepo()
         val userRepo = userRepo()
-        val repo = repository(bookmarksDataSource(listOf(gracePost), listOf(grace)), postRepo, userRepo)
+        val repo =
+            repository(bookmarksDataSource(listOf(gracePost), listOf(grace)), postRepo, userRepo)
 
         repo.refreshBookmarks("u1")
 
@@ -259,7 +262,12 @@ class ProfileRepositoryTest {
 
         postRepo.toggleLike("p2")
 
-        assertTrue(postRepo.entities.first().getValue("p2").isLiked)
+        assertTrue(
+            postRepo.entities
+                .first()
+                .getValue("p2")
+                .isLiked,
+        )
         // The like is not what puts a post on the Saved tab, so the row stays.
         assertEquals(listOf("p2"), repo.bookmarkIds("u1").first())
     }
@@ -296,7 +304,8 @@ class ProfileRepositoryTest {
     @Test
     fun `refreshLikes populates likeIds and ingests the authors`() = runTest {
         val userRepo = userRepo()
-        val repo = repository(likesDataSource(listOf(gracePost), listOf(grace)), userRepo = userRepo)
+        val repo =
+            repository(likesDataSource(listOf(gracePost), listOf(grace)), userRepo = userRepo)
 
         repo.refreshLikes("u1")
 
@@ -310,10 +319,12 @@ class ProfileRepositoryTest {
     fun `likes and bookmarks are independent lists`() = runTest {
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+                "u1" to
+                    mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
             ),
             bookmarks = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(adaPost), emptyList(), null, false)),
+                "u1" to
+                    mapOf(null to PostsWithAuthorsPage(listOf(adaPost), emptyList(), null, false)),
             ),
         )
         val repo = repository(dataSource)
@@ -389,7 +400,9 @@ class ProfileRepositoryTest {
         val postRepo = postRepo()
         postRepo.ingest(listOf(adaPost))
         val dataSource = FakeProfileDataSource(
-            likes = mapOf("u1" to mapOf(null to PostsWithAuthorsPage(emptyList(), emptyList(), null, false))),
+            likes = mapOf(
+                "u1" to mapOf(null to PostsWithAuthorsPage(emptyList(), emptyList(), null, false)),
+            ),
         )
         val repo = repository(dataSource, postRepo)
         repo.refreshLikes("u1")
@@ -409,7 +422,11 @@ class ProfileRepositoryTest {
         val newest = post(id = "p3", authorId = "u3", createdAt = older, isLiked = true)
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost, newest), emptyList(), null, false)),
+                "u1" to
+                    mapOf(
+                        null to
+                            PostsWithAuthorsPage(listOf(gracePost, newest), emptyList(), null, false),
+                    ),
             ),
         )
         val repo = repository(dataSource, postRepo)
@@ -429,7 +446,8 @@ class ProfileRepositoryTest {
         postRepo.ingest(listOf(ancient))
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), "c2", true)),
+                "u1" to
+                    mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), "c2", true)),
             ),
         )
         val repo = repository(dataSource, postRepo)
@@ -448,7 +466,8 @@ class ProfileRepositoryTest {
         postRepo.ingest(listOf(adaPost))
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
-                "u2" to mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+                "u2" to
+                    mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
             ),
         )
         val repo = repository(dataSource, postRepo, currentUserId = "u1")

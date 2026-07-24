@@ -3,8 +3,8 @@ package uno.lux.sample.app.navigation
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import uno.lux.sample.post.PostId
-import uno.lux.sample.video.Video
 import uno.lux.sample.user.UserId
+import uno.lux.sample.video.Video
 
 /**
  * The full-screen pages of the app — the keys Navigation 3's back stack is made of. [Shell]
@@ -22,7 +22,9 @@ sealed interface Screen : NavKey {
 
     /** A user's profile page, opened from a post's author header. */
     @Serializable
-    data class Profile(val userId: UserId) : Screen
+    data class Profile(
+        val userId: UserId,
+    ) : Screen
 
     /** The settings page, opened from the gear action any screen's top bar carries. */
     @Serializable
@@ -52,13 +54,18 @@ sealed interface Screen : NavKey {
      * accessibility; a clip picked from disk has none.
      */
     @Serializable
-    data class FullscreenVideo(val url: String, val title: String? = null) : Screen {
+    data class FullscreenVideo(
+        val url: String,
+        val title: String? = null,
+    ) : Screen {
         constructor(video: Video) : this(video.videoUrl, video.title)
     }
 
     /** A post's detail page: full content, media, and the comment thread. */
     @Serializable
-    data class PostDetail(val postId: PostId) : Screen
+    data class PostDetail(
+        val postId: PostId,
+    ) : Screen
 
     /**
      * Full-screen album image viewer with a horizontal pager. [images] holds what to show — a

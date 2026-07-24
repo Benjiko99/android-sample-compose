@@ -97,9 +97,10 @@ import uno.lux.sample.video.Video
 fun PostDetailScreen(
     postId: PostId,
     modifier: Modifier = Modifier,
-    viewModel: PostDetailViewModel = hiltViewModel<PostDetailViewModel, PostDetailViewModel.Factory>(
-        creationCallback = { factory -> factory.create(postId) },
-    ),
+    viewModel: PostDetailViewModel =
+        hiltViewModel<PostDetailViewModel, PostDetailViewModel.Factory>(
+            creationCallback = { factory -> factory.create(postId) },
+        ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -286,7 +287,7 @@ private fun PostDetailContent(
             item(key = "comments_error") {
                 CommentsError(
                     error = commentsError,
-                    onRetry = onRetryComments
+                    onRetry = onRetryComments,
                 )
             }
         } else if (commentsLoading) {
@@ -447,8 +448,8 @@ private fun CommentRow(
                     withStyle(
                         SpanStyle(
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
                     ) {
                         append(comment.author.nickname)
                     }
@@ -583,7 +584,7 @@ private fun PostDetailLoadedPreview() {
             post = SamplePosts.first(),
             author = SampleUsers.first(),
             comments = SampleComments["p1"] ?: emptyList(),
-        )
+        ),
     )
 }
 

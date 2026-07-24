@@ -51,7 +51,7 @@ import uno.lux.sample.user.ui.Avatar
 import uno.lux.sample.video.Video
 import uno.lux.sample.video.ui.VideoPostPlayer
 
-/**
+/*
  * The shared anatomy of a post — header, body, media, actions — composed both by [PostCard]
  * (the feed and profile rows) and by the post detail screen. The two differ only in what they
  * hang off these blocks: the feed card adds an overflow menu and a divider and opens the post on
@@ -129,7 +129,13 @@ internal fun PostBody(
     maxBodyLines: Int = Int.MAX_VALUE,
     onClick: (() -> Unit)? = null,
 ) {
-    val clickable = if (onClick == null) Modifier else Modifier.debouncedClickable(onClick = onClick)
+    val clickable = if (onClick ==
+        null
+    ) {
+        Modifier
+    } else {
+        Modifier.debouncedClickable(onClick = onClick)
+    }
 
     Column(
         modifier = modifier
@@ -200,7 +206,8 @@ private fun PostBodyText(body: String, maxLines: Int) {
                 val lastLine = result.lineCount - 1
                 val lineMid = (result.getLineTop(lastLine) + result.getLineBottom(lastLine)) / 2f
                 val cutX = (result.size.width - suffixWidth).toFloat().coerceAtLeast(0f)
-                val cut = result.getOffsetForPosition(Offset(x = cutX, y = lineMid))
+                val cut = result
+                    .getOffsetForPosition(Offset(x = cutX, y = lineMid))
                     .coerceIn(0, body.length)
 
                 display = buildAnnotatedString {

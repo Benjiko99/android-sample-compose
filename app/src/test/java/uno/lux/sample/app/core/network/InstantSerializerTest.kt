@@ -1,16 +1,21 @@
 package uno.lux.sample.app.core.network
 
-import java.time.Instant
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.post.data.network.PostFeedItemDto
+import java.time.Instant
 
 class InstantSerializerTest {
 
     @Test
     fun `decodes an ISO-8601 timestamp field into an Instant`() {
-        val json = """{"id":"p1","url":"https://mosaic.test/p/p1","title":"T","body":"B","createdAt":"2025-01-01T00:00:00.000Z","authorId":"u1","likeCount":0,"commentCount":0,"isLiked":false,"isBookmarked":false}"""
+        val json =
+            """
+            {"id":"p1","url":"https://mosaic.test/p/p1","title":"T","body":"B",
+            "createdAt":"2025-01-01T00:00:00.000Z","authorId":"u1","likeCount":0,
+            "commentCount":0,"isLiked":false,"isBookmarked":false}
+            """.trimIndent()
 
         val dto = Json.decodeFromString<PostFeedItemDto>(json)
 

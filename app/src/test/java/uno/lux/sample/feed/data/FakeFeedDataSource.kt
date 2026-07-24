@@ -1,6 +1,5 @@
 package uno.lux.sample.feed.data
 
-
 internal class FakeFeedDataSource(
     private val pages: List<FeedPage> = emptyList(),
 ) : FeedDataSource {
@@ -13,7 +12,7 @@ internal class FakeFeedDataSource(
                 posts = emptyList(),
                 users = emptyList(),
                 nextCursor = null,
-                hasMore = false
+                hasMore = false,
             )
         }
 }

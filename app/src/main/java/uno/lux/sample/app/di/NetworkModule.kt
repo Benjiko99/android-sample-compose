@@ -34,26 +34,30 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(@CurrentUserId currentUserId: UserId): OkHttpClient =
-        OkHttpClient.Builder()
+    fun provideOkHttpClient(
+        @CurrentUserId currentUserId: UserId,
+    ): OkHttpClient =
+        OkHttpClient
+            .Builder()
             .addInterceptor { chain ->
                 chain.proceed(
-                    chain.request().newBuilder()
+                    chain
+                        .request()
+                        .newBuilder()
                         .addHeader("X-User-Id", currentUserId)
-                        .build()
+                        .build(),
                 )
-            }
-            .apply {
+            }.apply {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(BodyLoggingInterceptor)
                 }
-            }
-            .build()
+            }.build()
 
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit =
-        Retrofit.Builder()
+        Retrofit
+            .Builder()
             .baseUrl(API_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json; charset=UTF-8".toMediaType()))
@@ -101,7 +105,11 @@ private object BodyLoggingInterceptor : Interceptor {
         HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.HEADERS }
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val isMultipart = chain.request().body?.contentType()?.type == "multipart"
+        val isMultipart = chain
+            .request()
+            .body
+            ?.contentType()
+            ?.type == "multipart"
 
         return (if (isMultipart) headersOnly else full).intercept(chain)
     }

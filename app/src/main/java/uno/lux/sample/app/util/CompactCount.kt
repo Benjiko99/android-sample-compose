@@ -8,9 +8,17 @@ package uno.lux.sample.app.util
 sealed interface CompactCount {
     val text: String
 
-    data class Ones(override val text: String) : CompactCount
-    data class Thousands(override val text: String) : CompactCount
-    data class Millions(override val text: String) : CompactCount
+    data class Ones(
+        override val text: String,
+    ) : CompactCount
+
+    data class Thousands(
+        override val text: String,
+    ) : CompactCount
+
+    data class Millions(
+        override val text: String,
+    ) : CompactCount
 }
 
 fun compactCount(count: Int): CompactCount = when {

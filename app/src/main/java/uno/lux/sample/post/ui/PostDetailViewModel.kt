@@ -16,17 +16,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import uno.lux.sample.comment.Comment
-import uno.lux.sample.comment.CommentId
-import uno.lux.sample.comment.data.CommentRepository
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.PostWithAuthor
-import uno.lux.sample.video.Video
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.di.CurrentUser
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
@@ -36,6 +25,17 @@ import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.app.util.toAppError
+import uno.lux.sample.comment.Comment
+import uno.lux.sample.comment.CommentId
+import uno.lux.sample.comment.data.CommentRepository
+import uno.lux.sample.post.Post
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.user.User
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.video.Video
 
 /**
  * Holds the state for a single post's detail view. The post itself comes from the shared
@@ -78,8 +78,12 @@ class PostDetailViewModel @AssistedInject constructor(
      */
     private sealed interface PostLoad {
         data object Pending : PostLoad
+
         data object Missing : PostLoad
-        data class Failed(val error: AppError) : PostLoad
+
+        data class Failed(
+            val error: AppError,
+        ) : PostLoad
     }
 
     private val _fetchOutcome = MutableStateFlow<PostLoad>(PostLoad.Pending)

@@ -12,23 +12,23 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.testing.ViewModelTest
-import uno.lux.sample.post.data.FakePostDataSource
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.profile.data.PostsWithAuthorsPage
-import uno.lux.sample.profile.data.FakeProfileDataSource
-import uno.lux.sample.profile.data.ProfileRefreshData
-import uno.lux.sample.profile.data.ProfileRepository
-import uno.lux.sample.user.data.FakeUserDataSource
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.data.UserDataSource
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.post.Post
+import uno.lux.sample.post.data.FakePostDataSource
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.profile.data.FakeProfileDataSource
+import uno.lux.sample.profile.data.PostsWithAuthorsPage
+import uno.lux.sample.profile.data.ProfileRefreshData
+import uno.lux.sample.profile.data.ProfileRepository
+import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.testPostUrl
+import uno.lux.sample.user.ProfileUpdate
+import uno.lux.sample.user.User
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.user.data.UserDataSource
+import uno.lux.sample.user.data.UserRepository
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -343,7 +343,10 @@ class ProfileViewModelTest : ViewModelTest() {
 
         viewModel.onToggleLike("p2")
 
-        val card = (viewModel.uiState.value as ProfileUiState.Loaded).data.bookmarks!!.posts.single()
+        val card = (viewModel.uiState.value as ProfileUiState.Loaded)
+            .data.bookmarks!!
+            .posts
+            .single()
         assertTrue(card.post.isLiked)
         assertEquals(4, card.post.likeCount)
     }
@@ -395,7 +398,10 @@ class ProfileViewModelTest : ViewModelTest() {
 
         viewModel.onLikesTabShown()
 
-        val card = (viewModel.uiState.value as ProfileUiState.Loaded).data.likes!!.posts.single()
+        val card = (viewModel.uiState.value as ProfileUiState.Loaded)
+            .data.likes!!
+            .posts
+            .single()
         assertEquals("p3", card.post.id)
         assertEquals(grace, card.author)
     }

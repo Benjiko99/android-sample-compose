@@ -65,9 +65,10 @@ class ArchitectureTest {
                     pkg.startsWith("$ROOT.app.core.network") ||
                     pkg.startsWith("$ROOT.app.di")
 
-                isNetworkLayer || file.imports.none {
-                    it.name.startsWith("retrofit2.") || it.name.startsWith("okhttp3.")
-                }
+                isNetworkLayer ||
+                    file.imports.none {
+                        it.name.startsWith("retrofit2.") || it.name.startsWith("okhttp3.")
+                    }
             }
     }
 
@@ -78,8 +79,12 @@ class ArchitectureTest {
             // `settings` is the documented exception: DataStoreSettingsRepository persists through
             // DataStore and AppCompatLocaleRepository *is* the wrapper around AppCompat's delegate.
             // Both have in-memory doubles, which is what keeps their consumers plain-JVM.
-            .withPackage(*(AGGREGATES + listOf("feed", "profile")).map { "$ROOT.$it.." }.toTypedArray())
-            .assertTrue(additionalMessage = REPOSITORY_MESSAGE) { file ->
+            .withPackage(
+                *(AGGREGATES + listOf("feed", "profile"))
+                    .map {
+                        "$ROOT.$it.."
+                    }.toTypedArray(),
+            ).assertTrue(additionalMessage = REPOSITORY_MESSAGE) { file ->
                 file.classes().none { it.name.endsWith("Repository") } ||
                     file.imports.none {
                         it.name.startsWith("android.") || it.name.startsWith("androidx.")

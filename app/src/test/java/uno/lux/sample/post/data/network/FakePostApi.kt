@@ -1,16 +1,16 @@
 package uno.lux.sample.post.data.network
 
-import java.time.Instant
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
+import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.core.network.notFoundException
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.UserDto
 import uno.lux.sample.user.data.network.stubAuthor
+import java.time.Instant
 
 class FakePostApi(
     /** What [getPost] serves; an id that isn't here 404s, the way the real API does. */
@@ -46,7 +46,10 @@ class FakePostApi(
     )
 
     /** One `images[]` part: the filename it declared and the bytes it carried. */
-    data class UploadedPart(val filename: String?, val bytes: ByteArray) {
+    data class UploadedPart(
+        val filename: String?,
+        val bytes: ByteArray,
+    ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is UploadedPart) return false
@@ -86,7 +89,8 @@ class FakePostApi(
 
     /** The `filename="…"` of a part's Content-Disposition header, which is how the server names it. */
     private fun MultipartBody.Part.filename(): String? =
-        headers?.get("Content-Disposition")
+        headers
+            ?.get("Content-Disposition")
             ?.substringAfter("filename=\"", missingDelimiterValue = "")
             ?.substringBefore('"')
             ?.takeIf { it.isNotEmpty() }

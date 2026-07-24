@@ -111,12 +111,12 @@ class BackStackRestorationTest {
         val tester = startHost()
         push(Screen.Profile(userId = "u2"))
 
-        composeTestRule.onNodeWithTag(CounterTag).performClick()
-        composeTestRule.onNodeWithTag(CounterTag).assertTextEquals("1")
+        composeTestRule.onNodeWithTag(COUNTER_TAG).performClick()
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("1")
 
         tester.emulateSavedInstanceStateRestore()
 
-        composeTestRule.onNodeWithTag(CounterTag).assertTextEquals("1")
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("1")
     }
 
     // ── host ──────────────────────────────────────────────────────────────────
@@ -135,12 +135,12 @@ class BackStackRestorationTest {
     private fun goBack() = composeTestRule.runOnIdle { navigator.goBack() }
 
     private fun assertTopIs(screen: Screen) {
-        composeTestRule.onNodeWithTag(CurrentKeyTag).assertTextEquals(screen.toString())
+        composeTestRule.onNodeWithTag(CURRENT_KEY_TAG).assertTextEquals(screen.toString())
     }
 }
 
-private const val CurrentKeyTag = "current_key"
-private const val CounterTag = "counter"
+private const val CURRENT_KEY_TAG = "current_key"
+private const val COUNTER_TAG = "counter"
 
 /**
  * A stand-in for `MosaicApp`: the same composition-owned back stack, [Navigator] attachment and
@@ -178,11 +178,11 @@ private fun KeyLabel(key: NavKey) {
     var taps by rememberSaveable { mutableIntStateOf(0) }
 
     Column {
-        Text(text = key.toString(), modifier = Modifier.testTag(CurrentKeyTag))
+        Text(text = key.toString(), modifier = Modifier.testTag(CURRENT_KEY_TAG))
         Text(
             text = taps.toString(),
             modifier = Modifier
-                .testTag(CounterTag)
+                .testTag(COUNTER_TAG)
                 .clickable { taps++ },
         )
     }

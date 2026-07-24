@@ -38,7 +38,7 @@ class HoldToConfirmButtonTest {
         composeRule.setContent {
             MosaicTheme {
                 HoldToConfirmButton(
-                    text = Label,
+                    text = LABEL,
                     onConfirm = onConfirm,
                     enabled = enabled,
                     isBusy = isBusy,
@@ -52,7 +52,8 @@ class HoldToConfirmButtonTest {
         var confirmed = 0
         setButton { confirmed++ }
 
-        composeRule.onNodeWithContentDescription(Label)
+        composeRule
+            .onNodeWithContentDescription(LABEL)
             .assertIsDisplayed()
             .assertIsEnabled()
             .performSemanticsAction(SemanticsActions.OnClick)
@@ -65,7 +66,8 @@ class HoldToConfirmButtonTest {
         var confirmed = 0
         setButton(enabled = false) { confirmed++ }
 
-        composeRule.onNodeWithContentDescription(Label)
+        composeRule
+            .onNodeWithContentDescription(LABEL)
             .assertIsNotEnabled()
             .performSemanticsAction(SemanticsActions.OnClick)
 
@@ -77,7 +79,8 @@ class HoldToConfirmButtonTest {
         var confirmed = 0
         setButton(isBusy = true) { confirmed++ }
 
-        composeRule.onNodeWithContentDescription(Label)
+        composeRule
+            .onNodeWithContentDescription(LABEL)
             .assertIsNotEnabled()
             .performSemanticsAction(SemanticsActions.OnClick)
 
@@ -89,9 +92,9 @@ class HoldToConfirmButtonTest {
     fun theButtonExposesOneLabelWhicheverIsShowing() {
         setButton {}
 
-        composeRule.onNodeWithContentDescription(Label).assertIsDisplayed()
-        composeRule.onAllNodesWithText(Label).assertCountEquals(0)
+        composeRule.onNodeWithContentDescription(LABEL).assertIsDisplayed()
+        composeRule.onAllNodesWithText(LABEL).assertCountEquals(0)
     }
 }
 
-private const val Label = "Publish"
+private const val LABEL = "Publish"

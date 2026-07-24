@@ -5,13 +5,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import uno.lux.sample.settings.AppLanguage
-import uno.lux.sample.settings.data.AppLocaleRepository
-import uno.lux.sample.settings.data.DefaultAutoPlayVideos
-import uno.lux.sample.settings.data.SettingsRepository
-import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.settings.AppLanguage
+import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.AppLocaleRepository
+import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
+import uno.lux.sample.settings.data.SettingsRepository
 import javax.inject.Inject
 
 /**
@@ -25,13 +25,14 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val appLocaleRepository: AppLocaleRepository,
     private val navigator: Navigator,
-) : ViewModel(), SettingsActions {
+) : ViewModel(),
+    SettingsActions {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
         .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
 
     val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
-        .stateInWhileSubscribed(viewModelScope, DefaultAutoPlayVideos)
+        .stateInWhileSubscribed(viewModelScope, DEFAULT_AUTO_PLAY_VIDEOS)
 
     /** Already hot state on the repository — a language is always in effect — so it passes straight through. */
     val language: StateFlow<AppLanguage> = appLocaleRepository.language

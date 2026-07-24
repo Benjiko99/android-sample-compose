@@ -23,11 +23,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,12 +39,12 @@ import androidx.core.app.ShareCompat
 import androidx.core.content.getSystemService
 import kotlinx.coroutines.launch
 import uno.lux.sample.R
+import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.post.Post
 import uno.lux.sample.user.User
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.app.util.debouncedClickable
-import uno.lux.sample.app.util.rememberDebounced
-import uno.lux.sample.app.theme.LocalMosaicColors
 
 /**
  * The post's "⋮" affordance and everything behind it: a bottom sheet of save / share / copy-link /
@@ -165,17 +164,26 @@ private fun PostOverflowSheet(
             label = stringResource(
                 if (post.isBookmarked) R.string.post_menu_unsave else R.string.post_menu_save,
             ),
-            onClick = { onToggleBookmark(); dismiss() },
+            onClick = {
+                onToggleBookmark()
+                dismiss()
+            },
         )
         SheetRow(
             iconRes = R.drawable.ic_share,
             label = stringResource(R.string.post_menu_share),
-            onClick = { sharePostLink(context, post); dismiss() },
+            onClick = {
+                sharePostLink(context, post)
+                dismiss()
+            },
         )
         SheetRow(
             iconRes = R.drawable.ic_link,
             label = stringResource(R.string.post_menu_copy_link),
-            onClick = { copyPostLink(context, post); dismiss() },
+            onClick = {
+                copyPostLink(context, post)
+                dismiss()
+            },
         )
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant,
@@ -184,7 +192,10 @@ private fun PostOverflowSheet(
         SheetRow(
             iconRes = R.drawable.ic_flag,
             label = stringResource(R.string.post_menu_report),
-            onClick = { onReport(); dismiss() },
+            onClick = {
+                onReport()
+                dismiss()
+            },
         )
         if (onDelete != null) {
             SheetRow(
@@ -193,7 +204,10 @@ private fun PostOverflowSheet(
                 danger = true,
                 // Dismiss first: the confirmation dialog replaces the sheet rather than
                 // stacking on top of it.
-                onClick = { dismiss(); onDelete() },
+                onClick = {
+                    dismiss()
+                    onDelete()
+                },
             )
         }
         Spacer(Modifier.height(16.dp))
@@ -205,7 +219,8 @@ private fun PostOverflowSheet(
  * the post title rides along as the subject for targets that use one (e.g. email).
  */
 private fun sharePostLink(context: Context, post: Post) {
-    ShareCompat.IntentBuilder(context)
+    ShareCompat
+        .IntentBuilder(context)
         .setType("text/plain")
         .setSubject(post.title)
         .setText(post.url)
@@ -228,7 +243,9 @@ private fun copyPostLink(context: Context, post: Post) {
 }
 
 /** Shows a short toast for [messageRes] — the shared form behind the sheet's placeholder actions. */
-private fun Context.toast(@StringRes messageRes: Int) {
+private fun Context.toast(
+    @StringRes messageRes: Int,
+) {
     Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
 }
 

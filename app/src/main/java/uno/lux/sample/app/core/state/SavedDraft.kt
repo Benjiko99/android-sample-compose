@@ -7,7 +7,7 @@ import androidx.savedstate.serialization.encodeToSavedState
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.serializer
 
-/**
+/*
  * Persisting a **draft** — the part of a screen's state the user typed — across process death.
  *
  * The back stack restores which page was open; everything a ViewModel holds is built again from

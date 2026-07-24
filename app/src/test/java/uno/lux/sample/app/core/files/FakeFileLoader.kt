@@ -1,7 +1,5 @@
 package uno.lux.sample.app.core.files
 
-
-
 /**
  * Shared [uno.lux.sample.app.core.files.FileLoader] double. [read] records the URI it was asked for and returns a payload naming
  * it, so a test can assert *which* files were uploaded; [error] and [size] drive the failure and
@@ -29,6 +27,8 @@ internal class FakeFileLoader(
 }
 
 /** Reports a fixed duration for any video URI. */
-internal class FakeVideoMetadataReader(private val duration: Int = 12) : VideoMetadataReader {
+internal class FakeVideoMetadataReader(
+    private val duration: Int = 12,
+) : VideoMetadataReader {
     override suspend fun durationSeconds(uri: String): Int = duration
 }

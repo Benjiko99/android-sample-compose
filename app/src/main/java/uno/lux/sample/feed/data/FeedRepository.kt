@@ -19,7 +19,7 @@ sealed interface FeedState {
 
     data class Loaded(
         val postIds: List<PostId>,
-        val hasMore: Boolean
+        val hasMore: Boolean,
     ) : FeedState
 }
 
@@ -68,8 +68,11 @@ class FeedRepository(
         val created = postRepository.create(draft)
 
         _feedState.update { state ->
-            if (state is FeedState.Loaded) state.copy(postIds = listOf(created.id) + state.postIds)
-            else state
+            if (state is FeedState.Loaded) {
+                state.copy(postIds = listOf(created.id) + state.postIds)
+            } else {
+                state
+            }
         }
 
         return created.id

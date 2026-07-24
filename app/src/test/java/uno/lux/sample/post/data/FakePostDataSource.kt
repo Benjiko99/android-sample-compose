@@ -1,12 +1,12 @@
 package uno.lux.sample.post.data
 
-import java.time.Instant
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
 import uno.lux.sample.post.PostWithAuthor
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
+import java.time.Instant
 
 internal class FakePostDataSource : PostDataSource {
 
@@ -69,7 +69,7 @@ internal class FakePostDataSource : PostDataSource {
     override suspend fun toggleLike(post: Post) =
         post.copy(
             isLiked = !post.isLiked,
-            likeCount = post.likeCount + if (!post.isLiked) 1 else -1
+            likeCount = post.likeCount + if (!post.isLiked) 1 else -1,
         )
 
     override suspend fun toggleBookmark(post: Post) =

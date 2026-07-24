@@ -1,13 +1,13 @@
 package uno.lux.sample.app.fixtures
 
-import java.time.Duration
-import java.time.Instant
 import uno.lux.sample.album.Album
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.post.Post
 import uno.lux.sample.post.PostId
-import uno.lux.sample.video.Video
 import uno.lux.sample.user.User
+import uno.lux.sample.video.Video
+import java.time.Duration
+import java.time.Instant
 
 /**
  * Stand-in content for the in-memory repository and Compose previews. Timestamps are
@@ -23,7 +23,7 @@ internal val SampleUsers = listOf(
         gender = "Woman",
         location = "London, England",
         bio = "Mathematician & writer. The Analytical Engine weaves algebra the way the loom " +
-                "weaves flowers. Poetical science, mostly.",
+            "weaves flowers. Poetical science, mostly.",
         followerCount = 128_400,
         followingCount = 212,
     ),
@@ -57,7 +57,7 @@ internal val SampleUsers = listOf(
         gender = "Woman",
         location = "Cambridge, Massachusetts",
         bio = "I coined \"software engineering\" so they'd take the code as seriously as the " +
-                "hardware. Apollo guidance, priority scheduling.",
+            "hardware. Apollo guidance, priority scheduling.",
         followerCount = 154_300,
         followingCount = 96,
     ),
@@ -75,7 +75,7 @@ internal val SampleUsers = listOf(
 )
 
 /** The sample user signed in as "me" — their own profile shows the Edit-profile action. */
-const val LoggedInUserId = "u1"
+const val LOGGED_IN_USER_ID = "u1"
 
 /**
  * The stand-in stream each sample [Video] points at — a short, freely hosted MP4, one per video.
@@ -85,16 +85,16 @@ const val LoggedInUserId = "u1"
  * They have to *look* different too. The host's `sample-3.mp4` and `sample-5.mp4` are the same
  * clip under two names, which leaves a playback bug indistinguishable from correct behaviour.
  */
-private const val ImitationGameVideoUrl = "https://getsamplefiles.com/download/mp4/sample-2.mp4"
-private const val KernelBootVideoUrl = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
+private const val IMITATION_GAME_VIDEO_URL = "https://getsamplefiles.com/download/mp4/sample-2.mp4"
+private const val KERNEL_BOOT_VIDEO_URL = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
 
 /**
  * Poster frames for the sample clips. An uploaded video's is extracted server-side, but the sample
  * clips are external files the server never read, so — exactly as its own seed data does — they
  * point at a hosted JPEG and carry fixed dimensions to match.
  */
-private const val ImitationGameThumbnailUrl = "https://getsamplefiles.com/download/jpg/sample-1.jpg"
-private const val KernelBootThumbnailUrl = "https://getsamplefiles.com/download/jpg/sample-4.jpg"
+private const val IMITATION_GAME_THUMBNAIL_URL = "https://getsamplefiles.com/download/jpg/sample-1.jpg"
+private const val KERNEL_BOOT_THUMBNAIL_URL = "https://getsamplefiles.com/download/jpg/sample-4.jpg"
 
 /** The stand-in photos the "Engine sketches" album shows, as freely hosted JPEGs. */
 private val EngineSketchImages = listOf(
@@ -167,10 +167,10 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
             id = "pv3",
             title = "The imitation game, in five seconds",
             durationSeconds = 5,
-            videoUrl = ImitationGameVideoUrl,
+            videoUrl = IMITATION_GAME_VIDEO_URL,
             width = 1280,
             height = 720,
-            thumbnailUrl = ImitationGameThumbnailUrl,
+            thumbnailUrl = IMITATION_GAME_THUMBNAIL_URL,
             thumbnailWidth = 640,
             thumbnailHeight = 360,
         ),
@@ -211,10 +211,10 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
             id = "pv5",
             title = "Booting the kernel",
             durationSeconds = 5,
-            videoUrl = KernelBootVideoUrl,
+            videoUrl = KERNEL_BOOT_VIDEO_URL,
             width = 1920,
             height = 1080,
-            thumbnailUrl = KernelBootThumbnailUrl,
+            thumbnailUrl = KERNEL_BOOT_THUMBNAIL_URL,
             thumbnailWidth = 640,
             thumbnailHeight = 360,
         ),
@@ -238,44 +238,68 @@ internal val SampleComments: Map<PostId, List<Comment>> = buildSampleComments(In
 private fun buildSampleComments(now: Instant): Map<PostId, List<Comment>> = mapOf(
     // p1 "The engine weaves algebraic patterns" — post is 4m old
     "p1" to listOf(
-        Comment("c1p1", SampleUsers[1], now.minus(Duration.ofMinutes(3)),
-            "The loom analogy is poetic — your best one yet.", 24),
-        Comment("c2p1", SampleUsers[2], now.minus(Duration.ofMinutes(1)),
-            "Did Ada ever see a Jacquard loom? I believe she did.", 9),
+        Comment(
+            "c1p1", SampleUsers[1], now.minus(Duration.ofMinutes(3)),
+            "The loom analogy is poetic — your best one yet.", 24,
+        ),
+        Comment(
+            "c2p1", SampleUsers[2], now.minus(Duration.ofMinutes(1)),
+            "Did Ada ever see a Jacquard loom? I believe she did.", 9,
+        ),
     ),
     // p2 "Found the bug" — post is 38m old
     "p2" to listOf(
-        Comment("c1p2", SampleUsers[2], now.minus(Duration.ofMinutes(35)),
-            "First recorded debugging session. The logbook is incredible.", 61),
-        Comment("c2p2", SampleUsers[3], now.minus(Duration.ofMinutes(20)),
-            "It's always the actual bugs, isn't it.", 18),
+        Comment(
+            "c1p2", SampleUsers[2], now.minus(Duration.ofMinutes(35)),
+            "First recorded debugging session. The logbook is incredible.", 61,
+        ),
+        Comment(
+            "c2p2", SampleUsers[3], now.minus(Duration.ofMinutes(20)),
+            "It's always the actual bugs, isn't it.", 18,
+        ),
     ),
     // p3 "Can machines think?" — post is 2h old
     "p3" to listOf(
-        Comment("c1p3", SampleUsers[0], now.minus(Duration.ofMinutes(115)),
-            "The imitation game is really a test of our assumptions, not the machine.", 44),
-        Comment("c2p3", SampleUsers[3], now.minus(Duration.ofMinutes(90)),
-            "The question itself is the insight. Brilliant framing.", 12),
-        Comment("c3p3", SampleUsers[4], now.minus(Duration.ofMinutes(38)),
-            "Philosophy embedded in a practical test.", 3),
+        Comment(
+            "c1p3", SampleUsers[0], now.minus(Duration.ofMinutes(115)),
+            "The imitation game is really a test of our assumptions, not the machine.", 44,
+        ),
+        Comment(
+            "c2p3", SampleUsers[3], now.minus(Duration.ofMinutes(90)),
+            "The question itself is the insight. Brilliant framing.", 12,
+        ),
+        Comment(
+            "c3p3", SampleUsers[4], now.minus(Duration.ofMinutes(38)),
+            "Philosophy embedded in a practical test.", 3,
+        ),
     ),
     // p4 "Priority scheduling saved the landing" — post is 6h old
     "p4" to listOf(
-        Comment("c1p4", SampleUsers[0], now.minus(Duration.ofMinutes(350)),
-            "The 1202 alarm story is one of the best in engineering. They kept going.", 31),
-        Comment("c2p4", SampleUsers[2], now.minus(Duration.ofHours(3)),
-            "Priority scheduling is underappreciated in computing history.", 7),
+        Comment(
+            "c1p4", SampleUsers[0], now.minus(Duration.ofMinutes(350)),
+            "The 1202 alarm story is one of the best in engineering. They kept going.", 31,
+        ),
+        Comment(
+            "c2p4", SampleUsers[2], now.minus(Duration.ofHours(3)),
+            "Priority scheduling is underappreciated in computing history.", 7,
+        ),
     ),
     // p5 "Just a hobby, won't be big" — post is 1d old
     "p5" to listOf(
-        Comment("c1p5", SampleUsers[1], now.minus(Duration.ofHours(20)),
-            "Famous last words. The kernel is still running.", 22),
-        Comment("c2p5", SampleUsers[0], now.minus(Duration.ofHours(16)),
-            "I love how this turned out to be just a hobby.", 15),
+        Comment(
+            "c1p5", SampleUsers[1], now.minus(Duration.ofHours(20)),
+            "Famous last words. The kernel is still running.", 22,
+        ),
+        Comment(
+            "c2p5", SampleUsers[0], now.minus(Duration.ofHours(16)),
+            "I love how this turned out to be just a hobby.", 15,
+        ),
     ),
     // p6 "On numbers and music" — post is 3d old
     "p6" to listOf(
-        Comment("c1p6", SampleUsers[1], now.minus(Duration.ofDays(2)),
-            "The Analytical Engine composing music — a beautiful idea.", 11),
+        Comment(
+            "c1p6", SampleUsers[1], now.minus(Duration.ofDays(2)),
+            "The Analytical Engine composing music — a beautiful idea.", 11,
+        ),
     ),
 )

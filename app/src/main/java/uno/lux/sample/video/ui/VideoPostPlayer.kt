@@ -28,12 +28,12 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import uno.lux.sample.R
-import uno.lux.sample.app.theme.MosaicGradients
-import uno.lux.sample.video.Video
 import uno.lux.sample.app.common.ui.MediaBadge
 import uno.lux.sample.app.common.ui.PlayBadge
-import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.format.formatVideoDuration
+import uno.lux.sample.app.theme.MosaicGradients
+import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.video.Video
 
 /**
  * A video post's media area: a 16:9 stage that starts as a tappable thumbnail and, once playing,
@@ -50,7 +50,8 @@ internal fun VideoPostPlayer(
     modifier: Modifier = Modifier,
 ) {
     val playback = LocalVideoPlayback.current
-    val isActive = playback != null && playback.activeVideoUrl == video.videoUrl && playback.player != null
+    val isActive =
+        playback != null && playback.activeVideoUrl == video.videoUrl && playback.player != null
 
     Box(
         modifier = modifier
@@ -81,7 +82,10 @@ internal fun VideoPostPlayer(
                 },
                 // While full screen owns the surface the inline view detaches (player = null) but
                 // never releases — the controller keeps the instance alive across the transition.
-                update = { view -> view.player = if (playback.isFullscreen) null else playback.player },
+                update = { view ->
+                    view.player =
+                        if (playback.isFullscreen) null else playback.player
+                },
                 onRelease = { view -> view.player = null },
                 modifier = Modifier.fillMaxSize(),
             )
@@ -160,14 +164,14 @@ private fun rememberThumbnailRequest(video: Video): ImageRequest {
     val context = LocalContext.current
 
     return remember(context, video.thumbnailUrl, video.thumbnailWidth, video.thumbnailHeight) {
-        ImageRequest.Builder(context)
+        ImageRequest
+            .Builder(context)
             .data(video.thumbnailUrl)
             .apply {
                 val width = video.thumbnailWidth
                 val height = video.thumbnailHeight
 
                 if (width != null && height != null) size(width, height)
-            }
-            .build()
+            }.build()
     }
 }

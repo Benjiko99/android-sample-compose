@@ -10,8 +10,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-private const val HoldMillis = 1_500L
-private const val HintMillis = 1_000L
+private const val HOLD_MILLIS = 1_500L
+private const val HINT_MILLIS = 1_000L
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HoldToConfirmStateTest {
@@ -19,13 +19,15 @@ class HoldToConfirmStateTest {
     @Test
     fun `holding for the whole duration confirms once`() = runTest {
         var confirmed = 0
-        val state = HoldToConfirmState(HoldMillis, HintMillis)
+        val state = HoldToConfirmState(HOLD_MILLIS, HINT_MILLIS)
 
-        backgroundScope.launch { state.press(awaitRelease = { awaitCancellation() }) { confirmed++ } }
+        backgroundScope.launch {
+            state.press(awaitRelease = { awaitCancellation() }) { confirmed++ }
+        }
         runCurrent()
         assertEquals(HoldPhase.HOLDING, state.phase)
 
-        advanceTimeBy(HoldMillis - 1)
+        advanceTimeBy(HOLD_MILLIS - 1)
         assertEquals(0, confirmed)
         assertEquals(HoldPhase.HOLDING, state.phase)
 
@@ -34,14 +36,14 @@ class HoldToConfirmStateTest {
         assertEquals(HoldPhase.IDLE, state.phase)
 
         // The finger is still down; the action must not repeat while it stays there.
-        advanceTimeBy(HoldMillis * 2)
+        advanceTimeBy(HOLD_MILLIS * 2)
         assertEquals(1, confirmed)
     }
 
     @Test
     fun `releasing early hints instead of confirming`() = runTest {
         var confirmed = 0
-        val state = HoldToConfirmState(HoldMillis, HintMillis)
+        val state = HoldToConfirmState(HOLD_MILLIS, HINT_MILLIS)
 
         backgroundScope.launch { state.press(awaitRelease = { delay(400) }) { confirmed++ } }
         runCurrent()
@@ -53,13 +55,13 @@ class HoldToConfirmStateTest {
 
     @Test
     fun `the hint clears itself after its duration`() = runTest {
-        val state = HoldToConfirmState(HoldMillis, HintMillis)
+        val state = HoldToConfirmState(HOLD_MILLIS, HINT_MILLIS)
 
         backgroundScope.launch { state.press(awaitRelease = { delay(400) }) {} }
         runCurrent()
         advanceTimeBy(401)
 
-        advanceTimeBy(HintMillis - 1)
+        advanceTimeBy(HINT_MILLIS - 1)
         assertEquals(HoldPhase.HINT, state.phase)
 
         advanceTimeBy(2)
@@ -73,24 +75,26 @@ class HoldToConfirmStateTest {
     @Test
     fun `a press started during the hint supersedes it`() = runTest {
         var confirmed = 0
-        val state = HoldToConfirmState(HoldMillis, HintMillis)
+        val state = HoldToConfirmState(HOLD_MILLIS, HINT_MILLIS)
 
         backgroundScope.launch { state.press(awaitRelease = { delay(200) }) { confirmed++ } }
         runCurrent()
         advanceTimeBy(201)
         assertEquals(HoldPhase.HINT, state.phase)
 
-        backgroundScope.launch { state.press(awaitRelease = { awaitCancellation() }) { confirmed++ } }
+        backgroundScope.launch {
+            state.press(awaitRelease = { awaitCancellation() }) { confirmed++ }
+        }
         runCurrent()
         assertEquals(HoldPhase.HOLDING, state.phase)
 
         // A full hint's worth of time: whenever the first press's hint was due to expire, it has.
         // Still short of the second press's own hold, which started later.
-        advanceTimeBy(HintMillis)
+        advanceTimeBy(HINT_MILLIS)
         assertEquals(HoldPhase.HOLDING, state.phase)
         assertEquals(0, confirmed)
 
-        advanceTimeBy(HoldMillis)
+        advanceTimeBy(HOLD_MILLIS)
         assertEquals(1, confirmed)
         assertEquals(HoldPhase.IDLE, state.phase)
     }
@@ -98,7 +102,7 @@ class HoldToConfirmStateTest {
     @Test
     fun `a cancelled press leaves the button idle`() = runTest {
         var confirmed = 0
-        val state = HoldToConfirmState(HoldMillis, HintMillis)
+        val state = HoldToConfirmState(HOLD_MILLIS, HINT_MILLIS)
 
         val press = backgroundScope.launch {
             state.press(awaitRelease = { awaitCancellation() }) { confirmed++ }

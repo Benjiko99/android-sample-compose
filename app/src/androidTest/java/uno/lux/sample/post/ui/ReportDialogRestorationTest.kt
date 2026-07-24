@@ -44,15 +44,15 @@ class ReportDialogRestorationTest {
         val spam = string(R.string.report_reason_spam)
 
         composeRule.onNodeWithText(spam).performClick()
-        composeRule.onNodeWithText(string(R.string.report_details_hint)).performTextInput(Details)
+        composeRule.onNodeWithText(string(R.string.report_details_hint)).performTextInput(DETAILS)
 
         restorationTester.emulateSavedInstanceStateRestore()
 
         // Both halves of the report survive: the radio choice this change made saveable, and the
         // details text, whose TextFieldState already was.
         composeRule.onNodeWithText(spam).assertIsSelected()
-        composeRule.onNodeWithText(Details).assertExists()
+        composeRule.onNodeWithText(DETAILS).assertExists()
     }
 }
 
-private const val Details = "Posted the same link four times."
+private const val DETAILS = "Posted the same link four times."

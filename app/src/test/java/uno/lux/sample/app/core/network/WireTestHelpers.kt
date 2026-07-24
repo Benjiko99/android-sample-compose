@@ -16,5 +16,5 @@ fun notFoundException(message: String) = HttpException(
         404,
         """{"error":{"code":"NOT_FOUND","message":"$message"}}"""
             .toResponseBody("application/json".toMediaType()),
-    )
+    ),
 )

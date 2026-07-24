@@ -14,22 +14,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.video.Video
-import uno.lux.sample.profile.data.ProfileRepository
-import uno.lux.sample.user.UserId
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.profile.data.ProfileRepository
+import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.video.Video
 
 /**
  * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
@@ -52,7 +52,8 @@ class ProfileViewModel @AssistedInject constructor(
     private val navigator: Navigator,
     @param:CurrentUserId private val currentUserId: UserId,
     @Assisted private val userId: UserId,
-) : ViewModel(), ProfileActions {
+) : ViewModel(),
+    ProfileActions {
 
     @AssistedFactory
     interface Factory {
@@ -87,8 +88,15 @@ class ProfileViewModel @AssistedInject constructor(
                 val post = entities[id] ?: return@mapNotNull null
                 val author = users[post.authorId] ?: return@mapNotNull null
                 val cached = cache[id]
-                if (cached != null && cached.post === post && cached.author === author) cached
-                else PostCardData(post = post, author = author, isOwn = post.authorId == currentUserId)
+                if (cached != null && cached.post === post && cached.author === author) {
+                    cached
+                } else {
+                    PostCardData(
+                        post = post, author = author,
+                        isOwn =
+                            post.authorId == currentUserId,
+                    )
+                }
             }
             cache = cards.associateBy { it.post.id }
 
@@ -97,7 +105,10 @@ class ProfileViewModel @AssistedInject constructor(
     }
 
     /** The two lazily-loaded tabs, paired so the state combine stays within its typed arity. */
-    private data class LazyTabs(val bookmarks: ProfilePostList?, val likes: ProfilePostList?)
+    private data class LazyTabs(
+        val bookmarks: ProfilePostList?,
+        val likes: ProfilePostList?,
+    )
 
     private val lazyTabs: Flow<LazyTabs> = combine(
         cardListFlow(profileRepository.bookmarkIds(userId), profileRepository.hasMoreBookmarks(userId)),
@@ -114,18 +125,21 @@ class ProfileViewModel @AssistedInject constructor(
             profileRepository.hasMorePosts(userId),
             lazyTabs,
         ) { user, profile, posts, hasMorePosts, tabs ->
-            if (user == null) null
-            else ProfileUiState.Loaded(
-                data = ProfileScreenData(
-                    user = user,
-                    profile = profile,
-                    posts = posts,
-                    postsEndReached = !hasMorePosts,
-                    bookmarks = tabs.bookmarks,
-                    likes = tabs.likes,
-                ),
-                isCurrentUser = userId == currentUserId,
-            )
+            if (user == null) {
+                null
+            } else {
+                ProfileUiState.Loaded(
+                    data = ProfileScreenData(
+                        user = user,
+                        profile = profile,
+                        posts = posts,
+                        postsEndReached = !hasMorePosts,
+                        bookmarks = tabs.bookmarks,
+                        likes = tabs.likes,
+                    ),
+                    isCurrentUser = userId == currentUserId,
+                )
+            }
         },
         _loadError,
         _hasLoaded,

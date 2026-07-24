@@ -6,30 +6,30 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.testing.ViewModelTest
-import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.app.navigation.Navigator
+import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.feed.data.FakeFeedDataSource
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.Post
+import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.video.Video
+import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.settings.data.SettingsRepository
-import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.app.navigation.Navigator
-import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.testing.testPostUrl
+import uno.lux.sample.video.Video
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -63,7 +63,8 @@ class HomeViewModelTest : ViewModelTest() {
     private val navigator = Navigator().apply { attach(backStack) }
 
     private fun viewModel(
-        feedDataSource: FeedDataSource = FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
+        feedDataSource: FeedDataSource =
+            FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
         currentUserId: UserId = "u1",
         settingsRepository: SettingsRepository = InMemorySettingsRepository(),
     ): HomeViewModel {
@@ -100,8 +101,17 @@ class HomeViewModelTest : ViewModelTest() {
         viewModel.onToggleLike("p1")
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
-        assertTrue(feed.posts.single().post.isLiked)
-        assertEquals(11, feed.posts.single().post.likeCount)
+        assertTrue(
+            feed.posts
+                .single()
+                .post.isLiked,
+        )
+        assertEquals(
+            11,
+            feed.posts
+                .single()
+                .post.likeCount,
+        )
     }
 
     @Test
@@ -114,7 +124,11 @@ class HomeViewModelTest : ViewModelTest() {
         viewModel.onToggleBookmark("p1")
 
         val feed = viewModel.uiState.value as HomeUiState.Feed
-        assertTrue(feed.posts.single().post.isBookmarked)
+        assertTrue(
+            feed.posts
+                .single()
+                .post.isBookmarked,
+        )
     }
 
     @Test
@@ -361,4 +375,3 @@ private class SuspendingFeedDataSource : FeedDataSource {
 
     fun complete() = gate.complete(Unit)
 }
-

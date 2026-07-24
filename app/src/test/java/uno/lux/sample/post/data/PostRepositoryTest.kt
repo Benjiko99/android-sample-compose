@@ -1,6 +1,5 @@
 package uno.lux.sample.post.data
 
-import java.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,6 +15,7 @@ import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
+import java.time.Instant
 
 class PostRepositoryTest {
 
@@ -226,4 +226,3 @@ private fun post(
     isLiked = isLiked,
     isBookmarked = isBookmarked,
 )
-

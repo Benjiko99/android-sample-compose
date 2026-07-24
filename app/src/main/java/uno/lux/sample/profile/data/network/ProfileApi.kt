@@ -7,7 +7,9 @@ import retrofit2.http.Query
 interface ProfileApi {
 
     @GET("users/{id}/profile")
-    suspend fun getProfileStats(@Path("id") id: String): ProfileStatsResponse
+    suspend fun getProfileStats(
+        @Path("id") id: String,
+    ): ProfileStatsResponse
 
     @GET("users/{id}/posts")
     suspend fun getUserPosts(

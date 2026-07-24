@@ -6,6 +6,7 @@ import uno.lux.sample.user.UserId
 
 interface ProfileDataSource {
     suspend fun refresh(userId: UserId): ProfileRefreshData
+
     suspend fun loadMorePosts(userId: UserId, cursor: String?): PostsPage
 
     /**
@@ -29,7 +30,11 @@ data class ProfileRefreshData(
     val postHasMore: Boolean,
 )
 
-data class PostsPage(val posts: List<Post>, val cursor: String?, val hasMore: Boolean)
+data class PostsPage(
+    val posts: List<Post>,
+    val cursor: String?,
+    val hasMore: Boolean,
+)
 
 /**
  * A page of posts for the Saved and Likes tabs. Unlike [PostsPage], it carries [users]: a

@@ -4,10 +4,10 @@ import androidx.annotation.StringRes
 import kotlinx.serialization.Serializable
 import uno.lux.sample.R
 import uno.lux.sample.app.core.files.FileUpload
+import uno.lux.sample.app.util.AppError
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
-import uno.lux.sample.app.util.AppError
 
 /**
  * The gender choices the profile editor offers. [storedValue] is the canonical value the
@@ -19,7 +19,8 @@ enum class GenderOption(
     @get:StringRes val labelRes: Int,
 ) {
     MAN("Man", R.string.gender_man),
-    WOMAN("Woman", R.string.gender_woman);
+    WOMAN("Woman", R.string.gender_woman),
+    ;
 
     companion object {
         fun fromStored(value: String?): GenderOption? =
@@ -87,7 +88,10 @@ data class EditProfileForm(
 /** The edit-profile screen's state: loading the profile, a failed load, or the live form. */
 sealed interface EditProfileUiState {
     data object Loading : EditProfileUiState
-    data class Error(val error: AppError) : EditProfileUiState
+
+    data class Error(
+        val error: AppError,
+    ) : EditProfileUiState
 
     data class Editing(
         val form: EditProfileForm,

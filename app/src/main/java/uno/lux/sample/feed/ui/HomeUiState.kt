@@ -1,7 +1,7 @@
 package uno.lux.sample.feed.ui
 
-import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.app.util.AppError
+import uno.lux.sample.post.ui.PostCardData
 
 /**
  * Exhaustive state for the feed screen, rendered by a stateless `HomeScreen`. Modeled as
@@ -9,7 +9,10 @@ import uno.lux.sample.app.util.AppError
  */
 sealed interface HomeUiState {
     data object Loading : HomeUiState
-    data class Error(val error: AppError) : HomeUiState
+
+    data class Error(
+        val error: AppError,
+    ) : HomeUiState
 
     /** [endReached] is true when the backend has no more posts beyond [posts]. */
     data class Feed(

@@ -1,7 +1,7 @@
 package uno.lux.sample.comment
 
-import java.time.Instant
 import uno.lux.sample.user.User
+import java.time.Instant
 
 typealias CommentId = String
 

@@ -14,23 +14,23 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.testing.ViewModelTest
-import uno.lux.sample.comment.Comment
-import uno.lux.sample.comment.data.CommentDataSource
-import uno.lux.sample.comment.data.FakeCommentDataSource
-import uno.lux.sample.post.data.FakePostDataSource
-import uno.lux.sample.comment.data.CommentRepository
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.PostWithAuthor
-import uno.lux.sample.user.data.FakeUserDataSource
-import uno.lux.sample.user.User
-import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
+import uno.lux.sample.comment.Comment
+import uno.lux.sample.comment.data.CommentDataSource
+import uno.lux.sample.comment.data.CommentRepository
+import uno.lux.sample.comment.data.FakeCommentDataSource
+import uno.lux.sample.post.Post
+import uno.lux.sample.post.PostId
+import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.post.data.FakePostDataSource
+import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.testPostUrl
+import uno.lux.sample.user.User
+import uno.lux.sample.user.data.FakeUserDataSource
+import uno.lux.sample.user.data.UserRepository
 import java.net.UnknownHostException
 import java.time.Instant
 
@@ -384,4 +384,3 @@ private class GatedCommentDataSource(
     override suspend fun toggleLike(postId: PostId, comment: Comment): Comment =
         throw UnsupportedOperationException()
 }
-

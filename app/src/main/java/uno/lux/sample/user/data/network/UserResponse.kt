@@ -4,4 +4,6 @@ import kotlinx.serialization.Serializable
 
 /** `{ "data": T }` — single-resource response envelope. */
 @Serializable
-data class UserResponse(val data: UserDto)
+data class UserResponse(
+    val data: UserDto,
+)

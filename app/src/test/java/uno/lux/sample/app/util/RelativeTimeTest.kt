@@ -1,9 +1,9 @@
 package uno.lux.sample.app.util
 
-import java.time.Duration
-import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.Duration
+import java.time.Instant
 
 class RelativeTimeTest {
 

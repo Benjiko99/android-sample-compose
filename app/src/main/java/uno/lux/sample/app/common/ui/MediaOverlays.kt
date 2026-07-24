@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.app.util.rememberDebounced
 
-/**
+/*
  * Chrome overlaid on media — the badges, play buttons and back affordance that sit on top of
  * thumbnails, galleries and the full-screen viewers. All of it paints over imagery the app can't
  * predict, so each piece scrims the pixels behind it in black and draws its glyphs in white.

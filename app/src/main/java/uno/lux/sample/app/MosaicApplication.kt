@@ -13,7 +13,9 @@ import uno.lux.sample.BuildConfig
  * [HiltAndroidApp] root of the dependency graph.
  */
 @HiltAndroidApp
-class MosaicApplication : Application(), SingletonImageLoader.Factory {
+class MosaicApplication :
+    Application(),
+    SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
@@ -26,7 +28,8 @@ class MosaicApplication : Application(), SingletonImageLoader.Factory {
      * image in the app is a still, which the default decoders already handle.
      */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
-        ImageLoader.Builder(context)
+        ImageLoader
+            .Builder(context)
             .components { add(VideoFrameDecoder.Factory()) }
             .build()
 }

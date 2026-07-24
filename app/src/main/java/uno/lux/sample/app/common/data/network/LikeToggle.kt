@@ -14,4 +14,6 @@ data class LikeToggleDto(
 )
 
 @Serializable
-data class LikeToggleResponse(val data: LikeToggleDto)
+data class LikeToggleResponse(
+    val data: LikeToggleDto,
+)

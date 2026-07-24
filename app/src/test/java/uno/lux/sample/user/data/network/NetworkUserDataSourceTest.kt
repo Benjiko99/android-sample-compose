@@ -8,10 +8,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.net.UnknownHostException
 import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
+import java.net.UnknownHostException
 
 class NetworkUserDataSourceTest {
 

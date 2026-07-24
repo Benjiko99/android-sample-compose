@@ -1,0 +1,31 @@
+root = true
+
+[*.{kt,kts}]
+# A @Composable is PascalCase by convention — ktlint's stock function-naming rule
+# would otherwise flag every composable in the app.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# Expression-body placement (brace on the declaration line vs. wrapped below it) is left to the
+# author rather than ktlint. Neither of function-signature's body-wrapping modes was acceptable:
+# `default` merges a short body onto a signature's closing-paren line once the signature itself
+# had to wrap for other reasons; `multiline` forces the opposite — it pushes the brace off the
+# declaration line for almost every trailing-lambda action (`= launchCatching { ... }`), which is
+# exactly what AGENTS.md's brace-on-declaration-line rule exists to keep inline. There is no
+# third option that only disables body-wrapping, so the whole rule is off. That also drops its
+# 2-or-more-parameter multiline threshold; parameter wrapping now falls to the older, simpler
+# standard:parameter-list-wrapping rule, which only wraps when a signature doesn't fit the line.
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_function-signature = disabled
+
+# Would split `@Inject constructor` over three lines and indent the whole class body beneath
+# it — every ViewModel in the app.
+ktlint_standard_annotation = disabled
+
+# A private `_foo` stays underscored here even with no public `foo` beside it.
+ktlint_standard_backing-property-naming = disabled
+
+# A class body may open with a blank line; it separates the declarations from the header.
+ktlint_standard_no-empty-first-line-in-class-body = disabled
+
+# Arguments that fit a line stay on it rather than going one-per-line.
+ktlint_standard_argument-list-wrapping = disabled
