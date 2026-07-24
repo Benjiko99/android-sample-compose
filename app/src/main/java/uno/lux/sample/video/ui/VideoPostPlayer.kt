@@ -10,14 +10,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.MosaicGradients
 import uno.lux.sample.video.Video
@@ -85,7 +90,11 @@ internal fun VideoPostPlayer(
     }
 }
 
-/** The pre-playback poster: a centered play button over the gradient, with a duration badge. */
+/**
+ * The pre-playback poster: the server-extracted frame if there is one, a centered play button and
+ * a duration badge. The gradient behind is drawn by the caller, so it is what shows through while
+ * the frame loads, if it fails, and for a clip that never got one.
+ */
 @Composable
 private fun VideoThumbnail(
     video: Video,
@@ -98,6 +107,15 @@ private fun VideoThumbnail(
             .debouncedClickable(onClick = onPlay),
         contentAlignment = Alignment.Center,
     ) {
+        if (video.thumbnailUrl != null) {
+            AsyncImage(
+                model = rememberThumbnailRequest(video),
+                contentDescription = video.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
         PlayBadge(
             contentDescription = stringResource(R.string.video_play),
             size = 58.dp,
@@ -109,5 +127,30 @@ private fun VideoThumbnail(
                 .align(Alignment.BottomEnd)
                 .padding(10.dp),
         )
+    }
+}
+
+/**
+ * The poster-frame request, told up front how large the image it is fetching is.
+ *
+ * The server sends the extracted frame's exact pixel dimensions, so Coil can start decoding
+ * immediately instead of waiting a frame for the stage to be measured, and targets the bitmap's
+ * true size rather than sampling for the layout's guess. The dimensions are optional on the wire;
+ * without them the request carries no size and Coil resolves one from the layout as usual.
+ */
+@Composable
+private fun rememberThumbnailRequest(video: Video): ImageRequest {
+    val context = LocalContext.current
+
+    return remember(context, video.thumbnailUrl, video.thumbnailWidth, video.thumbnailHeight) {
+        ImageRequest.Builder(context)
+            .data(video.thumbnailUrl)
+            .apply {
+                val width = video.thumbnailWidth
+                val height = video.thumbnailHeight
+
+                if (width != null && height != null) size(width, height)
+            }
+            .build()
     }
 }

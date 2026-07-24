@@ -88,6 +88,14 @@ const val LoggedInUserId = "u1"
 private const val ImitationGameVideoUrl = "https://getsamplefiles.com/download/mp4/sample-2.mp4"
 private const val KernelBootVideoUrl = "https://getsamplefiles.com/download/mp4/sample-5.mp4"
 
+/**
+ * Poster frames for the sample clips. An uploaded video's is extracted server-side, but the sample
+ * clips are external files the server never read, so — exactly as its own seed data does — they
+ * point at a hosted JPEG and carry fixed dimensions to match.
+ */
+private const val ImitationGameThumbnailUrl = "https://getsamplefiles.com/download/jpg/sample-1.jpg"
+private const val KernelBootThumbnailUrl = "https://getsamplefiles.com/download/jpg/sample-4.jpg"
+
 /** The stand-in photos the "Engine sketches" album shows, as freely hosted JPEGs. */
 private val EngineSketchImages = listOf(
     "https://getsamplefiles.com/download/jpg/sample-1.jpg",
@@ -160,6 +168,11 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
             title = "The imitation game, in five seconds",
             durationSeconds = 5,
             videoUrl = ImitationGameVideoUrl,
+            width = 1280,
+            height = 720,
+            thumbnailUrl = ImitationGameThumbnailUrl,
+            thumbnailWidth = 640,
+            thumbnailHeight = 360,
         ),
     ),
     Post(
@@ -199,6 +212,11 @@ private fun buildSamplePosts(now: Instant): List<Post> = listOf(
             title = "Booting the kernel",
             durationSeconds = 5,
             videoUrl = KernelBootVideoUrl,
+            width = 1920,
+            height = 1080,
+            thumbnailUrl = KernelBootThumbnailUrl,
+            thumbnailWidth = 640,
+            thumbnailHeight = 360,
         ),
     ),
     Post(

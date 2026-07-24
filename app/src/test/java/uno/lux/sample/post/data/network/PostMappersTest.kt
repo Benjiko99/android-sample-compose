@@ -59,6 +59,50 @@ class PostMappersTest {
     }
 
     @Test
+    fun `PostMapper carries a video's resolution and thumbnail across`() {
+        val dto = postDto(
+            video = VideoDto(
+                id = "v1",
+                title = "Clip",
+                durationSeconds = 42,
+                videoUrl = "http://v",
+                width = 1920,
+                height = 1080,
+                thumbnailUrl = "http://t.jpg",
+                thumbnailWidth = 720,
+                thumbnailHeight = 405,
+            ),
+        )
+
+        val video = PostMapper.map(dto).video!!
+
+        assertEquals(1920, video.width)
+        assertEquals(1080, video.height)
+        assertEquals("http://t.jpg", video.thumbnailUrl)
+        assertEquals(720, video.thumbnailWidth)
+        assertEquals(405, video.thumbnailHeight)
+    }
+
+    /**
+     * A clip the server could not probe publishes without a resolution or a poster frame, so the
+     * fields are absent from the payload entirely rather than sent as zeroes.
+     */
+    @Test
+    fun `PostMapper leaves a video's resolution and thumbnail null when the server sent none`() {
+        val dto = postDto(
+            video = VideoDto(id = "v1", title = "Clip", durationSeconds = 0, videoUrl = "http://v"),
+        )
+
+        val video = PostMapper.map(dto).video!!
+
+        assertNull(video.width)
+        assertNull(video.height)
+        assertNull(video.thumbnailUrl)
+        assertNull(video.thumbnailWidth)
+        assertNull(video.thumbnailHeight)
+    }
+
+    @Test
     fun `PostMapper leaves album and video null when absent`() {
         val post = PostMapper.map(postDto())
 
