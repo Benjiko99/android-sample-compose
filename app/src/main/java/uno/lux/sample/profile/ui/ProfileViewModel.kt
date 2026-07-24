@@ -153,7 +153,7 @@ class ProfileViewModel @AssistedInject constructor(
         retry()
     }
 
-    fun refresh() = launchRefresh(_isRefreshing) { load() }
+    fun refresh() = launchRefresh(::loadJob, _isRefreshing) { load() }
 
     fun retry() = launchIfIdle(::loadJob) { load() }
 

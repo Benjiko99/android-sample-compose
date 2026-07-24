@@ -104,7 +104,7 @@ class HomeViewModel @Inject constructor(
         retry()
     }
 
-    override fun refresh() = launchRefresh(_isRefreshing) { load() }
+    override fun refresh() = launchRefresh(::loadJob, _isRefreshing) { load() }
 
     override fun retry() = launchIfIdle(::loadJob) {
         // Back to NotLoaded first, so a retry after a loaded feed shows the spinner rather than

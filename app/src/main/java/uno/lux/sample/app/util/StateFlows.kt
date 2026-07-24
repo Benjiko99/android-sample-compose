@@ -26,11 +26,20 @@ fun <T> Flow<T>.stateInWhileSubscribed(scope: CoroutineScope, initialValue: T): 
     stateIn(scope, SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MILLIS), initialValue)
 
 /**
- * Launches [block] in [viewModelScope], setting [refreshing] to `true` for its duration.
- * Keeps the pull-to-refresh bookkeeping out of ViewModel bodies.
+ * Launches [block] in [viewModelScope] through [launchIfIdle], setting [refreshing] to `true` for
+ * its duration. Keeps the pull-to-refresh bookkeeping out of ViewModel bodies.
+ *
+ * Passing the same [jobRef] a screen's initial load uses is what makes a pull-to-refresh and a
+ * retry exclude each other: both fetch the same thing, so whichever arrives second would only
+ * duplicate the request. A refresh dropped this way leaves [refreshing] untouched — the load
+ * already running owns the indicator.
  */
-fun ViewModel.launchRefresh(refreshing: MutableStateFlow<Boolean>, block: suspend () -> Unit) {
-    viewModelScope.launch {
+fun ViewModel.launchRefresh(
+    jobRef: KMutableProperty0<Job?>,
+    refreshing: MutableStateFlow<Boolean>,
+    block: suspend () -> Unit,
+) {
+    launchIfIdle(jobRef) {
         refreshing.value = true
         try { block() } finally { refreshing.value = false }
     }

@@ -183,7 +183,11 @@ class HomeViewModelTest : ViewModelTest() {
 
     @Test
     fun `refresh raises isRefreshing until the feed data source finishes`() = runTest {
-        val dataSource = SuspendingFeedDataSource()
+        // The initial load has to have finished, or the refresh is the duplicate fetch that
+        // `refresh is ignored while the initial load is still running` pins.
+        val dataSource = SucceedOnceThenSuspendFeedDataSource(
+            firstPage = FeedPage(listOf(post), listOf(author), null, false),
+        )
         val viewModel = viewModel(feedDataSource = dataSource)
 
         assertFalse(viewModel.isRefreshing.value)
@@ -191,6 +195,19 @@ class HomeViewModelTest : ViewModelTest() {
         assertTrue(viewModel.isRefreshing.value)
         dataSource.complete()
         assertFalse(viewModel.isRefreshing.value)
+    }
+
+    @Test
+    fun `refresh is ignored while the initial load is still running`() = runTest {
+        val dataSource = SuspendingFeedDataSource()
+        val viewModel = viewModel(feedDataSource = dataSource)
+
+        viewModel.refresh()
+
+        // The load already in flight owns the spinner; a second fetch of the same page is not
+        // what a pull mid-load should buy.
+        assertFalse(viewModel.isRefreshing.value)
+        assertEquals(1, dataSource.fetches)
     }
 
     @Test
@@ -323,6 +340,8 @@ private class SucceedOnceThenSuspendFeedDataSource(
         gate.await()
         return FeedPage(emptyList(), emptyList(), null, false)
     }
+
+    fun complete() = gate.complete(Unit)
 }
 
 private class FailingFeedDataSource : FeedDataSource {
@@ -331,10 +350,15 @@ private class FailingFeedDataSource : FeedDataSource {
 
 private class SuspendingFeedDataSource : FeedDataSource {
     private val gate = CompletableDeferred<Unit>()
+    var fetches = 0
+        private set
+
     override suspend fun fetch(cursor: String?): FeedPage {
+        fetches++
         gate.await()
         return FeedPage(emptyList(), emptyList(), null, false)
     }
+
     fun complete() = gate.complete(Unit)
 }
 
