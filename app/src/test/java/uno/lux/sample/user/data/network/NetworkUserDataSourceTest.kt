@@ -1,16 +1,39 @@
 package uno.lux.sample.user.data.network
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.UnknownHostException
 import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 
 class NetworkUserDataSourceTest {
+
+    // A 404 is the server saying the user is gone. It has to arrive as an answer the caller can
+    // render — a restored Screen.Profile key can name a user the server has since deleted, and
+    // that page must read "not found", not spin on a retryable error.
+    @Test
+    fun `fetch returns null for a user the server does not have`() = runTest {
+        val dataSource = NetworkUserDataSource(FakeUserApi())
+
+        assertNull(dataSource.fetch("gone"))
+    }
+
+    @Test
+    fun `fetch lets any other failure through`() = runTest {
+        val api = FakeUserApi().apply { getUserError = UnknownHostException("offline") }
+        val dataSource = NetworkUserDataSource(api)
+
+        assertThrows(UnknownHostException::class.java) {
+            runBlocking { dataSource.fetch("u1") }
+        }
+    }
 
     @Test
     fun `fetch returns the user mapped from the API response`() = runTest {

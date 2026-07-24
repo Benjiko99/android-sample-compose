@@ -55,6 +55,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    // Declared rather than inherited transitively, so the whole coroutines group resolves at the
+    // catalog's version. Left implicit, core lagged behind kotlinx-coroutines-test and every
+    // instrumented test using runTest died with NoSuchMethodError.
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -25,6 +25,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -64,9 +65,10 @@ internal fun PostOverflowMenu(
     onDelete: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    var showSheet by remember { mutableStateOf(false) }
-    var showReportDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    // Saveable so an open sheet or dialog survives the activity recreation a rotation causes.
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+    var showReportDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     IconButton(onClick = ({ showSheet = true }).rememberDebounced(), modifier = modifier) {
         Icon(

@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,8 @@ internal fun ReportPostDialog(
     onSubmit: (reason: ReportReason, details: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedReason by remember { mutableStateOf<ReportReason?>(null) }
+    // Saveable like the details text below it: rotating mid-report must not drop the choice.
+    var selectedReason by rememberSaveable { mutableStateOf<ReportReason?>(null) }
     val detailsState = rememberTextFieldState()
 
     BasicAlertDialog(

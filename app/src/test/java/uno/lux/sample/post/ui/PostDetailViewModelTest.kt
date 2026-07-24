@@ -120,6 +120,32 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(listOf<NavKey>(Screen.Shell), backStack)
     }
 
+    // This page can sit *under* the screen that deletes its post — open a post, visit the
+    // author's profile, delete it there, come back. Absence from the store is ambiguous
+    // (never loaded? gone?), so the deletion has to reach this page as an answer, not as an
+    // emptied store that reads as "not loaded yet" and spins forever.
+    @Test
+    fun `a post deleted from another screen reads as gone, not loading`() = runTest {
+        val userRepo = UserRepository(FakeUserDataSource())
+        userRepo.ingest(listOf(currentUser, otherUser))
+        val postRepo = PostRepository(FakePostDataSource(), userRepo)
+        postRepo.ingest(listOf(post))
+        val vm = PostDetailViewModel(
+            postRepository = postRepo,
+            commentRepository = CommentRepository(FakeCommentDataSource(currentUser, emptyMap())),
+            userRepository = userRepo,
+            navigator = navigator,
+            currentUser = currentUser,
+            postId = "p1",
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertTrue(vm.uiState.value is PostDetailUiState.Loaded)
+
+        postRepo.delete("p1")
+
+        assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
+    }
+
     // ── navigation ────────────────────────────────────────────────────────────
 
     @Test

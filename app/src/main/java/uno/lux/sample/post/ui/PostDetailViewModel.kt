@@ -82,6 +82,18 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     private val _postLoad = MutableStateFlow<PostLoad>(PostLoad.Pending)
+
+    /**
+     * [_postLoad], overridden to [PostLoad.Missing] once the store says the post was deleted —
+     * whichever screen deleted it. This page may be sitting under the profile that removed the
+     * post, and without the override the emptied store would read as "not loaded yet" and leave
+     * this page spinning on a fetch nobody is going to make.
+     */
+    private val postLoad: Flow<PostLoad> =
+        combine(_postLoad, postRepository.deletedIds) { load, deleted ->
+            if (postId in deleted) PostLoad.Missing else load
+        }
+
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     private val _commentsError = MutableStateFlow<AppError?>(null)
     private val _commentsLoading = MutableStateFlow(true)
@@ -101,7 +113,7 @@ class PostDetailViewModel @AssistedInject constructor(
         _comments,
         _commentsError,
         _commentsLoading,
-        _postLoad,
+        postLoad,
     ) { resolved, comments, commentsError, commentsLoading, postLoad ->
         when {
             resolved != null -> PostDetailUiState.Loaded(
@@ -200,10 +212,9 @@ class PostDetailViewModel @AssistedInject constructor(
     fun onDelete() {
         viewModelScope.launch {
             ignoreErrors {
+                // The store marks the deletion, and [postLoad] reads NotFound from it — the same
+                // path a deletion performed on any other screen takes.
                 postRepository.delete(postId)
-                // The post is gone for certain now, so say so rather than letting the emptied
-                // store read as "not loaded yet" and flash a spinner behind the pop.
-                _postLoad.value = PostLoad.Missing
                 navigator.goBack()
             }
         }

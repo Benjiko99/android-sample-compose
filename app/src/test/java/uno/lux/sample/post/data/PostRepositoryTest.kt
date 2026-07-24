@@ -10,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.post.NewPost
 import uno.lux.sample.post.Post
+import uno.lux.sample.post.PostId
 import uno.lux.sample.post.PostWithAuthor
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
@@ -149,6 +150,30 @@ class PostRepositoryTest {
         repo.delete("unliked")
 
         assertEquals(mapOf("liked" to liked), repo.entities.first())
+    }
+
+    @Test
+    fun `delete records the id as deleted`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(unliked))
+
+        repo.delete("unliked")
+
+        assertEquals(setOf<PostId>("unliked"), repo.deletedIds.first())
+    }
+
+    // The store already knows the answer for an id it deleted, and "no such post" must hold
+    // even offline — so no request is made.
+    @Test
+    fun `load answers a deleted id from the store without a request`() = runTest {
+        val dataSource = FakePostDataSource()
+        dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+        repo.delete("unliked")
+
+        assertNull(repo.load("unliked"))
+        assertEquals(emptyList<PostId>(), dataSource.fetchedPostIds)
     }
 
     @Test

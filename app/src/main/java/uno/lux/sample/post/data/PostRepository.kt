@@ -33,6 +33,16 @@ class PostRepository(
     private val _entities = MutableStateFlow<Map<PostId, Post>>(emptyMap())
     val entities: StateFlow<Map<PostId, Post>> = _entities.asStateFlow()
 
+    private val _deletedIds = MutableStateFlow<Set<PostId>>(emptySet())
+
+    /**
+     * IDs this session has deleted. Exists because absence from [entities] is ambiguous — a post
+     * can be absent because nothing fetched it *or* because it is gone — and the one observer the
+     * ambiguity bites (a detail page open on the post someone deletes from another screen) can't
+     * resolve it alone. Grows only as fast as the user deletes, so it is never trimmed.
+     */
+    val deletedIds: StateFlow<Set<PostId>> = _deletedIds.asStateFlow()
+
     fun ingest(posts: List<Post>) {
         _entities.update { current -> current + posts.associateBy { it.id } }
     }
@@ -46,7 +56,12 @@ class PostRepository(
      * for a post — a post detail page restored after process death, whose stores start empty,
      * which is also why the embedded author is seeded here rather than fetched separately.
      */
-    suspend fun load(postId: PostId): Post? = dataSource.fetch(postId)?.let(::store)
+    suspend fun load(postId: PostId): Post? {
+        // A deletion this session performed is an answer the store already has — no request.
+        if (postId in _deletedIds.value) return null
+
+        return dataSource.fetch(postId)?.let(::store)
+    }
 
     /**
      * Publishes [draft] and stores the resulting entity, so any screen already resolving that ID
@@ -71,6 +86,9 @@ class PostRepository(
      */
     suspend fun delete(postId: PostId) {
         dataSource.delete(postId)
+        // Marked deleted *before* the entity drops, so no observer ever sees the post absent
+        // without [deletedIds] already explaining why.
+        _deletedIds.update { it + postId }
         _entities.update { it - postId }
     }
 

@@ -3,6 +3,7 @@ package uno.lux.sample.user.data.network
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
+import uno.lux.sample.app.core.network.notFoundException
 
 /** The hosted URL the fake reports after an avatar file is uploaded. */
 const val UPLOADED_AVATAR_URL = "https://cdn.test/avatars/uploaded.png"
@@ -12,8 +13,17 @@ class FakeUserApi(
     val followResult: FollowToggleDto = FollowToggleDto(isFollowing = true, followerCount = 1),
 ) : UserApi {
 
-    override suspend fun getUser(id: String): UserResponse =
-        UserResponse(userById[id] ?: error("FakeUserApi: no user for id '$id'"))
+    /** Thrown by [getUser] instead of answering, so tests can drive the failure path. */
+    var getUserError: Exception? = null
+
+    override suspend fun getUser(id: String): UserResponse {
+        getUserError?.let { throw it }
+
+        // An unknown id 404s the way the real API does, so the data source's mapping of
+        // "gone" to null is exercised rather than sidestepped with a stand-in error.
+        val dto = userById[id] ?: throw notFoundException("User '$id' was not found")
+        return UserResponse(dto)
+    }
 
     override suspend fun updateUser(
         id: String,
