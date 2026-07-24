@@ -1,6 +1,5 @@
 package uno.lux.sample.video.ui
 
-import android.graphics.Color
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,10 +9,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -53,7 +57,7 @@ internal fun VideoPostPlayer(
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(14.dp))
-            .background(MosaicGradients.mediaBrush(video.id)),
+            .background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
         // `isActive` already establishes playback != null, so it smart-casts inside this branch.
@@ -62,7 +66,7 @@ internal fun VideoPostPlayer(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-                        setBackgroundColor(Color.BLACK)
+                        setBackgroundColor(android.graphics.Color.BLACK)
                         setShowNextButton(false)
                         setShowPreviousButton(false)
                         setShowRewindButton(false)
@@ -92,11 +96,14 @@ internal fun VideoPostPlayer(
 
 /**
  * The pre-playback poster: the server-extracted frame if there is one, a centered play button and
- * a duration badge. The gradient behind is drawn by the caller, so it is what shows through while
- * the frame loads, if it fails, and for a clip that never got one.
+ * a duration badge.
+ *
+ * The gradient is a *stand-in for a missing frame*, not a backdrop — it shows only when there is
+ * no thumbnail to draw, or the one we were given failed to load. A clip that has its frame sits on
+ * black instead, which is what the stage is once the video plays.
  *
  * The frame is fitted rather than cropped, so a clip that is not 16:9 keeps its whole first
- * impression and lets the gradient fill the bars. That also matches what happens on play:
+ * impression and lets the black fill the bars. That also matches what happens on play:
  * `PlayerView` fits by default, so cropping here made the image jump the moment it started.
  */
 @Composable
@@ -105,9 +112,14 @@ private fun VideoThumbnail(
     onPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Reset per URL, so a recycled row does not inherit the previous clip's failure.
+    var frameFailed by remember(video.thumbnailUrl) { mutableStateOf(false) }
+    val hasFrame = video.thumbnailUrl != null && !frameFailed
+
     Box(
         modifier = modifier
             .fillMaxSize()
+            .background(if (hasFrame) SolidColor(Color.Black) else MosaicGradients.mediaBrush(video.id))
             .debouncedClickable(onClick = onPlay),
         contentAlignment = Alignment.Center,
     ) {
@@ -116,6 +128,7 @@ private fun VideoThumbnail(
                 model = rememberThumbnailRequest(video),
                 contentDescription = video.title,
                 contentScale = ContentScale.Fit,
+                onError = { frameFailed = true },
                 modifier = Modifier.fillMaxSize(),
             )
         }
