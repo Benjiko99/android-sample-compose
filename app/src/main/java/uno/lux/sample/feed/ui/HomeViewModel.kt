@@ -90,9 +90,9 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Whether the feed may start a video on its own as it scrolls into view. The stored preference
-     * arrives asynchronously, so this starts from [DefaultAutoPlayVideos] rather than from `false` —
-     * otherwise every launch would pass through a state that suppresses playback before the user's
-     * actual choice lands.
+     * arrives asynchronously, so this starts from [DefaultAutoPlayVideos] rather than a literal of
+     * its own — otherwise a launch would briefly disagree with the repository about what an
+     * unset preference means, and the feed would flip playback as the stored choice landed.
      */
     val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
         .stateInWhileSubscribed(viewModelScope, DefaultAutoPlayVideos)

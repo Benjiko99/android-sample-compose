@@ -281,15 +281,16 @@ class HomeViewModelTest : ViewModelTest() {
         assertFalse(feed.endReached)
     }
 
-    // The stored preference arrives asynchronously; starting from the default keeps a feed opened
-    // with auto-play on from flickering through a stopped state on every launch.
+    // The stored preference arrives asynchronously, so the StateFlow starts from the shared default
+    // rather than from the repository. The repository is seeded with the *opposite* value, so a
+    // ViewModel that read through to it instead of starting from the default would fail here.
     @Test
-    fun `autoPlayVideos is on before anything is collected`() {
+    fun `autoPlayVideos is off before anything is collected`() {
         val viewModel = viewModel(
-            settingsRepository = InMemorySettingsRepository(initialAutoPlayVideos = false),
+            settingsRepository = InMemorySettingsRepository(initialAutoPlayVideos = true),
         )
 
-        assertTrue(viewModel.autoPlayVideos.value)
+        assertFalse(viewModel.autoPlayVideos.value)
     }
 
     @Test

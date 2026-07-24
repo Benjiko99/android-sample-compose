@@ -23,8 +23,8 @@ class InMemorySettingsRepositoryTest {
     }
 
     @Test
-    fun `auto-play is on by default`() = runTest {
-        assertEquals(true, InMemorySettingsRepository().autoPlayVideos.first())
+    fun `auto-play is off by default`() = runTest {
+        assertEquals(false, InMemorySettingsRepository().autoPlayVideos.first())
     }
 
     @Test

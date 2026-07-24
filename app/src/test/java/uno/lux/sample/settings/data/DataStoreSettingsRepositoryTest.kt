@@ -68,18 +68,20 @@ class DataStoreSettingsRepositoryTest {
     }
 
     @Test
-    fun `autoPlayVideos defaults to on when nothing is persisted`() = runTest {
+    fun `autoPlayVideos defaults to off when nothing is persisted`() = runTest {
         val repository = DataStoreSettingsRepository(dataStore())
 
-        assertEquals(true, repository.autoPlayVideos.first())
+        assertEquals(false, repository.autoPlayVideos.first())
     }
 
+    // Persists the value that is *not* the default, so a repository that ignored the write and
+    // fell through to the default would fail rather than accidentally agree.
     @Test
     fun `setAutoPlayVideos persists the choice the flow then emits`() = runTest {
         val repository = DataStoreSettingsRepository(dataStore())
 
-        repository.setAutoPlayVideos(false)
+        repository.setAutoPlayVideos(true)
 
-        assertEquals(false, repository.autoPlayVideos.first())
+        assertEquals(true, repository.autoPlayVideos.first())
     }
 }

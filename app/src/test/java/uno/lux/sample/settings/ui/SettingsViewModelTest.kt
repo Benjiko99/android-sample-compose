@@ -50,17 +50,21 @@ class SettingsViewModelTest : ViewModelTest() {
 
     @Test
     fun `autoPlayVideos reflects the repository`() = runTest {
-        val viewModel = viewModel(InMemorySettingsRepository(initialAutoPlayVideos = false))
+        val viewModel = viewModel(InMemorySettingsRepository(initialAutoPlayVideos = true))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.autoPlayVideos.collect {}
         }
 
-        assertEquals(false, viewModel.autoPlayVideos.value)
+        assertEquals(true, viewModel.autoPlayVideos.value)
     }
 
+    // Seeded opposite the default, so a ViewModel reading through to the repository instead of
+    // starting from the shared default would fail here rather than agree by coincidence.
     @Test
-    fun `autoPlayVideos is on before anything is collected`() {
-        assertEquals(true, viewModel(InMemorySettingsRepository()).autoPlayVideos.value)
+    fun `autoPlayVideos is off before anything is collected`() {
+        val repository = InMemorySettingsRepository(initialAutoPlayVideos = true)
+
+        assertEquals(false, viewModel(repository).autoPlayVideos.value)
     }
 
     @Test

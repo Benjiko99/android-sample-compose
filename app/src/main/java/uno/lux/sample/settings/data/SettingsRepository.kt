@@ -6,12 +6,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import uno.lux.sample.settings.ThemeMode
 
 /**
- * Video auto-play is on until the user turns it off. Every layer that has to name that default —
- * the persisted flow when the key is absent, the in-memory double, and the `StateFlow` each
- * ViewModel starts from before the stored choice arrives — reads it from here, so the default is
- * one edit rather than four literals that have to agree.
+ * Video auto-play is off until the user turns it on: a feed that starts playing by itself is a
+ * choice to opt into, not one to be opted out of, and it spends someone's data before they asked.
+ *
+ * Every layer that has to name that default — the persisted flow when the key is absent, the
+ * in-memory double, and the `StateFlow` each ViewModel starts from before the stored choice
+ * arrives — reads it from here, so the default is one edit rather than four literals that have to
+ * agree.
  */
-const val DefaultAutoPlayVideos = true
+const val DefaultAutoPlayVideos = false
 
 /**
  * Stores user settings. Exposes [themeMode] and [autoPlayVideos] reactively and updates them on
