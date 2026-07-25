@@ -1,7 +1,6 @@
 package uno.lux.sample.user.ui
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -19,6 +18,8 @@ import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
 import uno.lux.sample.user.data.FakeUserDataSource
@@ -47,7 +48,7 @@ class EditProfileViewModelTest : ViewModelTest() {
     )
 
     // The editor sits on top of the profile that opened it; a successful save must pop it.
-    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.EditProfile)
+    private val backStack = backStackOf(Screen.Shell, Screen.EditProfile)
     private val navigator = Navigator().apply { attach(backStack) }
 
     private fun fixture(
@@ -182,7 +183,7 @@ class EditProfileViewModelTest : ViewModelTest() {
             dataSource.lastUpdate,
         )
         assertEquals("Ada King", repository.user("u1").first()?.nickname)
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
@@ -195,7 +196,7 @@ class EditProfileViewModelTest : ViewModelTest() {
 
         assertEquals("content://media/picker/42", avatarLoader.lastUri)
         assertEquals(avatarUpload, dataSource.lastUpdate?.second?.avatar)
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
@@ -224,7 +225,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         viewModel.save()
 
         assertNull(dataSource.lastUpdate)
-        assertEquals(Screen.EditProfile, backStack.last())
+        assertEquals(Screen.EditProfile, backStack.last().screen)
     }
 
     @Test
@@ -237,7 +238,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         val editing = viewModel.uiState.value as EditProfileUiState.Editing
         assertEquals(AppError.NoConnection, editing.saveError)
         assertFalse(editing.isSaving)
-        assertEquals(Screen.EditProfile, backStack.last())
+        assertEquals(Screen.EditProfile, backStack.last().screen)
     }
 
     @Test
@@ -250,7 +251,7 @@ class EditProfileViewModelTest : ViewModelTest() {
 
         val editing = viewModel.uiState.value as EditProfileUiState.Editing
         assertTrue(editing.showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell, Screen.EditProfile), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.EditProfile), backStack.screens())
     }
 
     @Test
@@ -263,7 +264,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         viewModel.confirmDiscard()
 
         assertFalse((viewModel.uiState.value as EditProfileUiState.Editing).showDiscardConfirmation)
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
@@ -276,7 +277,7 @@ class EditProfileViewModelTest : ViewModelTest() {
         viewModel.dismissDiscardConfirmation()
 
         assertFalse((viewModel.uiState.value as EditProfileUiState.Editing).showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell, Screen.EditProfile), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.EditProfile), backStack.screens())
     }
 
     @Test
@@ -286,6 +287,6 @@ class EditProfileViewModelTest : ViewModelTest() {
 
         viewModel.goBack()
 
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 }

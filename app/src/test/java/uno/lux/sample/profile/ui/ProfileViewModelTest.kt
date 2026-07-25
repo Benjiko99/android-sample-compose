@@ -1,6 +1,5 @@
 package uno.lux.sample.profile.ui
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -22,6 +21,8 @@ import uno.lux.sample.profile.data.PostsWithAuthorsPage
 import uno.lux.sample.profile.data.ProfileRefreshData
 import uno.lux.sample.profile.data.ProfileRepository
 import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.ProfileUpdate
 import uno.lux.sample.user.User
@@ -48,7 +49,7 @@ class ProfileViewModelTest : ViewModelTest() {
     )
 
     // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
-    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.Profile("u1"))
+    private val backStack = backStackOf(Screen.Shell, Screen.Profile("u1"))
     private val navigator = Navigator().apply { attach(backStack) }
 
     /** A post by someone else that u1 saved — the Saved tab's defining case. */
@@ -141,14 +142,14 @@ class ProfileViewModelTest : ViewModelTest() {
     fun `goBack pops the profile page`() {
         viewModel().goBack()
 
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
     fun `openEditProfile pushes the profile editor`() {
         viewModel().openEditProfile()
 
-        assertEquals(Screen.EditProfile, backStack.last())
+        assertEquals(Screen.EditProfile, backStack.last().screen)
     }
 
     @Test
@@ -158,14 +159,14 @@ class ProfileViewModelTest : ViewModelTest() {
         viewModel.openEditProfile()
         viewModel.openEditProfile()
 
-        assertEquals(listOf(Screen.Shell, Screen.Profile("u1"), Screen.EditProfile), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.Profile("u1"), Screen.EditProfile), backStack.screens())
     }
 
     @Test
     fun `openPost pushes the post's detail page`() {
         viewModel().openPost("p1")
 
-        assertEquals(Screen.PostDetail("p1"), backStack.last())
+        assertEquals(Screen.PostDetail("p1"), backStack.last().screen)
     }
 
     @Test
@@ -174,7 +175,7 @@ class ProfileViewModelTest : ViewModelTest() {
 
         assertEquals(
             Screen.AlbumViewer(listOf("https://example.test/avatar.jpg"), initialIndex = 0),
-            backStack.last(),
+            backStack.last().screen,
         )
     }
 
@@ -513,7 +514,7 @@ class ProfileViewModelTest : ViewModelTest() {
     fun `openProfile pushes the saved post's author`() {
         viewModel().openProfile("u2")
 
-        assertEquals(Screen.Profile("u2"), backStack.last())
+        assertEquals(Screen.Profile("u2"), backStack.last().screen)
     }
 
     @Test

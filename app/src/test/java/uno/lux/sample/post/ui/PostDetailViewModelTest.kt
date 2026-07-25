@@ -1,6 +1,5 @@
 package uno.lux.sample.post.ui
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +26,8 @@ import uno.lux.sample.post.PostWithAuthor
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
 import uno.lux.sample.user.data.FakeUserDataSource
@@ -60,7 +61,7 @@ class PostDetailViewModelTest : ViewModelTest() {
     )
 
     // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
-    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.PostDetail("p1"))
+    private val backStack = backStackOf(Screen.Shell, Screen.PostDetail("p1"))
     private val navigator = Navigator().apply { attach(backStack) }
 
     /** The entity store the last [viewModel] was built on, for driving it from outside. */
@@ -121,7 +122,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         viewModel.onDelete()
 
         assertEquals(PostDetailUiState.NotFound, viewModel.uiState.value)
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     // This page can sit *under* the screen that deletes its post — open a post, visit the
@@ -145,14 +146,14 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `goBack pops the detail page`() {
         viewModel().goBack()
 
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
     fun `openProfile pushes the author's profile page`() {
         viewModel().openProfile("u2")
 
-        assertEquals(Screen.Profile("u2"), backStack.last())
+        assertEquals(Screen.Profile("u2"), backStack.last().screen)
     }
 
     @Test
@@ -161,7 +162,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         viewModel().openAlbum(images, initialIndex = 0)
 
-        assertEquals(Screen.AlbumViewer(images, initialIndex = 0), backStack.last())
+        assertEquals(Screen.AlbumViewer(images, initialIndex = 0), backStack.last().screen)
     }
 
     // ── uiState ───────────────────────────────────────────────────────────────

@@ -102,7 +102,7 @@ internal fun PostOverflowMenu(
     if (showReportDialog) {
         ReportPostDialog(
             onDismiss = { showReportDialog = false },
-            // Reporting isn't wired to a backend yet — acknowledge and discard the report.
+            // TODO: Reporting isn't wired to a backend yet — acknowledge and discard the report.
             onSubmit = { _, _ ->
                 context.toast(R.string.report_sent)
                 showReportDialog = false

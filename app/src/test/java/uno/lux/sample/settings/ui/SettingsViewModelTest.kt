@@ -1,6 +1,5 @@
 package uno.lux.sample.settings.ui
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -14,11 +13,13 @@ import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest : ViewModelTest() {
 
-    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.Settings)
+    private val backStack = backStackOf(Screen.Shell, Screen.Settings)
     private val navigator = Navigator().apply { attach(backStack) }
 
     private fun viewModel(
@@ -99,6 +100,6 @@ class SettingsViewModelTest : ViewModelTest() {
     fun `goBack pops the settings page`() {
         viewModel().goBack()
 
-        assertEquals(listOf<NavKey>(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 }

@@ -1,6 +1,5 @@
 package uno.lux.sample.feed.ui
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -24,6 +23,8 @@ import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.User
 import uno.lux.sample.user.UserId
@@ -59,7 +60,7 @@ class HomeViewModelTest : ViewModelTest() {
     )
 
     // The real Navigator drives a plain list, so navigation tests assert on the stack directly.
-    private val backStack = mutableListOf<NavKey>(Screen.Shell)
+    private val backStack = backStackOf(Screen.Shell)
     private val navigator = Navigator().apply { attach(backStack) }
 
     private fun viewModel(
@@ -246,7 +247,7 @@ class HomeViewModelTest : ViewModelTest() {
     fun `openSettings pushes the settings page`() {
         viewModel().openSettings()
 
-        assertEquals(Screen.Settings, backStack.last())
+        assertEquals(Screen.Settings, backStack.last().screen)
     }
 
     @Test
@@ -256,21 +257,21 @@ class HomeViewModelTest : ViewModelTest() {
         viewModel.openSettings()
         viewModel.openSettings()
 
-        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.Settings), backStack.screens())
     }
 
     @Test
     fun `openProfile pushes the author's profile page`() {
         viewModel().openProfile("u1")
 
-        assertEquals(Screen.Profile("u1"), backStack.last())
+        assertEquals(Screen.Profile("u1"), backStack.last().screen)
     }
 
     @Test
     fun `openPost pushes the post's detail page`() {
         viewModel().openPost("p1")
 
-        assertEquals(Screen.PostDetail("p1"), backStack.last())
+        assertEquals(Screen.PostDetail("p1"), backStack.last().screen)
     }
 
     @Test
@@ -286,7 +287,7 @@ class HomeViewModelTest : ViewModelTest() {
 
         assertEquals(
             Screen.FullscreenVideo(url = "https://example.test/v1.mp4", title = "Talk"),
-            backStack.last(),
+            backStack.last().screen,
         )
     }
 
@@ -296,7 +297,7 @@ class HomeViewModelTest : ViewModelTest() {
 
         viewModel().openAlbum(images, initialIndex = 1)
 
-        assertEquals(Screen.AlbumViewer(images, initialIndex = 1), backStack.last())
+        assertEquals(Screen.AlbumViewer(images, initialIndex = 1), backStack.last().screen)
     }
 
     @Test

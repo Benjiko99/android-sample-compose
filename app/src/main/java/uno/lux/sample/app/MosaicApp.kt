@@ -35,14 +35,15 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
 import uno.lux.sample.album.ui.AlbumViewerScreen
 import uno.lux.sample.app.common.ui.DividedNavigationSuiteScaffold
+import uno.lux.sample.app.navigation.BackStackEntry
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.app.navigation.rememberBackStack
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.findActivity
 import uno.lux.sample.composer.ui.CreatePostScreen
@@ -57,13 +58,15 @@ import uno.lux.sample.video.ui.LocalVideoPlayback
 import uno.lux.sample.video.ui.VideoPlaybackViewModel
 
 /**
- * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberNavBackStack] back
- * stack of [Screen] keys: the tabbed [HomeNavShell] is the permanent root, and a user's
+ * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberBackStack] back
+ * stack of [BackStackEntry] keys: the tabbed [HomeNavShell] is the permanent root, and a user's
  * [ProfileScreen] or the [SettingsScreen] push over it as full-screen pages (settings stacks
  * over a profile, too). Pushes slide in from the right and pops slide back off — the
  * predictive back gesture included — while tab switches inside the shell stay a fade-through
  * between peers. The entry decorators give every page its own saveable-state and ViewModel
- * store, so a pushed page's ViewModel is created on push and cleared on pop.
+ * store, so a pushed page's ViewModel is created on push and cleared on pop. Those stores are
+ * scoped by [BackStackEntry.id], so *each push* is its own page: opening the same post twice
+ * gives the second copy its own ViewModel and its own comment draft.
  *
  * Navigation itself is driven by the ViewModels: the composition keeps owning the back stack
  * (that's what keeps it saveable across configuration changes and process death) but attaches
@@ -74,7 +77,7 @@ import uno.lux.sample.video.ui.VideoPlaybackViewModel
  */
 @Composable
 fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
-    val backStack = rememberNavBackStack(Screen.Shell)
+    val backStack = rememberBackStack { navigator.entryFor(Screen.Shell) }
 
     DisposableEffect(navigator, backStack) {
         navigator.attach(backStack)
@@ -111,32 +114,33 @@ fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
             predictivePopTransitionSpec = { popTransition() },
             modifier = Modifier.fillMaxSize(),
             entryProvider = entryProvider {
-                entry<Screen.Shell> {
-                    HomeNavShell(currentUserId = currentUserId)
-                }
-                entry<Screen.Profile> { profile ->
-                    ProfileScreen(userId = profile.userId, showBackButton = true)
-                }
-                entry<Screen.Settings> {
-                    SettingsScreen()
-                }
-                entry<Screen.EditProfile> {
-                    EditProfileScreen()
-                }
-                entry<Screen.CreatePost> {
-                    CreatePostScreen()
-                }
-                entry<Screen.FullscreenVideo> { video ->
-                    FullscreenVideoScreen(url = video.url, title = video.title)
-                }
-                entry<Screen.PostDetail> { detail ->
-                    PostDetailScreen(postId = detail.postId)
-                }
-                entry<Screen.AlbumViewer> { key ->
-                    AlbumViewerScreen(
-                        imageUrls = key.images,
-                        initialIndex = key.initialIndex,
-                    )
+                // One provider for the one key type, keyed by the entry's identity rather than by
+                // the screen — that is what gives two pushes of the same page separate state. The
+                // exhaustive `when` replaces a per-screen `entry<T>` block and is checked at
+                // compile time, where an unregistered key would only have thrown at runtime.
+                entry<BackStackEntry>(clazzContentKey = { it.id }) { entry ->
+                    when (val screen = entry.screen) {
+                        Screen.Shell -> HomeNavShell(currentUserId = currentUserId)
+
+                        is Screen.Profile ->
+                            ProfileScreen(userId = screen.userId, showBackButton = true)
+
+                        Screen.Settings -> SettingsScreen()
+
+                        Screen.EditProfile -> EditProfileScreen()
+
+                        Screen.CreatePost -> CreatePostScreen()
+
+                        is Screen.FullscreenVideo ->
+                            FullscreenVideoScreen(url = screen.url, title = screen.title)
+
+                        is Screen.PostDetail -> PostDetailScreen(postId = screen.postId)
+
+                        is Screen.AlbumViewer -> AlbumViewerScreen(
+                            imageUrls = screen.images,
+                            initialIndex = screen.initialIndex,
+                        )
+                    }
                 }
             },
         )

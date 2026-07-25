@@ -1,15 +1,16 @@
 package uno.lux.sample.app
 
-import androidx.navigation3.runtime.NavKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 
 class ShellViewModelTest {
 
-    private val backStack = mutableListOf<NavKey>(Screen.Shell)
+    private val backStack = backStackOf(Screen.Shell)
     private val navigator = Navigator().apply { attach(backStack) }
     private val viewModel = ShellViewModel(navigator)
 
@@ -17,7 +18,7 @@ class ShellViewModelTest {
     fun `an action destination pushes its screen over the shell`() {
         viewModel.openDestination(Screen.CreatePost)
 
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -25,7 +26,7 @@ class ShellViewModelTest {
         viewModel.openDestination(Screen.CreatePost)
         viewModel.openDestination(Screen.CreatePost)
 
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test

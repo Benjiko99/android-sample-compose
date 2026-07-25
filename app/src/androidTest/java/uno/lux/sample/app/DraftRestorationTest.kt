@@ -1,7 +1,6 @@
 package uno.lux.sample.app
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.navigation3.runtime.NavKey
 import androidx.savedstate.SavedState
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.Dispatchers
@@ -90,7 +89,7 @@ class DraftRestorationTest {
         feedRepository = FeedRepository(UnusedFeedDataSource, postRepository(), userRepository()),
         fileLoader = PickingFileLoader,
         videoMetadataReader = PickedClipMetadataReader,
-        navigator = Navigator().apply { attach(mutableListOf<NavKey>(Screen.CreatePost)) },
+        navigator = Navigator().apply { attach(mutableListOf(entryFor(Screen.CreatePost))) },
         savedStateHandle = handle,
     )
 
@@ -175,7 +174,7 @@ class DraftRestorationTest {
         return EditProfileViewModel(
             userRepository = users,
             fileLoader = PickingFileLoader,
-            navigator = Navigator().apply { attach(mutableListOf<NavKey>(Screen.EditProfile)) },
+            navigator = Navigator().apply { attach(mutableListOf(entryFor(Screen.EditProfile))) },
             savedStateHandle = handle,
             userId = ada.id,
         )

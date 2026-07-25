@@ -1,7 +1,6 @@
 package uno.lux.sample.composer.ui
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -20,6 +19,8 @@ import uno.lux.sample.post.NewPostMedia
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.testing.ViewModelTest
+import uno.lux.sample.testing.backStackOf
+import uno.lux.sample.testing.screens
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
 import java.io.IOException
@@ -27,7 +28,7 @@ import java.io.IOException
 class CreatePostViewModelTest : ViewModelTest() {
 
     // The composer is pushed over the shell, so it always has an entry of its own to leave.
-    private val backStack = mutableListOf<NavKey>(Screen.Shell, Screen.CreatePost)
+    private val backStack = backStackOf(Screen.Shell, Screen.CreatePost)
     private val navigator = Navigator().apply { attach(backStack) }
 
     private data class Fixture(
@@ -144,7 +145,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         )
         assertFalse(viewModel.uiState.first().isPublishing)
         // Replaced, not stacked: backing out of the new post must not land on the composer.
-        assertEquals(listOf(Screen.Shell, Screen.PostDetail("p-new")), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.PostDetail("p-new")), backStack.screens())
     }
 
     @Test
@@ -155,7 +156,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.publish()
 
         assertNull(dataSource.lastDraft)
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -169,7 +170,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         assertEquals("Title", state.form.title)
         assertEquals(CreatePostError.Failed(AppError.Unknown), state.error)
         assertFalse(state.isPublishing)
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -329,7 +330,7 @@ class CreatePostViewModelTest : ViewModelTest() {
 
         viewModel.openImages(CreatePostMedia.Images(listOf("uri-a", "uri-b")), initialIndex = 1)
 
-        assertEquals(Screen.AlbumViewer(listOf("uri-a", "uri-b"), initialIndex = 1), backStack.last())
+        assertEquals(Screen.AlbumViewer(listOf("uri-a", "uri-b"), initialIndex = 1), backStack.last().screen)
     }
 
     @Test
@@ -339,7 +340,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.openVideo(CreatePostMedia.Video(uri = "clip", durationSeconds = 12))
 
         // The key carries no title — a clip picked from disk has none.
-        assertEquals(Screen.FullscreenVideo(url = "clip"), backStack.last())
+        assertEquals(Screen.FullscreenVideo(url = "clip"), backStack.last().screen)
     }
 
     /**
@@ -392,7 +393,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.goBack()
 
         assertTrue(viewModel.uiState.first().showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -403,7 +404,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.goBack()
 
         assertTrue(viewModel.uiState.first().showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -413,7 +414,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.goBack()
 
         assertFalse(viewModel.uiState.first().showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
@@ -424,7 +425,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.goBack()
 
         assertTrue(viewModel.uiState.first().showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -436,7 +437,7 @@ class CreatePostViewModelTest : ViewModelTest() {
         viewModel.confirmDiscard()
 
         assertFalse(viewModel.uiState.first().showDiscardConfirmation)
-        assertEquals(listOf(Screen.Shell), backStack)
+        assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
@@ -450,6 +451,6 @@ class CreatePostViewModelTest : ViewModelTest() {
         val state = viewModel.uiState.first()
         assertFalse(state.showDiscardConfirmation)
         assertEquals("Half a thought", state.form.title)
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack)
+        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 }

@@ -17,10 +17,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -32,7 +29,9 @@ import org.junit.runner.RunWith
 /**
  * Pins the guarantee the whole navigation design rests on: **the back stack survives process
  * death**. An app killed in the background comes back on the page it was killed on, because the
- * [Screen] keys are `@Serializable` and `rememberNavBackStack` saves them into the instance state.
+ * [BackStackEntry] keys are `@Serializable` and [rememberBackStack] saves them into the instance
+ * state. It also pins the other half of an entry's identity — that two pushes of the same [Screen]
+ * are two pages, each with its own state, on both sides of that restart.
  *
  * [StateRestorationTester.emulateSavedInstanceStateRestore] is what makes that testable without a
  * device kill: it saves the registry, throws the composition away, and rebuilds it from the saved
@@ -51,7 +50,7 @@ class BackStackRestorationTest {
     val composeTestRule = createComposeRule()
 
     private val navigator = Navigator()
-    private var backStack: List<NavKey> = emptyList()
+    private var backStack: List<BackStackEntry> = emptyList()
 
     /** One of every [Screen], to catch a key that stops being serializable when a field is added. */
     private val everyScreen = listOf(
@@ -101,7 +100,7 @@ class BackStackRestorationTest {
         tester.emulateSavedInstanceStateRestore()
 
         composeTestRule.runOnIdle {
-            assertEquals(listOf<NavKey>(Screen.Shell) + everyScreen, backStack)
+            assertEquals(listOf(Screen.Shell) + everyScreen, backStack.map { it.screen })
         }
     }
 
@@ -117,6 +116,47 @@ class BackStackRestorationTest {
         tester.emulateSavedInstanceStateRestore()
 
         composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("1")
+    }
+
+    /**
+     * The same page open twice is two pages. State is scoped to [BackStackEntry.id] rather than to
+     * the [Screen], so a second push of an *equal* key gets its own entry — and both survive a
+     * restore separately. Before that identity existed, the second push landed in the first one's
+     * saveable-state slot and ViewModel store, and this counter would read 2 instead of 0.
+     */
+    @Test
+    fun keepsTwoEntriesOfTheSameScreenIndependent() {
+        val tester = startHost()
+
+        push(Screen.Profile(userId = "u2"))
+        composeTestRule.onNodeWithTag(COUNTER_TAG).performClick()
+        composeTestRule.onNodeWithTag(COUNTER_TAG).performClick()
+
+        push(Screen.Profile(userId = "u2"))
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("0")
+        composeTestRule.onNodeWithTag(COUNTER_TAG).performClick()
+
+        tester.emulateSavedInstanceStateRestore()
+
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("1")
+        goBack()
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("2")
+    }
+
+    /** The opt-out: a screen pinning [Screen.sharedId] resolves to one entry, and one state. */
+    @Test
+    fun sharesOneEntryForAScreenThatPinsItsIdentity() {
+        startHost()
+
+        composeTestRule.runOnIdle {
+            assertEquals(navigator.entryFor(Screen.Shell), backStack.single())
+        }
+
+        push(Screen.Shell)
+
+        composeTestRule.runOnIdle {
+            assertEquals(backStack[0].id, backStack[1].id)
+        }
     }
 
     // ── host ──────────────────────────────────────────────────────────────────
@@ -147,8 +187,8 @@ private const val COUNTER_TAG = "counter"
  * entry decorators, with every key rendered as its own name instead of a real screen.
  */
 @Composable
-private fun TestNavHost(navigator: Navigator, onBackStack: (List<NavKey>) -> Unit) {
-    val backStack = rememberNavBackStack(Screen.Shell)
+private fun TestNavHost(navigator: Navigator, onBackStack: (List<BackStackEntry>) -> Unit) {
+    val backStack = rememberBackStack { navigator.entryFor(Screen.Shell) }
 
     // Handing the stack out from the effect, not the composition body, so the test reads the
     // instance that is actually attached — a restore brings a new one, and re-runs this.
@@ -165,20 +205,19 @@ private fun TestNavHost(navigator: Navigator, onBackStack: (List<NavKey>) -> Uni
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
-        entryProvider = entryProvider(
-            fallback = { key -> NavEntry(key) { KeyLabel(key) } },
-            builder = {},
-        ),
+        entryProvider = entryProvider {
+            entry<BackStackEntry>(clazzContentKey = { it.id }) { entry -> KeyLabel(entry.screen) }
+        },
     )
 }
 
 /** Names the entry on screen, and carries a saveable counter to prove per-entry state restores. */
 @Composable
-private fun KeyLabel(key: NavKey) {
+private fun KeyLabel(screen: Screen) {
     var taps by rememberSaveable { mutableIntStateOf(0) }
 
     Column {
-        Text(text = key.toString(), modifier = Modifier.testTag(CURRENT_KEY_TAG))
+        Text(text = screen.toString(), modifier = Modifier.testTag(CURRENT_KEY_TAG))
         Text(
             text = taps.toString(),
             modifier = Modifier

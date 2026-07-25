@@ -1,24 +1,44 @@
 package uno.lux.sample.app.navigation
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import uno.lux.sample.post.PostId
 import uno.lux.sample.user.UserId
 import uno.lux.sample.video.Video
 
 /**
- * The full-screen pages of the app — the keys Navigation 3's back stack is made of. [Shell]
- * is the permanent root carrying the navigation-suite tabs; [Profile], [Settings] and
- * [FullscreenVideo] are pushed over it (settings can stack on top of a profile, too). Keys are
- * [Serializable] so `rememberNavBackStack` can persist the stack across configuration changes
+ * The full-screen pages of the app. [Shell] is the permanent root carrying the navigation-suite
+ * tabs; [Profile], [Settings] and [FullscreenVideo] are pushed over it (settings can stack on top
+ * of a profile, too). Screens are [Serializable] so the back stack survives configuration changes
  * and process death.
+ *
+ * A `Screen` describes *what to show*, not *which open copy of it* — the back stack is made of
+ * [BackStackEntry], which pairs a screen with the identity its state is scoped to. So two equal
+ * screens are two pushes of the same page, and equality is safe to ask about: it is what
+ * [Navigator.goToSingleTop] compares.
  */
 @Serializable
-sealed interface Screen : NavKey {
+sealed interface Screen {
 
-    /** The adaptive navigation shell hosting the top-level tabs; always the bottom entry. */
+    /**
+     * Pins every push of this screen to one back-stack identity, so all of them share a single
+     * ViewModel and one set of `rememberSaveable` state; `null` — the default — gives each push
+     * its own, which is what nearly every page wants.
+     *
+     * Override it with a constant for a page that is genuinely one thing wherever it is opened,
+     * or with a value derived from the screen's own arguments (`"post-$postId"`) to share per
+     * argument. Always declare it as `get() = …` and never as an initialized property: a property
+     * with a backing field would be pulled into the serialized form of the key.
+     */
+    val sharedId: String? get() = null
+
+    /**
+     * The adaptive navigation shell hosting the top-level tabs; always the bottom entry, and the
+     * only screen there is ever exactly one of — which is why it names its identity outright.
+     */
     @Serializable
-    data object Shell : Screen
+    data object Shell : Screen {
+        override val sharedId: String get() = "shell"
+    }
 
     /** A user's profile page, opened from a post's author header. */
     @Serializable
