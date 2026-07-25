@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The themed-icon layer: the system discards this fillColor and tints the shape,
+  so only the alpha channel survives. The mark's centre must therefore be a real
+  hole (evenOdd) rather than painted white the way the foreground paints it —
+  an opaque centre tints to the same colour as the body and flattens the mark
+  into a featureless diamond.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:fillColor="#FF000000"
+      android:fillType="evenOdd"
+      android:pathData="M45.0377,34.9623 A12.6746,12.6746 0 0,1 62.9623,34.9623 L73.0377,45.0377 A12.6746,12.6746 0 0,1 73.0377,62.9623 L62.9623,73.0377 A12.6746,12.6746 0 0,1 45.0377,73.0377 L34.9623,62.9623 A12.6746,12.6746 0 0,1 34.9623,45.0377 Z M51.0126,47.9874 A4.2249,4.2249 0 0,1 56.9874,47.9874 L60.0126,51.0126 A4.2249,4.2249 0 0,1 60.0126,56.9874 L56.9874,60.0126 A4.2249,4.2249 0 0,1 51.0126,60.0126 L47.9874,56.9874 A4.2249,4.2249 0 0,1 47.9874,51.0126 Z" />
+</vector>
