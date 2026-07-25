@@ -31,9 +31,8 @@ interface UserApi {
     ): UserResponse
 
     // Toggles whether the current user (the X-User-Id header) follows [id]. The server derives
-    // both sides from the header and path, so — unlike the older toggle endpoints that still
-    // carry an EmptyBody (see the TODO on PostApi.toggleLike) — this one deliberately sends no
-    // body. 403 if [id] is the current user, 404 if [id] is unknown.
+    // both sides from the header and path, so the request carries no body — as with every other
+    // toggle. 403 if [id] is the current user, 404 if [id] is unknown.
     @POST("users/{id}/follow")
     suspend fun toggleFollow(
         @Path("id") id: String,

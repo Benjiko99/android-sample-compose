@@ -2,7 +2,6 @@ package uno.lux.sample.comment.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.data.CommentDataSource
 import uno.lux.sample.post.PostId
@@ -20,7 +19,7 @@ class NetworkCommentDataSource(
     }
 
     override suspend fun toggleLike(postId: PostId, comment: Comment): Comment = withContext(Dispatchers.IO) {
-        val result = api.toggleCommentLike(postId, comment.id, EmptyBody()).data
+        val result = api.toggleCommentLike(postId, comment.id).data
         comment.copy(isLiked = result.isLiked, likeCount = result.likeCount)
     }
 }

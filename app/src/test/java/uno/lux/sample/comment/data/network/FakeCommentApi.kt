@@ -2,7 +2,6 @@ package uno.lux.sample.comment.data.network
 
 import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.core.network.emptyPage
 import uno.lux.sample.user.data.network.stubAuthor
 import java.time.Instant
@@ -30,7 +29,6 @@ class FakeCommentApi(
     override suspend fun toggleCommentLike(
         postId: String,
         commentId: String,
-        body: EmptyBody,
     ): LikeToggleResponse = LikeToggleResponse(likeResult)
 }
 

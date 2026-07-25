@@ -6,7 +6,6 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
-import uno.lux.sample.app.core.network.EmptyBody
 
 interface CommentApi {
 
@@ -23,10 +22,11 @@ interface CommentApi {
         @Body body: AddCommentRequestDto,
     ): CommentResponse
 
+    // Toggles the current user's (the X-User-Id header) like on [commentId]. Bodiless for the
+    // same reason [uno.lux.sample.post.data.network.PostApi.toggleLike] is.
     @POST("posts/{id}/comments/{commentId}/like")
     suspend fun toggleCommentLike(
         @Path("id") postId: String,
         @Path("commentId") commentId: String,
-        @Body body: EmptyBody,
     ): LikeToggleResponse
 }

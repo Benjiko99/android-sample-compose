@@ -2,7 +2,6 @@ package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.core.network.asPart
 import uno.lux.sample.app.core.network.asTextPart
 import uno.lux.sample.app.core.network.notFoundAsNull
@@ -43,12 +42,12 @@ class NetworkPostDataSource(
     }
 
     override suspend fun toggleLike(post: Post): Post = withContext(Dispatchers.IO) {
-        val result = api.toggleLike(post.id, EmptyBody()).data
+        val result = api.toggleLike(post.id).data
         post.copy(isLiked = result.isLiked, likeCount = result.likeCount)
     }
 
     override suspend fun toggleBookmark(post: Post): Post = withContext(Dispatchers.IO) {
-        val result = api.toggleBookmark(post.id, EmptyBody()).data
+        val result = api.toggleBookmark(post.id).data
         post.copy(isBookmarked = result.isBookmarked)
     }
 }

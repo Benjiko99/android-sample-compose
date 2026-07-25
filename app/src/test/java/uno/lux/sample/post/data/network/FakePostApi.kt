@@ -5,7 +5,6 @@ import okhttp3.RequestBody
 import okio.Buffer
 import uno.lux.sample.app.common.data.network.LikeToggleDto
 import uno.lux.sample.app.common.data.network.LikeToggleResponse
-import uno.lux.sample.app.core.network.EmptyBody
 import uno.lux.sample.app.core.network.notFoundException
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.UserDto
@@ -102,10 +101,10 @@ class FakePostApi(
         deletedPostIds += postId
     }
 
-    override suspend fun toggleLike(postId: String, body: EmptyBody): LikeToggleResponse =
+    override suspend fun toggleLike(postId: String): LikeToggleResponse =
         LikeToggleResponse(likeResult)
 
-    override suspend fun toggleBookmark(postId: String, body: EmptyBody): BookmarkToggleResponse =
+    override suspend fun toggleBookmark(postId: String): BookmarkToggleResponse =
         BookmarkToggleResponse(bookmarkResult)
 }
 
