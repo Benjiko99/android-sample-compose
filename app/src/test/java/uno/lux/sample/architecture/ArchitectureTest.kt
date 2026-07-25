@@ -1,114 +1,226 @@
 package uno.lux.sample.architecture
 
 import com.lemonappdev.konsist.api.Konsist
-import com.lemonappdev.konsist.api.ext.list.withPackage
+import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import com.lemonappdev.konsist.api.verify.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The package rules from AGENTS.md, asserted against the real import graph.
+ * The package convention from AGENTS.md, asserted against the real source tree.
  *
  * Kotlin has no package-private and `internal` is module-scoped, so a single-module project gets
  * no compiler enforcement of its own layering — a package layout is a convention until something
- * checks it. These are that something. Both violations found by hand during the slice refactor
- * (a KDoc link that needed an import, and a theme helper typed on `UserId`) would have failed
- * here the moment they were written.
+ * checks it. These are that something.
+ *
+ * **Every rule here is derived from the path, never from a list of names.** The concerns are
+ * discovered by reading the top-level packages that exist, and each rule then keys off the shape
+ * the convention gives them:
+ *
+ * ```
+ * <concern>/data/            the repository and its DataSource interface
+ * <concern>/data/domain/     the models — pure Kotlin, no platform and no wire
+ * <concern>/data/network/    the service, DTOs, mappers — the only place HTTP appears
+ * <concern>/ui/              composables and ViewModels
+ * app/                       the machine; may know every concern
+ * common/                    what concerns share; may know none of them
+ * ```
+ *
+ * That is what `every concern package follows the convention` protects, and it is why it matters
+ * most: the other rules select files by matching those suffixes, so a file in some invented
+ * package would be checked by *none* of them. Enforcing the shape first is what stops a rename
+ * from quietly emptying a rule instead of failing it — the previous version of this file hardcoded
+ * `uno.lux.sample.app.common..`, and when `common` moved to the top level the rule went on passing
+ * while matching nothing at all.
  */
 class ArchitectureTest {
 
     private companion object {
         const val ROOT = "uno.lux.sample"
 
-        /** Slices that own an entity. Everything about a post lives under `post`. */
-        val AGGREGATES = listOf("post", "user", "comment", "album", "video")
+        /** The machine. It wires the concerns together, so it is allowed to import them. */
+        const val APP = "app"
 
-        /** Slices that own no entity — read models over the aggregates, and the shell features. */
-        val FEATURES = listOf("feed", "profile", "composer", "settings")
+        /** What the concerns share. Depends on none of them — see [`common knows no concern`]. */
+        const val COMMON = "common"
 
-        /** Shared foundation: knows no domain noun and would survive deleting the product. */
-        val FOUNDATION = listOf("common", "core", "theme", "util", "format")
+        /** The two top-level packages that are not a concern, and so have no layer convention. */
+        val NON_CONCERNS = setOf(APP, COMMON)
+
+        /** The shapes a concern's packages may take, as suffixes on `<root>.<concern>`. */
+        val LAYERS = listOf(".data", ".data.domain", ".data.network", ".ui")
+
+        /**
+         * The one cycle AGENTS.md documents and accepts: a `Comment` needs a `PostId` and
+         * `PostDetailScreen` renders comments. A comment cannot exist without its post and is
+         * deleted with it, so folding `comment` into `post` is the fix if this ever bites.
+         */
+        val ACCEPTED_CYCLE = setOf("post", "comment")
     }
 
-    private fun production() = Konsist.scopeFromProduction()
+    private fun production() = Konsist.scopeFromProduction().files
+
+    private val KoFileDeclaration.pkg: String get() = packagee?.name.orEmpty()
+
+    /** The top-level package a file lives in: `uno.lux.sample.post.data` -> `post`. */
+    private val KoFileDeclaration.root: String get() = pkg.removePrefix("$ROOT.").substringBefore('.')
+
+    /** Whether the file is in the concern's data layer: `post.data`, `post.data.network`, … */
+    private val KoFileDeclaration.isDataLayer: Boolean
+        get() = pkg.removePrefix("$ROOT.").substringAfter('.', missingDelimiterValue = "").startsWith("data")
+
+    /** Whether the import names something of ours rather than a library. */
+    private fun ours(importName: String): Boolean = importName.startsWith("$ROOT.")
+
+    /** Every concern the tree actually has — discovered, never listed. */
+    private fun concerns(): Set<String> = production().map { it.root }.toSet() - NON_CONCERNS
 
     @Test
-    fun `the foundation never depends on a slice`() {
+    fun `every concern package follows the convention`() {
+        val allowed = concerns()
+            .flatMap { concern -> LAYERS.map { "$ROOT.$concern$it" } }
+            .toSet()
+
         production()
-            .files
-            .withPackage(*FOUNDATION.map { "$ROOT.app.$it.." }.toTypedArray())
-            .assertTrue(additionalMessage = FOUNDATION_MESSAGE) { file ->
+            .filter { it.root !in NON_CONCERNS }
+            .assertTrue(additionalMessage = CONVENTION_MESSAGE) { it.pkg in allowed }
+    }
+
+    @Test
+    fun `the wire stays in data-network`() {
+        production().assertTrue(additionalMessage = WIRE_MESSAGE) { file ->
+            file.pkg.endsWith(".data.network") ||
+                file.pkg == "$ROOT.$APP.di" ||
+                file.imports.none { it.name.startsWith("retrofit2.") || it.name.startsWith("okhttp3.") }
+        }
+    }
+
+    @Test
+    fun `the domain layer is pure`() {
+        production()
+            .filter { it.pkg.endsWith(".data.domain") }
+            .assertTrue(additionalMessage = DOMAIN_MESSAGE) { file ->
                 file.imports.none { import ->
-                    (AGGREGATES + FEATURES).any { import.name.startsWith("$ROOT.$it.") }
+                    import.name.startsWith("android.") ||
+                        import.name.startsWith("androidx.") ||
+                        import.name.startsWith("retrofit2.") ||
+                        import.name.startsWith("okhttp3.") ||
+                        (ours(import.name) && import.name.contains(".data.network.")) ||
+                        (ours(import.name) && import.name.contains(".ui."))
                 }
             }
     }
 
     @Test
-    fun `aggregates never depend on features`() {
+    fun `data never depends on ui`() {
         production()
-            .files
-            .withPackage(*AGGREGATES.map { "$ROOT.$it.." }.toTypedArray())
-            .assertTrue(additionalMessage = AGGREGATE_MESSAGE) { file ->
+            .filter { it.isDataLayer }
+            .assertTrue(additionalMessage = LAYERING_MESSAGE) { file ->
+                file.imports.none { ours(it.name) && it.name.contains(".ui.") }
+            }
+    }
+
+    @Test
+    fun `common knows no concern`() {
+        val concerns = concerns()
+
+        production()
+            .filter { it.root == COMMON }
+            .assertTrue(additionalMessage = COMMON_MESSAGE) { file ->
                 file.imports.none { import ->
-                    FEATURES.any { import.name.startsWith("$ROOT.$it.") }
+                    concerns.any { import.name.startsWith("$ROOT.$it.") }
                 }
             }
     }
 
     @Test
-    fun `HTTP stays in the network layer`() {
-        production()
-            .files
-            .assertTrue(additionalMessage = HTTP_MESSAGE) { file ->
-                val pkg = file.packagee?.name.orEmpty()
-                val isNetworkLayer = pkg.contains(".data.network") ||
-                    pkg.startsWith("$ROOT.app.core.network") ||
-                    pkg.startsWith("$ROOT.app.di")
-
-                isNetworkLayer ||
-                    file.imports.none {
-                        it.name.startsWith("retrofit2.") || it.name.startsWith("okhttp3.")
-                    }
-            }
+    fun `a repository behind no interface stays plain-JVM`() {
+        production().assertTrue(additionalMessage = REPOSITORY_MESSAGE) { file ->
+            file.classes().none { it.name.endsWith("Repository") && it.parents().isEmpty() } ||
+                file.imports.none {
+                    it.name.startsWith("android.") || it.name.startsWith("androidx.")
+                }
+        }
     }
 
     @Test
-    fun `repositories stay plain-JVM testable`() {
-        production()
-            .files
-            // `settings` is the documented exception: DataStoreSettingsRepository persists through
-            // DataStore and AppCompatLocaleRepository *is* the wrapper around AppCompat's delegate.
-            // Both have in-memory doubles, which is what keeps their consumers plain-JVM.
-            .withPackage(
-                *(AGGREGATES + listOf("feed", "profile"))
-                    .map {
-                        "$ROOT.$it.."
-                    }.toTypedArray(),
-            ).assertTrue(additionalMessage = REPOSITORY_MESSAGE) { file ->
-                file.classes().none { it.name.endsWith("Repository") } ||
-                    file.imports.none {
-                        it.name.startsWith("android.") || it.name.startsWith("androidx.")
-                    }
+    fun `the concern graph holds only the documented cycle`() {
+        val concerns = concerns()
+
+        val edges = production()
+            .groupBy { it.root }
+            .filterKeys { it in concerns }
+            .mapValues { (concern, files) ->
+                files
+                    .flatMap { file -> file.imports.mapNotNull { concernOf(it.name, concerns) } }
+                    .toSet() - concern
             }
+
+        // Sorted pairs, so a cycle reads the same whichever end it was found from.
+        val cycles = edges
+            .flatMap { (from, targets) ->
+                targets.filter { reaches(edges, from = it, to = from) }.map { listOf(from, it).sorted() }
+            }.toSet()
+
+        assertEquals(CYCLE_MESSAGE, setOf(ACCEPTED_CYCLE.sorted()), cycles)
+    }
+
+    private fun concernOf(importName: String, concerns: Set<String>): String? =
+        concerns.firstOrNull { importName.startsWith("$ROOT.$it.") }
+
+    private fun reaches(edges: Map<String, Set<String>>, from: String, to: String): Boolean {
+        val seen = mutableSetOf(from)
+        val queue = ArrayDeque(edges[from].orEmpty())
+
+        while (queue.isNotEmpty()) {
+            val next = queue.removeFirst()
+            if (next == to) return true
+            if (seen.add(next)) queue += edges[next].orEmpty()
+        }
+
+        return false
     }
 }
 
-private const val FOUNDATION_MESSAGE =
-    "A package under app/ that the whole product sits on has reached up into a slice. Either the " +
-        "helper belongs in that slice, or its parameter should be the plain type it really needs " +
-        "(MosaicGradients.avatarBrush took a UserId when all it did was hash a String)."
+private const val CONVENTION_MESSAGE =
+    "A concern grew a package the convention doesn't name. Every file under a concern belongs to " +
+        "one of `data`, `data/domain`, `data/network` or `ui` — including files that would " +
+        "otherwise sit loose at the concern's root. This is the rule the others are built on: they " +
+        "select files by matching those suffixes, so a file somewhere else is checked by none of " +
+        "them. Either file it under a layer, or widen LAYERS here and say why."
 
-private const val AGGREGATE_MESSAGE =
-    "An aggregate imported a feature. Features may depend on aggregates, never the other way — " +
-        "that direction is what lets a like toggled in the feed show up on a profile without the " +
-        "post store knowing either screen exists. Note a KDoc [Link] needs an import too: write " +
-        "cross-slice doc references fully qualified instead."
-
-private const val HTTP_MESSAGE =
-    "Retrofit or OkHttp appeared outside a data/network package. Wire types and HTTP calls belong " +
+private const val WIRE_MESSAGE =
+    "Retrofit or OkHttp appeared outside a `data/network` package. Wire types and HTTP calls belong " +
         "behind a DataSource interface, so a repository can be tested with a fake and swapped to a " +
-        "local source without touching its callers."
+        "local source without touching its callers. `app/di` is the exception that builds the one " +
+        "Retrofit instance."
+
+private const val DOMAIN_MESSAGE =
+    "A domain model reached for the platform, the wire, or the screen. `data/domain` is the layer " +
+        "everything else is allowed to depend on, which it can only stay if it depends on nothing: " +
+        "the mapper in `data/network` converts a DTO into a model, never the reverse."
+
+private const val LAYERING_MESSAGE =
+    "A file under `data` imported a `ui` package. Data doesn't know who renders it — that direction " +
+        "is what lets a ViewModel be deleted or rewritten without the repository noticing, and it " +
+        "keeps the data layer loadable from a plain-JVM test."
+
+private const val COMMON_MESSAGE =
+    "`common` imported a concern. It is what every concern shares, so it may know none of them — " +
+        "either the helper belongs in that concern, or its parameter should be the plain type it " +
+        "really needs (MosaicGradients.avatarBrush took a UserId when all it did was hash a String). " +
+        "Note a KDoc [Link] needs an import too: write cross-concern doc references fully qualified."
 
 private const val REPOSITORY_MESSAGE =
-    "A repository imported the Android framework, which makes it unreachable from a JVM unit test. " +
-        "Keep the platform behind an interface the way settings does, and inject it."
+    "A repository with no interface above it imported the Android framework, which makes it " +
+        "unreachable from a JVM unit test and gives its callers nothing to swap. A repository that " +
+        "genuinely needs the platform gets an interface and an in-memory double the way " +
+        "SettingsRepository and AppLocaleRepository do — that is what the supertype check is asking " +
+        "for, and why those two are not a hardcoded exception here."
+
+private const val CYCLE_MESSAGE =
+    "The concern graph changed. Two concerns that import each other can no longer be understood, " +
+        "tested, or deleted apart, so the graph is kept directed: a concern may depend on the ones " +
+        "it is built from, never on the ones built from it. If a new cycle is genuinely intended, " +
+        "add it to ACCEPTED_CYCLE with the reason; if one disappeared, drop it from there so it " +
+        "cannot come back unnoticed."
