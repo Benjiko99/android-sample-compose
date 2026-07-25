@@ -79,6 +79,7 @@ import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.asText
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.post.data.domain.Post
@@ -118,6 +119,7 @@ fun PostDetailScreen(
         onRetryComments = viewModel::retryComments,
         onRetry = viewModel::retry,
         onDelete = viewModel::onDelete,
+        onReport = viewModel::onReport,
         modifier = modifier,
     )
 }
@@ -143,6 +145,7 @@ internal fun PostDetailScreen(
     onRetryComments: () -> Unit,
     onRetry: () -> Unit,
     onDelete: () -> Unit,
+    onReport: (reason: ReportReason, details: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loaded = (uiState as? PostDetailUiState.Loaded)
@@ -180,6 +183,7 @@ internal fun PostDetailScreen(
                             post = loaded.post,
                             author = loaded.author,
                             onToggleBookmark = onToggleBookmark,
+                            onReport = onReport,
                             onDelete = if (loaded.isOwn) onDelete else null,
                         )
                     }
@@ -618,6 +622,7 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
             onRetryComments = {},
             onRetry = {},
             onDelete = {},
+            onReport = { _, _ -> },
         )
     }
 }

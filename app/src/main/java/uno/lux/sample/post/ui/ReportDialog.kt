@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialogDefaults
@@ -37,6 +39,12 @@ import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.common.data.ReportReason
+
+/**
+ * Mirrors the server's `PostsService::REPORT_DETAILS_MAX_LENGTH`. The report is acknowledged the
+ * moment it is sent, so a report the server would refuse must not be typeable in the first place.
+ */
+const val REPORT_DETAILS_MAX_LENGTH = 1000
 
 /**
  * The report-a-post dialog: a single-choice list of [ReportReason]s plus an optional free-text
@@ -107,6 +115,7 @@ private fun ReportPostDialogContent(
                 state = detailsState,
                 label = { Text(stringResource(R.string.report_details_hint)) },
                 lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 2),
+                inputTransformation = InputTransformation.maxLength(REPORT_DETAILS_MAX_LENGTH),
                 modifier = Modifier.fillMaxWidth(),
             )
         }

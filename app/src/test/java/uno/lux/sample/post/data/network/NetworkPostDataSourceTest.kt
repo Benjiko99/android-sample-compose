@@ -7,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.files.FileUpload
 import uno.lux.sample.common.data.network.LikeToggleDto
 import uno.lux.sample.post.data.domain.NewPost
@@ -159,6 +160,40 @@ class NetworkPostDataSourceTest {
         val result = dataSource.toggleBookmark(stubPost.copy(isBookmarked = false))
 
         assertTrue(result.isBookmarked)
+    }
+
+    @Test
+    fun `report sends the reason in the server's own spelling, with the details`() = runTest {
+        val api = FakePostApi()
+        val dataSource = NetworkPostDataSource(api)
+
+        dataSource.report("p1", ReportReason.HATE_SPEECH, "Read the third paragraph")
+
+        assertEquals(
+            listOf(
+                "p1" to ReportPostRequestDto(
+                    reason = ReportReasonDto.HATE_SPEECH,
+                    details = "Read the third paragraph",
+                ),
+            ),
+            api.reports,
+        )
+    }
+
+    // The free-text field is optional, so typing nothing has to reach the server as an absent
+    // field rather than an empty one it would have to treat as absent anyway.
+    @Test
+    fun `report omits details the reporter left blank`() = runTest {
+        val api = FakePostApi()
+        val dataSource = NetworkPostDataSource(api)
+
+        dataSource.report("p1", ReportReason.SPAM, "   ")
+
+        assertNull(
+            api.reports
+                .single()
+                .second.details,
+        )
     }
 
     @Test

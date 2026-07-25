@@ -23,6 +23,7 @@ import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCardData
@@ -205,6 +206,14 @@ class ProfileViewModel @AssistedInject constructor(
 
     override fun onDeletePost(postId: PostId) = launchCatching {
         postRepository.delete(postId)
+    }
+
+    override fun onReportPost(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    ) = launchCatching {
+        postRepository.report(postId, reason, details)
     }
 
     override fun onToggleFollow() = launchCatching {

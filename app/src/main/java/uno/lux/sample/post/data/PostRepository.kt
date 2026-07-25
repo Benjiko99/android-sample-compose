@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
@@ -104,4 +105,16 @@ class PostRepository(
         val updated = dataSource.toggleBookmark(post)
         _entities.update { it + (postId to updated) }
     }
+
+    /**
+     * Reports a post. Nothing in the store moves: a report is a message *about* a post, so the
+     * post the reporter is looking at is unchanged, and the server keeps nothing to read back.
+     * Unlike the toggles it needs no entity either — an ID is all a report is about, which is
+     * what lets a post be reported from a screen that never resolved it.
+     */
+    suspend fun report(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    ) = dataSource.report(postId, reason, details)
 }

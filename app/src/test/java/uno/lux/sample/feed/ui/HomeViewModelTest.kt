@@ -12,6 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.feed.data.FakeFeedDataSource
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedPage
@@ -68,9 +69,10 @@ class HomeViewModelTest : ViewModelTest() {
             FakeFeedDataSource(listOf(FeedPage(listOf(post), listOf(author), null, false))),
         currentUserId: UserId = "u1",
         settingsRepository: SettingsRepository = InMemorySettingsRepository(),
+        postDataSource: FakePostDataSource = FakePostDataSource(),
     ): HomeViewModel {
         val userRepo = UserRepository(FakeUserDataSource())
-        val postRepo = PostRepository(FakePostDataSource(), userRepo)
+        val postRepo = PostRepository(postDataSource, userRepo)
         val feedRepo = FeedRepository(feedDataSource, postRepo, userRepo)
         return HomeViewModel(feedRepo, postRepo, userRepo, settingsRepository, navigator, currentUserId)
     }
@@ -153,6 +155,26 @@ class HomeViewModelTest : ViewModelTest() {
         viewModel.onDeletePost("p1")
 
         assertTrue((viewModel.uiState.value as HomeUiState.Feed).posts.isEmpty())
+    }
+
+    // Reporting from the feed reports the card that was tapped and leaves the feed alone —
+    // the post is still there, and still says what it said.
+    @Test
+    fun `onReportPost reports the post without changing the feed`() = runTest {
+        val dataSource = FakePostDataSource()
+        val viewModel = viewModel(postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        val before = (viewModel.uiState.value as HomeUiState.Feed).posts
+
+        viewModel.onReportPost("p1", ReportReason.VIOLENCE, "")
+
+        assertEquals(
+            listOf(FakePostDataSource.Report("p1", ReportReason.VIOLENCE, "")),
+            dataSource.reports,
+        )
+        assertEquals(before, (viewModel.uiState.value as HomeUiState.Feed).posts)
     }
 
     @Test

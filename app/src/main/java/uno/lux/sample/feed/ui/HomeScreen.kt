@@ -44,6 +44,7 @@ import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.common.asText
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -77,6 +78,12 @@ interface HomeActions {
     fun onToggleBookmark(postId: PostId)
 
     fun onDeletePost(postId: PostId)
+
+    fun onReportPost(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    )
 
     fun openSettings()
 
@@ -255,6 +262,9 @@ private fun FeedList(
                 onOpenVideo = actions::openVideo,
                 onOpenAlbum = actions::openAlbum,
                 onOpenPost = { actions.openPost(data.post.id) },
+                onReport = { reason, details ->
+                    actions.onReportPost(data.post.id, reason, details)
+                },
                 onDelete = if (data.isOwn) ({ actions.onDeletePost(data.post.id) }) else null,
             )
         }

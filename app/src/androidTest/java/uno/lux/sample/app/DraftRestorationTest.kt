@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.files.FileLoader
 import uno.lux.sample.common.data.files.FileUpload
 import uno.lux.sample.common.data.files.VideoMetadataReader
@@ -260,6 +261,12 @@ class DraftRestorationTest {
         override suspend fun toggleLike(post: Post): Post = unused()
 
         override suspend fun toggleBookmark(post: Post): Post = unused()
+
+        override suspend fun report(
+            postId: PostId,
+            reason: ReportReason,
+            details: String,
+        ) = unused()
     }
 
     /** Answers the size check a video pick makes; reading bytes only happens on publish. */

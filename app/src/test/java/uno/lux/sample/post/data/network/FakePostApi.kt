@@ -106,6 +106,13 @@ class FakePostApi(
 
     override suspend fun toggleBookmark(postId: String): BookmarkToggleResponse =
         BookmarkToggleResponse(bookmarkResult)
+
+    /** The reports passed to [reportPost], in call order, for test assertions. */
+    val reports = mutableListOf<Pair<String, ReportPostRequestDto>>()
+
+    override suspend fun reportPost(postId: String, report: ReportPostRequestDto) {
+        reports += postId to report
+    }
 }
 
 fun feedItemDto(

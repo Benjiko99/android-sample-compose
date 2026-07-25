@@ -2,6 +2,7 @@ package uno.lux.sample.post.data.network
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
@@ -40,4 +41,11 @@ interface PostApi {
     suspend fun toggleBookmark(
         @Path("id") postId: String,
     ): BookmarkToggleResponse
+
+    // The server keeps no report, so it answers an empty 204 — hence no response type.
+    @POST("posts/{id}/report")
+    suspend fun reportPost(
+        @Path("id") postId: String,
+        @Body report: ReportPostRequestDto,
+    )
 }

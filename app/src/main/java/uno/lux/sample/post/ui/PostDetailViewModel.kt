@@ -28,6 +28,7 @@ import uno.lux.sample.app.util.toAppError
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
@@ -220,6 +221,14 @@ class PostDetailViewModel @AssistedInject constructor(
         // path a deletion performed on any other screen takes.
         postRepository.delete(postId)
         navigator.goBack()
+    }
+
+    /**
+     * Reports the post. Unlike [onDelete] the page stays where it is: a reported post is still
+     * a post, and the reporter is still reading it.
+     */
+    fun onReport(reason: ReportReason, details: String) = launchCatching {
+        postRepository.report(postId, reason, details)
     }
 
     fun onToggleCommentLike(commentId: CommentId) = launchCatching {

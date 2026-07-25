@@ -7,6 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
@@ -174,6 +175,44 @@ class PostRepositoryTest {
 
         assertNull(repo.load("unliked"))
         assertEquals(emptyList<PostId>(), dataSource.fetchedPostIds)
+    }
+
+    @Test
+    fun `report goes through the data source`() = runTest {
+        val dataSource = FakePostDataSource()
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+
+        repo.report("unliked", ReportReason.SPAM, "Posted this five times")
+
+        assertEquals(
+            listOf(FakePostDataSource.Report("unliked", ReportReason.SPAM, "Posted this five times")),
+            dataSource.reports,
+        )
+    }
+
+    // A report says nothing about the post itself, so the card the reporter is looking at — and
+    // every other screen showing it — must be left exactly as it was.
+    @Test
+    fun `report leaves the entity map untouched`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(unliked))
+
+        repo.report("unliked", ReportReason.SPAM, "")
+
+        assertEquals(mapOf<PostId, Post>("unliked" to unliked), repo.entities.first())
+    }
+
+    // Unlike a toggle, a report needs no entity: an id is all it is about, so a post can be
+    // reported from a screen that never resolved it into the store.
+    @Test
+    fun `report is made for a post the store does not hold`() = runTest {
+        val dataSource = FakePostDataSource()
+        val repo = repository(dataSource)
+
+        repo.report("unknown", ReportReason.OTHER, "")
+
+        assertEquals(listOf("unknown"), dataSource.reports.map { it.postId })
     }
 
     @Test

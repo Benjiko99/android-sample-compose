@@ -20,6 +20,7 @@ import uno.lux.sample.comment.data.CommentDataSource
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.FakeCommentDataSource
 import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
@@ -138,6 +139,28 @@ class PostDetailViewModelTest : ViewModelTest() {
         postRepository.delete("p1")
 
         assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
+    }
+
+    // ── report ────────────────────────────────────────────────────────────────
+
+    // A report is about the post, not on it: unlike a deletion it changes nothing the page
+    // shows, and leaves the reporter reading what they reported.
+    @Test
+    fun `onReport reports the post and keeps the page open`() = runTest {
+        val dataSource = FakePostDataSource()
+        val viewModel = viewModel(postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onReport(ReportReason.HARASSMENT, "Second time this week")
+
+        assertEquals(
+            listOf(FakePostDataSource.Report("p1", ReportReason.HARASSMENT, "Second time this week")),
+            dataSource.reports,
+        )
+        assertTrue(viewModel.uiState.value is PostDetailUiState.Loaded)
+        assertEquals(listOf(Screen.Shell, Screen.PostDetail("p1")), backStack.screens())
     }
 
     // ── navigation ────────────────────────────────────────────────────────────

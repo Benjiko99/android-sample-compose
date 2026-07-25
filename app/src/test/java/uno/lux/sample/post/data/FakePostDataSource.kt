@@ -1,5 +1,6 @@
 package uno.lux.sample.post.data
 
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
@@ -74,4 +75,21 @@ internal class FakePostDataSource : PostDataSource {
 
     override suspend fun toggleBookmark(post: Post) =
         post.copy(isBookmarked = !post.isBookmarked)
+
+    /** The reports passed to [report], in call order, for test assertions. */
+    val reports = mutableListOf<Report>()
+
+    data class Report(
+        val postId: PostId,
+        val reason: ReportReason,
+        val details: String,
+    )
+
+    override suspend fun report(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    ) {
+        reports += Report(postId, reason, details)
+    }
 }

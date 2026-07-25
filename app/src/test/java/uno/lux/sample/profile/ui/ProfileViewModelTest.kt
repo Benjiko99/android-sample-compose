@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
@@ -87,9 +88,10 @@ class ProfileViewModelTest : ViewModelTest() {
         bookmarks: List<Post> = listOf(savedPost),
         likes: List<Post> = listOf(likedPost),
         userDataSource: UserDataSource = FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
+        postDataSource: FakePostDataSource = FakePostDataSource(),
     ): ProfileViewModel {
         val userRepo = UserRepository(userDataSource)
-        val postRepo = PostRepository(FakePostDataSource(), userRepo)
+        val postRepo = PostRepository(postDataSource, userRepo)
         profileDataSource = FakeProfileDataSource(
             refreshData = mapOf(
                 "u1" to ProfileRefreshData(
@@ -136,6 +138,28 @@ class ProfileViewModelTest : ViewModelTest() {
 
         val loaded = viewModel.uiState.value as ProfileUiState.Loaded
         assertTrue(loaded.data.posts.isEmpty())
+    }
+
+    // Someone else's profile is where a post is most likely to be reported, and reporting one
+    // must leave the profile showing exactly what it showed.
+    @Test
+    fun `onReportPost reports the post and leaves the profile as it was`() = runTest {
+        val dataSource = FakePostDataSource()
+        val viewModel = viewModel(postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        val before = (viewModel.uiState.value as ProfileUiState.Loaded).data.posts
+
+        viewModel.onReportPost("p1", ReportReason.MISINFORMATION, "None of this is true")
+
+        assertEquals(
+            listOf(
+                FakePostDataSource.Report("p1", ReportReason.MISINFORMATION, "None of this is true"),
+            ),
+            dataSource.reports,
+        )
+        assertEquals(before, (viewModel.uiState.value as ProfileUiState.Loaded).data.posts)
     }
 
     @Test

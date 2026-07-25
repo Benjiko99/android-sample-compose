@@ -42,6 +42,7 @@ import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.ui.Avatar
@@ -60,6 +61,7 @@ internal fun PostOverflowMenu(
     post: Post,
     author: User,
     onToggleBookmark: () -> Unit,
+    onReport: (reason: ReportReason, details: String) -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
@@ -102,8 +104,11 @@ internal fun PostOverflowMenu(
     if (showReportDialog) {
         ReportPostDialog(
             onDismiss = { showReportDialog = false },
-            // TODO: Reporting isn't wired to a backend yet — acknowledge and discard the report.
-            onSubmit = { _, _ ->
+            // The thanks is optimistic: the report goes out fire-and-forget, like a like or a
+            // delete, and there is nothing a reporter could do about a failed one anyway. What
+            // they are being told is that the report was made, not that a server has it.
+            onSubmit = { reason, details ->
+                onReport(reason, details)
                 context.toast(R.string.report_sent)
                 showReportDialog = false
             },

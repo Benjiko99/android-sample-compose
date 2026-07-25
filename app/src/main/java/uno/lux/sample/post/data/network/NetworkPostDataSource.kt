@@ -2,6 +2,7 @@ package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.files.asPart
 import uno.lux.sample.common.data.files.asTextPart
 import uno.lux.sample.common.data.network.notFoundAsNull
@@ -49,5 +50,21 @@ class NetworkPostDataSource(
     override suspend fun toggleBookmark(post: Post): Post = withContext(Dispatchers.IO) {
         val result = api.toggleBookmark(post.id).data
         post.copy(isBookmarked = result.isBookmarked)
+    }
+
+    override suspend fun report(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    ) = withContext(Dispatchers.IO) {
+        api.reportPost(
+            postId = postId,
+            // Blank details are left off the request rather than sent as an empty string:
+            // the field is optional, and "typed nothing" is exactly what absent means.
+            report = ReportPostRequestDto(
+                reason = reason.toDto(),
+                details = details.takeIf { it.isNotBlank() },
+            ),
+        )
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.video.data.domain.Video
 
 /** In the feed the body is a perex — clipped to this many lines, with a "Show more" affordance. */
@@ -35,6 +36,7 @@ internal fun PostCard(
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: () -> Unit,
+    onReport: (reason: ReportReason, details: String) -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
@@ -56,6 +58,7 @@ internal fun PostCard(
                     post = post,
                     author = author,
                     onToggleBookmark = onToggleBookmark,
+                    onReport = onReport,
                     onDelete = onDelete,
                 )
             },
@@ -93,6 +96,7 @@ private fun PostCardPreview() {
             onOpenVideo = {},
             onOpenAlbum = { _, _ -> },
             onOpenPost = {},
+            onReport = { _, _ -> },
         )
     }
 }

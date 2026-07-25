@@ -1,5 +1,6 @@
 package uno.lux.sample.post.data
 
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
@@ -20,4 +21,14 @@ interface PostDataSource {
     suspend fun toggleLike(post: Post): Post
 
     suspend fun toggleBookmark(post: Post): Post
+
+    /**
+     * Reports a post for [reason], with whatever context the reporter typed. [details] is blank
+     * when they typed none — the free-text field is optional.
+     */
+    suspend fun report(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    )
 }

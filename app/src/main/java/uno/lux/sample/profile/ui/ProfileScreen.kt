@@ -85,6 +85,7 @@ import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.common.asText
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -114,6 +115,12 @@ interface ProfileActions {
     fun onToggleBookmark(postId: PostId)
 
     fun onDeletePost(postId: PostId)
+
+    fun onReportPost(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    )
 
     fun onToggleFollow()
 
@@ -696,6 +703,7 @@ private fun LazyListScope.postItems(
             onOpenVideo = actions::openVideo,
             onOpenAlbum = actions::openAlbum,
             onOpenPost = { actions.openPost(post.id) },
+            onReport = { reason, details -> actions.onReportPost(post.id, reason, details) },
             onDelete = if (isCurrentUser) ({ actions.onDeletePost(post.id) }) else null,
         )
     }
@@ -755,6 +763,7 @@ private fun LazyListScope.onDemandTabItems(
             onOpenVideo = actions::openVideo,
             onOpenAlbum = actions::openAlbum,
             onOpenPost = { actions.openPost(data.post.id) },
+            onReport = { reason, details -> actions.onReportPost(data.post.id, reason, details) },
             onDelete = if (data.isOwn) ({ actions.onDeletePost(data.post.id) }) else null,
         )
     }

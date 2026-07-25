@@ -17,6 +17,7 @@ import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
+import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.feed.data.FeedState
 import uno.lux.sample.post.data.PostRepository
@@ -140,6 +141,14 @@ class HomeViewModel @Inject constructor(
 
     override fun onDeletePost(postId: PostId) = launchCatching {
         postRepository.delete(postId)
+    }
+
+    override fun onReportPost(
+        postId: PostId,
+        reason: ReportReason,
+        details: String,
+    ) = launchCatching {
+        postRepository.report(postId, reason, details)
     }
 
     override fun openSettings() = navigator.goToSingleTop(Screen.Settings)
