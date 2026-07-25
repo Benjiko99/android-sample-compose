@@ -13,7 +13,7 @@ import javax.inject.Inject
  * [Screen] opens that page over the whole shell instead of swapping the content area.
  */
 @HiltViewModel
-class AppShellViewModel @Inject constructor(
+class ShellViewModel @Inject constructor(
     private val navigator: Navigator,
 ) : ViewModel() {
 

@@ -12,7 +12,7 @@ import androidx.compose.animation.togetherWith
  * How a full-screen page enters and leaves the `NavDisplay`. Pushing and popping are each other's
  * inverse, and the pop spec doubles as the predictive-back one so the gesture drags the very
  * animation the release plays out. Tab switches inside the shell are not navigation events and get
- * their own fade-through instead — see `AppShell`.
+ * their own fade-through instead — see `ShellScreen`.
  */
 
 /** How long a push or pop between full-screen pages runs. */

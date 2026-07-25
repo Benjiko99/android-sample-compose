@@ -26,7 +26,7 @@ import uno.lux.sample.video.ui.ProvideVideoPlayback
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberBackStack] back
- * stack of [BackStackEntry] keys: the tabbed [AppShell] is the permanent root, and a user's
+ * stack of [BackStackEntry] keys: the tabbed [ShellScreen] is the permanent root, and a user's
  * [ProfileScreen] or the [SettingsScreen] push over it as full-screen pages (settings stacks
  * over a profile, too). The entry decorators give every page its own saveable-state and ViewModel
  * store, so a pushed page's ViewModel is created on push and cleared on pop. Those stores are
@@ -68,18 +68,11 @@ fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
     }
 }
 
-/**
- * The page each [Screen] key renders — one exhaustive `when` over the sealed hierarchy, so a new
- * key is a compile error here rather than a crash on the push that first uses it.
- *
- * A screen takes only what its key carries (plus [currentUserId], which the shell's Profile tab
- * needs): everything else it shows, it reaches through its own ViewModel, navigation included.
- */
 @Composable
 private fun ScreenContent(screen: Screen, currentUserId: UserId) {
     when (screen) {
         Screen.Shell -> {
-            AppShell(currentUserId = currentUserId)
+            ShellScreen(currentUserId = currentUserId)
         }
 
         is Screen.Profile -> {

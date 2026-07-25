@@ -3,6 +3,7 @@ package uno.lux.sample.app.ui
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -39,14 +40,14 @@ import uno.lux.sample.user.data.domain.UserId
  * never grows the back stack), so the content cross-fades (fade-through) rather than sliding.
  *
  * An [AppDestinations] entry carrying a [Screen] breaks that rule deliberately: it is an action,
- * not a tab, and selecting it pushes that page over the whole shell through [AppShellViewModel] —
+ * not a tab, and selecting it pushes that page over the whole shell through [ShellViewModel] —
  * covering the navigation bar, leaving the current tab selected underneath, and sliding in like
  * any other page. [AppDestinations.CREATE] opens the composer this way.
  */
 @Composable
-fun AppShell(
+fun ShellScreen(
     currentUserId: UserId,
-    viewModel: AppShellViewModel = hiltViewModel(),
+    viewModel: ShellViewModel = hiltViewModel(),
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
@@ -89,19 +90,7 @@ fun AppShell(
     ) {
         AnimatedContent(
             targetState = currentDestination,
-            transitionSpec = {
-                (
-                    fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
-                        scaleIn(
-                            animationSpec = tween(
-                                durationMillis = 210,
-                                delayMillis = 90,
-                            ),
-                            initialScale = 0.94f,
-                        )
-                ) togetherWith
-                    fadeOut(tween(durationMillis = 90))
-            },
+            transitionSpec = { tabTransition() },
             modifier = Modifier.fillMaxSize(),
             label = "tab",
         ) { destination ->
@@ -118,6 +107,28 @@ fun AppShell(
             }
         }
     }
+}
+
+/** How long the outgoing tab takes to fade out, which is also how long the incoming one waits. */
+private const val TAB_FADE_OUT_MILLIS = 90
+
+/** How long the incoming tab's fade-and-scale runs, once the outgoing one has gone. */
+private const val TAB_FADE_IN_MILLIS = 210
+
+/** The incoming tab starts a touch small and settles into place, rather than snapping to size. */
+private const val TAB_INITIAL_SCALE = 0.94f
+
+/**
+ * The tab switch: Material's **fade-through**, the transition between peers. The two halves don't
+ * overlap — the outgoing tab fades out first and the incoming one waits that long before fading in,
+ * scaling up the last sliver as it arrives. Nothing slides, because sliding would claim the tabs sit
+ * in some spatial order; a page pushed *over* the shell slides instead (`pushTransition`).
+ */
+private fun tabTransition(): ContentTransform {
+    val enter = tween<Float>(durationMillis = TAB_FADE_IN_MILLIS, delayMillis = TAB_FADE_OUT_MILLIS)
+
+    return (fadeIn(enter) + scaleIn(enter, initialScale = TAB_INITIAL_SCALE)) togetherWith
+        fadeOut(tween(durationMillis = TAB_FADE_OUT_MILLIS))
 }
 
 /**
