@@ -49,6 +49,7 @@ fun AppShell(
     viewModel: AppShellViewModel = hiltViewModel(),
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+
     val navItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
             selectedIconColor = MaterialTheme.colorScheme.primary,

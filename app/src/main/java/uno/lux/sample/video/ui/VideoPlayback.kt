@@ -1,16 +1,26 @@
 package uno.lux.sample.video.ui
 
 import android.content.Context
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import uno.lux.sample.app.util.findActivity
 import javax.inject.Inject
 
 /**
@@ -145,3 +155,29 @@ class VideoPlaybackViewModel @Inject constructor(
  * (e.g. in `@Preview`s), where video controls render their static thumbnail state.
  */
 val LocalVideoPlayback = compositionLocalOf<VideoPlaybackController?> { null }
+
+/**
+ * Puts the shared player in reach of [content]. The controller is held by an **activity-scoped**
+ * [VideoPlaybackViewModel], so it survives the push to full screen and configuration changes and is
+ * released when the activity finishes; providing it around the whole back stack is what lets an
+ * inline post and the full-screen page reach the same instance.
+ *
+ * Playback also pauses whenever the app is backgrounded — it resumes on the user's next tap — which
+ * belongs here rather than in a screen: the player outlives every one of them.
+ */
+@Composable
+fun ProvideVideoPlayback(content: @Composable () -> Unit) {
+    val activity = LocalContext.current.findActivity() as ComponentActivity
+    val playback = hiltViewModel<VideoPlaybackViewModel>(activity).controller
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, playback) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) playback.pause()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    CompositionLocalProvider(LocalVideoPlayback provides playback, content = content)
+}
