@@ -1,7 +1,5 @@
 package uno.lux.sample.app.ui
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
@@ -15,6 +13,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItemColors
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import uno.lux.sample.R
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.common.ui.DividedNavigationSuiteScaffold
@@ -63,28 +62,16 @@ fun ShellScreen(
 
     DividedNavigationSuiteScaffold(
         navigationSuiteItems = {
-            AppDestinations.entries.forEach { destination ->
-                item(
-                    icon = {
-                        Icon(
-                            painterResource(destination.icon),
-                            contentDescription = stringResource(destination.labelRes),
-                        )
-                    },
-                    label = { Text(stringResource(destination.labelRes)) },
-                    // An action entry never reports as selected — it pushes a page and leaves
-                    // the current tab highlighted underneath.
-                    selected = destination == currentDestination,
-                    onClick = {
-                        val screen = destination.screen
-                        if (screen != null) {
-                            viewModel.openDestination(screen)
-                        } else {
-                            currentDestination = destination
-                        }
-                    },
-                    colors = navItemColors,
-                )
+            destinationItems(current = currentDestination, colors = navItemColors) { destination ->
+                // An entry carrying a screen is an action, not a tab: it pushes that page over the
+                // whole shell and leaves the current tab selected underneath.
+                val screen = destination.screen
+
+                if (screen != null) {
+                    viewModel.openDestination(screen)
+                } else {
+                    currentDestination = destination
+                }
             }
         },
     ) {
@@ -97,8 +84,6 @@ fun ShellScreen(
             when (destination) {
                 AppDestinations.HOME -> HomeScreen()
 
-                // The Profile tab is the signed-in user's own profile (no up-affordance, so
-                // showBackButton stays false); tapping another author still pushes Screen.Profile.
                 AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
 
                 // CREATE pushes Screen.CreatePost over the shell rather than filling the
@@ -107,6 +92,35 @@ fun ShellScreen(
             }
         }
     }
+}
+
+/**
+ * One navigation item per [AppDestinations] entry, in declaration order — which is what makes the
+ * enum the single source of truth for the navigation suite: adding a destination adds an item, and
+ * nothing here names one.
+ *
+ * [current] is the selected *tab*, so an action entry never reports as selected: it carries a
+ * `screen`, [current] is only ever assigned a tab, and the two therefore never match — which is
+ * what leaves the tab underneath highlighted while its page sits on top. What a click means is the
+ * caller's to decide; [onClick] receives the entry itself.
+ */
+private fun NavigationSuiteScope.destinationItems(
+    current: AppDestinations,
+    colors: NavigationSuiteItemColors,
+    onClick: (AppDestinations) -> Unit,
+) = AppDestinations.entries.forEach { destination ->
+    item(
+        icon = {
+            Icon(
+                painterResource(destination.icon),
+                contentDescription = stringResource(destination.labelRes),
+            )
+        },
+        label = { Text(stringResource(destination.labelRes)) },
+        selected = destination == current,
+        onClick = { onClick(destination) },
+        colors = colors,
+    )
 }
 
 /** How long the outgoing tab takes to fade out, which is also how long the incoming one waits. */
@@ -129,33 +143,4 @@ private fun tabTransition(): ContentTransform {
 
     return (fadeIn(enter) + scaleIn(enter, initialScale = TAB_INITIAL_SCALE)) togetherWith
         fadeOut(tween(durationMillis = TAB_FADE_OUT_MILLIS))
-}
-
-/**
- * The top-level entries of the navigation suite; add or change one by editing the enum.
- *
- * Most are **tabs**: selecting one swaps the shell's content area and leaves the item
- * highlighted. An entry carrying a [screen] is instead an **action** — selecting it pushes that
- * page over the entire shell (covering the tab bar) and never becomes the selection, so the tab
- * the user was on stays highlighted underneath. That is how [CREATE] opens the composer, the
- * behaviour a centre "new post" button has in apps like TikTok.
- */
-enum class AppDestinations(
-    @get:StringRes val labelRes: Int,
-    @get:DrawableRes val icon: Int,
-    val screen: Screen? = null,
-) {
-    HOME(
-        labelRes = R.string.nav_home,
-        icon = R.drawable.ic_home,
-    ),
-    CREATE(
-        labelRes = R.string.nav_create,
-        icon = R.drawable.ic_add,
-        screen = Screen.CreatePost,
-    ),
-    PROFILE(
-        labelRes = R.string.nav_profile,
-        icon = R.drawable.ic_account_box,
-    ),
 }
