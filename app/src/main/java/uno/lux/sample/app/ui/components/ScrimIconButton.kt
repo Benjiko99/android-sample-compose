@@ -1,4 +1,4 @@
-package uno.lux.sample.common.ui
+package uno.lux.sample.app.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background

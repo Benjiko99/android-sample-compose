@@ -1,4 +1,4 @@
-package uno.lux.sample.common.ui
+package uno.lux.sample.app.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

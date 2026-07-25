@@ -1,4 +1,4 @@
-package uno.lux.sample.common.ui
+package uno.lux.sample.app.ui.components
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation

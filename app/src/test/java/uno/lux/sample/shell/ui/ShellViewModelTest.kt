@@ -4,7 +4,6 @@ import org.junit.Assert
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.shell.data.domain.ShellDestinations
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
 

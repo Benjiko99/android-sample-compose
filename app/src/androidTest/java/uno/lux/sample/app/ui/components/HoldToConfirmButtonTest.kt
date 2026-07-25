@@ -1,4 +1,4 @@
-package uno.lux.sample.app.common.ui
+package uno.lux.sample.app.ui.components
 
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
@@ -15,7 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import uno.lux.sample.app.theme.MosaicTheme
-import uno.lux.sample.common.ui.HoldToConfirmButton
 
 /**
  * Pins the button's accessibility escape hatch. Holding is a motor-skill barrier, so a service

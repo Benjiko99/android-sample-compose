@@ -1,4 +1,4 @@
-package uno.lux.sample.common.ui
+package uno.lux.sample.app.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -7,7 +7,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import uno.lux.sample.app.util.findActivity
 
 /** Hides the system bars (swipe to reveal transiently) while shown, restoring them on dispose. */
 @Composable

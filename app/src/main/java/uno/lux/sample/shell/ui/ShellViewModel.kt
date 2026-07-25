@@ -9,7 +9,7 @@ import javax.inject.Inject
 /**
  * Backs the tabbed shell itself. The shell holds no content state — which tab is selected is
  * plain composition state, since switching tabs is not a navigation event — so its only intent is
- * the one navigation-suite item that *does* navigate: an [uno.lux.sample.shell.data.domain.ShellDestinations] entry carrying a
+ * the one navigation-suite item that *does* navigate: a [ShellDestinations] entry carrying a
  * [Screen] opens that page over the whole shell instead of swapping the content area.
  */
 @HiltViewModel

@@ -1,4 +1,4 @@
-package uno.lux.sample.shell.data.domain
+package uno.lux.sample.shell.ui
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes

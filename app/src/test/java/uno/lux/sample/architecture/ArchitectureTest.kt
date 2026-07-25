@@ -21,7 +21,8 @@ import org.junit.Test
  * <concern>/data/domain/     the models — pure Kotlin, no platform and no wire
  * <concern>/data/network/    the service, DTOs, mappers — the only place HTTP appears
  * <concern>/ui/              composables and ViewModels
- * app/                       the machine; may know every concern
+ * app/                       the machine; wires the concerns, so it may know every one of them
+ * app/theme|util|ui/components   what the app is drawn with; may know none of them
  * common/                    what concerns share; may know none of them
  * ```
  *
@@ -45,6 +46,13 @@ class ArchitectureTest {
 
         /** The two top-level packages that are not a concern, and so have no layer convention. */
         val NON_CONCERNS = setOf(APP, COMMON)
+
+        /**
+         * The parts of the machine the app is drawn *with* rather than wired *by* — the palette,
+         * the branded controls, the utilities. The rest of `app` (`di`, `navigation`, `fixtures`
+         * and `MosaicApp` itself) exists to wire the concerns together and must import them.
+         */
+        val APP_CORE = listOf("$APP.theme", "$APP.util", "$APP.ui.components")
 
         /** The shapes a concern's packages may take, as suffixes on `<root>.<concern>`. */
         val LAYERS = listOf(".data", ".data.domain", ".data.network", ".ui")
@@ -126,6 +134,19 @@ class ArchitectureTest {
     }
 
     @Test
+    fun `the design system and utilities know no concern`() {
+        val concerns = concerns()
+
+        production()
+            .filter { file -> APP_CORE.any { file.pkg.startsWith("$ROOT.$it") } }
+            .assertTrue(additionalMessage = APP_CORE_MESSAGE) { file ->
+                file.imports.none { import ->
+                    concerns.any { import.name.startsWith("$ROOT.$it.") }
+                }
+            }
+    }
+
+    @Test
     fun `a repository behind no interface stays plain-JVM`() {
         production().assertTrue(additionalMessage = REPOSITORY_MESSAGE) { file ->
             file.classes().none { it.name.endsWith("Repository") && it.parents().isEmpty() } ||
@@ -164,6 +185,13 @@ private const val COMMON_MESSAGE =
         "either the helper belongs in that concern, or its parameter should be the plain type it " +
         "really needs (MosaicGradients.avatarBrush took a UserId when all it did was hash a String). " +
         "Note a KDoc [Link] needs an import too: write cross-concern doc references fully qualified."
+
+private const val APP_CORE_MESSAGE =
+    "The palette, the design system or a utility imported a concern. Unlike the rest of `app` — " +
+        "`di` binds every repository and `MosaicApp` renders every screen, so those must know the " +
+        "concerns — these three are what everything is drawn with, and they stay reusable only " +
+        "while they know nothing. A branded control that grew a `Post` parameter is post UI: file " +
+        "it in `post/ui`, or take the plain type it really needs."
 
 private const val REPOSITORY_MESSAGE =
     "A repository with no interface above it imported the Android framework, which makes it " +

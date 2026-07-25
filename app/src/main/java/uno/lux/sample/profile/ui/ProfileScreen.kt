@@ -80,6 +80,7 @@ import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicElevations
 import uno.lux.sample.app.theme.MosaicGradients
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.ScrimIconButton
 import uno.lux.sample.app.util.compactCount
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
@@ -90,7 +91,6 @@ import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
 import uno.lux.sample.common.ui.LoadingMoreFooter
-import uno.lux.sample.common.ui.ScrimIconButton
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData

@@ -26,10 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.theme.LocalMosaicColors
-import uno.lux.sample.common.ui.DividedNavigationSuiteScaffold
+import uno.lux.sample.app.ui.components.DividedNavigationSuiteScaffold
 import uno.lux.sample.feed.ui.HomeScreen
 import uno.lux.sample.profile.ui.ProfileScreen
-import uno.lux.sample.shell.data.domain.ShellDestinations
 import uno.lux.sample.user.data.domain.UserId
 
 /**

@@ -56,12 +56,12 @@ import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.HoldToConfirmButton
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.common.formatVideoDuration
 import uno.lux.sample.common.ui.DiscardChangesDialog
-import uno.lux.sample.common.ui.HoldToConfirmButton
 import uno.lux.sample.common.ui.MediaBadge
 import uno.lux.sample.common.ui.MediaRemoveButton
 

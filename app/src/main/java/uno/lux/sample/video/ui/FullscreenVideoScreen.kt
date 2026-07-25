@@ -15,8 +15,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import uno.lux.sample.app.util.ImmersiveSystemBars
 import uno.lux.sample.app.util.findActivity
-import uno.lux.sample.common.ui.ImmersiveSystemBars
 import uno.lux.sample.common.ui.OverlayBackButton
 
 /**
