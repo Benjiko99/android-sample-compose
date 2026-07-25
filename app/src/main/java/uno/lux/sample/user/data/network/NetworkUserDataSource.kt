@@ -2,8 +2,8 @@ package uno.lux.sample.user.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.common.data.files.asPart
-import uno.lux.sample.common.data.files.asTextPart
+import uno.lux.sample.common.data.network.asPart
+import uno.lux.sample.common.data.network.asTextPart
 import uno.lux.sample.common.data.network.notFoundAsNull
 import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.data.domain.ProfileUpdate
