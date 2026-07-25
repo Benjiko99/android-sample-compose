@@ -72,6 +72,7 @@ import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.relativeTime
@@ -170,12 +171,11 @@ internal fun PostDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack.rememberDebounced()) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
+                    AppBarAction(
+                        icon = R.drawable.ic_arrow_back,
+                        onClick = onBack,
+                        contentDescription = stringResource(R.string.navigate_back),
+                    )
                 },
                 actions = {
                     if (loaded != null) {

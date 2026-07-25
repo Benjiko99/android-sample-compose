@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -30,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,8 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.util.createActionsProxy
-import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
 
@@ -104,12 +101,11 @@ internal fun SettingsScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
                 navigationIcon = {
-                    IconButton(onClick = actions::goBack.rememberDebounced()) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
+                    AppBarAction(
+                        icon = R.drawable.ic_arrow_back,
+                        onClick = actions::goBack,
+                        contentDescription = stringResource(R.string.navigate_back),
+                    )
                 },
             )
         },

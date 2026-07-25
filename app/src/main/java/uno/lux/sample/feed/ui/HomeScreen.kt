@@ -42,6 +42,7 @@ import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.ui.components.MosaicWordmark
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.common.asText
@@ -50,7 +51,6 @@ import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
 import uno.lux.sample.common.ui.LoadingMoreFooter
-import uno.lux.sample.common.ui.SettingsAction
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData
@@ -204,7 +204,13 @@ private fun FeedTopBar(
 
     TopAppBar(
         title = { MosaicWordmark() },
-        actions = { SettingsAction(onOpenSettings) },
+        actions = {
+            AppBarAction(
+                icon = R.drawable.ic_settings,
+                onClick = onOpenSettings,
+                contentDescription = stringResource(R.string.nav_settings),
+            )
+        },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),

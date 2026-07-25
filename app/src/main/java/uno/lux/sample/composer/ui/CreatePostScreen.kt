@@ -27,7 +27,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -56,10 +55,10 @@ import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.ui.components.HoldToConfirmButton
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
-import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.common.formatVideoDuration
 import uno.lux.sample.common.ui.DiscardChangesDialog
 import uno.lux.sample.common.ui.MediaBadge
@@ -192,12 +191,11 @@ internal fun CreatePostScreen(
                 title = { Text(stringResource(R.string.create_post_title)) },
                 modifier = Modifier.shadow(4.dp),
                 navigationIcon = {
-                    IconButton(onClick = actions::goBack.rememberDebounced()) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
+                    AppBarAction(
+                        icon = R.drawable.ic_arrow_back,
+                        onClick = actions::goBack,
+                        contentDescription = stringResource(R.string.navigate_back),
+                    )
                 },
             )
         },

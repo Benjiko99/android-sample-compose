@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -58,8 +57,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.util.createActionsProxy
-import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.ui.DiscardChangesDialog
 import uno.lux.sample.common.ui.FullScreenError
@@ -170,12 +169,11 @@ internal fun EditProfileScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
                 navigationIcon = {
-                    IconButton(onClick = actions::goBack.rememberDebounced()) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.navigate_back),
-                        )
-                    }
+                    AppBarAction(
+                        icon = R.drawable.ic_arrow_back,
+                        onClick = actions::goBack,
+                        contentDescription = stringResource(R.string.navigate_back),
+                    )
                 },
                 actions = {
                     (uiState as? EditProfileUiState.Editing)?.let { editing ->
