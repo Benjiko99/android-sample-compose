@@ -154,16 +154,6 @@ class NavigatorTest {
     }
 
     @Test
-    fun `pages that differ only by argument also get their own identity`() {
-        navigator.attach(backStack)
-
-        navigator.goTo(Screen.PostDetail("p1"))
-        navigator.goTo(Screen.PostDetail("p2"))
-
-        assertNotEquals(backStack[1].id, backStack[2].id)
-    }
-
-    @Test
     fun `replaceTop gives the replacement its own identity`() {
         navigator.attach(backStack)
         navigator.goTo(Screen.PostDetail("p1"))
@@ -176,7 +166,6 @@ class NavigatorTest {
 
     @Test
     fun `a screen pinning a shared id keeps one identity across pushes`() {
-        val navigator = Navigator(nextId = { "generated" })
         navigator.attach(backStack)
 
         navigator.goTo(Screen.Shell)

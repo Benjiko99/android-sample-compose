@@ -23,7 +23,7 @@ import java.util.UUID
  *
  * The class is deliberately free of DI annotations (provided in `NavigationModule`, retained
  * across configuration changes) and of framework types, so unit tests drive the real
- * implementation by attaching a plain `mutableListOf(...)` of entries.
+ * implementation by attaching a stack from `testing/BackStacks.kt`'s `backStackOf(…)`.
  */
 class Navigator(
     private val nextId: () -> String = { UUID.randomUUID().toString() },
@@ -46,10 +46,11 @@ class Navigator(
      * own ViewModel and `rememberSaveable` state — unless the screen pins one through
      * [Screen.sharedId], in which case every push resolves to the same position's state.
      *
-     * Public because the composition needs it to seed the stack's root entry, and tests to build
-     * a stack the way the app builds one.
+     * Visible to the module rather than private because [rememberBackStack] seeds the stack's root
+     * entry with it, and tests build a stack the way the app builds one; it is not part of the
+     * surface ViewModels navigate through.
      */
-    fun entryFor(screen: Screen) = BackStackEntry(screen, screen.sharedId ?: nextId())
+    internal fun entryFor(screen: Screen) = BackStackEntry(screen, screen.sharedId ?: nextId())
 
     /**
      * Pushes [screen] on top of the back stack. Deliberately allows a screen equal to the current

@@ -17,7 +17,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -39,9 +38,10 @@ import org.junit.runner.RunWith
  * emulate is the *other* half of a real restart, that every in-memory store comes back empty; the
  * screens' own cold-start loading is covered by their ViewModel tests.
  *
- * The host below mirrors `MosaicApp`'s wiring — a `rememberNavBackStack` owned by the composition
- * and attached to a [Navigator] — rather than using it directly, which would drag in Hilt and the
- * network for a question that is purely about the keys.
+ * The host below mirrors `MosaicApp`'s wiring — a [rememberBackStack] owned by the composition,
+ * attached to a [Navigator], rendered through the same [backStackEntryProvider] — rather than
+ * using it directly, which would drag in Hilt and the network for a question that is purely about
+ * the keys.
  */
 @RunWith(AndroidJUnit4::class)
 class BackStackRestorationTest {
@@ -143,20 +143,26 @@ class BackStackRestorationTest {
         composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("2")
     }
 
-    /** The opt-out: a screen pinning [Screen.sharedId] resolves to one entry, and one state. */
+    /**
+     * The opt-in on the other side. A screen pinning [Screen.sharedId] resolves every push to one
+     * identity, so its entries share a ViewModel store and one set of saveable state — what every
+     * other screen deliberately gives up — and go on sharing it across a restore. Asserting on the
+     * state rather than only on the ids is what this can say that `NavigatorTest` cannot.
+     */
     @Test
-    fun sharesOneEntryForAScreenThatPinsItsIdentity() {
-        startHost()
+    fun sharesStateBetweenEntriesOfAScreenThatPinsItsIdentity() {
+        val tester = startHost()
 
-        composeTestRule.runOnIdle {
-            assertEquals(navigator.entryFor(Screen.Shell), backStack.single())
-        }
+        composeTestRule.onNodeWithTag(COUNTER_TAG).performClick()
+        composeTestRule.onNodeWithTag(COUNTER_TAG).performClick()
 
         push(Screen.Shell)
+        composeTestRule.runOnIdle { assertEquals(backStack[0].id, backStack[1].id) }
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("2")
 
-        composeTestRule.runOnIdle {
-            assertEquals(backStack[0].id, backStack[1].id)
-        }
+        tester.emulateSavedInstanceStateRestore()
+
+        composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("2")
     }
 
     // ── host ──────────────────────────────────────────────────────────────────
@@ -188,7 +194,7 @@ private const val COUNTER_TAG = "counter"
  */
 @Composable
 private fun TestNavHost(navigator: Navigator, onBackStack: (List<BackStackEntry>) -> Unit) {
-    val backStack = rememberBackStack { navigator.entryFor(Screen.Shell) }
+    val backStack = rememberBackStack(navigator, root = Screen.Shell)
 
     // Handing the stack out from the effect, not the composition body, so the test reads the
     // instance that is actually attached — a restore brings a new one, and re-runs this.
@@ -205,9 +211,9 @@ private fun TestNavHost(navigator: Navigator, onBackStack: (List<BackStackEntry>
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ),
-        entryProvider = entryProvider {
-            entry<BackStackEntry>(clazzContentKey = { it.id }) { entry -> KeyLabel(entry.screen) }
-        },
+        // The app's own provider, so what these tests pin is the content key MosaicApp uses
+        // rather than a second copy of the rule written here.
+        entryProvider = backStackEntryProvider { screen -> KeyLabel(screen) },
     )
 }
 

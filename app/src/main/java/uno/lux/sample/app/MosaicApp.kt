@@ -34,7 +34,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
@@ -43,6 +42,7 @@ import uno.lux.sample.app.common.ui.DividedNavigationSuiteScaffold
 import uno.lux.sample.app.navigation.BackStackEntry
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.app.navigation.backStackEntryProvider
 import uno.lux.sample.app.navigation.rememberBackStack
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.findActivity
@@ -77,7 +77,7 @@ import uno.lux.sample.video.ui.VideoPlaybackViewModel
  */
 @Composable
 fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
-    val backStack = rememberBackStack { navigator.entryFor(Screen.Shell) }
+    val backStack = rememberBackStack(navigator, root = Screen.Shell)
 
     DisposableEffect(navigator, backStack) {
         navigator.attach(backStack)
@@ -113,30 +113,38 @@ fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
             popTransitionSpec = { popTransition() },
             predictivePopTransitionSpec = { popTransition() },
             modifier = Modifier.fillMaxSize(),
-            entryProvider = entryProvider {
-                // One provider for the one key type, keyed by the entry's identity rather than by
-                // the screen — that is what gives two pushes of the same page separate state. The
-                // exhaustive `when` replaces a per-screen `entry<T>` block and is checked at
-                // compile time, where an unregistered key would only have thrown at runtime.
-                entry<BackStackEntry>(clazzContentKey = { it.id }) { entry ->
-                    when (val screen = entry.screen) {
-                        Screen.Shell -> HomeNavShell(currentUserId = currentUserId)
+            entryProvider = backStackEntryProvider { screen ->
+                when (screen) {
+                    Screen.Shell -> {
+                        HomeNavShell(currentUserId = currentUserId)
+                    }
 
-                        is Screen.Profile ->
-                            ProfileScreen(userId = screen.userId, showBackButton = true)
+                    is Screen.Profile -> {
+                        ProfileScreen(userId = screen.userId, showBackButton = true)
+                    }
 
-                        Screen.Settings -> SettingsScreen()
+                    Screen.Settings -> {
+                        SettingsScreen()
+                    }
 
-                        Screen.EditProfile -> EditProfileScreen()
+                    Screen.EditProfile -> {
+                        EditProfileScreen()
+                    }
 
-                        Screen.CreatePost -> CreatePostScreen()
+                    Screen.CreatePost -> {
+                        CreatePostScreen()
+                    }
 
-                        is Screen.FullscreenVideo ->
-                            FullscreenVideoScreen(url = screen.url, title = screen.title)
+                    is Screen.FullscreenVideo -> {
+                        FullscreenVideoScreen(url = screen.url, title = screen.title)
+                    }
 
-                        is Screen.PostDetail -> PostDetailScreen(postId = screen.postId)
+                    is Screen.PostDetail -> {
+                        PostDetailScreen(postId = screen.postId)
+                    }
 
-                        is Screen.AlbumViewer -> AlbumViewerScreen(
+                    is Screen.AlbumViewer -> {
+                        AlbumViewerScreen(
                             imageUrls = screen.images,
                             initialIndex = screen.initialIndex,
                         )
@@ -207,7 +215,13 @@ private fun HomeNavShell(
             transitionSpec = {
                 (
                     fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
-                        scaleIn(animationSpec = tween(durationMillis = 210, delayMillis = 90), initialScale = 0.94f)
+                        scaleIn(
+                            animationSpec = tween(
+                                durationMillis = 210,
+                                delayMillis = 90,
+                            ),
+                            initialScale = 0.94f,
+                        )
                 ) togetherWith
                     fadeOut(tween(durationMillis = 90))
             },

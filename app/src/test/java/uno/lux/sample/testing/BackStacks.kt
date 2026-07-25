@@ -12,8 +12,8 @@ import uno.lux.sample.app.navigation.Screen
 
 /**
  * A back stack holding [screens], built exactly the way [Navigator] builds one so the identity
- * rule lives in a single place. Ids are a readable running count rather than UUIDs, so a test
- * that *is* about identity can name them.
+ * rule lives in a single place. Ids come from a running count rather than a UUID only so that a
+ * failure message names the position that differed.
  */
 fun backStackOf(vararg screens: Screen): MutableList<BackStackEntry> {
     val ids = generateSequence(1) { it + 1 }.map { "entry-$it" }.iterator()
