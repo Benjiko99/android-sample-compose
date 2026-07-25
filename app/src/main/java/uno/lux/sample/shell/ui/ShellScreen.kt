@@ -1,4 +1,4 @@
-package uno.lux.sample.app.ui
+package uno.lux.sample.shell.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
@@ -29,26 +29,27 @@ import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.common.ui.DividedNavigationSuiteScaffold
 import uno.lux.sample.feed.ui.HomeScreen
 import uno.lux.sample.profile.ui.ProfileScreen
+import uno.lux.sample.shell.data.domain.ShellDestinations
 import uno.lux.sample.user.data.domain.UserId
 
 /**
  * The tabbed shell: [DividedNavigationSuiteScaffold] adapts the navigation affordance to the
  * window size — bottom bar on phones, navigation rail on larger or unfolded screens — and the
- * selected [AppDestinations] entry chooses which screen fills the content area. Tabs are peer
+ * selected [ShellDestinations] entry chooses which screen fills the content area. Tabs are peer
  * destinations held as plain selection state (switching tabs is not a navigation event and
  * never grows the back stack), so the content cross-fades (fade-through) rather than sliding.
  *
- * An [AppDestinations] entry carrying a [Screen] breaks that rule deliberately: it is an action,
+ * An [ShellDestinations] entry carrying a [Screen] breaks that rule deliberately: it is an action,
  * not a tab, and selecting it pushes that page over the whole shell through [ShellViewModel] —
  * covering the navigation bar, leaving the current tab selected underneath, and sliding in like
- * any other page. [AppDestinations.CREATE] opens the composer this way.
+ * any other page. [ShellDestinations.CREATE] opens the composer this way.
  */
 @Composable
 fun ShellScreen(
     currentUserId: UserId,
     viewModel: ShellViewModel = hiltViewModel(),
 ) {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    var currentDestination by rememberSaveable { mutableStateOf(ShellDestinations.HOME) }
 
     val navItemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
@@ -82,20 +83,20 @@ fun ShellScreen(
             label = "tab",
         ) { destination ->
             when (destination) {
-                AppDestinations.HOME -> HomeScreen()
+                ShellDestinations.HOME -> HomeScreen()
 
-                AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
+                ShellDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
 
                 // CREATE pushes Screen.CreatePost over the shell rather than filling the
                 // content area, so it is never the selected destination and never renders here.
-                AppDestinations.CREATE -> Unit
+                ShellDestinations.CREATE -> Unit
             }
         }
     }
 }
 
 /**
- * One navigation item per [AppDestinations] entry, in declaration order — which is what makes the
+ * One navigation item per [ShellDestinations] entry, in declaration order — which is what makes the
  * enum the single source of truth for the navigation suite: adding a destination adds an item, and
  * nothing here names one.
  *
@@ -105,10 +106,10 @@ fun ShellScreen(
  * caller's to decide; [onClick] receives the entry itself.
  */
 private fun NavigationSuiteScope.destinationItems(
-    current: AppDestinations,
+    current: ShellDestinations,
     colors: NavigationSuiteItemColors,
-    onClick: (AppDestinations) -> Unit,
-) = AppDestinations.entries.forEach { destination ->
+    onClick: (ShellDestinations) -> Unit,
+) = ShellDestinations.entries.forEach { destination ->
     item(
         icon = {
             Icon(

@@ -1,4 +1,4 @@
-package uno.lux.sample.app.ui
+package uno.lux.sample.shell.data.domain
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -14,7 +14,7 @@ import uno.lux.sample.app.navigation.Screen
  * the user was on stays highlighted underneath. That is how [CREATE] opens the composer, the
  * behavior a centred "new post" button has in apps like TikTok.
  */
-enum class AppDestinations(
+enum class ShellDestinations(
     @get:StringRes val labelRes: Int,
     @get:DrawableRes val icon: Int,
     val screen: Screen? = null,

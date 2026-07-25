@@ -1,12 +1,11 @@
-package uno.lux.sample.app
+package uno.lux.sample.app.ui
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Test
-import uno.lux.sample.app.ui.MainViewModel
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
 import uno.lux.sample.settings.data.InMemorySettingsRepository
@@ -26,7 +25,7 @@ class MainViewModelTest : ViewModelTest() {
     fun `themeMode is null until the flow is collected`() {
         val viewModel = viewModel()
 
-        assertEquals(null, viewModel.themeMode.value)
+        Assert.assertEquals(null, viewModel.themeMode.value)
     }
 
     @Test
@@ -37,11 +36,11 @@ class MainViewModelTest : ViewModelTest() {
             viewModel.themeMode.collect {}
         }
 
-        assertEquals(ThemeMode.DARK, viewModel.themeMode.value)
+        Assert.assertEquals(ThemeMode.DARK, viewModel.themeMode.value)
 
         repository.setThemeMode(ThemeMode.LIGHT)
 
-        assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
+        Assert.assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
     }
 
     @Test
@@ -51,7 +50,7 @@ class MainViewModelTest : ViewModelTest() {
 
         viewModel.resolveInitialLanguage()
 
-        assertEquals(AppLanguage.CZECH, locales.language.value)
+        Assert.assertEquals(AppLanguage.CZECH, locales.language.value)
     }
 
     @Test
@@ -64,6 +63,6 @@ class MainViewModelTest : ViewModelTest() {
 
         viewModel.resolveInitialLanguage()
 
-        assertEquals(AppLanguage.ENGLISH, locales.language.value)
+        Assert.assertEquals(AppLanguage.ENGLISH, locales.language.value)
     }
 }

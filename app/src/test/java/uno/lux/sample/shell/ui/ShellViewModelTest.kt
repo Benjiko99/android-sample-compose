@@ -1,12 +1,10 @@
-package uno.lux.sample.app
+package uno.lux.sample.shell.ui
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.app.ui.AppDestinations
-import uno.lux.sample.app.ui.ShellViewModel
+import uno.lux.sample.shell.data.domain.ShellDestinations
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
 
@@ -20,7 +18,7 @@ class ShellViewModelTest {
     fun `an action destination pushes its screen over the shell`() {
         viewModel.openDestination(Screen.CreatePost)
 
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
+        Assert.assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
@@ -28,20 +26,20 @@ class ShellViewModelTest {
         viewModel.openDestination(Screen.CreatePost)
         viewModel.openDestination(Screen.CreatePost)
 
-        assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
+        Assert.assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
     }
 
     @Test
     fun `CREATE is the only destination that navigates`() {
-        val navigating = AppDestinations.entries.filter { it.screen != null }
+        val navigating = ShellDestinations.entries.filter { it.screen != null }
 
-        assertEquals(listOf(AppDestinations.CREATE), navigating)
-        assertEquals(Screen.CreatePost, AppDestinations.CREATE.screen)
+        Assert.assertEquals(listOf(ShellDestinations.CREATE), navigating)
+        Assert.assertEquals(Screen.CreatePost, ShellDestinations.CREATE.screen)
     }
 
     @Test
     fun `the tab destinations carry no screen, so selecting one never navigates`() {
-        assertNull(AppDestinations.HOME.screen)
-        assertNull(AppDestinations.PROFILE.screen)
+        Assert.assertNull(ShellDestinations.HOME.screen)
+        Assert.assertNull(ShellDestinations.PROFILE.screen)
     }
 }

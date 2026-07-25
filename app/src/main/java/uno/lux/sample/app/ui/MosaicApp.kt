@@ -19,6 +19,7 @@ import uno.lux.sample.composer.ui.CreatePostScreen
 import uno.lux.sample.post.ui.PostDetailScreen
 import uno.lux.sample.profile.ui.ProfileScreen
 import uno.lux.sample.settings.ui.SettingsScreen
+import uno.lux.sample.shell.ui.ShellScreen
 import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.ui.EditProfileScreen
 import uno.lux.sample.video.ui.FullscreenVideoScreen
@@ -26,7 +27,7 @@ import uno.lux.sample.video.ui.ProvideVideoPlayback
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberBackStack] back
- * stack of [BackStackEntry] keys: the tabbed [ShellScreen] is the permanent root, and a user's
+ * stack of [BackStackEntry] keys: the tabbed [uno.lux.sample.shell.ui.ShellScreen] is the permanent root, and a user's
  * [ProfileScreen] or the [SettingsScreen] push over it as full-screen pages (settings stacks
  * over a profile, too). The entry decorators give every page its own saveable-state and ViewModel
  * store, so a pushed page's ViewModel is created on push and cleared on pop. Those stores are
