@@ -5,14 +5,16 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.app.ui.AppDestinations
+import uno.lux.sample.app.ui.AppShellViewModel
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
 
-class ShellViewModelTest {
+class AppShellViewModelTest {
 
     private val backStack = backStackOf(Screen.Shell)
     private val navigator = Navigator().apply { attach(backStack) }
-    private val viewModel = ShellViewModel(navigator)
+    private val viewModel = AppShellViewModel(navigator)
 
     @Test
     fun `an action destination pushes its screen over the shell`() {

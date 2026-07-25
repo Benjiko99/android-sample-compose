@@ -1,4 +1,4 @@
-package uno.lux.sample.app
+package uno.lux.sample.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

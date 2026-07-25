@@ -1,34 +1,21 @@
-package uno.lux.sample.app
+package uno.lux.sample.app.ui
 
 import androidx.activity.ComponentActivity
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -36,18 +23,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import uno.lux.sample.R
 import uno.lux.sample.album.ui.AlbumViewerScreen
 import uno.lux.sample.app.navigation.BackStackEntry
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.navigation.backStackEntryProvider
 import uno.lux.sample.app.navigation.rememberBackStack
-import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.findActivity
-import uno.lux.sample.common.ui.DividedNavigationSuiteScaffold
 import uno.lux.sample.composer.ui.CreatePostScreen
-import uno.lux.sample.feed.ui.HomeScreen
 import uno.lux.sample.post.ui.PostDetailScreen
 import uno.lux.sample.profile.ui.ProfileScreen
 import uno.lux.sample.settings.ui.SettingsScreen
@@ -59,7 +42,7 @@ import uno.lux.sample.video.ui.VideoPlaybackViewModel
 
 /**
  * App shell. A Navigation 3 [NavDisplay] renders the top of a [rememberBackStack] back
- * stack of [BackStackEntry] keys: the tabbed [HomeNavShell] is the permanent root, and a user's
+ * stack of [BackStackEntry] keys: the tabbed [AppShell] is the permanent root, and a user's
  * [ProfileScreen] or the [SettingsScreen] push over it as full-screen pages (settings stacks
  * over a profile, too). Pushes slide in from the right and pops slide back off — the
  * predictive back gesture included — while tab switches inside the shell stay a fade-through
@@ -69,7 +52,7 @@ import uno.lux.sample.video.ui.VideoPlaybackViewModel
  * gives the second copy its own ViewModel and its own comment draft.
  *
  * Navigation itself is driven by the ViewModels: the composition keeps owning the back stack
- * (that's what keeps it saveable across configuration changes and process death) but attaches
+ * (that's what keeps it savable across configuration changes and process death) but attaches
  * it to the injected [navigator], and each screen's ViewModel pushes and pops through that
  * seam instead of the host threading navigation lambdas down to every screen. Every entry —
  * the fullscreen viewers and the composer tab included — reaches the stack through its own
@@ -116,7 +99,7 @@ fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
             entryProvider = backStackEntryProvider { screen ->
                 when (screen) {
                     Screen.Shell -> {
-                        HomeNavShell(currentUserId = currentUserId)
+                        AppShell(currentUserId = currentUserId)
                     }
 
                     is Screen.Profile -> {
@@ -153,123 +136,6 @@ fun MosaicApp(currentUserId: UserId, navigator: Navigator) {
             },
         )
     }
-}
-
-/**
- * The tabbed shell: [DividedNavigationSuiteScaffold] adapts the navigation affordance to the
- * window size — bottom bar on phones, navigation rail on larger or unfolded screens — and the
- * selected [AppDestinations] entry chooses which screen fills the content area. Tabs are peer
- * destinations held as plain selection state (switching tabs is not a navigation event and
- * never grows the back stack), so the content cross-fades (fade-through) rather than sliding.
- *
- * An [AppDestinations] entry carrying a [Screen] breaks that rule deliberately: it is an action,
- * not a tab, and selecting it pushes that page over the whole shell through [ShellViewModel] —
- * covering the navigation bar, leaving the current tab selected underneath, and sliding in like
- * any other page. [AppDestinations.CREATE] opens the composer this way.
- */
-@Composable
-private fun HomeNavShell(
-    currentUserId: UserId,
-    viewModel: ShellViewModel = hiltViewModel(),
-) {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
-    val navItemColors = NavigationSuiteDefaults.itemColors(
-        navigationBarItemColors = NavigationBarItemDefaults.colors(
-            selectedIconColor = MaterialTheme.colorScheme.primary,
-            selectedTextColor = MaterialTheme.colorScheme.primary,
-            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            unselectedTextColor = LocalMosaicColors.current.textTertiary,
-        ),
-    )
-
-    DividedNavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEach { destination ->
-                item(
-                    icon = {
-                        Icon(
-                            painterResource(destination.icon),
-                            contentDescription = stringResource(destination.labelRes),
-                        )
-                    },
-                    label = { Text(stringResource(destination.labelRes)) },
-                    // An action entry never reports as selected — it pushes a page and leaves
-                    // the current tab highlighted underneath.
-                    selected = destination == currentDestination,
-                    onClick = {
-                        val screen = destination.screen
-                        if (screen != null) {
-                            viewModel.openDestination(screen)
-                        } else {
-                            currentDestination = destination
-                        }
-                    },
-                    colors = navItemColors,
-                )
-            }
-        },
-    ) {
-        AnimatedContent(
-            targetState = currentDestination,
-            transitionSpec = {
-                (
-                    fadeIn(tween(durationMillis = 210, delayMillis = 90)) +
-                        scaleIn(
-                            animationSpec = tween(
-                                durationMillis = 210,
-                                delayMillis = 90,
-                            ),
-                            initialScale = 0.94f,
-                        )
-                ) togetherWith
-                    fadeOut(tween(durationMillis = 90))
-            },
-            modifier = Modifier.fillMaxSize(),
-            label = "tab",
-        ) { destination ->
-            when (destination) {
-                AppDestinations.HOME -> HomeScreen()
-
-                // The Profile tab is the signed-in user's own profile (no up-affordance, so
-                // showBackButton stays false); tapping another author still pushes Screen.Profile.
-                AppDestinations.PROFILE -> ProfileScreen(userId = currentUserId)
-
-                // CREATE pushes Screen.CreatePost over the shell rather than filling the
-                // content area, so it is never the selected destination and never renders here.
-                AppDestinations.CREATE -> Unit
-            }
-        }
-    }
-}
-
-/**
- * The top-level entries of the navigation suite; add or change one by editing the enum.
- *
- * Most are **tabs**: selecting one swaps the shell's content area and leaves the item
- * highlighted. An entry carrying a [screen] is instead an **action** — selecting it pushes that
- * page over the entire shell (covering the tab bar) and never becomes the selection, so the tab
- * the user was on stays highlighted underneath. That is how [CREATE] opens the composer, the
- * behaviour a centre "new post" button has in apps like TikTok.
- */
-enum class AppDestinations(
-    @get:StringRes val labelRes: Int,
-    @get:DrawableRes val icon: Int,
-    val screen: Screen? = null,
-) {
-    HOME(
-        labelRes = R.string.nav_home,
-        icon = R.drawable.ic_home,
-    ),
-    CREATE(
-        labelRes = R.string.nav_create,
-        icon = R.drawable.ic_add,
-        screen = Screen.CreatePost,
-    ),
-    PROFILE(
-        labelRes = R.string.nav_profile,
-        icon = R.drawable.ic_account_box,
-    ),
 }
 
 /** How long a push or pop between full-screen pages runs. */

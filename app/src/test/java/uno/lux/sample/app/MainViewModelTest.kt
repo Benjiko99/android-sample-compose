@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.app.ui.MainViewModel
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
 import uno.lux.sample.settings.data.InMemorySettingsRepository

@@ -1,4 +1,4 @@
-package uno.lux.sample.app
+package uno.lux.sample.app.ui
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +13,7 @@ import javax.inject.Inject
  * [Screen] opens that page over the whole shell instead of swapping the content area.
  */
 @HiltViewModel
-class ShellViewModel @Inject constructor(
+class AppShellViewModel @Inject constructor(
     private val navigator: Navigator,
 ) : ViewModel() {
 
