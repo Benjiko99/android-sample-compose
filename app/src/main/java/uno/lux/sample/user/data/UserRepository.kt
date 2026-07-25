@@ -6,9 +6,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.domain.ProfileUpdate
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
 
 /**
  * Single source of truth for user identity.

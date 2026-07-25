@@ -18,7 +18,7 @@ import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
-import uno.lux.sample.profile.Profile
+import uno.lux.sample.profile.data.domain.Profile
 
 /**
  * The profile's scroll position is stored in two places, and only one of them was ever saved.

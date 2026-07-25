@@ -19,14 +19,14 @@ import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.feed.data.FeedState
-import uno.lux.sample.post.PostId
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.settings.data.SettingsRepository
-import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.video.Video
+import uno.lux.sample.user.data.domain.UserId
+import uno.lux.sample.video.data.domain.Video
 import javax.inject.Inject
 
 /**
@@ -67,7 +67,10 @@ class HomeViewModel @Inject constructor(
     ) { feedState, entities, users, loadError ->
         if (loadError != null) return@combine HomeUiState.Error(loadError)
         when (feedState) {
-            FeedState.NotLoaded -> HomeUiState.Loading
+            FeedState.NotLoaded -> {
+                HomeUiState.Loading
+            }
+
             is FeedState.Loaded -> {
                 val cards = feedState.postIds.mapNotNull { id ->
                     val post = entities[id] ?: return@mapNotNull null

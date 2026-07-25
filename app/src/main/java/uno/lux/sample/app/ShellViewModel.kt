@@ -11,9 +11,6 @@ import javax.inject.Inject
  * plain composition state, since switching tabs is not a navigation event — so its only intent is
  * the one navigation-suite item that *does* navigate: an [AppDestinations] entry carrying a
  * [Screen] opens that page over the whole shell instead of swapping the content area.
- *
- * The push is [goToSingleTop][Navigator.goToSingleTop] so hammering the Create item while the
- * composer is already open can never stack a second copy of it.
  */
 @HiltViewModel
 class ShellViewModel @Inject constructor(

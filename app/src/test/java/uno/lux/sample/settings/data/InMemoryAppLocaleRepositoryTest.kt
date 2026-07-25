@@ -2,7 +2,7 @@ package uno.lux.sample.settings.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import uno.lux.sample.settings.AppLanguage
+import uno.lux.sample.settings.data.domain.AppLanguage
 
 class InMemoryAppLocaleRepositoryTest {
 

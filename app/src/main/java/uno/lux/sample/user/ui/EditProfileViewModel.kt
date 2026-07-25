@@ -10,17 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.state.restoreDraft
-import uno.lux.sample.app.core.state.saveDraft
 import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchIfIdle
+import uno.lux.sample.app.util.restoreDraft
+import uno.lux.sample.app.util.saveDraft
 import uno.lux.sample.app.util.stateInWhileSubscribed
-import uno.lux.sample.user.UserId
+import uno.lux.sample.common.data.files.FileLoader
 import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.user.data.domain.UserId
 import javax.inject.Inject
 
 /**
@@ -79,7 +79,9 @@ class EditProfileViewModel @Inject constructor(
                 showDiscardConfirmation = showDiscardConfirmation,
                 saveError = saveError,
             )
+
             loadError != null -> EditProfileUiState.Error(loadError)
+
             else -> EditProfileUiState.Loading
         }
     }.stateInWhileSubscribed(viewModelScope, EditProfileUiState.Loading)

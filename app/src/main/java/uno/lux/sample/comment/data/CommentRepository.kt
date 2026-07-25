@@ -1,7 +1,7 @@
 package uno.lux.sample.comment.data
 
-import uno.lux.sample.comment.Comment
-import uno.lux.sample.post.PostId
+import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.post.data.domain.PostId
 
 /**
  * Stateless data source for post comments.

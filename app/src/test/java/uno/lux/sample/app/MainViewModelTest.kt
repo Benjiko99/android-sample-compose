@@ -6,11 +6,11 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import uno.lux.sample.settings.AppLanguage
-import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
 import uno.lux.sample.settings.data.InMemorySettingsRepository
+import uno.lux.sample.settings.data.domain.AppLanguage
+import uno.lux.sample.settings.data.domain.ThemeMode
 import uno.lux.sample.testing.ViewModelTest
 
 @OptIn(ExperimentalCoroutinesApi::class)

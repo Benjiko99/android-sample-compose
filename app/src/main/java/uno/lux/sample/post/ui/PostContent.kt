@@ -40,15 +40,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
-import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.compactCount
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.relativeTime
-import uno.lux.sample.post.Post
-import uno.lux.sample.user.User
+import uno.lux.sample.common.asText
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.video.Video
+import uno.lux.sample.video.data.domain.Video
 import uno.lux.sample.video.ui.VideoPostPlayer
 
 /*

@@ -1,6 +1,6 @@
 package uno.lux.sample.profile.data
 
-import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.domain.UserId
 
 internal class FakeProfileDataSource(
     private val refreshData: Map<String, ProfileRefreshData> = emptyMap(),

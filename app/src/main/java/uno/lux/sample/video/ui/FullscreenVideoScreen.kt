@@ -15,9 +15,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
-import uno.lux.sample.app.common.ui.ImmersiveSystemBars
-import uno.lux.sample.app.common.ui.OverlayBackButton
 import uno.lux.sample.app.util.findActivity
+import uno.lux.sample.common.ui.ImmersiveSystemBars
+import uno.lux.sample.common.ui.OverlayBackButton
 
 /**
  * Stateful entry point: binds the [FullscreenVideoViewModel] (its sole job is routing back

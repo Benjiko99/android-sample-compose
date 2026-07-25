@@ -8,9 +8,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.app.core.files.FileUpload
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.User
+import uno.lux.sample.common.data.files.FileUpload
+import uno.lux.sample.user.data.domain.ProfileUpdate
+import uno.lux.sample.user.data.domain.User
 import java.net.UnknownHostException
 
 class NetworkUserDataSourceTest {

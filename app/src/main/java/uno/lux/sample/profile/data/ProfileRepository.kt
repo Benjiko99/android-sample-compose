@@ -6,14 +6,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.PostKey
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.key
-import uno.lux.sample.profile.Profile
-import uno.lux.sample.user.UserId
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.post.data.domain.PostKey
+import uno.lux.sample.post.data.domain.key
+import uno.lux.sample.profile.data.domain.Profile
 import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.user.data.domain.UserId
 
 /**
  * Source of truth for a user's profile metadata and the ordered IDs of their posts.

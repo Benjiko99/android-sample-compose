@@ -1,7 +1,7 @@
 package uno.lux.sample.post.ui
 
-import uno.lux.sample.post.Post
-import uno.lux.sample.user.User
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.user.data.domain.User
 
 /**
  * Resolved display data for a single post card: the post and its resolved author.

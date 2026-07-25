@@ -1,6 +1,6 @@
 package uno.lux.sample.user.data.network
 
-import uno.lux.sample.user.User
+import uno.lux.sample.user.data.domain.User
 
 /**
  * Hand-written rather than a Mappie object because [UserDto] and [User] are field-identical:

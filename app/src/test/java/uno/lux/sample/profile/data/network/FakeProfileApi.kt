@@ -1,6 +1,6 @@
 package uno.lux.sample.profile.data.network
 
-import uno.lux.sample.app.core.network.emptyPage
+import uno.lux.sample.common.data.network.emptyPage
 import uno.lux.sample.post.data.network.PostFeedItemDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 

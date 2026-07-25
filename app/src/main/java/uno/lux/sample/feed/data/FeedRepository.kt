@@ -4,9 +4,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.post.NewPost
-import uno.lux.sample.post.PostId
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.domain.NewPost
+import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.user.data.UserRepository
 
 /**
@@ -27,7 +27,7 @@ sealed interface FeedState {
  * Source of truth for the home feed's ordered post IDs.
  *
  * [feedState] carries the IDs in display order plus the pagination flag; consumers resolve IDs to
- * [uno.lux.sample.post.Post] objects via [uno.lux.sample.post.data.PostRepository.entities] so mutations (likes, bookmarks) propagate automatically
+ * [uno.lux.sample.post.data.domain.Post] objects via [uno.lux.sample.post.data.PostRepository.entities] so mutations (likes, bookmarks) propagate automatically
  * without re-fetching. [refresh] re-fetches the first page. [loadMore] appends the next page.
  * [publish] creates a post and puts it at the head of the feed.
  *

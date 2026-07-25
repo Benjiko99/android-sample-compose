@@ -25,17 +25,17 @@ import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.app.util.toAppError
-import uno.lux.sample.comment.Comment
-import uno.lux.sample.comment.CommentId
 import uno.lux.sample.comment.data.CommentRepository
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.post.data.domain.PostWithAuthor
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.video.Video
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
+import uno.lux.sample.video.data.domain.Video
 
 /**
  * Holds the state for a single post's detail view. The post itself comes from the shared
@@ -134,8 +134,11 @@ class PostDetailViewModel @AssistedInject constructor(
                 commentsLoading = commentsLoading,
                 isOwn = resolved.post.authorId == currentUser.id,
             )
+
             postLoad is PostLoad.Missing -> PostDetailUiState.NotFound
+
             postLoad is PostLoad.Failed -> PostDetailUiState.Error(postLoad.error)
+
             else -> PostDetailUiState.Loading
         }
     }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)

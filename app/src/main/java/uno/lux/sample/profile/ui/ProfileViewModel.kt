@@ -23,13 +23,13 @@ import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
-import uno.lux.sample.post.PostId
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.profile.data.ProfileRepository
-import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.video.Video
+import uno.lux.sample.user.data.domain.UserId
+import uno.lux.sample.video.data.domain.Video
 
 /**
  * Holds the profile state for one [userId]. Combines [UserRepository], [ProfileRepository]
@@ -146,11 +146,14 @@ class ProfileViewModel @AssistedInject constructor(
     ) { state, loadError, hasLoaded ->
         when {
             state != null -> state
+
             loadError != null -> ProfileUiState.Error(loadError)
+
             // Absent from the stores means "no such user" only once a fetch has actually run.
             // Before that it means nothing has asked yet — which is every cold start, since a
             // profile restored after process death begins with empty stores.
             hasLoaded -> ProfileUiState.NotFound
+
             else -> ProfileUiState.Loading
         }
     }.stateInWhileSubscribed(viewModelScope, ProfileUiState.Loading)

@@ -2,9 +2,9 @@ package uno.lux.sample.comment.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uno.lux.sample.comment.Comment
 import uno.lux.sample.comment.data.CommentDataSource
-import uno.lux.sample.post.PostId
+import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.post.data.domain.PostId
 
 class NetworkCommentDataSource(
     private val api: CommentApi,

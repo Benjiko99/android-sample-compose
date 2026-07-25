@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.MosaicTheme
-import uno.lux.sample.video.Video
+import uno.lux.sample.video.data.domain.Video
 
 /** In the feed the body is a perex — clipped to this many lines, with a "Show more" affordance. */
 private const val FEED_BODY_MAX_LINES = 5

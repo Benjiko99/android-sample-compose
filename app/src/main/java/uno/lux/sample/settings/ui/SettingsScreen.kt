@@ -42,8 +42,8 @@ import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.rememberDebounced
-import uno.lux.sample.settings.AppLanguage
-import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.domain.AppLanguage
+import uno.lux.sample.settings.data.domain.ThemeMode
 
 /**
  * The settings screen's ViewModel-backed intents — picking a theme, toggling video auto-play,

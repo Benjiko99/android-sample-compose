@@ -3,7 +3,7 @@ package uno.lux.sample.post.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import uno.lux.sample.R
-import uno.lux.sample.app.common.ReportReason
+import uno.lux.sample.common.data.ReportReason
 
 /** Maps a [ReportReason] to its localized display label. */
 @Composable

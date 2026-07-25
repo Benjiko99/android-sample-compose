@@ -9,7 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.domain.ThemeMode
 import java.io.IOException
 
 /**

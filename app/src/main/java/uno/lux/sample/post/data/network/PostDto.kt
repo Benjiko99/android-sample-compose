@@ -1,7 +1,7 @@
 package uno.lux.sample.post.data.network
 
 import kotlinx.serialization.Serializable
-import uno.lux.sample.app.core.network.InstantSerializer
+import uno.lux.sample.common.data.network.InstantSerializer
 import uno.lux.sample.user.data.network.UserDto
 import java.time.Instant
 

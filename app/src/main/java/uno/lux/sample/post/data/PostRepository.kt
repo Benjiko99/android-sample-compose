@@ -4,10 +4,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.post.NewPost
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.post.data.domain.NewPost
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.post.data.domain.PostWithAuthor
 import uno.lux.sample.user.data.UserRepository
 
 /**

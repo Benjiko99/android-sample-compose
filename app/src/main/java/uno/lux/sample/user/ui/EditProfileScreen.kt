@@ -56,15 +56,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.app.common.ui.DiscardChangesDialog
-import uno.lux.sample.app.common.ui.FullScreenError
-import uno.lux.sample.app.common.ui.FullScreenProgress
 import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.rememberDebounced
-import uno.lux.sample.user.UserId
+import uno.lux.sample.common.asText
+import uno.lux.sample.common.ui.DiscardChangesDialog
+import uno.lux.sample.common.ui.FullScreenError
+import uno.lux.sample.common.ui.FullScreenProgress
+import uno.lux.sample.user.data.domain.UserId
 
 /**
  * The editor's ViewModel-backed intents as one [Stable] seam the stateless

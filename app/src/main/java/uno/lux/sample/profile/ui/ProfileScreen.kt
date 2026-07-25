@@ -74,14 +74,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
-import uno.lux.sample.app.common.ui.FullScreenError
-import uno.lux.sample.app.common.ui.FullScreenProgress
-import uno.lux.sample.app.common.ui.LoadMoreEffect
-import uno.lux.sample.app.common.ui.LoadingMoreFooter
-import uno.lux.sample.app.common.ui.ScrimIconButton
 import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
-import uno.lux.sample.app.format.asText
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicElevations
 import uno.lux.sample.app.theme.MosaicGradients
@@ -90,14 +84,20 @@ import uno.lux.sample.app.util.compactCount
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
-import uno.lux.sample.post.PostId
+import uno.lux.sample.common.asText
+import uno.lux.sample.common.ui.FullScreenError
+import uno.lux.sample.common.ui.FullScreenProgress
+import uno.lux.sample.common.ui.LoadMoreEffect
+import uno.lux.sample.common.ui.LoadingMoreFooter
+import uno.lux.sample.common.ui.ScrimIconButton
+import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData
-import uno.lux.sample.profile.Profile
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
+import uno.lux.sample.profile.data.domain.Profile
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.ui.Avatar
-import uno.lux.sample.video.Video
+import uno.lux.sample.video.data.domain.Video
 import kotlin.math.roundToInt
 
 /**

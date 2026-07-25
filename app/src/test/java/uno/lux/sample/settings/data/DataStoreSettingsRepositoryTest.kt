@@ -15,7 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.domain.ThemeMode
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)

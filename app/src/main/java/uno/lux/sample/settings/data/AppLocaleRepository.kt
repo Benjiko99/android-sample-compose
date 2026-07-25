@@ -3,7 +3,7 @@ package uno.lux.sample.settings.data
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import uno.lux.sample.settings.AppLanguage
+import uno.lux.sample.settings.data.domain.AppLanguage
 
 /**
  * Reads and applies the app's language.

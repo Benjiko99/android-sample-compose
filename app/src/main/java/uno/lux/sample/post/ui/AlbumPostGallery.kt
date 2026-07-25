@@ -24,11 +24,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.size.Size
 import uno.lux.sample.R
-import uno.lux.sample.album.Album
-import uno.lux.sample.app.common.ui.MediaBadge
-import uno.lux.sample.app.common.ui.PrefetchNextImage
+import uno.lux.sample.album.data.domain.Album
 import uno.lux.sample.app.theme.MosaicGradients
 import uno.lux.sample.app.util.debouncedClickable
+import uno.lux.sample.common.ui.MediaBadge
+import uno.lux.sample.common.ui.PrefetchNextImage
 
 /**
  * How a gallery tile draws its photo, shared by the rendered image and its prefetch request — the

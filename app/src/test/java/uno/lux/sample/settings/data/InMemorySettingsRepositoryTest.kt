@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.domain.ThemeMode
 
 class InMemorySettingsRepositoryTest {
 

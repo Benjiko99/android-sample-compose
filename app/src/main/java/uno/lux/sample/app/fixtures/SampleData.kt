@@ -1,11 +1,11 @@
 package uno.lux.sample.app.fixtures
 
-import uno.lux.sample.album.Album
-import uno.lux.sample.comment.Comment
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.user.User
-import uno.lux.sample.video.Video
+import uno.lux.sample.album.data.domain.Album
+import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.video.data.domain.Video
 import java.time.Duration
 import java.time.Instant
 

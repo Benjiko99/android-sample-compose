@@ -1,11 +1,11 @@
 package uno.lux.sample.post.data
 
-import uno.lux.sample.post.NewPost
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
-import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.post.data.domain.NewPost
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.post.data.domain.PostWithAuthor
 import uno.lux.sample.testing.testPostUrl
-import uno.lux.sample.user.User
+import uno.lux.sample.user.data.domain.User
 import java.time.Instant
 
 internal class FakePostDataSource : PostDataSource {

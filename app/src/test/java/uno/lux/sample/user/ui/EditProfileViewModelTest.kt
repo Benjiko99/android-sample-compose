@@ -12,18 +12,18 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.app.core.files.FakeFileLoader
-import uno.lux.sample.app.core.files.FileUpload
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
+import uno.lux.sample.common.data.files.FakeFileLoader
+import uno.lux.sample.common.data.files.FileUpload
 import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.User
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.user.data.domain.ProfileUpdate
+import uno.lux.sample.user.data.domain.User
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditProfileViewModelTest : ViewModelTest() {

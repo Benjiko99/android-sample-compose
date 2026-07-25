@@ -8,7 +8,7 @@ import uno.lux.sample.profile.data.PostsPage
 import uno.lux.sample.profile.data.PostsWithAuthorsPage
 import uno.lux.sample.profile.data.ProfileDataSource
 import uno.lux.sample.profile.data.ProfileRefreshData
-import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.data.network.toDomain
 
 class NetworkProfileDataSource(

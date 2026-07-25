@@ -1,8 +1,8 @@
 package uno.lux.sample.profile.data
 
-import uno.lux.sample.post.Post
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
 
 interface ProfileDataSource {
     suspend fun refresh(userId: UserId): ProfileRefreshData

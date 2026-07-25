@@ -28,12 +28,12 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import uno.lux.sample.R
-import uno.lux.sample.app.common.ui.MediaBadge
-import uno.lux.sample.app.common.ui.PlayBadge
-import uno.lux.sample.app.format.formatVideoDuration
 import uno.lux.sample.app.theme.MosaicGradients
 import uno.lux.sample.app.util.debouncedClickable
-import uno.lux.sample.video.Video
+import uno.lux.sample.common.formatVideoDuration
+import uno.lux.sample.common.ui.MediaBadge
+import uno.lux.sample.common.ui.PlayBadge
+import uno.lux.sample.video.data.domain.Video
 
 /**
  * A video post's media area: a 16:9 stage that starts as a tappable thumbnail and, once playing,

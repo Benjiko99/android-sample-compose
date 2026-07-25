@@ -1,9 +1,8 @@
 package uno.lux.sample.user.data
 
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
-import uno.lux.sample.user.data.network.UPLOADED_AVATAR_URL
+import uno.lux.sample.user.data.domain.ProfileUpdate
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
 import java.net.ConnectException
 
 internal class FakeUserDataSource(

@@ -6,10 +6,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.util.stateInWhileSubscribed
-import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.SettingsRepository
-import uno.lux.sample.user.UserId
+import uno.lux.sample.settings.data.domain.ThemeMode
+import uno.lux.sample.user.data.domain.UserId
 import javax.inject.Inject
 
 /**

@@ -1,11 +1,11 @@
 package uno.lux.sample.post.data.network
 
 import tech.mappie.api.ObjectMappie
-import uno.lux.sample.album.Album
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostWithAuthor
+import uno.lux.sample.album.data.domain.Album
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostWithAuthor
 import uno.lux.sample.user.data.network.toDomain
-import uno.lux.sample.video.Video
+import uno.lux.sample.video.data.domain.Video
 
 // DTO → domain mapping runs through Mappie (a Kotlin compiler plugin)
 

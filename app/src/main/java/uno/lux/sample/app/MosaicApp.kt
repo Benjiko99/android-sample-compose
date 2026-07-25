@@ -38,7 +38,6 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import uno.lux.sample.R
 import uno.lux.sample.album.ui.AlbumViewerScreen
-import uno.lux.sample.app.common.ui.DividedNavigationSuiteScaffold
 import uno.lux.sample.app.navigation.BackStackEntry
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
@@ -46,12 +45,13 @@ import uno.lux.sample.app.navigation.backStackEntryProvider
 import uno.lux.sample.app.navigation.rememberBackStack
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.findActivity
+import uno.lux.sample.common.ui.DividedNavigationSuiteScaffold
 import uno.lux.sample.composer.ui.CreatePostScreen
 import uno.lux.sample.feed.ui.HomeScreen
 import uno.lux.sample.post.ui.PostDetailScreen
 import uno.lux.sample.profile.ui.ProfileScreen
 import uno.lux.sample.settings.ui.SettingsScreen
-import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.ui.EditProfileScreen
 import uno.lux.sample.video.ui.FullscreenVideoScreen
 import uno.lux.sample.video.ui.LocalVideoPlayback
@@ -257,9 +257,19 @@ enum class AppDestinations(
     @get:DrawableRes val icon: Int,
     val screen: Screen? = null,
 ) {
-    HOME(R.string.nav_home, R.drawable.ic_home),
-    CREATE(R.string.nav_create, R.drawable.ic_add, Screen.CreatePost),
-    PROFILE(R.string.nav_profile, R.drawable.ic_account_box),
+    HOME(
+        labelRes = R.string.nav_home,
+        icon = R.drawable.ic_home,
+    ),
+    CREATE(
+        labelRes = R.string.nav_create,
+        icon = R.drawable.ic_add,
+        screen = Screen.CreatePost,
+    ),
+    PROFILE(
+        labelRes = R.string.nav_profile,
+        icon = R.drawable.ic_account_box,
+    ),
 }
 
 /** How long a push or pop between full-screen pages runs. */

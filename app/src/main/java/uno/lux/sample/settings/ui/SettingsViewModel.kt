@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.util.stateInWhileSubscribed
-import uno.lux.sample.settings.AppLanguage
-import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.settings.data.SettingsRepository
+import uno.lux.sample.settings.data.domain.AppLanguage
+import uno.lux.sample.settings.data.domain.ThemeMode
 import javax.inject.Inject
 
 /**

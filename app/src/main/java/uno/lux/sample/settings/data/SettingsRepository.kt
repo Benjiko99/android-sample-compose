@@ -3,7 +3,7 @@ package uno.lux.sample.settings.data
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import uno.lux.sample.settings.ThemeMode
+import uno.lux.sample.settings.data.domain.ThemeMode
 
 /**
  * Video auto-play is off until the user turns it on: a feed that starts playing by itself is a

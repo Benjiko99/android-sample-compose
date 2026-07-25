@@ -7,11 +7,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.app.common.data.network.LikeToggleDto
-import uno.lux.sample.app.core.files.FileUpload
-import uno.lux.sample.post.NewPost
-import uno.lux.sample.post.NewPostMedia
-import uno.lux.sample.post.Post
+import uno.lux.sample.common.data.files.FileUpload
+import uno.lux.sample.common.data.network.LikeToggleDto
+import uno.lux.sample.post.data.domain.NewPost
+import uno.lux.sample.post.data.domain.NewPostMedia
+import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.userDto
 import java.net.UnknownHostException

@@ -8,17 +8,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import uno.lux.sample.app.core.files.FileLoader
-import uno.lux.sample.app.core.files.VideoMetadataReader
-import uno.lux.sample.app.core.state.restoreDraft
-import uno.lux.sample.app.core.state.saveDraft
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchIfIdle
+import uno.lux.sample.app.util.restoreDraft
+import uno.lux.sample.app.util.saveDraft
 import uno.lux.sample.app.util.toAppError
+import uno.lux.sample.common.data.files.FileLoader
+import uno.lux.sample.common.data.files.VideoMetadataReader
 import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.post.NewPostMedia
+import uno.lux.sample.post.data.domain.NewPostMedia
 import javax.inject.Inject
 
 /**
@@ -182,12 +182,17 @@ class CreatePostViewModel @Inject constructor(
     }
 
     private suspend fun loadMedia(media: CreatePostMedia): NewPostMedia = when (media) {
-        CreatePostMedia.None -> NewPostMedia.None
+        CreatePostMedia.None -> {
+            NewPostMedia.None
+        }
 
-        is CreatePostMedia.Images ->
+        is CreatePostMedia.Images -> {
             NewPostMedia.Images(media.uris.map { fileLoader.read(it) })
+        }
 
-        is CreatePostMedia.Video -> NewPostMedia.Video(fileLoader.read(media.uri))
+        is CreatePostMedia.Video -> {
+            NewPostMedia.Video(fileLoader.read(media.uri))
+        }
     }
 
     private fun updateForm(transform: (CreatePostForm) -> CreatePostForm) {

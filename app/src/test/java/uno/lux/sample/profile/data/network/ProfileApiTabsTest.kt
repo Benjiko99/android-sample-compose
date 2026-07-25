@@ -9,7 +9,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import uno.lux.sample.app.core.network.createApi
+import uno.lux.sample.common.data.network.createApi
 
 /**
  * Pins the **wire format** of the profile's on-demand tabs — `GET /users/:id/bookmarks` and

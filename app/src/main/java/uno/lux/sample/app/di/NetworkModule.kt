@@ -17,7 +17,7 @@ import uno.lux.sample.comment.data.network.CommentApi
 import uno.lux.sample.feed.data.network.FeedApi
 import uno.lux.sample.post.data.network.PostApi
 import uno.lux.sample.profile.data.network.ProfileApi
-import uno.lux.sample.user.UserId
+import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.data.network.UserApi
 import javax.inject.Singleton
 

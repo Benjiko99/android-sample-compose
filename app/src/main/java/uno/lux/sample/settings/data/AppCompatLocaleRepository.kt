@@ -7,7 +7,7 @@ import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import uno.lux.sample.settings.AppLanguage
+import uno.lux.sample.settings.data.domain.AppLanguage
 
 /**
  * [AppLocaleRepository] backed by the per-app language APIs — the platform's own store, so this

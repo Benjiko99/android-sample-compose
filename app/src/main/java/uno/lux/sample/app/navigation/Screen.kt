@@ -1,9 +1,9 @@
 package uno.lux.sample.app.navigation
 
 import kotlinx.serialization.Serializable
-import uno.lux.sample.post.PostId
-import uno.lux.sample.user.UserId
-import uno.lux.sample.video.Video
+import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.user.data.domain.UserId
+import uno.lux.sample.video.data.domain.Video
 
 /**
  * The full-screen pages of the app. [Shell] is the permanent root carrying the navigation-suite

@@ -1,7 +1,7 @@
 package uno.lux.sample.testing
 
-import uno.lux.sample.post.Post
-import uno.lux.sample.post.PostId
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.data.domain.PostId
 
 /**
  * The shareable link a test post carries. Real ones are built by the server and arrive as

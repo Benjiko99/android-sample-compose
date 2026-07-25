@@ -1,7 +1,7 @@
 package uno.lux.sample.comment.data.network
 
 import tech.mappie.api.ObjectMappie
-import uno.lux.sample.comment.Comment
+import uno.lux.sample.comment.data.domain.Comment
 
 // DTO → domain mapping runs through Mappie (a Kotlin compiler plugin)
 

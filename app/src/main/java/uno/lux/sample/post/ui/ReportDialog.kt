@@ -35,8 +35,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import uno.lux.sample.R
-import uno.lux.sample.app.common.ReportReason
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.common.data.ReportReason
 
 /**
  * The report-a-post dialog: a single-choice list of [ReportReason]s plus an optional free-text

@@ -3,6 +3,7 @@ package uno.lux.sample.settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import uno.lux.sample.settings.data.domain.AppLanguage
 
 class AppLanguageTest {
 

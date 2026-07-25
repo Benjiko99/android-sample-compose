@@ -13,9 +13,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.post.Post
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.profile.data.FakeProfileDataSource
 import uno.lux.sample.profile.data.PostsWithAuthorsPage
 import uno.lux.sample.profile.data.ProfileRefreshData
@@ -24,12 +24,12 @@ import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
 import uno.lux.sample.testing.testPostUrl
-import uno.lux.sample.user.ProfileUpdate
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserDataSource
 import uno.lux.sample.user.data.UserRepository
+import uno.lux.sample.user.data.domain.ProfileUpdate
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)

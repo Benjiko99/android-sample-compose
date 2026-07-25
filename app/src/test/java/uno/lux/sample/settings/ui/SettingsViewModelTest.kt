@@ -8,10 +8,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.settings.AppLanguage
-import uno.lux.sample.settings.ThemeMode
 import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
 import uno.lux.sample.settings.data.InMemorySettingsRepository
+import uno.lux.sample.settings.data.domain.AppLanguage
+import uno.lux.sample.settings.data.domain.ThemeMode
 import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens

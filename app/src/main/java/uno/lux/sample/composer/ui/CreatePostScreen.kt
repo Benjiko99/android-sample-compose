@@ -54,16 +54,16 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
-import uno.lux.sample.app.common.ui.DiscardChangesDialog
-import uno.lux.sample.app.common.ui.HoldToConfirmButton
-import uno.lux.sample.app.common.ui.MediaBadge
-import uno.lux.sample.app.common.ui.MediaRemoveButton
-import uno.lux.sample.app.format.formatVideoDuration
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
+import uno.lux.sample.common.formatVideoDuration
+import uno.lux.sample.common.ui.DiscardChangesDialog
+import uno.lux.sample.common.ui.HoldToConfirmButton
+import uno.lux.sample.common.ui.MediaBadge
+import uno.lux.sample.common.ui.MediaRemoveButton
 
 /**
  * The composer's ViewModel-backed intents, as one [Stable] seam the stateless

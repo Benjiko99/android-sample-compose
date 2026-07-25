@@ -5,8 +5,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.comment.Comment
-import uno.lux.sample.user.User
+import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.user.data.domain.User
 import java.time.Instant
 
 class CommentRepositoryTest {

@@ -9,10 +9,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import uno.lux.sample.app.core.files.FileUpload
-import uno.lux.sample.app.core.network.createApi
-import uno.lux.sample.post.NewPost
-import uno.lux.sample.post.NewPostMedia
+import uno.lux.sample.common.data.files.FileUpload
+import uno.lux.sample.common.data.network.createApi
+import uno.lux.sample.post.data.domain.NewPost
+import uno.lux.sample.post.data.domain.NewPostMedia
 
 /**
  * Pins the `POST /posts` **wire format** by driving the real Retrofit stack over loopback.

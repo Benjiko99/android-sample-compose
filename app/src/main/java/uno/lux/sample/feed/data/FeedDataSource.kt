@@ -1,7 +1,7 @@
 package uno.lux.sample.feed.data
 
-import uno.lux.sample.post.Post
-import uno.lux.sample.user.User
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.user.data.domain.User
 
 interface FeedDataSource {
     suspend fun fetch(cursor: String?): FeedPage

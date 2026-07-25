@@ -42,8 +42,8 @@ import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
-import uno.lux.sample.post.Post
-import uno.lux.sample.user.User
+import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.ui.Avatar
 
 /**

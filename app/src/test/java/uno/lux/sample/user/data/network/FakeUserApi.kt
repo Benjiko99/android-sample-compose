@@ -3,7 +3,7 @@ package uno.lux.sample.user.data.network
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
-import uno.lux.sample.app.core.network.notFoundException
+import uno.lux.sample.common.data.network.notFoundException
 
 /** The hosted URL the fake reports after an avatar file is uploaded. */
 const val UPLOADED_AVATAR_URL = "https://cdn.test/avatars/uploaded.png"

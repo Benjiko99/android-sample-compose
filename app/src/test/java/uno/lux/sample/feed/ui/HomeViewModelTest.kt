@@ -16,9 +16,9 @@ import uno.lux.sample.feed.data.FakeFeedDataSource
 import uno.lux.sample.feed.data.FeedDataSource
 import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.feed.data.FeedRepository
-import uno.lux.sample.post.Post
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.settings.data.SettingsRepository
@@ -26,11 +26,11 @@ import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
 import uno.lux.sample.testing.testPostUrl
-import uno.lux.sample.user.User
-import uno.lux.sample.user.UserId
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
-import uno.lux.sample.video.Video
+import uno.lux.sample.user.data.domain.User
+import uno.lux.sample.user.data.domain.UserId
+import uno.lux.sample.video.data.domain.Video
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
