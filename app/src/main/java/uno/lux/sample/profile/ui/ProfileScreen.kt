@@ -45,12 +45,14 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -211,17 +213,30 @@ internal fun ProfileScreen(
             }
 
             // The loaded state owns its own scroll-reactive TopAppBar over the cover.
-            is ProfileUiState.Loaded -> ProfileContent(
-                data = uiState.data,
-                isCurrentUser = uiState.isCurrentUser,
-                isRefreshing = isRefreshing,
-                onRefresh = onRefresh,
-                actions = actions,
-                onBack = onBack,
-            )
+            is ProfileUiState.Loaded -> {
+                ProfileContent(
+                    data = uiState.data,
+                    isCurrentUser = uiState.isCurrentUser,
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    actions = actions,
+                    onBack = onBack,
+                )
+            }
         }
     }
 }
+
+/**
+ * Saves the header's collapse offset. Writing `rememberSaveable { mutableFloatStateOf(…) }` would
+ * resolve to the `MutableState<Float>` overload and hand back a boxed state, giving up the
+ * [FloatState] type the layout pass and the app bar read on every frame — so the float is saved by
+ * hand and the specialized state rebuilt from it.
+ */
+private val CollapseSaver = Saver<MutableFloatState, Float>(
+    save = { it.floatValue },
+    restore = { mutableFloatStateOf(it) },
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -252,7 +267,11 @@ private fun ProfileContent(
         WindowInsets.statusBars.getTop(this) + ProfileBarHeight.roundToPx()
     }
     var headerHeightPx by remember { mutableIntStateOf(0) }
-    val collapse = remember { mutableFloatStateOf(0f) }
+    // Saveable, unlike the measured height above: the collapse *is* the top of this page's scroll
+    // position, and `rememberLazyListState` only remembers the part below it. Left as a plain
+    // `remember`, a profile scrolled less than one header's worth came back from a post detail —
+    // or a rotation — with the cover expanded again, reading as a scroll position thrown away.
+    val collapse = rememberSaveable(saver = CollapseSaver) { mutableFloatStateOf(0f) }
     // The header collapses until its foot reaches the bar; past that the tabs are pinned and the
     // list takes over. Keyed off the measured header height, never off `collapse`, so this scope
     // does not recompose as you scroll — only the header relayouts and the bar (which reads it).

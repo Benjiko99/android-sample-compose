@@ -23,7 +23,24 @@ inline fun <reified T> createActionsProxy(): T =
         ActionsInvocationHandler(),
     ) as T
 
-/** The [InvocationHandler] behind [createActionsProxy]: every proxied call does nothing. */
+/**
+ * The [InvocationHandler] behind [createActionsProxy]: every proxied *interface* call does nothing.
+ *
+ * `Object`'s three methods are answered properly rather than swallowed, because a proxy stands in
+ * for a `@Stable` type and Compose takes that annotation at its word: a recomposition compares the
+ * new actions against the slot's with `equals`, which returning [Unit] from answers with the wrong
+ * type — `result has type boolean, got kotlin.Unit`. The proxy has no state to compare, so identity
+ * is the honest answer, and [hashCode] has to agree with it.
+ */
 class ActionsInvocationHandler : InvocationHandler {
-    override fun invoke(proxy: Any?, method: Method, args: Array<Any?>?): Any = Unit
+    override fun invoke(proxy: Any?, method: Method, args: Array<Any?>?): Any =
+        if (method.declaringClass != Any::class.java) {
+            Unit
+        } else {
+            when (method.name) {
+                "equals" -> proxy === args?.firstOrNull()
+                "hashCode" -> System.identityHashCode(proxy)
+                else -> "ActionsProxy@${Integer.toHexString(System.identityHashCode(proxy))}"
+            }
+        }
 }
