@@ -95,7 +95,14 @@ private fun ReportPostDialogContent(
             style = MaterialTheme.typography.headlineSmall,
         )
         Spacer(Modifier.height(16.dp))
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        // The title and the buttons are measured first and the scroll area takes what is left, so
+        // a long details field scrolls instead of pushing Send out of the dialog. `fill = false`
+        // keeps a dialog with nothing typed in it as short as its content.
+        Column(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
+        ) {
             Text(
                 text = stringResource(R.string.report_dialog_prompt),
                 style = MaterialTheme.typography.bodyMedium,

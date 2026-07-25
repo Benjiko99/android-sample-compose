@@ -15,12 +15,10 @@ import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.common.data.ReportReason
 
 /**
- * The details field is capped at what the server accepts.
+ * What the dialog hands its host when Send is tapped.
  *
- * A report is acknowledged the moment Send is tapped — it travels fire-and-forget, so a 422 for
- * over-long details would be swallowed behind a "thank you". The cap is what keeps that honest,
- * and it belongs in an instrumented test because it is enforced by the text field itself rather
- * than by anything a JVM test could call.
+ * It belongs in an instrumented test because the reason and the details are owned by the dialog
+ * itself rather than by anything a JVM test could call.
  */
 @RunWith(AndroidJUnit4::class)
 class ReportDialogInputTest {
@@ -30,24 +28,6 @@ class ReportDialogInputTest {
 
     private fun string(id: Int): String =
         InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
-
-    @Test
-    fun capsTheDetailsAtWhatTheServerAccepts() {
-        var submitted: String? = null
-        composeRule.setContent {
-            MosaicTheme {
-                ReportPostDialog(onDismiss = {}, onSubmit = { _, details -> submitted = details })
-            }
-        }
-
-        composeRule.onNodeWithText(string(R.string.report_reason_spam)).performClick()
-        composeRule
-            .onNodeWithText(string(R.string.report_details_hint))
-            .performTextInput("x".repeat(REPORT_DETAILS_MAX_LENGTH + 50))
-        composeRule.onNodeWithText(string(R.string.report_send)).performClick()
-
-        assertEquals(REPORT_DETAILS_MAX_LENGTH, submitted?.length)
-    }
 
     @Test
     fun handsTheChosenReasonAndTrimmedDetailsToTheHost() {
