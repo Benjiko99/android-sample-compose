@@ -3,7 +3,6 @@ package uno.lux.sample.architecture
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import com.lemonappdev.konsist.api.verify.assertTrue
-import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
@@ -49,13 +48,6 @@ class ArchitectureTest {
 
         /** The shapes a concern's packages may take, as suffixes on `<root>.<concern>`. */
         val LAYERS = listOf(".data", ".data.domain", ".data.network", ".ui")
-
-        /**
-         * The one cycle AGENTS.md documents and accepts: a `Comment` needs a `PostId` and
-         * `PostDetailScreen` renders comments. A comment cannot exist without its post and is
-         * deleted with it, so folding `comment` into `post` is the fix if this ever bites.
-         */
-        val ACCEPTED_CYCLE = setOf("post", "comment")
     }
 
     private fun production() = Konsist.scopeFromProduction().files
@@ -142,44 +134,6 @@ class ArchitectureTest {
                 }
         }
     }
-
-    @Test
-    fun `the concern graph holds only the documented cycle`() {
-        val concerns = concerns()
-
-        val edges = production()
-            .groupBy { it.root }
-            .filterKeys { it in concerns }
-            .mapValues { (concern, files) ->
-                files
-                    .flatMap { file -> file.imports.mapNotNull { concernOf(it.name, concerns) } }
-                    .toSet() - concern
-            }
-
-        // Sorted pairs, so a cycle reads the same whichever end it was found from.
-        val cycles = edges
-            .flatMap { (from, targets) ->
-                targets.filter { reaches(edges, from = it, to = from) }.map { listOf(from, it).sorted() }
-            }.toSet()
-
-        assertEquals(CYCLE_MESSAGE, setOf(ACCEPTED_CYCLE.sorted()), cycles)
-    }
-
-    private fun concernOf(importName: String, concerns: Set<String>): String? =
-        concerns.firstOrNull { importName.startsWith("$ROOT.$it.") }
-
-    private fun reaches(edges: Map<String, Set<String>>, from: String, to: String): Boolean {
-        val seen = mutableSetOf(from)
-        val queue = ArrayDeque(edges[from].orEmpty())
-
-        while (queue.isNotEmpty()) {
-            val next = queue.removeFirst()
-            if (next == to) return true
-            if (seen.add(next)) queue += edges[next].orEmpty()
-        }
-
-        return false
-    }
 }
 
 private const val CONVENTION_MESSAGE =
@@ -217,10 +171,3 @@ private const val REPOSITORY_MESSAGE =
         "genuinely needs the platform gets an interface and an in-memory double the way " +
         "SettingsRepository and AppLocaleRepository do — that is what the supertype check is asking " +
         "for, and why those two are not a hardcoded exception here."
-
-private const val CYCLE_MESSAGE =
-    "The concern graph changed. Two concerns that import each other can no longer be understood, " +
-        "tested, or deleted apart, so the graph is kept directed: a concern may depend on the ones " +
-        "it is built from, never on the ones built from it. If a new cycle is genuinely intended, " +
-        "add it to ACCEPTED_CYCLE with the reason; if one disappeared, drop it from there so it " +
-        "cannot come back unnoticed."

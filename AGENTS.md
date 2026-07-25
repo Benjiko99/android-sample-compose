@@ -103,7 +103,7 @@ Inside a slice, `data/` holds the repository and its `DataSource` interface, and
 
 **There is one Retrofit service per slice** (`FeedApi`, `PostApi`, `CommentApi`, `UserApi`, `ProfileApi`), all created from the one `Retrofit` instance in `app/di/NetworkModule.kt`. Do not reintroduce a single app-wide API interface: the previous one spanned five slices, so it fit in none of them, and its 338-line fake had to be implemented in full by every test that needed one endpoint.
 
-**These rules are executable, not advisory** — `app/src/test/java/uno/lux/sample/architecture/ArchitectureTest.kt` (Konsist) asserts seven of them against the real source tree and fails the build on a violation. Kotlin has no package-private and `internal` is module-scoped, so nothing else in a single-module project checks this.
+**These rules are executable, not advisory** — `app/src/test/java/uno/lux/sample/architecture/ArchitectureTest.kt` (Konsist) asserts six of them against the real source tree and fails the build on a violation. Kotlin has no package-private and `internal` is module-scoped, so nothing else in a single-module project checks this.
 
 **Every rule is derived from the path, never from a list of names.** The concerns are *discovered* — the top-level packages that exist, minus `app` and `common` — and each rule keys off the shape the convention gives them (`<concern>/data`, `/data/domain`, `/data/network`, `/ui`). Nothing declares that `post` is an aggregate or `feed` a read model, so adding a slice requires no edit to the test:
 
@@ -113,7 +113,8 @@ Inside a slice, `data/` holds the repository and its `DataSource` interface, and
 4. **`data` never depends on `ui`.**
 5. **`common` knows no concern** — it is what they share, so it may know none of them.
 6. **A repository behind no interface stays plain-JVM** — a `*Repository` with no supertype carries no Android import. This is what replaced a hardcoded `settings` exemption, and it states the actual reason: `DataStoreSettingsRepository` and `AppCompatLocaleRepository` may touch the platform *because* they implement an interface their consumers can be handed a double for.
-7. **The concern graph holds only the documented cycle** — the import graph is built and searched for cycles, with `post ↔ comment` the single accepted entry.
+
+**The direction of the cross-concern graph is not checked**, deliberately — it is documented above and reviewed by hand. A test that searched the import graph for cycles was written and removed: it is the one rule here that can't be read off a path, so it has to encode which cycles are tolerated, and that is a list to maintain in exchange for catching something a code review sees anyway.
 
 The failure mode this shape exists to prevent is a rule that silently stops checking. The previous version hardcoded `uno.lux.sample.app.common..`; when `common` moved to the top level the rule kept passing while matching zero files. Rule 1 is the guard — the layout can no longer drift out from under the others without failing. Adding a rule means adding a test; if a violation is *intended*, widen the rule and say why in its message rather than deleting it. Verify a new rule by planting a violation and watching it fail — a green architecture test proves nothing on its own.
 
