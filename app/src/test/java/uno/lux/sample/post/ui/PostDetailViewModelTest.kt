@@ -20,6 +20,8 @@ import uno.lux.sample.comment.data.CommentDataSource
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.FakeCommentDataSource
 import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.comment.data.domain.CommentId
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
@@ -90,6 +92,10 @@ class PostDetailViewModelTest : ViewModelTest() {
             postId = postId,
         )
     }
+
+    /** A comment source on p1, typed as the fake so a test can reach its like bookkeeping. */
+    private fun commentSource(thread: List<Comment> = listOf(seedComment)) =
+        FakeCommentDataSource(currentUser, mapOf("p1" to thread))
 
     // ── delete ────────────────────────────────────────────────────────────────
 
@@ -402,7 +408,8 @@ class PostDetailViewModelTest : ViewModelTest() {
 
     @Test
     fun `onToggleCommentLike likes a comment in the thread`() = runTest {
-        val vm = viewModel()
+        // The count in the answer is the server's, so the fake is told what it started from.
+        val vm = viewModel(commentDataSource = commentSource().apply { likeCounts["c1"] = 2 })
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
         vm.onToggleCommentLike("c1")
@@ -411,6 +418,99 @@ class PostDetailViewModelTest : ViewModelTest() {
         val liked = state.comments.single()
         assertTrue(liked.isLiked)
         assertEquals(3, liked.likeCount)
+    }
+
+    @Test
+    fun `onToggleCommentLike asks for the state opposite the comment's own`() = runTest {
+        val source = commentSource(listOf(seedComment.copy(isLiked = true)))
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.onToggleCommentLike("c1")
+
+        assertEquals(listOf("c1" to false), source.likeRequests)
+    }
+
+    // The heart under a comment fills on the tap for the same reason the post's does — waiting out
+    // a round trip reads as broken. The request is held open on [answered] so the in-flight state
+    // can be read, and the fake's server is seeded to disagree with the count the thread was
+    // loaded with, which is what tells the optimistic value (3) from the confirmed one (11).
+    @Test
+    fun `onToggleCommentLike fills the heart before the request answers`() = runTest {
+        val answered = CompletableDeferred<Unit>()
+        val source = commentSource().apply {
+            likeCounts["c1"] = 10
+            whileInFlight = { answered.await() }
+        }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.onToggleCommentLike("c1")
+        advanceUntilIdle()
+
+        val inFlight = (vm.uiState.value as PostDetailUiState.Loaded).comments.single()
+        assertTrue(inFlight.isLiked)
+        assertEquals(3, inFlight.likeCount)
+
+        answered.complete(Unit)
+        advanceUntilIdle()
+
+        // And once it lands, the server's count replaces the guess.
+        assertEquals(11, (vm.uiState.value as PostDetailUiState.Loaded).comments.single().likeCount)
+    }
+
+    @Test
+    fun `a failed comment like puts the heart back`() = runTest {
+        val source = commentSource().apply {
+            likeCounts["c1"] = 2
+            setLikeError = UnknownHostException("offline")
+        }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.onToggleCommentLike("c1")
+
+        val comment = (vm.uiState.value as PostDetailUiState.Loaded).comments.single()
+        assertFalse(comment.isLiked)
+        assertEquals(2, comment.likeCount)
+    }
+
+    // A comment like writes only the two fields it owns, so a thread reloaded while the request
+    // was in flight keeps the text it brought back rather than the copy the tap was made against.
+    @Test
+    fun `a comment like answer leaves the rest of the comment alone`() = runTest {
+        val source = commentSource().apply { likeCounts["c1"] = 2 }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        source.whileInFlight = {
+            source.comments = mapOf("p1" to listOf(seedComment.copy(text = "Edited", isLiked = true)))
+            vm.retryComments()
+        }
+
+        vm.onToggleCommentLike("c1")
+
+        val comment = (vm.uiState.value as PostDetailUiState.Loaded).comments.single()
+        assertEquals("Edited", comment.text)
+        assertTrue(comment.isLiked)
+    }
+
+    // Two taps in flight: the second is what the user last asked for, so the first request's
+    // answer — which describes a state nobody is waiting for — must not overwrite it.
+    @Test
+    fun `a comment like answer that a newer tap has moved past is dropped`() = runTest {
+        val source = commentSource().apply { likeCounts["c1"] = 2 }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        source.whileInFlight = {
+            // Only the first request re-enters; the second must not recurse.
+            source.whileInFlight = null
+            vm.onToggleCommentLike("c1")
+        }
+
+        vm.onToggleCommentLike("c1")
+
+        assertEquals(listOf("c1" to true, "c1" to false), source.likeRequests)
+        assertFalse((vm.uiState.value as PostDetailUiState.Loaded).comments.single().isLiked)
     }
 
     @Test
@@ -456,6 +556,9 @@ private class GatedCommentDataSource(
     override suspend fun addComment(postId: PostId, text: String): Comment =
         throw UnsupportedOperationException()
 
-    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment =
-        throw UnsupportedOperationException()
+    override suspend fun setLike(
+        postId: PostId,
+        commentId: CommentId,
+        liked: Boolean,
+    ): LikeState = throw UnsupportedOperationException()
 }

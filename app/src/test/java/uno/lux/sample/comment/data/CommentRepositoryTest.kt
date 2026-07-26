@@ -66,23 +66,27 @@ class CommentRepositoryTest {
     }
 
     @Test
-    fun `toggleLike likes an unliked comment and increments the count`() = runTest {
-        val unliked = comment("c1", likeCount = 3, isLiked = false)
-        val repository = CommentRepository(FakeCommentDataSource(author))
+    fun `setLike asks the data source for the state and answers with the server's`() = runTest {
+        val dataSource = FakeCommentDataSource(author).apply { likeCounts["c1"] = 3 }
+        val repository = CommentRepository(dataSource)
 
-        val result = repository.toggleLike("p1", unliked)
+        val result = repository.setLike("p1", "c1", liked = true)
 
+        assertEquals(listOf("c1" to true), dataSource.likeRequests)
         assertTrue(result.isLiked)
         assertEquals(4, result.likeCount)
     }
 
+    // Unliking is the same call with the other state, not a second operation — which is what lets
+    // a retry of either repeat a state rather than repeat a flip.
     @Test
-    fun `toggleLike unlikes a liked comment and decrements the count`() = runTest {
-        val liked = comment("c1", likeCount = 7, isLiked = true)
-        val repository = CommentRepository(FakeCommentDataSource(author))
+    fun `setLike asks for false the same way it asks for true`() = runTest {
+        val dataSource = FakeCommentDataSource(author).apply { likeCounts["c1"] = 7 }
+        val repository = CommentRepository(dataSource)
 
-        val result = repository.toggleLike("p1", liked)
+        val result = repository.setLike("p1", "c1", liked = false)
 
+        assertEquals(listOf("c1" to false), dataSource.likeRequests)
         assertFalse(result.isLiked)
         assertEquals(6, result.likeCount)
     }

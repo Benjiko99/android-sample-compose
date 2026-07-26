@@ -7,11 +7,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.files.FileUpload
 import uno.lux.sample.common.data.network.LikeStateDto
 import uno.lux.sample.common.data.network.SetLikeRequestDto
-import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.NewPostMedia
 import uno.lux.sample.user.data.network.userDto

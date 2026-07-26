@@ -4,22 +4,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.network.LikeStateDto
 import uno.lux.sample.common.data.network.SetLikeRequestDto
-import uno.lux.sample.user.data.domain.User
-import java.time.Instant
 
 class NetworkCommentDataSourceTest {
-
-    private val stubComment = Comment(
-        id = "c1",
-        author = User(id = "u1", nickname = "Ada", handle = "@ada"),
-        createdAt = Instant.EPOCH,
-        text = "Hello",
-        likeCount = 2,
-        isLiked = false,
-    )
 
     @Test
     fun `loadComments fetches from the API`() = runTest {
@@ -53,37 +42,24 @@ class NetworkCommentDataSourceTest {
     }
 
     @Test
-    fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
+    fun `setLike answers with the isLiked and likeCount the server settled on`() = runTest {
         val api = FakeCommentApi(likeResult = LikeStateDto(isLiked = true, likeCount = 3))
         val dataSource = NetworkCommentDataSource(api)
 
-        val updated = dataSource.toggleLike("p1", stubComment)
+        val settled = dataSource.setLike("p1", "c1", liked = true)
 
-        assertTrue(updated.isLiked)
-        assertEquals(3, updated.likeCount)
+        assertEquals(LikeState(isLiked = true, likeCount = 3), settled)
     }
 
-    // The flip is worked out here and the wire carries the state it lands on, so the request the
-    // server sees is one a timeout-retry can repeat without moving the like twice.
+    // The wire carries the state being asked for rather than a request to flip whatever is there,
+    // so a request the server sees twice moves the like once.
     @Test
-    fun `toggleLike asks for the state opposite the comment's own`() = runTest {
+    fun `setLike sends the state the caller asked for`() = runTest {
         val api = FakeCommentApi()
         val dataSource = NetworkCommentDataSource(api)
 
-        dataSource.toggleLike("p1", stubComment.copy(isLiked = true))
+        dataSource.setLike("p1", "c1", liked = false)
 
         assertEquals(listOf("c1" to SetLikeRequestDto(liked = false)), api.likeRequests)
-    }
-
-    @Test
-    fun `toggleLike preserves all other fields on the comment`() = runTest {
-        val dataSource = NetworkCommentDataSource(FakeCommentApi())
-
-        val updated = dataSource.toggleLike("p1", stubComment)
-
-        assertEquals(stubComment.id, updated.id)
-        assertEquals(stubComment.text, updated.text)
-        assertEquals(stubComment.author, updated.author)
-        assertEquals(stubComment.createdAt, updated.createdAt)
     }
 }

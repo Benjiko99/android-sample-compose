@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uno.lux.sample.comment.data.CommentDataSource
 import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.comment.data.domain.CommentId
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.post.data.domain.PostId
 
@@ -19,11 +21,13 @@ class NetworkCommentDataSource(
         CommentMapper.map(api.addComment(postId, AddCommentRequestDto(text)).data)
     }
 
-    override suspend fun toggleLike(postId: PostId, comment: Comment): Comment = withContext(Dispatchers.IO) {
-        // The flip is worked out here rather than asked for on the wire, so a retry of the
-        // request that follows repeats a state instead of repeating a flip.
-        val result = api.setCommentLike(postId, comment.id, SetLikeRequestDto(!comment.isLiked)).data
+    override suspend fun setLike(
+        postId: PostId,
+        commentId: CommentId,
+        liked: Boolean,
+    ): LikeState = withContext(Dispatchers.IO) {
+        val result = api.setCommentLike(postId, commentId, SetLikeRequestDto(liked)).data
 
-        comment.copy(isLiked = result.isLiked, likeCount = result.likeCount)
+        LikeState(isLiked = result.isLiked, likeCount = result.likeCount)
     }
 }

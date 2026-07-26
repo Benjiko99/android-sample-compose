@@ -6,6 +6,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -231,11 +232,57 @@ class PostDetailViewModel @AssistedInject constructor(
         postRepository.report(postId, reason, details)
     }
 
+    /**
+     * Flips the viewer's like on one comment in the thread, moving it *before* the request goes
+     * out and reconciling with the server's answer when it lands.
+     *
+     * The same shape [PostRepository.toggleLike] has, and deliberately not shared with it: a
+     * comment's like lives in the list this ViewModel owns rather than in an entity store, so the
+     * two differ in the one thing — where the item is — that the code is about. What they do
+     * share is the reasoning, and [updateComment] is this side's [PostRepository] `updateEntity`:
+     * every write re-reads the comment and touches only the like fields, so a reload landing
+     * mid-flight is not overwritten by a copy of the comment as it was before the request.
+     */
     fun onToggleCommentLike(commentId: CommentId) = launchCatching {
-        val comment = _comments.value.find { it.id == commentId } ?: return@launchCatching
+        val before = _comments.value.find { it.id == commentId } ?: return@launchCatching
+        val liked = !before.isLiked
+        // A later tap has already moved past this request, so its answer is the one to trust.
+        val stillOurs = { comment: Comment -> comment.isLiked == liked }
 
-        val updated = commentRepository.toggleLike(postId, comment)
-        _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
+        updateComment(commentId) {
+            it.copy(isLiked = liked, likeCount = it.likeCount + if (liked) 1 else -1)
+        }
+
+        try {
+            val confirmed = commentRepository.setLike(postId, commentId, liked)
+            updateComment(commentId, stillOurs) {
+                it.copy(isLiked = confirmed.isLiked, likeCount = confirmed.likeCount)
+            }
+        } catch (e: CancellationException) {
+            // The screen went away, not the request: it is on the wire and the server most
+            // likely took it, so the optimistic value is the better guess to leave behind.
+            throw e
+        } catch (e: Exception) {
+            updateComment(commentId, stillOurs) {
+                it.copy(isLiked = before.isLiked, likeCount = before.likeCount)
+            }
+            throw e
+        }
+    }
+
+    /**
+     * Applies [edit] to [commentId] where it sits in the thread, if it is still there and
+     * [stillOurs] accepts what it currently says. A comment the reload replaced, or one a newer
+     * tap has moved past, is left alone.
+     */
+    private fun updateComment(
+        commentId: CommentId,
+        stillOurs: (Comment) -> Boolean = { true },
+        edit: (Comment) -> Comment,
+    ) = _comments.update { comments ->
+        comments.map { comment ->
+            if (comment.id == commentId && stillOurs(comment)) edit(comment) else comment
+        }
     }
 
     /**

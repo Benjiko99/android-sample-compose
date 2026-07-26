@@ -2,13 +2,13 @@ package uno.lux.sample.post.data.network
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.common.data.network.asPart
 import uno.lux.sample.common.data.network.asTextPart
 import uno.lux.sample.common.data.network.notFoundAsNull
 import uno.lux.sample.post.data.PostDataSource
-import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.NewPostMedia
 import uno.lux.sample.post.data.domain.PostId

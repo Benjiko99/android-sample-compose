@@ -1,6 +1,6 @@
 package uno.lux.sample.comment.data
 
-import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.post.data.domain.PostId
 
 /**
@@ -18,8 +18,9 @@ class CommentRepository(
 
     suspend fun addComment(postId: PostId, text: String) = dataSource.addComment(postId, text)
 
-    suspend fun toggleLike(
+    suspend fun setLike(
         postId: PostId,
-        comment: Comment,
-    ) = dataSource.toggleLike(postId, comment)
+        commentId: CommentId,
+        liked: Boolean,
+    ) = dataSource.setLike(postId, commentId, liked)
 }

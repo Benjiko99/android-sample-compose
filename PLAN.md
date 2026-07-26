@@ -72,11 +72,10 @@ one response.
 - **`derivedIds` re-filters and re-sorts the whole entity store on every emission**
   (`profile/data/ProfileRepository.kt`) — O(N log N) per emission per subscribed tab. Fine at demo
   scale; worth knowing where the cliff is.
-- **Comment likes and follows kept the shape post likes moved away from.** The wire is idempotent
-  for both now, but `CommentRepository.toggleLike` still returns a comment built from the one it
-  was handed (`comment/data/CommentRepository.kt`) and neither is optimistic. Comments live in
-  `PostDetailViewModel` rather than a store, so the fix is a different one from `PostRepository`'s;
-  `POST /users/:id/follow` is still a server-side toggle.
+- **Following kept the shape likes moved away from.** `POST /users/:id/follow` is still a
+  server-side toggle, so a timeout-retry can flip it twice, and `UserRepository.toggleFollow` still
+  waits out the round trip. The like/bookmark change is the template: an idempotent
+  `PUT follow=true/false` plus an optimistic apply-then-reconcile over the user store.
 
 ## Doc accuracy
 

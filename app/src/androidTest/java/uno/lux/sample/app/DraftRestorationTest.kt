@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.files.FileLoader
 import uno.lux.sample.common.data.files.FileUpload
@@ -32,7 +33,6 @@ import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.data.PostDataSource
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.data.domain.PostWithAuthor

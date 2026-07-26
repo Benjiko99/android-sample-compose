@@ -1,7 +1,7 @@
 package uno.lux.sample.post.data
 
+import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
-import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.data.domain.PostWithAuthor
