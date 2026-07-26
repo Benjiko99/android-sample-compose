@@ -131,6 +131,18 @@ class HomeViewModel @Inject constructor(
         load()
     }
 
+    /**
+     * The screen has announced the transient [HomeUiState.Feed.refreshError] and is done with it.
+     * Clearing it here rather than leaving it to stand until the next load is what stops a
+     * configuration change from re-announcing a failure the user has already read: the composition
+     * is rebuilt from nothing, so an error still in the state would be shown again on every
+     * rotation. The full-screen [HomeUiState.Error] is never spent this way — it *is* the screen,
+     * and only [retry] leaves it.
+     */
+    override fun onRefreshErrorShown() {
+        _loadError.value = null
+    }
+
     override fun loadMore() = launchIfIdle(::loadMoreJob) {
         ignoreErrors { feedRepository.loadMore() }
     }

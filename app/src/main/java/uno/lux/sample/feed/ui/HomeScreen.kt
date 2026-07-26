@@ -15,8 +15,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -72,6 +74,8 @@ interface HomeActions {
     fun refresh()
 
     fun retry()
+
+    fun onRefreshErrorShown()
 
     fun loadMore()
 
@@ -139,13 +143,25 @@ internal fun HomeScreen(
     // when crossing the top — so reading it directly needs no derivedStateOf wrapper.
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
-    // A refresh that failed over a feed already on screen. The message is the effect's key, so a
-    // later failure re-announces itself: a refresh clears the error before it fetches, which is
-    // what makes the key change even when the second failure is the same kind as the first.
+    // A refresh that failed over a feed already on screen — announced without taking the posts
+    // away. The duration is stated because Material's default is Indefinite whenever an action
+    // label is given: right for a decision the user must make, wrong for a feed that is still
+    // perfectly readable behind it.
     val refreshErrorMessage = (uiState as? HomeUiState.Feed)?.refreshError?.asText()
+    val retryLabel = stringResource(R.string.error_retry)
 
     LaunchedEffect(refreshErrorMessage) {
-        if (refreshErrorMessage != null) snackbarHostState.showSnackbar(refreshErrorMessage)
+        if (refreshErrorMessage == null) return@LaunchedEffect
+
+        val result = snackbarHostState.showSnackbar(
+            message = refreshErrorMessage,
+            actionLabel = retryLabel,
+            duration = SnackbarDuration.Long,
+        )
+        // Spent, whether it was acted on or waited out — neither the message nor a rotation
+        // rebuilding this composition should say it twice.
+        actions.onRefreshErrorShown()
+        if (result == SnackbarResult.ActionPerformed) actions.refresh()
     }
 
     Scaffold(

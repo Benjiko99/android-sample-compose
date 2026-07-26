@@ -224,6 +224,25 @@ class HomeViewModelTest : ViewModelTest() {
         assertEquals(AppError.NoConnection, feed.refreshError)
     }
 
+    // Announced once and then spent: what is left in the state is what a rotation would replay,
+    // and a failure the user has already read is not worth reading twice.
+    @Test
+    fun `onRefreshErrorShown clears the transient error without touching the feed`() = runTest {
+        val dataSource = FlakyFeedDataSource(FeedPage(listOf(post), listOf(author), null, false))
+        val viewModel = viewModel(feedDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        dataSource.failNext = true
+        viewModel.refresh()
+
+        viewModel.onRefreshErrorShown()
+
+        val feed = viewModel.uiState.value as HomeUiState.Feed
+        assertNull(feed.refreshError)
+        assertEquals(listOf(PostCardData(post, author, isOwn = true)), feed.posts)
+    }
+
     @Test
     fun `a refresh that succeeds clears the previous failure`() = runTest {
         val dataSource = FlakyFeedDataSource(FeedPage(listOf(post), listOf(author), null, false))

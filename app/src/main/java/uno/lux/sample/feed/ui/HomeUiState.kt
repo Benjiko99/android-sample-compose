@@ -21,7 +21,9 @@ sealed interface HomeUiState {
      * [refreshError] carries a load that failed *over* these posts — a pull-to-refresh in a
      * tunnel. The feed being readable outranks the failure, so it is reported transiently (a
      * snackbar) instead of replacing the content the user was already looking at; [Error] is
-     * reserved for having nothing to show at all.
+     * reserved for having nothing to show at all. It stands only until the screen has announced
+     * it and calls `HomeActions.onRefreshErrorShown` — state, but state with a lifetime, which is
+     * what keeps a rebuilt composition from repeating a failure the user has already read.
      */
     data class Feed(
         val posts: List<PostCardData>,
