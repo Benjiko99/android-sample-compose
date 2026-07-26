@@ -1,8 +1,8 @@
 package uno.lux.sample.post.data
 
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
-import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.data.domain.PostWithAuthor
 
@@ -18,9 +18,19 @@ interface PostDataSource {
 
     suspend fun delete(postId: PostId)
 
-    suspend fun toggleLike(post: Post): Post
+    /**
+     * Puts the viewer's like on [postId] into [liked] and answers the state the server settled
+     * on. Idempotent: asking for a like that is already there changes nothing and answers the
+     * same thing, so a retried request — or a second tap the first hasn't answered yet — cannot
+     * move the like twice.
+     *
+     * It takes an ID and a target rather than a [Post] so it has nothing stale to write back:
+     * only the two fields it names are the server's to change.
+     */
+    suspend fun setLike(postId: PostId, liked: Boolean): LikeState
 
-    suspend fun toggleBookmark(post: Post): Post
+    /** Puts the viewer's bookmark on [postId] into [bookmarked], answering whether it is set. */
+    suspend fun setBookmark(postId: PostId, bookmarked: Boolean): Boolean
 
     /**
      * Reports a post for [reason], with whatever context the reporter typed. [details] is blank

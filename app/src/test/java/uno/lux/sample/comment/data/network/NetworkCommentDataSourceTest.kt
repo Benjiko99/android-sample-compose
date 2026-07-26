@@ -5,7 +5,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.comment.data.domain.Comment
-import uno.lux.sample.common.data.network.LikeToggleDto
+import uno.lux.sample.common.data.network.LikeStateDto
+import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.user.data.domain.User
 import java.time.Instant
 
@@ -53,13 +54,25 @@ class NetworkCommentDataSourceTest {
 
     @Test
     fun `toggleLike updates isLiked and likeCount from the server response`() = runTest {
-        val api = FakeCommentApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 3))
+        val api = FakeCommentApi(likeResult = LikeStateDto(isLiked = true, likeCount = 3))
         val dataSource = NetworkCommentDataSource(api)
 
         val updated = dataSource.toggleLike("p1", stubComment)
 
         assertTrue(updated.isLiked)
         assertEquals(3, updated.likeCount)
+    }
+
+    // The flip is worked out here and the wire carries the state it lands on, so the request the
+    // server sees is one a timeout-retry can repeat without moving the like twice.
+    @Test
+    fun `toggleLike asks for the state opposite the comment's own`() = runTest {
+        val api = FakeCommentApi()
+        val dataSource = NetworkCommentDataSource(api)
+
+        dataSource.toggleLike("p1", stubComment.copy(isLiked = true))
+
+        assertEquals(listOf("c1" to SetLikeRequestDto(liked = false)), api.likeRequests)
     }
 
     @Test

@@ -21,18 +21,6 @@ confirmation dialog closes, nothing pops, nothing appears, and the user's tap si
 Follow toggles and reports behave the same. There is no app-wide channel for "that didn't go
 through"; at minimum delete and follow must surface failure.
 
-### Like/bookmark: not optimistic, and a stale write-back window
-In `PostRepository.toggleLike` (`post/data/PostRepository.kt`):
-- **Not optimistic** — the heart doesn't fill until the round trip finishes, so the most-tapped
-  affordance in the app feels broken on a slow connection. The single entity store with one writer is
-  ideally placed for optimistic-apply-then-reconcile.
-- **Stale write-back** — the post is read *before* the request and updated from that pre-request
-  snapshot (`post/data/network/NetworkPostDataSource.kt`). A refresh landing mid-flight gets its
-  fresher entity clobbered. Re-read the entity at write time and apply only the toggled fields.
-
-`POST …/toggle` is also non-idempotent, so a timeout-retry or two rapid taps can double-toggle. An
-idempotent `PUT like=true/false` is the safer contract — and the backend is ours to change.
-
 ## Medium — robustness
 
 ### All HTTP failures collapse to `AppError.Unknown`
@@ -84,6 +72,11 @@ one response.
 - **`derivedIds` re-filters and re-sorts the whole entity store on every emission**
   (`profile/data/ProfileRepository.kt`) — O(N log N) per emission per subscribed tab. Fine at demo
   scale; worth knowing where the cliff is.
+- **Comment likes and follows kept the shape post likes moved away from.** The wire is idempotent
+  for both now, but `CommentRepository.toggleLike` still returns a comment built from the one it
+  was handed (`comment/data/CommentRepository.kt`) and neither is optimistic. Comments live in
+  `PostDetailViewModel` rather than a store, so the fix is a different one from `PostRepository`'s;
+  `POST /users/:id/follow` is still a server-side toggle.
 
 ## Doc accuracy
 

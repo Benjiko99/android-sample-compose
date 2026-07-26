@@ -1,5 +1,6 @@
 package uno.lux.sample.post.data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +18,8 @@ import uno.lux.sample.user.data.UserRepository
  * All screens share one entity map so a like toggled in the feed is immediately visible on a
  * profile and vice versa — without duplicating mutation logic. [ingest] merges posts fetched by
  * any screen into the shared store; [toggleLike] and [toggleBookmark] mutate individual entries
- * so every observer sees the update in the same emission.
+ * so every observer sees the update in the same emission — optimistically, which having exactly
+ * one copy of each post to correct is what makes safe.
  *
  * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
  * [uno.lux.sample.feed.data.FeedRepository] or [uno.lux.sample.profile.data.ProfileRepository]; this store owns only the entity data.
@@ -94,16 +96,86 @@ class PostRepository(
         _entities.update { it - postId }
     }
 
+    /**
+     * Flips the viewer's like on [postId], moving the entity *before* the request goes out and
+     * reconciling with the server's answer when it lands.
+     *
+     * Optimistic because the heart is the most-tapped control in the app: waiting out a round
+     * trip makes it read as broken on a slow connection, and a single store with a single writer
+     * is what makes applying-then-reconciling safe — there is one copy of the post to correct.
+     * A failure puts the like fields back and rethrows, so the tap is undone rather than left
+     * showing a like the server never took.
+     *
+     * Every write goes through [updateEntity], which re-reads the entity and touches only the
+     * like fields. Reading the post once and writing that snapshot back afterwards was the bug
+     * this replaces: a refresh landing mid-flight had its fresher post overwritten by a stale one.
+     */
     suspend fun toggleLike(postId: PostId) {
-        val post = _entities.value[postId] ?: return
-        val updated = dataSource.toggleLike(post)
-        _entities.update { it + (postId to updated) }
+        val before = _entities.value[postId] ?: return
+        val liked = !before.isLiked
+        // A later tap has already moved past this request, so its answer is the one to trust.
+        val stillOurs = { post: Post -> post.isLiked == liked }
+
+        updateEntity(postId) {
+            it.copy(isLiked = liked, likeCount = it.likeCount + if (liked) 1 else -1)
+        }
+
+        try {
+            val confirmed = dataSource.setLike(postId, liked)
+            updateEntity(postId, stillOurs) {
+                it.copy(isLiked = confirmed.isLiked, likeCount = confirmed.likeCount)
+            }
+        } catch (e: CancellationException) {
+            // The screen went away, not the request: it is on the wire and the server most
+            // likely took it, so the optimistic value is the better guess to leave in a store
+            // that outlives the screen. The next read settles it either way.
+            throw e
+        } catch (e: Exception) {
+            updateEntity(postId, stillOurs) {
+                it.copy(isLiked = before.isLiked, likeCount = before.likeCount)
+            }
+            throw e
+        }
     }
 
+    /** Flips the viewer's bookmark on [postId], optimistically — see [toggleLike]. */
     suspend fun toggleBookmark(postId: PostId) {
-        val post = _entities.value[postId] ?: return
-        val updated = dataSource.toggleBookmark(post)
-        _entities.update { it + (postId to updated) }
+        val before = _entities.value[postId] ?: return
+        val bookmarked = !before.isBookmarked
+        val stillOurs = { post: Post -> post.isBookmarked == bookmarked }
+
+        updateEntity(postId) { it.copy(isBookmarked = bookmarked) }
+
+        try {
+            val confirmed = dataSource.setBookmark(postId, bookmarked)
+            updateEntity(postId, stillOurs) { it.copy(isBookmarked = confirmed) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            updateEntity(postId, stillOurs) { it.copy(isBookmarked = before.isBookmarked) }
+            throw e
+        }
+    }
+
+    /**
+     * Applies [edit] to the stored [postId], if the store still holds it and [stillOurs] accepts
+     * what it currently says.
+     *
+     * Re-reading the entity inside the update is the whole point: an edit describes the fields it
+     * owns, so whatever else landed while a request was in flight survives it. [stillOurs] is the
+     * other half — an answer that arrives after a newer tap already moved the post describes a
+     * state nobody is waiting for any more, and dropping it is what keeps the store on the last
+     * thing the user asked for.
+     */
+    private fun updateEntity(
+        postId: PostId,
+        stillOurs: (Post) -> Boolean = { true },
+        edit: (Post) -> Post,
+    ) = _entities.update { entities ->
+        val current = entities[postId] ?: return@update entities
+        if (!stillOurs(current)) return@update entities
+
+        entities + (postId to edit(current))
     }
 
     /**
@@ -119,10 +191,8 @@ class PostRepository(
      * a toggle: no request is made here. The caller has already posted the comment, and a bump
      * applied before the server answered would be a count for a comment that may never land.
      */
-    fun commentAdded(postId: PostId) = _entities.update { entities ->
-        val post = entities[postId] ?: return@update entities
-
-        entities + (postId to post.copy(commentCount = post.commentCount + 1))
+    fun commentAdded(postId: PostId) = updateEntity(postId) {
+        it.copy(commentCount = it.commentCount + 1)
     }
 
     /**

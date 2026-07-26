@@ -99,7 +99,10 @@ class HomeViewModelTest : ViewModelTest() {
 
     @Test
     fun `onToggleLike likes the post through the repository`() = runTest {
-        val viewModel = viewModel()
+        // The count in the answer is the server's, so the fake is told what it started from.
+        val viewModel = viewModel(
+            postDataSource = FakePostDataSource().apply { likeCounts["p1"] = post.likeCount },
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
         }

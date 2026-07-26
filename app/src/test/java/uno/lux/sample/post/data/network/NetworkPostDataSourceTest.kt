@@ -9,18 +9,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.files.FileUpload
-import uno.lux.sample.common.data.network.LikeToggleDto
+import uno.lux.sample.common.data.network.LikeStateDto
+import uno.lux.sample.common.data.network.SetLikeRequestDto
+import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.NewPostMedia
-import uno.lux.sample.post.data.domain.Post
-import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.userDto
 import java.net.UnknownHostException
-import java.time.Instant
 
 class NetworkPostDataSourceTest {
-
-    private val stubPost = post("p1")
 
     @Test
     fun `fetch maps the full projection with its author flattened to an id`() = runTest {
@@ -142,24 +139,36 @@ class NetworkPostDataSourceTest {
     }
 
     @Test
-    fun `toggleLike returns post with updated isLiked and likeCount from the server response`() = runTest {
-        val api = FakePostApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 6))
+    fun `setLike answers with the isLiked and likeCount the server settled on`() = runTest {
+        val api = FakePostApi(likeResult = LikeStateDto(isLiked = true, likeCount = 6))
         val dataSource = NetworkPostDataSource(api)
 
-        val result = dataSource.toggleLike(stubPost.copy(isLiked = false, likeCount = 5))
+        val result = dataSource.setLike("p1", liked = true)
 
-        assertTrue(result.isLiked)
-        assertEquals(6, result.likeCount)
+        assertEquals(LikeState(isLiked = true, likeCount = 6), result)
+    }
+
+    // The state is named in the body rather than left to the server to flip, which is what makes
+    // a retry after a timeout land where the first attempt would have.
+    @Test
+    fun `setLike sends the state the caller asked for`() = runTest {
+        val api = FakePostApi()
+        val dataSource = NetworkPostDataSource(api)
+
+        dataSource.setLike("p1", liked = false)
+
+        assertEquals(listOf("p1" to SetLikeRequestDto(liked = false)), api.likeRequests)
     }
 
     @Test
-    fun `toggleBookmark returns post with updated isBookmarked from the server response`() = runTest {
-        val api = FakePostApi(bookmarkResult = BookmarkToggleDto(isBookmarked = true))
+    fun `setBookmark sends the state the caller asked for and answers the server's`() = runTest {
+        val api = FakePostApi(bookmarkResult = BookmarkStateDto(isBookmarked = true))
         val dataSource = NetworkPostDataSource(api)
 
-        val result = dataSource.toggleBookmark(stubPost.copy(isBookmarked = false))
+        val result = dataSource.setBookmark("p1", bookmarked = true)
 
-        assertTrue(result.isBookmarked)
+        assertEquals(listOf("p1" to SetBookmarkRequestDto(bookmarked = true)), api.bookmarkRequests)
+        assertTrue(result)
     }
 
     @Test
@@ -195,29 +204,4 @@ class NetworkPostDataSourceTest {
                 .second.details,
         )
     }
-
-    @Test
-    fun `toggleLike preserves all other fields on the post`() = runTest {
-        val api = FakePostApi(likeResult = LikeToggleDto(isLiked = true, likeCount = 1))
-        val dataSource = NetworkPostDataSource(api)
-        val original = stubPost.copy(isLiked = false, likeCount = 0)
-
-        val result = dataSource.toggleLike(original)
-
-        assertEquals(original.id, result.id)
-        assertEquals(original.authorId, result.authorId)
-        assertEquals(original.title, result.title)
-        assertEquals(original.isBookmarked, result.isBookmarked)
-    }
 }
-
-private fun post(id: String) = Post(
-    id = id,
-    url = testPostUrl(id),
-    authorId = "u1",
-    title = "Title $id",
-    body = "Body $id",
-    createdAt = Instant.EPOCH,
-    likeCount = 0,
-    commentCount = 0,
-)

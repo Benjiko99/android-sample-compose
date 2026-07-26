@@ -312,7 +312,10 @@ class PostDetailViewModelTest : ViewModelTest() {
 
     @Test
     fun `onToggleLike likes the post through the shared entity store`() = runTest {
-        val vm = viewModel()
+        // The count in the answer is the server's, so the fake is told what it started from.
+        val vm = viewModel(
+            postDataSource = FakePostDataSource().apply { likeCounts["p1"] = post.likeCount },
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
         vm.onToggleLike()

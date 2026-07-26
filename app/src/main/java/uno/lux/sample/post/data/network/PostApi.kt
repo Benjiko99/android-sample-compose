@@ -7,9 +7,11 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
-import uno.lux.sample.common.data.network.LikeToggleResponse
+import uno.lux.sample.common.data.network.LikeStateResponse
+import uno.lux.sample.common.data.network.SetLikeRequestDto
 
 interface PostApi {
 
@@ -32,15 +34,19 @@ interface PostApi {
         @Path("id") postId: String,
     )
 
-    @POST("posts/{id}/like")
-    suspend fun toggleLike(
+    // PUT, not POST: the request names the state it wants rather than asking for a flip, so
+    // sending it twice lands where sending it once does.
+    @PUT("posts/{id}/like")
+    suspend fun setLike(
         @Path("id") postId: String,
-    ): LikeToggleResponse
+        @Body body: SetLikeRequestDto,
+    ): LikeStateResponse
 
-    @POST("posts/{id}/bookmark")
-    suspend fun toggleBookmark(
+    @PUT("posts/{id}/bookmark")
+    suspend fun setBookmark(
         @Path("id") postId: String,
-    ): BookmarkToggleResponse
+        @Body body: SetBookmarkRequestDto,
+    ): BookmarkStateResponse
 
     // The server keeps no report, so it answers an empty 204 — hence no response type.
     @POST("posts/{id}/report")

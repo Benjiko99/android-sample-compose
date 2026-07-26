@@ -1,11 +1,13 @@
 package uno.lux.sample.post.data
 
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.common.data.ReportReason
@@ -114,7 +116,8 @@ class PostRepositoryTest {
 
     @Test
     fun `toggleLike applies the data source result to the entity map`() = runTest {
-        val repo = repository()
+        val dataSource = FakePostDataSource().apply { likeCounts["unliked"] = 4 }
+        val repo = repository(dataSource)
         repo.ingest(listOf(unliked))
 
         repo.toggleLike("unliked")
@@ -125,6 +128,18 @@ class PostRepositoryTest {
     }
 
     @Test
+    fun `toggleLike asks for the state opposite the one the post is in`() = runTest {
+        val dataSource = FakePostDataSource()
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked, liked))
+
+        repo.toggleLike("unliked")
+        repo.toggleLike("liked")
+
+        assertEquals(listOf("unliked" to true, "liked" to false), dataSource.likeRequests)
+    }
+
+    @Test
     fun `toggleBookmark applies the data source result to the entity map`() = runTest {
         val repo = repository()
         repo.ingest(listOf(bookmarked))
@@ -132,6 +147,140 @@ class PostRepositoryTest {
         repo.toggleBookmark("bookmarked")
 
         assertFalse(repo.entities.first()["bookmarked"]!!.isBookmarked)
+    }
+
+    // ── optimism ──────────────────────────────────────────────────────────────
+    //
+    // The heart is the most-tapped control in the app, so it fills on the tap rather than on the
+    // round trip. [FakePostDataSource.whileInFlight] runs inside the request, which is the only
+    // moment the optimistic value is the one in the store.
+
+    @Test
+    fun `toggleLike fills the heart before the request answers`() = runTest {
+        var inFlight: Post? = null
+        val dataSource = FakePostDataSource().apply { likeCounts["unliked"] = 4 }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+        dataSource.whileInFlight = { inFlight = repo.entities.value["unliked"] }
+
+        repo.toggleLike("unliked")
+
+        val seen = inFlight!!
+        assertTrue(seen.isLiked)
+        assertEquals(5, seen.likeCount)
+    }
+
+    @Test
+    fun `toggleBookmark fills the bookmark before the request answers`() = runTest {
+        var inFlight: Post? = null
+        val dataSource = FakePostDataSource()
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+        dataSource.whileInFlight = { inFlight = repo.entities.value["unliked"] }
+
+        repo.toggleBookmark("unliked")
+
+        assertTrue(inFlight!!.isBookmarked)
+    }
+
+    // A tap the server refused has to come back off, or the app is showing a like nobody holds.
+    @Test
+    fun `a failed toggleLike puts the like fields back`() = runTest {
+        val dataSource = FakePostDataSource().apply {
+            likeCounts["unliked"] = 4
+            setLikeError = IllegalStateException("boom")
+        }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+
+        runCatching { repo.toggleLike("unliked") }
+
+        val result = repo.entities.first()["unliked"]!!
+        assertFalse(result.isLiked)
+        assertEquals(4, result.likeCount)
+    }
+
+    @Test
+    fun `a failed toggleBookmark puts the bookmark back`() = runTest {
+        val dataSource = FakePostDataSource().apply { setBookmarkError = IllegalStateException("boom") }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(bookmarked))
+
+        runCatching { repo.toggleBookmark("bookmarked") }
+
+        assertTrue(repo.entities.first()["bookmarked"]!!.isBookmarked)
+    }
+
+    // The caller has to be able to tell a like that landed from one that did not — a failure that
+    // rolled the entity back and said nothing would look identical to a tap that never happened.
+    @Test
+    fun `a failed toggle rethrows`() = runTest {
+        val dataSource = FakePostDataSource().apply { setLikeError = IllegalStateException("boom") }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+
+        assertThrows(IllegalStateException::class.java) {
+            runBlocking { repo.toggleLike("unliked") }
+        }
+    }
+
+    // ── the write-back window ─────────────────────────────────────────────────
+    //
+    // A request that answers writes only the fields it owns, onto whatever the entity says by
+    // then. Writing back the post as it was read *before* the request was the bug this replaces.
+
+    @Test
+    fun `a toggleLike answer leaves fields that changed mid-flight alone`() = runTest {
+        val dataSource = FakePostDataSource().apply { likeCounts["unliked"] = 4 }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+        // A refresh landing while the like is on the wire, bringing a fresher post.
+        dataSource.whileInFlight = {
+            repo.ingest(listOf(unliked.copy(title = "Edited", commentCount = 9, isLiked = true, likeCount = 5)))
+        }
+
+        repo.toggleLike("unliked")
+
+        val result = repo.entities.first()["unliked"]!!
+        assertEquals("Edited", result.title)
+        assertEquals(9, result.commentCount)
+    }
+
+    @Test
+    fun `a failed toggleLike leaves fields that changed mid-flight alone`() = runTest {
+        val dataSource = FakePostDataSource().apply { setLikeError = IllegalStateException("boom") }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+        dataSource.whileInFlight = {
+            repo.ingest(listOf(unliked.copy(title = "Edited", isLiked = true, likeCount = 5)))
+        }
+
+        runCatching { repo.toggleLike("unliked") }
+
+        val result = repo.entities.first()["unliked"]!!
+        assertEquals("Edited", result.title)
+        assertFalse(result.isLiked)
+    }
+
+    // Two taps in flight at once: the second one is what the user last asked for, so the first
+    // request's answer — which describes a state nobody is waiting for — must not overwrite it.
+    @Test
+    fun `an answer that a newer tap has moved past is dropped`() = runTest {
+        val dataSource = FakePostDataSource().apply { likeCounts["unliked"] = 4 }
+        val repo = repository(dataSource)
+        repo.ingest(listOf(unliked))
+        dataSource.whileInFlight = {
+            // Only the first request re-enters; the second must not recurse.
+            dataSource.whileInFlight = null
+            repo.toggleLike("unliked")
+        }
+
+        repo.toggleLike("unliked")
+
+        // Both taps were sent, and the store is left on the second — the one the user last asked
+        // for — rather than on the first request's later, and by now meaningless, answer.
+        assertEquals(listOf("unliked" to true, "unliked" to false), dataSource.likeRequests)
+        assertFalse(repo.entities.first()["unliked"]!!.isLiked)
     }
 
     @Test

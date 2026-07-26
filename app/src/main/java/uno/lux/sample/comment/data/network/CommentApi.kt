@@ -3,9 +3,11 @@ package uno.lux.sample.comment.data.network
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
-import uno.lux.sample.common.data.network.LikeToggleResponse
+import uno.lux.sample.common.data.network.LikeStateResponse
+import uno.lux.sample.common.data.network.SetLikeRequestDto
 
 interface CommentApi {
 
@@ -22,11 +24,13 @@ interface CommentApi {
         @Body body: AddCommentRequestDto,
     ): CommentResponse
 
-    // Toggles the current user's (the X-User-Id header) like on [commentId]. Bodiless for the
-    // same reason [uno.lux.sample.post.data.network.PostApi.toggleLike] is.
-    @POST("posts/{id}/comments/{commentId}/like")
-    suspend fun toggleCommentLike(
+    // Puts the current user's (the X-User-Id header) like on [commentId] into the requested
+    // state, and is a PUT for the same reason [uno.lux.sample.post.data.network.PostApi.setLike]
+    // is: a repeat has to be harmless.
+    @PUT("posts/{id}/comments/{commentId}/like")
+    suspend fun setCommentLike(
         @Path("id") postId: String,
         @Path("commentId") commentId: String,
-    ): LikeToggleResponse
+        @Body body: SetLikeRequestDto,
+    ): LikeStateResponse
 }

@@ -3,8 +3,9 @@ package uno.lux.sample.post.data.network
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
-import uno.lux.sample.common.data.network.LikeToggleDto
-import uno.lux.sample.common.data.network.LikeToggleResponse
+import uno.lux.sample.common.data.network.LikeStateDto
+import uno.lux.sample.common.data.network.LikeStateResponse
+import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.common.data.network.notFoundException
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.network.UserDto
@@ -14,8 +15,8 @@ import java.time.Instant
 class FakePostApi(
     /** What [getPost] serves; an id that isn't here 404s, the way the real API does. */
     private val postById: Map<String, PostDto> = emptyMap(),
-    val likeResult: LikeToggleDto = LikeToggleDto(isLiked = true, likeCount = 1),
-    val bookmarkResult: BookmarkToggleDto = BookmarkToggleDto(isBookmarked = true),
+    val likeResult: LikeStateDto = LikeStateDto(isLiked = true, likeCount = 1),
+    val bookmarkResult: BookmarkStateDto = BookmarkStateDto(isBookmarked = true),
 ) : PostApi {
 
     /** IDs passed to [getPost], in call order, for test assertions. */
@@ -101,11 +102,23 @@ class FakePostApi(
         deletedPostIds += postId
     }
 
-    override suspend fun toggleLike(postId: String): LikeToggleResponse =
-        LikeToggleResponse(likeResult)
+    /** The `(postId, body)` pairs passed to [setLike], in call order, for test assertions. */
+    val likeRequests = mutableListOf<Pair<String, SetLikeRequestDto>>()
 
-    override suspend fun toggleBookmark(postId: String): BookmarkToggleResponse =
-        BookmarkToggleResponse(bookmarkResult)
+    override suspend fun setLike(postId: String, body: SetLikeRequestDto): LikeStateResponse {
+        likeRequests += postId to body
+
+        return LikeStateResponse(likeResult)
+    }
+
+    /** The `(postId, body)` pairs passed to [setBookmark], in call order, for test assertions. */
+    val bookmarkRequests = mutableListOf<Pair<String, SetBookmarkRequestDto>>()
+
+    override suspend fun setBookmark(postId: String, body: SetBookmarkRequestDto): BookmarkStateResponse {
+        bookmarkRequests += postId to body
+
+        return BookmarkStateResponse(bookmarkResult)
+    }
 
     /** The reports passed to [reportPost], in call order, for test assertions. */
     val reports = mutableListOf<Pair<String, ReportPostRequestDto>>()

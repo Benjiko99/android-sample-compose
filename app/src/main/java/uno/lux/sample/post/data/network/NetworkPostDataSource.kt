@@ -3,13 +3,14 @@ package uno.lux.sample.post.data.network
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.common.data.network.asPart
 import uno.lux.sample.common.data.network.asTextPart
 import uno.lux.sample.common.data.network.notFoundAsNull
 import uno.lux.sample.post.data.PostDataSource
+import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.NewPostMedia
-import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.data.domain.PostWithAuthor
 
@@ -42,14 +43,14 @@ class NetworkPostDataSource(
         api.deletePost(postId)
     }
 
-    override suspend fun toggleLike(post: Post): Post = withContext(Dispatchers.IO) {
-        val result = api.toggleLike(post.id).data
-        post.copy(isLiked = result.isLiked, likeCount = result.likeCount)
+    override suspend fun setLike(postId: PostId, liked: Boolean): LikeState = withContext(Dispatchers.IO) {
+        val result = api.setLike(postId, SetLikeRequestDto(liked)).data
+
+        LikeState(isLiked = result.isLiked, likeCount = result.likeCount)
     }
 
-    override suspend fun toggleBookmark(post: Post): Post = withContext(Dispatchers.IO) {
-        val result = api.toggleBookmark(post.id).data
-        post.copy(isBookmarked = result.isBookmarked)
+    override suspend fun setBookmark(postId: PostId, bookmarked: Boolean): Boolean = withContext(Dispatchers.IO) {
+        api.setBookmark(postId, SetBookmarkRequestDto(bookmarked)).data.isBookmarked
     }
 
     override suspend fun report(

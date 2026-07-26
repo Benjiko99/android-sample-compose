@@ -273,7 +273,10 @@ class ProfileViewModelTest : ViewModelTest() {
 
     @Test
     fun `onToggleLike likes the post through the shared entity store`() = runTest {
-        val viewModel = viewModel()
+        // The count in the answer is the server's, so the fake is told what it started from.
+        val viewModel = viewModel(
+            postDataSource = FakePostDataSource().apply { likeCounts["p1"] = post.likeCount },
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
         }
@@ -360,7 +363,9 @@ class ProfileViewModelTest : ViewModelTest() {
     // row outright — that is the tab's defining flag, asserted further down.)
     @Test
     fun `liking a saved post updates it in place`() = runTest {
-        val viewModel = viewModel()
+        val viewModel = viewModel(
+            postDataSource = FakePostDataSource().apply { likeCounts["p2"] = savedPost.likeCount },
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
         }

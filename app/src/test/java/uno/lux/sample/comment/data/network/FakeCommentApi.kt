@@ -1,15 +1,19 @@
 package uno.lux.sample.comment.data.network
 
-import uno.lux.sample.common.data.network.LikeToggleDto
-import uno.lux.sample.common.data.network.LikeToggleResponse
+import uno.lux.sample.common.data.network.LikeStateDto
+import uno.lux.sample.common.data.network.LikeStateResponse
+import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.common.data.network.emptyPage
 import uno.lux.sample.user.data.network.stubAuthor
 import java.time.Instant
 
 class FakeCommentApi(
     private val comments: List<CommentDto> = emptyList(),
-    val likeResult: LikeToggleDto = LikeToggleDto(isLiked = true, likeCount = 1),
+    val likeResult: LikeStateDto = LikeStateDto(isLiked = true, likeCount = 1),
 ) : CommentApi {
+
+    /** The `(commentId, body)` pairs passed to [setCommentLike], in call order. */
+    val likeRequests = mutableListOf<Pair<String, SetLikeRequestDto>>()
 
     override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
         CommentListResponse(data = comments, page = emptyPage)
@@ -26,10 +30,15 @@ class FakeCommentApi(
             ),
         )
 
-    override suspend fun toggleCommentLike(
+    override suspend fun setCommentLike(
         postId: String,
         commentId: String,
-    ): LikeToggleResponse = LikeToggleResponse(likeResult)
+        body: SetLikeRequestDto,
+    ): LikeStateResponse {
+        likeRequests += commentId to body
+
+        return LikeStateResponse(likeResult)
+    }
 }
 
 fun commentDto(

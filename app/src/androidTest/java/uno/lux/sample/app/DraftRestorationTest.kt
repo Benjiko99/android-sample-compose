@@ -32,8 +32,8 @@ import uno.lux.sample.feed.data.FeedPage
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.data.PostDataSource
 import uno.lux.sample.post.data.PostRepository
+import uno.lux.sample.post.data.domain.LikeState
 import uno.lux.sample.post.data.domain.NewPost
-import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.data.domain.PostWithAuthor
 import uno.lux.sample.user.data.UserDataSource
@@ -258,9 +258,9 @@ class DraftRestorationTest {
 
         override suspend fun delete(postId: PostId) = unused()
 
-        override suspend fun toggleLike(post: Post): Post = unused()
+        override suspend fun setLike(postId: PostId, liked: Boolean): LikeState = unused()
 
-        override suspend fun toggleBookmark(post: Post): Post = unused()
+        override suspend fun setBookmark(postId: PostId, bookmarked: Boolean): Boolean = unused()
 
         override suspend fun report(
             postId: PostId,
