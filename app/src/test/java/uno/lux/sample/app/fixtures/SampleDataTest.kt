@@ -25,6 +25,21 @@ class SampleDataTest {
         assertEquals("sample albums should not share a photo", images.distinct(), images)
     }
 
+    // The number on the card and the thread the card opens are the same fixtures, so a post
+    // claiming 612 comments over a list of two was a preview contradicting itself. The server
+    // counts its comment rows for the same reason; these stand in for what it sends.
+    @Test
+    fun `a sample post counts the comments it has`() {
+        assertTrue("expected sample comments", SampleComments.isNotEmpty())
+        SamplePosts.forEach { post ->
+            assertEquals(
+                "post ${post.id} should count its own comments",
+                SampleComments[post.id].orEmpty().size,
+                post.commentCount,
+            )
+        }
+    }
+
     @Test
     fun `a sample album counts the images it carries`() {
         val albums = SamplePosts.mapNotNull { it.album }

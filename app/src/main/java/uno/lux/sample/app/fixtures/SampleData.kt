@@ -114,126 +114,21 @@ private val LaunchRoomImages = listOf(
 )
 
 /**
- * Sample posts stand in for server payloads, so they carry the shareable link the way the server
- * would send it rather than leaving the app to assemble one.
+ * Sample comments seeded per post id; timestamps are anchored to first access.
+ *
+ * Declared *above* [SamplePosts] on purpose: a post's `commentCount` is read from here through
+ * [sampleCommentCount], and top-level properties in a file initialize in declaration order, so
+ * moving this back below the posts would have every one of them counting an empty map.
  */
-private fun samplePostUrl(id: PostId) = "https://mosaic.tree-among-shrubs.com/p/$id"
-
-internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
-
-private fun buildSamplePosts(now: Instant): List<Post> = listOf(
-    Post(
-        id = "p1",
-        url = samplePostUrl("p1"),
-        authorId = SampleUsers[0].id,
-        title = "The engine weaves algebraic patterns",
-        body = "Just like the Jacquard loom weaves flowers and leaves. A machine need not " +
-            "be limited to numbers — give it the right notation and it can compose.",
-        createdAt = now.minus(Duration.ofMinutes(4)),
-        likeCount = 128,
-        commentCount = 17,
-        isLiked = false,
-        album = Album(
-            id = "pa1",
-            title = "Engine sketches",
-            itemCount = EngineSketchImages.size,
-            images = EngineSketchImages,
-        ),
-    ),
-    Post(
-        id = "p2",
-        url = samplePostUrl("p2"),
-        authorId = SampleUsers[1].id,
-        title = "Found the bug",
-        body = "It was an actual moth, taped into the logbook at 15:45. First recorded " +
-            "case of debugging being literal. Onward to the next nanosecond.",
-        createdAt = now.minus(Duration.ofMinutes(38)),
-        likeCount = 342,
-        commentCount = 51,
-        isLiked = true,
-        isBookmarked = true,
-    ),
-    Post(
-        id = "p3",
-        url = samplePostUrl("p3"),
-        authorId = SampleUsers[2].id,
-        title = "Can machines think?",
-        body = "The question is too meaningless to deserve discussion. So replace it: can a " +
-            "machine play the imitation game well enough that you can't tell?",
-        createdAt = now.minus(Duration.ofHours(2)),
-        likeCount = 891,
-        commentCount = 203,
-        video = Video(
-            id = "pv3",
-            title = "The imitation game, in five seconds",
-            durationSeconds = 5,
-            videoUrl = IMITATION_GAME_VIDEO_URL,
-            width = 1280,
-            height = 720,
-            thumbnailUrl = IMITATION_GAME_THUMBNAIL_URL,
-            thumbnailWidth = 640,
-            thumbnailHeight = 360,
-        ),
-    ),
-    Post(
-        id = "p4",
-        url = samplePostUrl("p4"),
-        authorId = SampleUsers[3].id,
-        title = "Priority scheduling saved the landing",
-        body = "Three minutes before touchdown the computer flashed a 1202 alarm. Because we " +
-            "designed it to shed low-priority work under overload, it kept the essentials " +
-            "running. Apollo 11 landed anyway.",
-        createdAt = now.minus(Duration.ofHours(6)),
-        likeCount = 1543,
-        commentCount = 88,
-        isLiked = true,
-        isBookmarked = true,
-        video = null,
-        album = Album(
-            id = "pa4",
-            title = "Launch room",
-            itemCount = LaunchRoomImages.size,
-            images = LaunchRoomImages,
-        ),
-    ),
-    Post(
-        id = "p5",
-        url = samplePostUrl("p5"),
-        authorId = SampleUsers[4].id,
-        title = "Just a hobby, won't be big",
-        body = "I'm doing a (free) operating system — nothing professional like GNU — for " +
-            "386(486) AT clones. It probably never will support anything other than AT " +
-            "hard disks, as that's all I have. :)",
-        createdAt = now.minus(Duration.ofDays(1)),
-        likeCount = 5200,
-        commentCount = 612,
-        video = Video(
-            id = "pv5",
-            title = "Booting the kernel",
-            durationSeconds = 5,
-            videoUrl = KERNEL_BOOT_VIDEO_URL,
-            width = 1920,
-            height = 1080,
-            thumbnailUrl = KERNEL_BOOT_THUMBNAIL_URL,
-            thumbnailWidth = 640,
-            thumbnailHeight = 360,
-        ),
-    ),
-    Post(
-        id = "p6",
-        url = samplePostUrl("p6"),
-        authorId = SampleUsers[0].id,
-        title = "On numbers and music",
-        body = "Supposing the relations of pitched sounds could be expressed by the engine, it " +
-            "might compose elaborate pieces of music of any degree of complexity.",
-        createdAt = now.minus(Duration.ofDays(3)),
-        likeCount = 64,
-        commentCount = 5,
-    ),
-)
-
-/** Sample comments seeded per post id; timestamps are anchored to first access. */
 internal val SampleComments: Map<PostId, List<Comment>> = buildSampleComments(Instant.now())
+
+/**
+ * How many comments the fixtures give [postId] — what its `commentCount` is, rather than a number
+ * written beside one. The server derives the count from its comment rows the same way, and these
+ * fixtures used to claim 17, 51 and 612 against threads holding two or three, which made every
+ * preview of a post card disagree with the detail page it opened.
+ */
+private fun sampleCommentCount(postId: PostId) = SampleComments.getValue(postId).size
 
 private fun buildSampleComments(now: Instant): Map<PostId, List<Comment>> = mapOf(
     // p1 "The engine weaves algebraic patterns" — post is 4m old
@@ -301,5 +196,124 @@ private fun buildSampleComments(now: Instant): Map<PostId, List<Comment>> = mapO
             "c1p6", SampleUsers[1], now.minus(Duration.ofDays(2)),
             "The Analytical Engine composing music — a beautiful idea.", 11,
         ),
+    ),
+)
+
+/**
+ * Sample posts stand in for server payloads, so they carry the shareable link the way the server
+ * would send it rather than leaving the app to assemble one.
+ */
+private fun samplePostUrl(id: PostId) = "https://mosaic.tree-among-shrubs.com/p/$id"
+
+internal val SamplePosts: List<Post> = buildSamplePosts(Instant.now())
+
+private fun buildSamplePosts(now: Instant): List<Post> = listOf(
+    Post(
+        id = "p1",
+        url = samplePostUrl("p1"),
+        authorId = SampleUsers[0].id,
+        title = "The engine weaves algebraic patterns",
+        body = "Just like the Jacquard loom weaves flowers and leaves. A machine need not " +
+            "be limited to numbers — give it the right notation and it can compose.",
+        createdAt = now.minus(Duration.ofMinutes(4)),
+        likeCount = 128,
+        commentCount = sampleCommentCount("p1"),
+        isLiked = false,
+        album = Album(
+            id = "pa1",
+            title = "Engine sketches",
+            itemCount = EngineSketchImages.size,
+            images = EngineSketchImages,
+        ),
+    ),
+    Post(
+        id = "p2",
+        url = samplePostUrl("p2"),
+        authorId = SampleUsers[1].id,
+        title = "Found the bug",
+        body = "It was an actual moth, taped into the logbook at 15:45. First recorded " +
+            "case of debugging being literal. Onward to the next nanosecond.",
+        createdAt = now.minus(Duration.ofMinutes(38)),
+        likeCount = 342,
+        commentCount = sampleCommentCount("p2"),
+        isLiked = true,
+        isBookmarked = true,
+    ),
+    Post(
+        id = "p3",
+        url = samplePostUrl("p3"),
+        authorId = SampleUsers[2].id,
+        title = "Can machines think?",
+        body = "The question is too meaningless to deserve discussion. So replace it: can a " +
+            "machine play the imitation game well enough that you can't tell?",
+        createdAt = now.minus(Duration.ofHours(2)),
+        likeCount = 891,
+        commentCount = sampleCommentCount("p3"),
+        video = Video(
+            id = "pv3",
+            title = "The imitation game, in five seconds",
+            durationSeconds = 5,
+            videoUrl = IMITATION_GAME_VIDEO_URL,
+            width = 1280,
+            height = 720,
+            thumbnailUrl = IMITATION_GAME_THUMBNAIL_URL,
+            thumbnailWidth = 640,
+            thumbnailHeight = 360,
+        ),
+    ),
+    Post(
+        id = "p4",
+        url = samplePostUrl("p4"),
+        authorId = SampleUsers[3].id,
+        title = "Priority scheduling saved the landing",
+        body = "Three minutes before touchdown the computer flashed a 1202 alarm. Because we " +
+            "designed it to shed low-priority work under overload, it kept the essentials " +
+            "running. Apollo 11 landed anyway.",
+        createdAt = now.minus(Duration.ofHours(6)),
+        likeCount = 1543,
+        commentCount = sampleCommentCount("p4"),
+        isLiked = true,
+        isBookmarked = true,
+        video = null,
+        album = Album(
+            id = "pa4",
+            title = "Launch room",
+            itemCount = LaunchRoomImages.size,
+            images = LaunchRoomImages,
+        ),
+    ),
+    Post(
+        id = "p5",
+        url = samplePostUrl("p5"),
+        authorId = SampleUsers[4].id,
+        title = "Just a hobby, won't be big",
+        body = "I'm doing a (free) operating system — nothing professional like GNU — for " +
+            "386(486) AT clones. It probably never will support anything other than AT " +
+            "hard disks, as that's all I have. :)",
+        createdAt = now.minus(Duration.ofDays(1)),
+        likeCount = 5200,
+        commentCount = sampleCommentCount("p5"),
+        video = Video(
+            id = "pv5",
+            title = "Booting the kernel",
+            durationSeconds = 5,
+            videoUrl = KERNEL_BOOT_VIDEO_URL,
+            width = 1920,
+            height = 1080,
+            thumbnailUrl = KERNEL_BOOT_THUMBNAIL_URL,
+            thumbnailWidth = 640,
+            thumbnailHeight = 360,
+        ),
+    ),
+    Post(
+        id = "p6",
+        url = samplePostUrl("p6"),
+        authorId = SampleUsers[0].id,
+        title = "On numbers and music",
+        body = "Supposing the relations of pitched sounds could be expressed by the engine, it " +
+            "might compose elaborate pieces of music of any degree of complexity.",
+        createdAt = now.minus(Duration.ofDays(3)),
+        likeCount = 64,
+        commentCount = sampleCommentCount("p6"),
     ),
 )
