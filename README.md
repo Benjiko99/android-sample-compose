@@ -4,9 +4,7 @@ A portfolio Android app demonstrating modern architecture: single-activity Compo
 
 ## Package layout
 
-The top level is **slices, not layers** — layers are the shape *inside* a slice. There is no root `data/` or `ui/` package, and deliberately no `activities/`, `fragments/`, `viewmodels/` or `dialogs/`: **a file's home is decided by what it is *about*, never by what it extends.** Supertype is what the IDE indexes for you; it never needs a folder.
-
-What is left at the root is the product itself — everything that is not a domain noun is gathered under `app/`.
+The top level is **slices, not layers** — layers are the shape *inside* a slice. There is no root `data/` or `ui/` package, and deliberately no `activities/`, `fragments/`, `viewmodels/` or `dialogs/`: **a file's home is decided by what it is *about*, never by what it extends.**
 
 ```
 uno/lux/sample/
@@ -17,22 +15,22 @@ uno/lux/sample/
 ├── video/        ─┘
 │
 ├── feed/         ─┐
-├── profile/       ├─ read models and features: they own no entity
-├── composer/      │
-├── settings/     ─┘
+├── profile/       │
+├── composer/      ├─ features and read models: they own no entity
+├── settings/      │
+├── shell/        ─┘
 │
-└── app/          the machine — MainActivity, MosaicApplication, the shell
-    ├── di/         the Hilt modules
-    ├── navigation/ the Navigator and the serializable Screen keys
-    ├── theme/      the Mosaic palette, type and gradients
-    ├── common/     ui/ noun-free composables · data/network/ wire types no one slice owns
-    ├── core/       network/ plumbing, files/, state/ — would survive deleting the product
-    ├── util/       pure functions with zero project imports
-    ├── format/     resolves a util bucket to a localized string — the Android-aware half
-    └── fixtures/   stand-in content for previews and DI seeding
+├── common/       what two or more concerns share — ui/ composables · data/ wire types and files
+└── app/          the machine — MainActivity, MosaicApplication, MosaicApp
+    ├── di/           the Hilt modules
+    ├── navigation/   the Navigator, the serializable Screen keys, BackStackEntry
+    ├── theme/        the Mosaic palette, type and gradients
+    ├── ui/components/ the Mosaic design system — branded controls, no domain noun
+    ├── util/         pure functions with zero project imports
+    └── fixtures/     stand-in content for previews and DI seeding
 ```
 
-Each slice carries its own layers: `post/Post.kt` is the entity, `post/data/` holds the repository and its `DataSource` **interface**, `post/data/network/` holds the Retrofit service, DTOs, mapper and the `Network…DataSource`, and `post/ui/` holds the screens. The interface lives beside its *consumer*, not beside its implementation — which is what would let a repository compose a network and a local source without either one owning the contract.
+Each slice carries its own layers: `post/data/domain/` holds the entity, `post/data/` the repository and its `DataSource` **interface**, `post/data/network/` the Retrofit service, DTOs, mapper and the `Network…DataSource`, and `post/ui/` the screens. The interface lives beside its *consumer*, not beside its implementation — which is what lets a repository compose a network and a local source without either one owning the contract.
 
 ### Aggregates vs. read models
 
@@ -49,6 +47,9 @@ graph BT
     profile --> video
     composer --> post
     composer -.->|publish prepends to the feed| feed
+    shell -.->|its tabs are these screens| feed
+    shell -.-> profile
+    shell --> user
     post --> user
     post --> album
     post --> video
@@ -59,7 +60,7 @@ graph BT
     classDef agg fill:#2d6a4f,stroke:#1b4332,color:#fff
     classDef rm fill:#264653,stroke:#1d3557,color:#fff
     class post,user,comment,album,video agg
-    class feed,profile,composer,settings rm
+    class feed,profile,composer,settings,shell rm
 ```
 
 > Features may depend on aggregates. **Aggregates never depend on features.**
@@ -70,13 +71,7 @@ The one genuine cycle is `post ↔ comment`: a comment needs a `PostId`, and the
 
 ### Where does a new file go?
 
-Ask in order — no two questions tie:
-
-1. **Does it mention a domain noun?** No → 2. Yes → 3.
-2. Pixels → `app/common/ui` (a colour or a font → `app/theme`). Wires the app together → `app`. Neither → `app/core` / `app/util`.
-3. Claimed by exactly one feature → that feature. By several → the noun's aggregate.
-
-The cases that used to be ambiguous, resolved: `DiscardChangesDialog` names no noun and is shared by the composer and the profile editor → `app/common/ui/`. `ReportDialog` knows `ReportReason` → `post/ui/`. `Avatar` renders a `User` → `user/ui/`, *not* `app/common/ui/`. `FileLoader` reads content URIs and names nothing → `app/core/files/`. `relativeTime()` imports nothing of ours → `app/util/`.
+A short decision procedure settles it — does the file mention a domain noun, is it pixels or plumbing, and is it claimed by one concern or several. The procedure, the worked examples and the rest of the conventions live in **[AGENTS.md](AGENTS.md)**, which is the single authoritative copy; this README stays an overview so the two cannot drift.
 
 There is **one Retrofit service per slice** (`FeedApi`, `PostApi`, `CommentApi`, `UserApi`, `ProfileApi`), all created from a single `Retrofit` instance. A single app-wide API interface is what the split replaced: it spanned five slices, so it belonged to none of them, and its 338-line test fake had to be implemented in full by every test that needed one endpoint.
 
@@ -129,9 +124,9 @@ The app talks to a Rails backend at `https://mosaic.tree-among-shrubs.com/api/`,
 
 ## Testing
 
-Tests are the primary consumer of this codebase — the architecture is shaped by what a test needs to drive. 354 JVM unit tests cover repositories, ViewModels and formatters with hand-written fakes; instrumented tests cover the two things a JVM test cannot reach, saved-state restoration and process death.
+Tests are the primary consumer of this codebase — the architecture is shaped by what a test needs to drive. The JVM suite covers repositories, ViewModels and formatters with hand-written fakes and no mocking framework; instrumented tests cover the two things a JVM test cannot reach, saved-state restoration and process death.
 
-Four of those are **architecture tests**. `ArchitectureTest` (Konsist) reads every import in the project and fails the build if one crosses a line the layout forbids — the foundation reaching into a slice, an aggregate importing a feature, HTTP escaping the network layer, or a repository picking up an Android dependency. Kotlin has no package-private and `internal` is module-scoped, so in a single-module project a package layout is a convention until something checks it. This is that something.
+Seven of the assertions are **architecture rules**. `ArchitectureTest` (Konsist) reads every import in the project and fails the build if one crosses a line the layout forbids — the design system reaching into a slice, HTTP escaping the network layer, the domain layer picking up a platform type, or a repository behind no interface taking an Android dependency. Every rule is derived from the package path rather than a list of names, so adding a slice needs no edit to the test. Kotlin has no package-private and `internal` is module-scoped, so in a single-module project a package layout is a convention until something checks it. This is that something.
 
 ```bash
 ./gradlew testDebugUnitTest
