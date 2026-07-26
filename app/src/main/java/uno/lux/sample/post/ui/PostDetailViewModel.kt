@@ -238,9 +238,16 @@ class PostDetailViewModel @AssistedInject constructor(
         _comments.update { current -> current.map { if (it.id == commentId) updated else it } }
     }
 
+    /**
+     * Posts a comment, prepending it to the thread this page owns and telling the entity store the
+     * post gained one. The two halves land in different places on purpose: the comment is this
+     * ViewModel's, but the count under the post belongs to the shared entity, so it is what the
+     * feed card and the profile behind this page redraw from.
+     */
     fun addComment(text: String) = launchCatching {
         val comment = commentRepository.addComment(postId, text)
         _comments.update { listOf(comment) + it }
+        postRepository.commentAdded(postId)
     }
 
     fun goBack() = navigator.goBack()

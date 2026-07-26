@@ -16,7 +16,7 @@ The findings below are what I would raise in an interview. None of them undermin
 
 In `HomeViewModel` the error check wins over loaded content ([HomeViewModel.kt:69](app/src/main/java/uno/lux/sample/feed/ui/HomeViewModel.kt)): `if (loadError != null) return@combine HomeUiState.Error(loadError)` runs before the `FeedState.Loaded` branch. Pull to refresh in a tunnel and the feed you were reading is replaced by a full-screen error; tapping Retry then resets to `NotLoaded` and a spinner. `ProfileViewModel` resolves the same situation the other way — `state != null` wins over `loadError` ([ProfileViewModel.kt:147-159](app/src/main/java/uno/lux/sample/profile/ui/ProfileViewModel.kt)) — so a failed profile refresh keeps the content. The two screens disagree, and the feed's behavior is the wrong one. `HomeViewModelTest` covers the initial-load failure but not refresh-failure-over-loaded-content, which is how this slipped through. A refresh failure over existing content should surface as a transient (snackbar), with the full-screen error reserved for having nothing to show.
 
-### 2. `commentCount` goes stale the moment you comment
+### 2. ~~`commentCount` goes stale the moment you comment~~
 
 `PostDetailViewModel.addComment` prepends the new comment to its local list ([PostDetailViewModel.kt:241-244](app/src/main/java/uno/lux/sample/post/ui/PostDetailViewModel.kt)), but nothing updates `Post.commentCount` in the shared entity store. The count under the post — on its own detail page, on the feed card, on the profile — keeps showing the old number until a full re-fetch. The store propagates like counts on toggle; comments deserve the same treatment (a `PostRepository.commentAdded(postId)` bumping the entity would do it).
 

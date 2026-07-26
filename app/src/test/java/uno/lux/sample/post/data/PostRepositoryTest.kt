@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.common.data.ReportReason
@@ -143,6 +144,40 @@ class PostRepositoryTest {
         assertEquals(liked, repo.entities.first()["liked"])
     }
 
+    // The comment itself is the detail page's to hold; the count is a field on the post, so it
+    // has to move in the shared store or the number under the card stays stale everywhere.
+    @Test
+    fun `commentAdded bumps the post's comment count`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(post(id = "p", commentCount = 2)))
+
+        repo.commentAdded("p")
+
+        assertEquals(3, repo.entities.first()["p"]!!.commentCount)
+    }
+
+    // Skipping is by instance, so every post that did not gain a comment must come back as the
+    // same object — otherwise a comment recomposes every visible row.
+    @Test
+    fun `commentAdded leaves every other post the same instance`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(unliked, liked))
+
+        repo.commentAdded("unliked")
+
+        assertSame(liked, repo.entities.first()["liked"])
+    }
+
+    @Test
+    fun `commentAdded on an unknown id leaves the entities unchanged`() = runTest {
+        val repo = repository()
+        repo.ingest(listOf(unliked))
+
+        repo.commentAdded("missing")
+
+        assertEquals(mapOf("unliked" to unliked), repo.entities.first())
+    }
+
     @Test
     fun `delete removes the post from the entity map`() = runTest {
         val repo = repository()
@@ -251,6 +286,7 @@ class PostRepositoryTest {
 private fun post(
     id: String,
     likeCount: Int = 0,
+    commentCount: Int = 0,
     isLiked: Boolean = false,
     isBookmarked: Boolean = false,
 ) = Post(
@@ -261,7 +297,7 @@ private fun post(
     body = "Body $id",
     createdAt = Instant.EPOCH,
     likeCount = likeCount,
-    commentCount = 0,
+    commentCount = commentCount,
     isLiked = isLiked,
     isBookmarked = isBookmarked,
 )

@@ -349,6 +349,35 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(currentUser, newest.author)
     }
 
+    // The comment lands in this ViewModel's own list, but the count under the post is a field on
+    // the entity — so it has to go through the store, or the header here, the feed card and the
+    // profile all keep showing the number the post had before the user commented on it.
+    @Test
+    fun `addComment bumps the post's comment count in the shared store`() = runTest {
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+
+        assertEquals(2, (vm.uiState.value as PostDetailUiState.Loaded).post.commentCount)
+        assertEquals(2, postRepository.entities.value["p1"]!!.commentCount)
+    }
+
+    // The count follows the comment: a post that never landed must not inflate it.
+    @Test
+    fun `a failed addComment leaves the comment count alone`() = runTest {
+        val commentDataSource = FakeCommentDataSource(currentUser, mapOf("p1" to listOf(seedComment)))
+            .apply { addError = UnknownHostException("offline") }
+        val vm = viewModel(commentDataSource = commentDataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(1, state.post.commentCount)
+        assertEquals(listOf(seedComment), state.comments)
+    }
+
     @Test
     fun `onToggleCommentLike likes a comment in the thread`() = runTest {
         val vm = viewModel()

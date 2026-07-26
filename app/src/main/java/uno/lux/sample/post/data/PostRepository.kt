@@ -107,6 +107,25 @@ class PostRepository(
     }
 
     /**
+     * Records that a comment landed on [postId], bumping its count by one.
+     *
+     * The comment itself is not this store's — [uno.lux.sample.comment.data.CommentRepository] is
+     * stateless and the thread belongs to the detail page that is reading it. The *count* is a
+     * field on the post, though, so it can only move here: the number under the post is drawn
+     * from the same entity on the detail page, the feed card and the profile, and without this it
+     * keeps showing what the post had before the user commented on it until something re-fetches.
+     *
+     * Named for what it is told rather than for what it does, because that is the difference from
+     * a toggle: no request is made here. The caller has already posted the comment, and a bump
+     * applied before the server answered would be a count for a comment that may never land.
+     */
+    fun commentAdded(postId: PostId) = _entities.update { entities ->
+        val post = entities[postId] ?: return@update entities
+
+        entities + (postId to post.copy(commentCount = post.commentCount + 1))
+    }
+
+    /**
      * Reports a post. Nothing in the store moves: a report is a message *about* a post, so the
      * post the reporter is looking at is unchanged, and the server keeps nothing to read back.
      * Unlike the toggles it needs no entity either — an ID is all a report is about, which is
