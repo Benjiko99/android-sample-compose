@@ -54,12 +54,6 @@ OkHttp client instead of sharing the app's — a shared connection pool and inte
 scaffold with `allowBackup="true"`. Harmless (only theme and auto-play persist) but it reads as never
 looked at — configure it meaningfully or disable backup and say why.
 
-## Backend / API
-
-### Comments have no pagination
-`loadComments` fetches an entire thread; a post with the fixture's 612 comments pulls all of them in
-one response.
-
 ## Code quality
 
 - **`EditProfileViewModel` uses the array-overload `combine` with unchecked casts**

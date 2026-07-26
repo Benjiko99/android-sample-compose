@@ -1,5 +1,6 @@
 package uno.lux.sample.comment.data.network
 
+import uno.lux.sample.common.data.network.CursorPageDto
 import uno.lux.sample.common.data.network.LikeStateDto
 import uno.lux.sample.common.data.network.LikeStateResponse
 import uno.lux.sample.common.data.network.SetLikeRequestDto
@@ -9,14 +10,21 @@ import java.time.Instant
 
 class FakeCommentApi(
     private val comments: List<CommentDto> = emptyList(),
+    private val page: CursorPageDto = emptyPage,
     val likeResult: LikeStateDto = LikeStateDto(isLiked = true, likeCount = 1),
 ) : CommentApi {
 
     /** The `(commentId, body)` pairs passed to [setCommentLike], in call order. */
     val likeRequests = mutableListOf<Pair<String, SetLikeRequestDto>>()
 
-    override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse =
-        CommentListResponse(data = comments, page = emptyPage)
+    /** The cursors passed to [getComments], in call order; null is the first page. */
+    val commentCursors = mutableListOf<String?>()
+
+    override suspend fun getComments(postId: String, cursor: String?, limit: Int): CommentListResponse {
+        commentCursors += cursor
+
+        return CommentListResponse(data = comments, page = page)
+    }
 
     override suspend fun addComment(postId: String, body: AddCommentRequestDto): CommentResponse =
         CommentResponse(

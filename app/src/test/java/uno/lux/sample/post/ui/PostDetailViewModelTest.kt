@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -17,6 +18,7 @@ import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.comment.data.CommentDataSource
+import uno.lux.sample.comment.data.CommentPage
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.FakeCommentDataSource
 import uno.lux.sample.comment.data.domain.Comment
@@ -96,6 +98,15 @@ class PostDetailViewModelTest : ViewModelTest() {
     /** A comment source on p1, typed as the fake so a test can reach its like bookkeeping. */
     private fun commentSource(thread: List<Comment> = listOf(seedComment)) =
         FakeCommentDataSource(currentUser, mapOf("p1" to thread))
+
+    /** A thread of [size] comments, ids `c1`..`cN` in the order the server would send them. */
+    private fun thread(size: Int) = List(size) { index ->
+        seedComment.copy(id = "c${index + 1}", text = "Comment ${index + 1}")
+    }
+
+    /** A comment source on p1 that hands its thread out [pageSize] comments at a time. */
+    private fun pagedSource(thread: List<Comment>, pageSize: Int) =
+        FakeCommentDataSource(currentUser, mapOf("p1" to thread), pageSize = pageSize)
 
     // ── delete ────────────────────────────────────────────────────────────────
 
@@ -372,10 +383,10 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(2, postRepository.entities.value["p1"]!!.commentCount)
     }
 
-    // The thread and the count arrive from two different flows into one combine, and the header
-    // (comments.size) moving while the action row (post.commentCount) stays put is what a stale
-    // build looks like. Driven on a real dispatcher rather than an unconfined one, so an
-    // emission the combine dropped would settle wrong instead of being papered over.
+    // The thread and the count arrive from two different flows into one combine, and the new
+    // comment appearing while the count under the post stays put is what a stale build looks
+    // like. Driven on a real dispatcher rather than an unconfined one, so an emission the combine
+    // dropped would settle wrong instead of being papered over.
     @Test
     fun `the thread and the count settle together on the same state`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -387,8 +398,8 @@ class PostDetailViewModelTest : ViewModelTest() {
         advanceUntilIdle()
 
         val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals("the header counts the thread", 2, state.comments.size)
-        assertEquals("the action row counts the post", 2, state.post.commentCount)
+        assertEquals("the thread carries the new comment", 2, state.comments.size)
+        assertEquals("the header and action row count the post", 2, state.post.commentCount)
     }
 
     // The count follows the comment: a post that never landed must not inflate it.
@@ -513,6 +524,130 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertFalse((vm.uiState.value as PostDetailUiState.Loaded).comments.single().isLiked)
     }
 
+    // ── comment pagination ────────────────────────────────────────────────────
+    //
+    // A thread arrives a window at a time, so opening a post with hundreds of comments costs the
+    // same first request as opening one with three.
+
+    @Test
+    fun `only the first page of the thread is loaded up front`() = runTest {
+        val full = thread(5)
+        val source = pagedSource(full, pageSize = 2)
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(full.take(2), state.comments)
+        assertFalse(state.commentsEndReached)
+        assertEquals(listOf("p1" to null), source.loadRequests)
+    }
+
+    @Test
+    fun `loadMoreComments appends the page after the one loaded last`() = runTest {
+        val full = thread(5)
+        val vm = viewModel(commentDataSource = pagedSource(full, pageSize = 2))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.loadMoreComments()
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(full.take(4), state.comments)
+        assertFalse(state.commentsEndReached)
+    }
+
+    // The end of the thread is the server's to declare, and the screen stops asking on it — the
+    // spinner under the last comment has to become nothing rather than spin forever.
+    @Test
+    fun `the thread ends when the last page lands, and nothing more is asked for`() = runTest {
+        val full = thread(4)
+        val source = pagedSource(full, pageSize = 2)
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.loadMoreComments()
+        vm.loadMoreComments()
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(full, state.comments)
+        assertTrue(state.commentsEndReached)
+        assertEquals(listOf("p1" to null, "p1" to "c2"), source.loadRequests)
+    }
+
+    // The list is near its end while the first page is still on the wire, so the screen asks
+    // early. There is no cursor to ask with yet, and a request without one would re-fetch the
+    // page already coming.
+    @Test
+    fun `loadMoreComments waits for the first page to hand back a cursor`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val source = pagedSource(thread(5), pageSize = 2).apply { whileLoading = { gate.await() } }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.loadMoreComments()
+
+        assertEquals(listOf("p1" to null), source.loadRequests)
+
+        gate.complete(Unit)
+    }
+
+    // A page that failed leaves the thread as it was: the comments already read stay on screen.
+    @Test
+    fun `a failed page leaves the loaded thread alone`() = runTest {
+        val full = thread(5)
+        val source = pagedSource(full, pageSize = 2)
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        source.loadError = UnknownHostException("offline")
+        vm.loadMoreComments()
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(full.take(2), state.comments)
+        assertFalse(state.commentsEndReached)
+    }
+
+    // A retry is a fresh thread, not a resumed one: the cursor it was holding describes a window
+    // into a thread that may have moved since.
+    @Test
+    fun `retryComments starts the thread over from the first page`() = runTest {
+        val full = thread(5)
+        val source = pagedSource(full, pageSize = 2)
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.loadMoreComments()
+
+        vm.retryComments()
+
+        assertEquals(full.take(2), (vm.uiState.value as PostDetailUiState.Loaded).comments)
+        assertEquals(listOf("p1" to null, "p1" to "c2", "p1" to null), source.loadRequests)
+    }
+
+    // A reload that lands mid-flight has started the thread over, so the page still on the wire
+    // describes a window that no longer follows what is on screen — appending it would show the
+    // reader comments from two different threads, and duplicate keys in the list.
+    @Test
+    fun `a page a reload has moved past is not appended`() = runTest {
+        val full = thread(5)
+        val source = pagedSource(full, pageSize = 2)
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        val newest = seedComment.copy(id = "c0", text = "Posted since")
+        source.whileLoading = {
+            // Only the load-more re-enters; the reload it triggers must not recurse.
+            source.whileLoading = null
+            source.comments = mapOf("p1" to (listOf(newest) + full))
+            vm.retryComments()
+            // Hands the thread over so the reload finishes here, while this page is still on the
+            // wire — which is the whole of what this test is about.
+            yield()
+        }
+
+        vm.loadMoreComments()
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(listOf(newest, full[0]), state.comments)
+    }
+
     @Test
     fun `state updates emit to subscribers after addComment`() = runTest {
         val vm = viewModel(comments = emptyMap())
@@ -548,9 +683,9 @@ private class GatedCommentDataSource(
     private val result: List<Comment>,
 ) : CommentDataSource {
 
-    override suspend fun loadComments(postId: PostId): List<Comment> {
+    override suspend fun loadComments(postId: PostId, cursor: String?): CommentPage {
         gate.await()
-        return result
+        return CommentPage(comments = result, nextCursor = null, hasMore = false)
     }
 
     override suspend fun addComment(postId: PostId, text: String): Comment =

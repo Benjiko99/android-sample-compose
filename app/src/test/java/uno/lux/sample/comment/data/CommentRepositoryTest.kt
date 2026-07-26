@@ -3,6 +3,7 @@ package uno.lux.sample.comment.data
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.comment.data.domain.Comment
@@ -31,9 +32,10 @@ class CommentRepositoryTest {
     fun `loadComments returns empty list for unknown post`() = runTest {
         val repository = CommentRepository(FakeCommentDataSource(author))
 
-        val comments = repository.loadComments("no-such-post")
+        val page = repository.loadComments("no-such-post", cursor = null)
 
-        assertEquals(emptyList<Comment>(), comments)
+        assertEquals(emptyList<Comment>(), page.comments)
+        assertFalse(page.hasMore)
     }
 
     @Test
@@ -48,9 +50,27 @@ class CommentRepositoryTest {
             ),
         )
 
-        val comments = repository.loadComments("p1")
+        val page = repository.loadComments("p1", cursor = null)
 
-        assertEquals(listOf(c), comments)
+        assertEquals(listOf(c), page.comments)
+    }
+
+    // The repository carries the cursor rather than remembering it: the window belongs to the
+    // screen reading it, so asking for the page after one is the caller's move to make.
+    @Test
+    fun `loadComments serves the page the cursor names`() = runTest {
+        val thread = listOf(comment("c1"), comment("c2"), comment("c3"))
+        val dataSource = FakeCommentDataSource(author, mapOf("p1" to thread), pageSize = 2)
+        val repository = CommentRepository(dataSource)
+
+        val first = repository.loadComments("p1", cursor = null)
+        val second = repository.loadComments("p1", cursor = first.nextCursor)
+
+        assertEquals(listOf(thread[0], thread[1]), first.comments)
+        assertTrue(first.hasMore)
+        assertEquals(listOf(thread[2]), second.comments)
+        assertFalse(second.hasMore)
+        assertNull(second.nextCursor)
     }
 
     @Test

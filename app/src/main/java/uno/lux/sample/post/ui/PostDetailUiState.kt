@@ -19,13 +19,19 @@ sealed interface PostDetailUiState {
         val error: AppError,
     ) : PostDetailUiState
 
-    /** [isOwn] is the post being authored by the signed-in user; it gates the delete action. */
+    /**
+     * [comments] is the stretch of the thread loaded so far, not the whole of it —
+     * [commentsEndReached] is what says whether there is more below, and the count in the header
+     * comes from the post rather than from this list. [isOwn] is the post being authored by the
+     * signed-in user; it gates the delete action.
+     */
     data class Loaded(
         val post: Post,
         val author: User,
         val comments: List<Comment>,
         val commentsError: AppError? = null,
         val commentsLoading: Boolean = false,
+        val commentsEndReached: Boolean = true,
         val isOwn: Boolean = false,
     ) : PostDetailUiState
 }

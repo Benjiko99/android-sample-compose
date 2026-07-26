@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.common.data.LikeState
+import uno.lux.sample.common.data.network.CursorPageDto
 import uno.lux.sample.common.data.network.LikeStateDto
 import uno.lux.sample.common.data.network.SetLikeRequestDto
 
@@ -15,7 +16,7 @@ class NetworkCommentDataSourceTest {
         val api = FakeCommentApi(comments = listOf(commentDto("c1", "Hello")))
         val dataSource = NetworkCommentDataSource(api)
 
-        val loaded = dataSource.loadComments("p1")
+        val loaded = dataSource.loadComments("p1", cursor = null).comments
 
         assertEquals(1, loaded.size)
         assertEquals("c1", loaded.single().id)
@@ -26,9 +27,33 @@ class NetworkCommentDataSourceTest {
     fun `loadComments returns empty list when the API returns none`() = runTest {
         val dataSource = NetworkCommentDataSource(FakeCommentApi(comments = emptyList()))
 
-        val loaded = dataSource.loadComments("p1")
+        val loaded = dataSource.loadComments("p1", cursor = null)
 
-        assertTrue(loaded.isEmpty())
+        assertTrue(loaded.comments.isEmpty())
+    }
+
+    // The token is the server's to mint and the ViewModel's to hand back; this layer only carries
+    // it, so a page dropping it would end a thread that has more to show.
+    @Test
+    fun `loadComments carries the page's cursor and hasMore`() = runTest {
+        val api = FakeCommentApi(page = CursorPageDto(nextCursor = "c-20", hasMore = true))
+        val dataSource = NetworkCommentDataSource(api)
+
+        val page = dataSource.loadComments("p1", cursor = null)
+
+        assertEquals("c-20", page.nextCursor)
+        assertTrue(page.hasMore)
+    }
+
+    @Test
+    fun `loadComments asks for the page the cursor names`() = runTest {
+        val api = FakeCommentApi()
+        val dataSource = NetworkCommentDataSource(api)
+
+        dataSource.loadComments("p1", cursor = null)
+        dataSource.loadComments("p1", cursor = "c-20")
+
+        assertEquals(listOf(null, "c-20"), api.commentCursors)
     }
 
     @Test

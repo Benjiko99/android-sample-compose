@@ -83,6 +83,8 @@ import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
+import uno.lux.sample.common.ui.LoadMoreEffect
+import uno.lux.sample.common.ui.LoadingMoreFooter
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.user.data.domain.User
@@ -117,6 +119,7 @@ fun PostDetailScreen(
         onToggleBookmark = viewModel::onToggleBookmark,
         onToggleCommentLike = viewModel::onToggleCommentLike,
         onAddComment = viewModel::addComment,
+        onLoadMoreComments = viewModel::loadMoreComments,
         onRetryComments = viewModel::retryComments,
         onRetry = viewModel::retry,
         onDelete = viewModel::onDelete,
@@ -143,6 +146,7 @@ internal fun PostDetailScreen(
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
+    onLoadMoreComments: () -> Unit,
     onRetryComments: () -> Unit,
     onRetry: () -> Unit,
     onDelete: () -> Unit,
@@ -234,6 +238,7 @@ internal fun PostDetailScreen(
                 comments = uiState.comments,
                 commentsError = uiState.commentsError,
                 commentsLoading = uiState.commentsLoading,
+                commentsEndReached = uiState.commentsEndReached,
                 listState = listState,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
@@ -241,6 +246,7 @@ internal fun PostDetailScreen(
                 onToggleLike = onToggleLike,
                 onToggleBookmark = onToggleBookmark,
                 onToggleCommentLike = onToggleCommentLike,
+                onLoadMoreComments = onLoadMoreComments,
                 onRetryComments = onRetryComments,
                 modifier = Modifier.padding(contentPadding),
             )
@@ -260,6 +266,7 @@ private fun PostDetailContent(
     comments: List<Comment>,
     commentsError: AppError?,
     commentsLoading: Boolean,
+    commentsEndReached: Boolean,
     listState: LazyListState,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -267,10 +274,21 @@ private fun PostDetailContent(
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
+    onLoadMoreComments: () -> Unit,
     onRetryComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+
+    // The post is one item at the top, so the end of this list is the end of the thread. While the
+    // first page is still coming — or failed — the thread counts as ended: there is no cursor to
+    // ask a second page for yet, and firing on the near-empty list would spend the trigger on a
+    // call that can do nothing.
+    LoadMoreEffect(
+        listState = listState,
+        endReached = commentsEndReached || commentsLoading || commentsError != null,
+        onLoadMore = onLoadMoreComments,
+    )
 
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         item {
@@ -297,7 +315,8 @@ private fun PostDetailContent(
         } else if (commentsLoading) {
             item(key = "comments_loading") { CommentsLoading() }
         } else {
-            item(key = "comments_header") { CommentsHeader(count = comments.size) }
+            // The whole thread's count, not the loaded window's — the list below is a page of it.
+            item(key = "comments_header") { CommentsHeader(count = post.commentCount) }
             if (comments.isNotEmpty()) {
                 items(comments, key = { it.id }) { comment ->
                     CommentRow(
@@ -305,6 +324,9 @@ private fun PostDetailContent(
                         onLike = { onToggleCommentLike(comment.id) },
                         onOpenProfile = { onOpenProfile(comment.author.id) },
                     )
+                }
+                if (!commentsEndReached) {
+                    item(key = "comments_loading_more") { LoadingMoreFooter() }
                 }
             } else {
                 item(key = "empty_comments") {
@@ -619,6 +641,7 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
             onToggleBookmark = {},
             onToggleCommentLike = {},
             onAddComment = {},
+            onLoadMoreComments = {},
             onRetryComments = {},
             onRetry = {},
             onDelete = {},

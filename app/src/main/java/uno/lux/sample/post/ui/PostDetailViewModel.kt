@@ -42,10 +42,11 @@ import uno.lux.sample.video.data.domain.Video
 /**
  * Holds the state for a single post's detail view. The post itself comes from the shared
  * [PostRepository] entity store so likes toggled here propagate to the feed and profile screens.
- * Comments are owned by this ViewModel: they are loaded once on creation and updated in-place by
- * [addComment] and [onToggleCommentLike], then discarded when the ViewModel is cleared. This
- * avoids the cross-post keying and memory-retention problems that a shared comment store would
- * introduce.
+ * Comments are owned by this ViewModel: a first page is loaded on creation, [loadMoreComments]
+ * appends the rest a window at a time as the reader scrolls, [addComment] and
+ * [onToggleCommentLike] update them in place, and the lot is discarded when the ViewModel is
+ * cleared. This avoids the cross-post keying and memory-retention problems that a shared comment
+ * store would introduce.
  *
  * The entity store normally already holds the post — this page is reached from a feed or profile
  * that fetched it. It does not when the page is restored after **process death**, where the back
@@ -106,9 +107,22 @@ class PostDetailViewModel @AssistedInject constructor(
             if (deleted) PostLoad.Missing else outcome
         }
 
-    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-    private val _commentsError = MutableStateFlow<AppError?>(null)
-    private val _commentsLoading = MutableStateFlow(true)
+    /**
+     * The stretch of the thread this page has loaded, together with where the next page starts
+     * and how the last load went. One value rather than a flow per field because they move
+     * together — a page landing sets the comments, the cursor and the end of the thread at once,
+     * and the screen must never see a thread grown past a cursor that has not.
+     */
+    private data class CommentThread(
+        val comments: List<Comment> = emptyList(),
+        val isLoading: Boolean = true,
+        val error: AppError? = null,
+        /** Null both before the first page lands and once the last one has. */
+        val nextCursor: String? = null,
+        val endReached: Boolean = false,
+    )
+
+    private val _thread = MutableStateFlow(CommentThread())
 
     /**
      * The post and its author, resolved together — one is no use without the other. Both stores
@@ -122,18 +136,17 @@ class PostDetailViewModel @AssistedInject constructor(
 
     val uiState: StateFlow<PostDetailUiState> = combine(
         postWithAuthor,
-        _comments,
-        _commentsError,
-        _commentsLoading,
+        _thread,
         postLoad,
-    ) { resolved, comments, commentsError, commentsLoading, postLoad ->
+    ) { resolved, thread, postLoad ->
         when {
             resolved != null -> PostDetailUiState.Loaded(
                 post = resolved.post,
                 author = resolved.author,
-                comments = comments,
-                commentsError = commentsError,
-                commentsLoading = commentsLoading,
+                comments = thread.comments,
+                commentsError = thread.error,
+                commentsLoading = thread.isLoading,
+                commentsEndReached = thread.endReached,
                 isOwn = resolved.post.authorId == currentUser.id,
             )
 
@@ -149,6 +162,7 @@ class PostDetailViewModel @AssistedInject constructor(
     val composerUser: User = currentUser
 
     private var loadJob: Job? = null
+    private var loadMoreJob: Job? = null
 
     init {
         retry()
@@ -191,16 +205,58 @@ class PostDetailViewModel @AssistedInject constructor(
         return PostWithAuthor(post, author)
     }
 
+    /**
+     * Loads the thread's first page, replacing whatever was there — a retry after a failure, and
+     * the reload [retry] performs, both start the thread over rather than resuming a window whose
+     * cursor may describe a page that has since moved.
+     */
     private suspend fun loadComments() {
-        _commentsError.value = null
-        _commentsLoading.value = true
+        _thread.update { it.copy(isLoading = true, error = null) }
 
         try {
-            ignoreErrors(_commentsError) {
-                _comments.value = commentRepository.loadComments(postId)
+            ignoreErrors(onError = { e -> _thread.update { it.copy(error = e.toAppError()) } }) {
+                val page = commentRepository.loadComments(postId, cursor = null)
+                _thread.update {
+                    it.copy(
+                        comments = page.comments,
+                        nextCursor = page.nextCursor,
+                        endReached = !page.hasMore,
+                    )
+                }
             }
         } finally {
-            _commentsLoading.value = false
+            _thread.update { it.copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * Appends the page after the one loaded last. A thread of any length is read a window at a
+     * time, so a post with hundreds of comments costs the same first request as one with three.
+     *
+     * The cursor is the whole guard: it is null before the first page lands and again once the
+     * server says that page was the last, so "there is nothing to ask for" and "we have it all"
+     * need no flag of their own. [loadMoreJob] covers the third case — the screen asking again
+     * while a page is still on the wire.
+     */
+    fun loadMoreComments() = launchIfIdle(::loadMoreJob) {
+        val cursor = _thread.value.nextCursor ?: return@launchIfIdle
+
+        ignoreErrors {
+            val page = commentRepository.loadComments(postId, cursor)
+            _thread.update { thread ->
+                // A reload that landed while this page was on the wire started the thread over,
+                // and this window no longer follows what is on screen. Dropping it is the same
+                // move [onToggleCommentLike] makes on an answer a newer tap has passed.
+                if (thread.nextCursor != cursor) {
+                    thread
+                } else {
+                    thread.copy(
+                        comments = thread.comments + page.comments,
+                        nextCursor = page.nextCursor,
+                        endReached = !page.hasMore,
+                    )
+                }
+            }
         }
     }
 
@@ -244,7 +300,7 @@ class PostDetailViewModel @AssistedInject constructor(
      * mid-flight is not overwritten by a copy of the comment as it was before the request.
      */
     fun onToggleCommentLike(commentId: CommentId) = launchCatching {
-        val before = _comments.value.find { it.id == commentId } ?: return@launchCatching
+        val before = _thread.value.comments.find { it.id == commentId } ?: return@launchCatching
         val liked = !before.isLiked
         // A later tap has already moved past this request, so its answer is the one to trust.
         val stillOurs = { comment: Comment -> comment.isLiked == liked }
@@ -279,10 +335,12 @@ class PostDetailViewModel @AssistedInject constructor(
         commentId: CommentId,
         stillOurs: (Comment) -> Boolean = { true },
         edit: (Comment) -> Comment,
-    ) = _comments.update { comments ->
-        comments.map { comment ->
-            if (comment.id == commentId && stillOurs(comment)) edit(comment) else comment
-        }
+    ) = _thread.update { thread ->
+        thread.copy(
+            comments = thread.comments.map { comment ->
+                if (comment.id == commentId && stillOurs(comment)) edit(comment) else comment
+            },
+        )
     }
 
     /**
@@ -293,7 +351,7 @@ class PostDetailViewModel @AssistedInject constructor(
      */
     fun addComment(text: String) = launchCatching {
         val comment = commentRepository.addComment(postId, text)
-        _comments.update { listOf(comment) + it }
+        _thread.update { it.copy(comments = listOf(comment) + it.comments) }
         postRepository.commentAdded(postId)
     }
 

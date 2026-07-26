@@ -6,7 +6,11 @@ import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.post.data.domain.PostId
 
 interface CommentDataSource {
-    suspend fun loadComments(postId: PostId): List<Comment>
+    /**
+     * One page of [postId]'s thread, newest first. [cursor] is null for the first page and
+     * otherwise the token the previous page answered with.
+     */
+    suspend fun loadComments(postId: PostId, cursor: String?): CommentPage
 
     suspend fun addComment(postId: PostId, text: String): Comment
 
@@ -22,3 +26,14 @@ interface CommentDataSource {
         liked: Boolean,
     ): LikeState
 }
+
+/**
+ * A window onto a post's thread. [nextCursor] is where the page after this one starts — opaque to
+ * everything above [CommentDataSource] — and is null exactly when [hasMore] is false, so a caller
+ * holding no cursor is a caller with nothing left to ask for.
+ */
+data class CommentPage(
+    val comments: List<Comment>,
+    val nextCursor: String?,
+    val hasMore: Boolean,
+)
