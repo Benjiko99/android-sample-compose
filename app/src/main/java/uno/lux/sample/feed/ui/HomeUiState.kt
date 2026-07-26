@@ -10,13 +10,22 @@ import uno.lux.sample.post.ui.PostCardData
 sealed interface HomeUiState {
     data object Loading : HomeUiState
 
+    /** Nothing to show and the load failed — the whole screen is the error. */
     data class Error(
         val error: AppError,
     ) : HomeUiState
 
-    /** [endReached] is true when the backend has no more posts beyond [posts]. */
+    /**
+     * [endReached] is true when the backend has no more posts beyond [posts].
+     *
+     * [refreshError] carries a load that failed *over* these posts — a pull-to-refresh in a
+     * tunnel. The feed being readable outranks the failure, so it is reported transiently (a
+     * snackbar) instead of replacing the content the user was already looking at; [Error] is
+     * reserved for having nothing to show at all.
+     */
     data class Feed(
         val posts: List<PostCardData>,
         val endReached: Boolean,
+        val refreshError: AppError? = null,
     ) : HomeUiState
 }

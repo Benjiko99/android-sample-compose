@@ -7,11 +7,13 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
+import uno.lux.sample.app.util.AppError
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.feed.data.FakeFeedDataSource
 import uno.lux.sample.feed.data.FeedDataSource
@@ -32,6 +34,7 @@ import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.video.data.domain.Video
+import java.net.UnknownHostException
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -200,6 +203,41 @@ class HomeViewModelTest : ViewModelTest() {
         }
 
         assertTrue(viewModel.uiState.value is HomeUiState.Error)
+    }
+
+    // A refresh in a tunnel must not take away the feed the user was reading: the posts stay on
+    // screen and the failure rides along for the screen to report transiently.
+    @Test
+    fun `a failed refresh keeps the loaded feed and carries the error alongside it`() = runTest {
+        val dataSource = FlakyFeedDataSource(FeedPage(listOf(post), listOf(author), null, false))
+        val viewModel = viewModel(feedDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        assertTrue(viewModel.uiState.value is HomeUiState.Feed)
+
+        dataSource.failNext = true
+        viewModel.refresh()
+
+        val feed = viewModel.uiState.value as HomeUiState.Feed
+        assertEquals(listOf(PostCardData(post, author, isOwn = true)), feed.posts)
+        assertEquals(AppError.NoConnection, feed.refreshError)
+    }
+
+    @Test
+    fun `a refresh that succeeds clears the previous failure`() = runTest {
+        val dataSource = FlakyFeedDataSource(FeedPage(listOf(post), listOf(author), null, false))
+        val viewModel = viewModel(feedDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        dataSource.failNext = true
+        viewModel.refresh()
+
+        dataSource.failNext = false
+        viewModel.refresh()
+
+        assertNull((viewModel.uiState.value as HomeUiState.Feed).refreshError)
     }
 
     @Test
@@ -379,6 +417,22 @@ private class SucceedOnceThenSuspendFeedDataSource(
     }
 
     fun complete() = gate.complete(Unit)
+}
+
+/**
+ * Serves [page] on every fetch except while [failNext] is set — a feed that loaded and then had
+ * the network go out from under it.
+ */
+private class FlakyFeedDataSource(
+    private val page: FeedPage,
+) : FeedDataSource {
+    var failNext = false
+
+    override suspend fun fetch(cursor: String?): FeedPage {
+        if (failNext) throw UnknownHostException("offline")
+
+        return page
+    }
 }
 
 private class FailingFeedDataSource : FeedDataSource {

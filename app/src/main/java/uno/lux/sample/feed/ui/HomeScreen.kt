@@ -15,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -136,9 +138,19 @@ internal fun HomeScreen(
     // the very top. canScrollBackward is already a coalesced boolean snapshot — it only changes
     // when crossing the top — so reading it directly needs no derivedStateOf wrapper.
     val elevated = listState.canScrollBackward
+    val snackbarHostState = remember { SnackbarHostState() }
+    // A refresh that failed over a feed already on screen. The message is the effect's key, so a
+    // later failure re-announces itself: a refresh clears the error before it fetches, which is
+    // what makes the key change even when the second failure is the same kind as the first.
+    val refreshErrorMessage = (uiState as? HomeUiState.Feed)?.refreshError?.asText()
+
+    LaunchedEffect(refreshErrorMessage) {
+        if (refreshErrorMessage != null) snackbarHostState.showSnackbar(refreshErrorMessage)
+    }
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             FeedTopBar(
                 elevated = elevated,

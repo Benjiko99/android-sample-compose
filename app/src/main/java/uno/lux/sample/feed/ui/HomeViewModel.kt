@@ -42,6 +42,12 @@ import javax.inject.Inject
  * to [HomeUiState.Loading] until [FeedRepository.refresh] completes and emits [FeedState.Loaded].
  * Because entities and users are ingested before that emission, the Loading → Feed transition is
  * atomic: there is no intermediate state where the flag flips but the data has not yet arrived.
+ *
+ * **A loaded feed outranks a load error.** The state a failure lands in is decided by whether
+ * there is anything to read: with nothing loaded it becomes [HomeUiState.Error] and owns the
+ * screen, while over a loaded feed it rides along as [HomeUiState.Feed.refreshError] for the
+ * screen to show transiently — a refresh that failed must not take away the posts the user was
+ * reading. [retry] is the one path back to a full-screen error, because it resets the feed first.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -66,10 +72,10 @@ class HomeViewModel @Inject constructor(
         userRepository.users,
         _loadError,
     ) { feedState, entities, users, loadError ->
-        if (loadError != null) return@combine HomeUiState.Error(loadError)
         when (feedState) {
             FeedState.NotLoaded -> {
-                HomeUiState.Loading
+                // Nothing loaded, so a failed load is all there is to show.
+                if (loadError != null) HomeUiState.Error(loadError) else HomeUiState.Loading
             }
 
             is FeedState.Loaded -> {
@@ -88,7 +94,11 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 cardCache = cards.associateBy { it.post.id }
-                HomeUiState.Feed(posts = cards, endReached = !feedState.hasMore)
+                HomeUiState.Feed(
+                    posts = cards,
+                    endReached = !feedState.hasMore,
+                    refreshError = loadError,
+                )
             }
         }
     }.stateInWhileSubscribed(viewModelScope, HomeUiState.Loading)
