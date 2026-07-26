@@ -363,6 +363,25 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(2, postRepository.entities.value["p1"]!!.commentCount)
     }
 
+    // The thread and the count arrive from two different flows into one combine, and the header
+    // (comments.size) moving while the action row (post.commentCount) stays put is what a stale
+    // build looks like. Driven on a real dispatcher rather than an unconfined one, so an
+    // emission the combine dropped would settle wrong instead of being papered over.
+    @Test
+    fun `the thread and the count settle together on the same state`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.addComment("Hello!")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals("the header counts the thread", 2, state.comments.size)
+        assertEquals("the action row counts the post", 2, state.post.commentCount)
+    }
+
     // The count follows the comment: a post that never landed must not inflate it.
     @Test
     fun `a failed addComment leaves the comment count alone`() = runTest {
