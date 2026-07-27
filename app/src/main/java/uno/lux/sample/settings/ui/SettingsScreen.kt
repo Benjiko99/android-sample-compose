@@ -22,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,46 +37,20 @@ import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.ui.components.AppBarAction
-import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
 
-/**
- * The settings screen's ViewModel-backed intents — picking a theme, toggling video auto-play,
- * picking a language, and navigating back (which the ViewModel forwards to the injected
- * `Navigator`) — as a [Stable] seam the stateless [SettingsScreen] depends on.
- * [SettingsViewModel] implements it, so the binder passes the ViewModel directly and a preview
- * passes a no-op [createActionsProxy].
- */
-@Stable
-interface SettingsActions {
-    fun setThemeMode(mode: ThemeMode)
-
-    fun setAutoPlayVideos(enabled: Boolean)
-
-    fun setLanguage(language: AppLanguage)
-
-    fun goBack()
-}
-
-/**
- * Stateful entry point: binds the [SettingsViewModel] and forwards state and intent to the
- * stateless overload below.
- */
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-    val autoPlayVideos by viewModel.autoPlayVideos.collectAsStateWithLifecycle()
-    val language by viewModel.language.collectAsStateWithLifecycle()
+    val eventSink = viewModel::eventSink
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     SettingsScreen(
-        themeMode = themeMode,
-        autoPlayVideos = autoPlayVideos,
-        language = language,
-        actions = viewModel,
+        eventSink = eventSink,
+        state = state,
         modifier = modifier,
     )
 }
@@ -85,10 +58,8 @@ fun SettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsScreen(
-    themeMode: ThemeMode,
-    autoPlayVideos: Boolean,
-    language: AppLanguage,
-    actions: SettingsActions,
+    eventSink: (SettingsUiEvent) -> Unit,
+    state: SettingsUiState,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -103,47 +74,64 @@ internal fun SettingsScreen(
                 navigationIcon = {
                     AppBarAction(
                         icon = R.drawable.ic_arrow_back,
-                        onClick = actions::goBack,
+                        onClick = { eventSink(SettingsUiEvent.GoBack) },
                         contentDescription = stringResource(R.string.navigate_back),
                     )
                 },
             )
         },
     ) { contentPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(contentPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-        ) {
-            SettingsSection(title = stringResource(R.string.settings_language)) {
-                SingleChoiceRow(
-                    options = AppLanguage.entries,
-                    selected = language,
-                    onSelected = actions::setLanguage,
-                    label = { stringResource(it.labelRes()) },
-                )
-            }
+        when (state) {
+            SettingsUiState.Loading -> Unit
 
-            SettingsSection(title = stringResource(R.string.settings_appearance)) {
-                SingleChoiceRow(
-                    options = ThemeMode.entries,
-                    selected = themeMode,
-                    onSelected = actions::setThemeMode,
-                    label = { stringResource(it.labelRes()) },
-                )
-            }
+            is SettingsUiState.Content -> SettingsScreenContent(
+                eventSink = eventSink,
+                state = state,
+                modifier = Modifier
+                    .padding(contentPadding),
+            )
+        }
+    }
+}
 
-            SettingsSection(title = stringResource(R.string.settings_preferences)) {
-                SwitchRow(
-                    label = stringResource(R.string.settings_autoplay_videos),
-                    supportingText = stringResource(R.string.settings_autoplay_videos_description),
-                    checked = autoPlayVideos,
-                    onCheckedChange = actions::setAutoPlayVideos,
-                )
-            }
+@Composable
+private fun SettingsScreenContent(
+    eventSink: (SettingsUiEvent) -> Unit,
+    state: SettingsUiState.Content,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        SettingsSection(title = stringResource(R.string.settings_language)) {
+            SingleChoiceRow(
+                options = AppLanguage.entries,
+                selected = state.language,
+                onSelected = { eventSink(SettingsUiEvent.SetLanguage(it)) },
+                label = { stringResource(it.labelRes()) },
+            )
+        }
+
+        SettingsSection(title = stringResource(R.string.settings_appearance)) {
+            SingleChoiceRow(
+                options = ThemeMode.entries,
+                selected = state.themeMode,
+                onSelected = { eventSink(SettingsUiEvent.SetThemeMode(it)) },
+                label = { stringResource(it.labelRes()) },
+            )
+        }
+
+        SettingsSection(title = stringResource(R.string.settings_preferences)) {
+            SwitchRow(
+                label = stringResource(R.string.settings_autoplay_videos),
+                supportingText = stringResource(R.string.settings_autoplay_videos_description),
+                checked = state.autoPlayVideos,
+                onCheckedChange = { eventSink(SettingsUiEvent.SetAutoPlayVideos(it)) },
+            )
         }
     }
 }
@@ -245,10 +233,12 @@ private fun AppLanguage.labelRes(): Int = when (this) {
 private fun SettingsScreenPreview() {
     MosaicTheme {
         SettingsScreen(
-            themeMode = ThemeMode.SYSTEM,
-            autoPlayVideos = true,
-            language = AppLanguage.ENGLISH,
-            actions = createActionsProxy(),
+            eventSink = {},
+            state = SettingsUiState.Content(
+                themeMode = ThemeMode.SYSTEM,
+                autoPlayVideos = true,
+                language = AppLanguage.ENGLISH,
+            ),
         )
     }
 }

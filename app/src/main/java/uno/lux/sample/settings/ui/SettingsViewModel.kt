@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.settings.data.AppLocaleRepository
-import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
@@ -25,27 +25,47 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val appLocaleRepository: AppLocaleRepository,
     private val navigator: Navigator,
-) : ViewModel(),
-    SettingsActions {
+) : ViewModel() {
 
-    val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode
-        .stateInWhileSubscribed(viewModelScope, ThemeMode.SYSTEM)
+    val uiState: StateFlow<SettingsUiState> = combine(
+        settingsRepository.themeMode,
+        settingsRepository.autoPlayVideos,
+        appLocaleRepository.language,
+    ) { themeMode, autoPlayVideos, language ->
+        SettingsUiState.Content(
+            themeMode = themeMode,
+            autoPlayVideos = autoPlayVideos,
+            language = language,
+        )
+    }.stateInWhileSubscribed(viewModelScope, SettingsUiState.Loading)
 
-    val autoPlayVideos: StateFlow<Boolean> = settingsRepository.autoPlayVideos
-        .stateInWhileSubscribed(viewModelScope, DEFAULT_AUTO_PLAY_VIDEOS)
+    fun eventSink(event: SettingsUiEvent) {
+        when (event) {
+            is SettingsUiEvent.SetThemeMode -> {
+                setThemeMode(event.mode)
+            }
 
-    /** Already hot state on the repository — a language is always in effect — so it passes straight through. */
-    val language: StateFlow<AppLanguage> = appLocaleRepository.language
+            is SettingsUiEvent.SetAutoPlayVideos -> {
+                setAutoPlayVideos(event.enabled)
+            }
 
-    override fun setThemeMode(mode: ThemeMode) {
+            is SettingsUiEvent.SetLanguage -> {
+                setLanguage(event.language)
+            }
+
+            SettingsUiEvent.GoBack -> {
+                navigator.goBack()
+            }
+        }
+    }
+
+    private fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     }
 
-    override fun setAutoPlayVideos(enabled: Boolean) {
+    private fun setAutoPlayVideos(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setAutoPlayVideos(enabled) }
     }
 
-    override fun setLanguage(language: AppLanguage) = appLocaleRepository.setLanguage(language)
-
-    override fun goBack() = navigator.goBack()
+    private fun setLanguage(language: AppLanguage) = appLocaleRepository.setLanguage(language)
 }

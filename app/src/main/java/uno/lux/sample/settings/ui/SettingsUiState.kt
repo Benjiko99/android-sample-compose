@@ -1,0 +1,16 @@
+package uno.lux.sample.settings.ui
+
+import uno.lux.sample.app.framework.UiState
+import uno.lux.sample.settings.data.domain.AppLanguage
+import uno.lux.sample.settings.data.domain.ThemeMode
+
+sealed interface SettingsUiState : UiState {
+
+    data object Loading : SettingsUiState
+
+    data class Content(
+        val themeMode: ThemeMode,
+        val autoPlayVideos: Boolean,
+        val language: AppLanguage,
+    ) : SettingsUiState
+}
