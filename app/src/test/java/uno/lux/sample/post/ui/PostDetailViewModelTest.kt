@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
@@ -415,6 +416,56 @@ class PostDetailViewModelTest : ViewModelTest() {
         val state = vm.uiState.value as PostDetailUiState.Loaded
         assertEquals(1, state.post.commentCount)
         assertEquals(listOf(seedComment), state.comments)
+    }
+
+    // The thread hangs below the whole post, so a comment sent from a long page lands off screen
+    // unless the screen is told to go to it.
+    @Test
+    fun `addComment names the new comment as the one to scroll to`() = runTest {
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+
+        val state = vm.uiState.value as PostDetailUiState.Loaded
+        assertEquals(state.comments.first().id, state.scrollToComment)
+    }
+
+    // Spent once acted on: a configuration change must not yank the list back a second time.
+    @Test
+    fun `onScrolledToComment spends the scroll signal`() = runTest {
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.addComment("Hello!")
+
+        vm.onScrolledToComment()
+
+        assertNull((vm.uiState.value as PostDetailUiState.Loaded).scrollToComment)
+    }
+
+    // Nothing was posted, so there is nothing to go to.
+    @Test
+    fun `a failed addComment names nothing to scroll to`() = runTest {
+        val commentDataSource = commentSource().apply { addError = UnknownHostException("offline") }
+        val vm = viewModel(commentDataSource = commentDataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+
+        assertNull((vm.uiState.value as PostDetailUiState.Loaded).scrollToComment)
+    }
+
+    // A reload starts the thread over, so a scroll owed into the window it replaced has nothing
+    // left to aim at — and the screen would otherwise jump to whatever now sits at that index.
+    @Test
+    fun `retrying comments drops a pending scroll`() = runTest {
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.addComment("Hello!")
+
+        vm.retryComments()
+
+        assertNull((vm.uiState.value as PostDetailUiState.Loaded).scrollToComment)
     }
 
     @Test

@@ -119,6 +119,7 @@ fun PostDetailScreen(
         onToggleBookmark = viewModel::onToggleBookmark,
         onToggleCommentLike = viewModel::onToggleCommentLike,
         onAddComment = viewModel::addComment,
+        onScrolledToComment = viewModel::onScrolledToComment,
         onLoadMoreComments = viewModel::loadMoreComments,
         onRetryComments = viewModel::retryComments,
         onRetry = viewModel::retry,
@@ -146,6 +147,7 @@ internal fun PostDetailScreen(
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
+    onScrolledToComment: () -> Unit,
     onLoadMoreComments: () -> Unit,
     onRetryComments: () -> Unit,
     onRetry: () -> Unit,
@@ -239,7 +241,9 @@ internal fun PostDetailScreen(
                 commentsError = uiState.commentsError,
                 commentsLoading = uiState.commentsLoading,
                 commentsEndReached = uiState.commentsEndReached,
+                scrollToComment = uiState.scrollToComment,
                 listState = listState,
+                onScrolledToComment = onScrolledToComment,
                 onOpenProfile = onOpenProfile,
                 onOpenVideo = onOpenVideo,
                 onOpenAlbum = onOpenAlbum,
@@ -257,6 +261,15 @@ internal fun PostDetailScreen(
 /** Resting shadow depth of the pinned detail bar once the content is scrolled. */
 private val TopBarElevation = 4.dp
 
+/**
+ * Where the thread section starts: the row right after the post card, which is the list's single
+ * first item. The comments header sits here — or the error and loading placeholders, which stand
+ * in the same slot. Compose has no key-based scroll, and a row's index cannot be asked for unless
+ * the row is visible, so this one structural fact is the anchor every scroll on the page offsets
+ * from: the first comment is the row after the header.
+ */
+private const val COMMENTS_HEADER_INDEX = 1
+
 // ── Scrollable content ─────────────────────────────────────────────────────────
 
 @Composable
@@ -267,7 +280,9 @@ private fun PostDetailContent(
     commentsError: AppError?,
     commentsLoading: Boolean,
     commentsEndReached: Boolean,
+    scrollToComment: CommentId?,
     listState: LazyListState,
+    onScrolledToComment: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
     onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
@@ -290,6 +305,21 @@ private fun PostDetailContent(
         onLoadMore = onLoadMoreComments,
     )
 
+    // Bring the comment the user just sent into view — the row after the header, offset by where
+    // the comment sits in the thread. The thread hangs below the whole post, so without this the
+    // reply lands off screen on anything but a short post. The signal is spent either way: a
+    // comment the list no longer shows is one a reload has replaced, and chasing it on a later
+    // frame would move the list under a reader who has since scrolled away.
+    LaunchedEffect(scrollToComment) {
+        if (scrollToComment == null) return@LaunchedEffect
+
+        val position = comments.indexOfFirst { it.id == scrollToComment }
+        if (position >= 0 && commentsError == null && !commentsLoading) {
+            listState.animateScrollToItem(COMMENTS_HEADER_INDEX + 1 + position)
+        }
+        onScrolledToComment()
+    }
+
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
         item {
             DetailPostCard(
@@ -300,7 +330,9 @@ private fun PostDetailContent(
                 onOpenAlbum = onOpenAlbum,
                 onToggleLike = onToggleLike,
                 onToggleBookmark = onToggleBookmark,
-                onScrollToComments = { scope.launch { listState.animateScrollToItem(index = 1) } },
+                onScrollToComments = {
+                    scope.launch { listState.animateScrollToItem(COMMENTS_HEADER_INDEX) }
+                },
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
@@ -641,6 +673,7 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
             onToggleBookmark = {},
             onToggleCommentLike = {},
             onAddComment = {},
+            onScrolledToComment = {},
             onLoadMoreComments = {},
             onRetryComments = {},
             onRetry = {},

@@ -2,6 +2,7 @@ package uno.lux.sample.post.ui
 
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.comment.data.domain.Comment
+import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.user.data.domain.User
 
@@ -24,6 +25,10 @@ sealed interface PostDetailUiState {
      * [commentsEndReached] is what says whether there is more below, and the count in the header
      * comes from the post rather than from this list. [isOwn] is the post being authored by the
      * signed-in user; it gates the delete action.
+     *
+     * [scrollToComment] is a comment the screen has yet to bring into view — the one the user just
+     * sent. It is spent once acted on, through `onScrolledToComment`, so a configuration change
+     * cannot yank the list back a second time.
      */
     data class Loaded(
         val post: Post,
@@ -33,5 +38,6 @@ sealed interface PostDetailUiState {
         val commentsLoading: Boolean = false,
         val commentsEndReached: Boolean = true,
         val isOwn: Boolean = false,
+        val scrollToComment: CommentId? = null,
     ) : PostDetailUiState
 }

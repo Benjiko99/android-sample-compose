@@ -120,6 +120,8 @@ class PostDetailViewModel @AssistedInject constructor(
         /** Null both before the first page lands and once the last one has. */
         val nextCursor: String? = null,
         val endReached: Boolean = false,
+        /** The comment the screen still owes a scroll to, or null once it has made it. */
+        val scrollTo: CommentId? = null,
     )
 
     private val _thread = MutableStateFlow(CommentThread())
@@ -148,6 +150,7 @@ class PostDetailViewModel @AssistedInject constructor(
                 commentsLoading = thread.isLoading,
                 commentsEndReached = thread.endReached,
                 isOwn = resolved.post.authorId == currentUser.id,
+                scrollToComment = thread.scrollTo,
             )
 
             postLoad is PostLoad.Missing -> PostDetailUiState.NotFound
@@ -221,6 +224,9 @@ class PostDetailViewModel @AssistedInject constructor(
                         comments = page.comments,
                         nextCursor = page.nextCursor,
                         endReached = !page.hasMore,
+                        // This page starts the thread over, so a scroll owed to a comment in the
+                        // window it replaces has nothing left to aim at.
+                        scrollTo = null,
                     )
                 }
             }
@@ -348,12 +354,21 @@ class PostDetailViewModel @AssistedInject constructor(
      * post gained one. The two halves land in different places on purpose: the comment is this
      * ViewModel's, but the count under the post belongs to the shared entity, so it is what the
      * feed card and the profile behind this page redraw from.
+     *
+     * The comment is also named as the one to scroll to. The thread sits below the whole post, so
+     * a reader who commented from the bottom of a long page would otherwise never see what they
+     * sent. Only a comment the server took is named, so a failed send moves nothing.
      */
     fun addComment(text: String) = launchCatching {
         val comment = commentRepository.addComment(postId, text)
-        _thread.update { it.copy(comments = listOf(comment) + it.comments) }
+        _thread.update {
+            it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
+        }
         postRepository.commentAdded(postId)
     }
+
+    /** Spends the scroll signal [addComment] raised, once the screen has acted on it. */
+    fun onScrolledToComment() = _thread.update { it.copy(scrollTo = null) }
 
     fun goBack() = navigator.goBack()
 
