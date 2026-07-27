@@ -1,16 +1,17 @@
 package uno.lux.sample.settings.data
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import uno.lux.sample.settings.data.domain.AppLanguage
 
 /**
- * Reads and applies the app's language.
+ * Applies the app's language to the platform. The chosen language is stored by
+ * [SettingsRepository]; this only projects it onto the per-app locale APIs, which is what makes
+ * the resources change.
  */
 interface AppLocaleRepository {
 
-    val language: StateFlow<AppLanguage>
+    /** Applies [language]. A no-op when it is already in effect, so it is safe to call on every emission. */
+    fun applyLanguage(language: AppLanguage)
 
     /**
      * Pins a language on first launch, when nothing is stored yet: the best of the device's
@@ -18,33 +19,31 @@ interface AppLocaleRepository {
      * once a language is stored, so it is safe to call on every launch — and it must be, because
      * the stored language is what keeps the app steady if the device's language later changes.
      */
-    fun resolveInitialLanguage()
-
-    fun setLanguage(language: AppLanguage)
+    suspend fun resolveInitialLanguage()
 }
 
 /**
- * @param storedLanguage the language a previous launch persisted, or `null` for a first launch.
  * @param systemLanguageTags stands in for the device's preferred languages, as a BCP 47 tag list.
  */
 class InMemoryAppLocaleRepository(
-    storedLanguage: AppLanguage? = null,
+    private val settingsRepository: SettingsRepository,
     private val systemLanguageTags: String = "",
 ) : AppLocaleRepository {
 
-    private var stored: AppLanguage? = storedLanguage
-    private val state = MutableStateFlow(storedLanguage ?: AppLanguage.Default)
+    /** The languages handed to [applyLanguage], in order, for a test to assert what reached the platform. */
+    val applied = mutableListOf<AppLanguage>()
 
-    override val language: StateFlow<AppLanguage> = state.asStateFlow()
+    override fun applyLanguage(language: AppLanguage) {
+        if (applied.lastOrNull() == language) return
 
-    override fun resolveInitialLanguage() {
-        if (stored != null) return
-
-        setLanguage(AppLanguage.fromLanguageTags(systemLanguageTags) ?: AppLanguage.Default)
+        applied += language
     }
 
-    override fun setLanguage(language: AppLanguage) {
-        stored = language
-        state.value = language
+    override suspend fun resolveInitialLanguage() {
+        if (settingsRepository.settings.first().language != null) return
+
+        settingsRepository.setLanguage(
+            AppLanguage.fromLanguageTags(systemLanguageTags) ?: AppLanguage.Default,
+        )
     }
 }

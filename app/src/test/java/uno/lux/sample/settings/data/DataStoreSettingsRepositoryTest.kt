@@ -17,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.Settings
 import uno.lux.sample.settings.data.domain.ThemeMode
 import java.io.File
@@ -89,13 +90,34 @@ class DataStoreSettingsRepositoryTest {
     }
 
     @Test
-    fun `settings carries both persisted values`() = runTest {
+    fun `no language is persisted until one is chosen`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+
+        assertEquals(null, repository.language.first())
+    }
+
+    @Test
+    fun `setLanguage persists the choice the flow then emits`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+
+        repository.setLanguage(AppLanguage.CZECH)
+
+        assertEquals(AppLanguage.CZECH, repository.language.first())
+    }
+
+    @Test
+    fun `settings carries every persisted value`() = runTest {
         val repository = DataStoreSettingsRepository(dataStore())
 
         repository.setThemeMode(ThemeMode.LIGHT)
         repository.setAutoPlayVideos(true)
+        repository.setLanguage(AppLanguage.CZECH)
 
-        val expected = Settings(themeMode = ThemeMode.LIGHT, autoPlayVideos = true)
+        val expected = Settings(
+            themeMode = ThemeMode.LIGHT,
+            autoPlayVideos = true,
+            language = AppLanguage.CZECH,
+        )
         assertEquals(expected, repository.settings.first())
     }
 

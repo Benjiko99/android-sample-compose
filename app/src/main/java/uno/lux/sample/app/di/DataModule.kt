@@ -105,7 +105,8 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideAppLocaleRepository(): AppLocaleRepository = AppCompatLocaleRepository()
+    fun provideAppLocaleRepository(settingsRepository: SettingsRepository): AppLocaleRepository =
+        AppCompatLocaleRepository(settingsRepository)
 
     @Provides
     @Singleton

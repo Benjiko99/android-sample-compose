@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.Settings
 import uno.lux.sample.settings.data.domain.ThemeMode
 
@@ -44,13 +45,32 @@ class InMemorySettingsRepositoryTest {
     }
 
     @Test
-    fun `settings carries both stored values`() = runTest {
+    fun `no language is stored until one is chosen`() = runTest {
+        assertEquals(null, InMemorySettingsRepository().language.first())
+    }
+
+    @Test
+    fun `setLanguage updates the exposed language`() = runTest {
+        val repository = InMemorySettingsRepository()
+
+        repository.setLanguage(AppLanguage.CZECH)
+
+        assertEquals(AppLanguage.CZECH, repository.language.first())
+    }
+
+    @Test
+    fun `settings carries every stored value`() = runTest {
         val repository = InMemorySettingsRepository()
 
         repository.setThemeMode(ThemeMode.LIGHT)
         repository.setAutoPlayVideos(true)
+        repository.setLanguage(AppLanguage.CZECH)
 
-        val expected = Settings(themeMode = ThemeMode.LIGHT, autoPlayVideos = true)
+        val expected = Settings(
+            themeMode = ThemeMode.LIGHT,
+            autoPlayVideos = true,
+            language = AppLanguage.CZECH,
+        )
         assertEquals(expected, repository.settings.first())
     }
 

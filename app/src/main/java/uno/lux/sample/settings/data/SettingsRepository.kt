@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.settings.data.domain.Settings
 import uno.lux.sample.settings.data.domain.ThemeMode
@@ -23,20 +24,28 @@ interface SettingsRepository {
     val autoPlayVideos: Flow<Boolean>
         get() = settings.map { it.autoPlayVideos }.distinctUntilChanged()
 
+    /** `null` until a language has been chosen. Storing it does not apply it — [AppLocaleRepository] does. */
+    val language: Flow<AppLanguage?>
+        get() = settings.map { it.language }.distinctUntilChanged()
+
     suspend fun setThemeMode(mode: ThemeMode)
 
     suspend fun setAutoPlayVideos(enabled: Boolean)
+
+    suspend fun setLanguage(language: AppLanguage)
 }
 
 class InMemorySettingsRepository(
     initialThemeMode: ThemeMode = ThemeMode.SYSTEM,
     initialAutoPlayVideos: Boolean = DEFAULT_AUTO_PLAY_VIDEOS,
+    initialLanguage: AppLanguage? = null,
 ) : SettingsRepository {
 
     private val _settings = MutableStateFlow(
         Settings(
             themeMode = initialThemeMode,
             autoPlayVideos = initialAutoPlayVideos,
+            language = initialLanguage,
         ),
     )
     override val settings: Flow<Settings> = _settings.asStateFlow()
@@ -47,5 +56,9 @@ class InMemorySettingsRepository(
 
     override suspend fun setAutoPlayVideos(enabled: Boolean) {
         _settings.update { it.copy(autoPlayVideos = enabled) }
+    }
+
+    override suspend fun setLanguage(language: AppLanguage) {
+        _settings.update { it.copy(language = language) }
     }
 }

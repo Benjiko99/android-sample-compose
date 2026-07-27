@@ -4,45 +4,49 @@ import android.content.res.Resources
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.ConfigurationCompat
 import androidx.core.os.LocaleListCompat
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import uno.lux.sample.settings.data.domain.AppLanguage
 
 /**
- * [AppLocaleRepository] backed by the per-app language APIs — the platform's own store, so this
- * class persists nothing. `AppCompatDelegate` forwards to the framework's `LocaleManager` on
- * Android 13+ and, below that, keeps the choice itself (enabled by the `autoStoreLocales` flag on
- * the `AppLocalesMetadataHolderService` declared in the manifest) and re-applies it on the next
- * cold start. Applying a language recreates the activity, which is what re-reads the resources.
+ * [AppLocaleRepository] on the per-app language APIs. `AppCompatDelegate` forwards to the
+ * framework's `LocaleManager` on Android 13+ and, below that, keeps the choice itself (enabled by
+ * the `autoStoreLocales` flag on the `AppLocalesMetadataHolderService` declared in the manifest).
+ * Either way the platform re-applies it before the Activity exists, which is what keeps a cold
+ * start from drawing a frame in the wrong language.
  *
- * Both `AppCompatDelegate` locale calls need the delegate to exist, so this must not be constructed
- * before an `AppCompatActivity` has attached — `MainActivity` injects it, which is early enough.
+ * That platform copy is a cache, not the app's answer: [SettingsRepository] holds the choice, and
+ * [applyLanguage] pushes it back down. Applying recreates the Activity, which is what re-reads the
+ * resources — hence the guard against re-applying what is already in effect.
  *
- * The current value is mirrored into a [MutableStateFlow] because the delegate offers a getter,
- * not a stream; seeding it at construction picks up the language a previous launch persisted.
+ * Both `AppCompatDelegate` locale calls need the delegate to exist, so [applyLanguage] and
+ * [resolveInitialLanguage] must not run before an `AppCompatActivity` has attached.
  */
-class AppCompatLocaleRepository : AppLocaleRepository {
+class AppCompatLocaleRepository(
+    private val settingsRepository: SettingsRepository,
+) : AppLocaleRepository {
 
-    private val state = MutableStateFlow(storedLanguage() ?: AppLanguage.Default)
+    override fun applyLanguage(language: AppLanguage) {
+        if (platformLanguage() == language) return
 
-    override val language: StateFlow<AppLanguage> = state.asStateFlow()
-
-    override fun resolveInitialLanguage() {
-        if (storedLanguage() != null) return
-
-        setLanguage(AppLanguage.fromLanguageTags(systemLanguageTags()) ?: AppLanguage.Default)
-    }
-
-    override fun setLanguage(language: AppLanguage) {
         AppCompatDelegate.setApplicationLocales(
             LocaleListCompat.forLanguageTags(language.languageTag),
         )
-        state.value = language
     }
 
-    /** The language a previous launch pinned, or `null` while the per-app locale list is empty. */
-    private fun storedLanguage(): AppLanguage? =
+    override suspend fun resolveInitialLanguage() {
+        if (settingsRepository.settings.first().language != null) return
+
+        // A launch that predates the stored setting still has its choice in the platform copy;
+        // carrying it over is what keeps an upgrade from silently re-resolving the language.
+        val language = platformLanguage()
+            ?: AppLanguage.fromLanguageTags(systemLanguageTags())
+            ?: AppLanguage.Default
+
+        settingsRepository.setLanguage(language)
+    }
+
+    /** The language the platform currently has in effect, or `null` while its locale list is empty. */
+    private fun platformLanguage(): AppLanguage? =
         AppLanguage.fromLanguageTags(AppCompatDelegate.getApplicationLocales().toLanguageTags())
 
     /**

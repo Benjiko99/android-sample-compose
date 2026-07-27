@@ -9,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
@@ -25,8 +24,7 @@ class SettingsViewModelTest : ViewModelTest() {
 
     private fun viewModel(
         repository: InMemorySettingsRepository = InMemorySettingsRepository(),
-        localeRepository: InMemoryAppLocaleRepository = InMemoryAppLocaleRepository(),
-    ) = SettingsViewModel(repository, localeRepository, navigator)
+    ) = SettingsViewModel(repository, navigator)
 
     /** Subscribes for the rest of the test, since the state is only assembled while collected. */
     private fun TestScope.collecting(viewModel: SettingsViewModel) = viewModel.also {
@@ -90,9 +88,18 @@ class SettingsViewModelTest : ViewModelTest() {
 
     @Test
     fun `language reflects the repository`() = runTest {
-        val viewModel = collecting(viewModel(localeRepository = InMemoryAppLocaleRepository(AppLanguage.CZECH)))
+        val repository = InMemorySettingsRepository(initialLanguage = AppLanguage.CZECH)
+        val viewModel = collecting(viewModel(repository))
 
         assertEquals(AppLanguage.CZECH, viewModel.content.language)
+    }
+
+    // The picker needs an entry to mark as selected even in the moment before a launch pins one.
+    @Test
+    fun `a language nobody has chosen yet shows as the default`() = runTest {
+        val viewModel = collecting(viewModel())
+
+        assertEquals(AppLanguage.Default, viewModel.content.language)
     }
 
     @Test

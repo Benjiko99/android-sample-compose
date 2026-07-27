@@ -1,11 +1,9 @@
 package uno.lux.sample.settings.data.domain
 
-import uno.lux.sample.settings.data.AppLocaleRepository
-
 /**
  * The languages the app ships translations for. There is deliberately no "follow the system" entry.
- * Instead, the system language seeds the choice once,
- * on first launch — see [AppLocaleRepository.resolveInitialLanguage].
+ * Instead, the system language seeds the choice once, on first launch — see
+ * [uno.lux.sample.settings.data.AppLocaleRepository.resolveInitialLanguage].
  */
 enum class AppLanguage(
     val languageTag: String,

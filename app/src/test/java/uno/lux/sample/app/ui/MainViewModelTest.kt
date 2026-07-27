@@ -1,10 +1,11 @@
 package uno.lux.sample.app.ui
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.settings.data.AppLocaleRepository
 import uno.lux.sample.settings.data.InMemoryAppLocaleRepository
@@ -18,14 +19,14 @@ class MainViewModelTest : ViewModelTest() {
 
     private fun viewModel(
         settingsRepository: InMemorySettingsRepository = InMemorySettingsRepository(ThemeMode.DARK),
-        appLocaleRepository: AppLocaleRepository = InMemoryAppLocaleRepository(),
+        appLocaleRepository: AppLocaleRepository = InMemoryAppLocaleRepository(settingsRepository),
     ) = MainViewModel(settingsRepository, appLocaleRepository, currentUserId = "u1")
 
     @Test
     fun `themeMode is null until the flow is collected`() {
         val viewModel = viewModel()
 
-        Assert.assertEquals(null, viewModel.themeMode.value)
+        assertEquals(null, viewModel.themeMode.value)
     }
 
     @Test
@@ -36,33 +37,62 @@ class MainViewModelTest : ViewModelTest() {
             viewModel.themeMode.collect {}
         }
 
-        Assert.assertEquals(ThemeMode.DARK, viewModel.themeMode.value)
+        assertEquals(ThemeMode.DARK, viewModel.themeMode.value)
 
         repository.setThemeMode(ThemeMode.LIGHT)
 
-        Assert.assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
+        assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
     }
 
     @Test
-    fun `resolveInitialLanguage pins the device language on a first launch`() {
-        val locales = InMemoryAppLocaleRepository(systemLanguageTags = "cs-CZ,en-US")
-        val viewModel = viewModel(appLocaleRepository = locales)
+    fun `resolveInitialLanguage pins the device language on a first launch`() = runTest {
+        val settings = InMemorySettingsRepository()
+        val locales = InMemoryAppLocaleRepository(settings, systemLanguageTags = "cs-CZ,en-US")
 
-        viewModel.resolveInitialLanguage()
+        viewModel(settings, locales).resolveInitialAppLanguage().join()
 
-        Assert.assertEquals(AppLanguage.CZECH, locales.language.value)
+        assertEquals(AppLanguage.CZECH, settings.language.first())
     }
 
     @Test
-    fun `resolveInitialLanguage leaves a stored language alone`() {
-        val locales = InMemoryAppLocaleRepository(
-            storedLanguage = AppLanguage.ENGLISH,
-            systemLanguageTags = "cs-CZ",
-        )
-        val viewModel = viewModel(appLocaleRepository = locales)
+    fun `resolveInitialLanguage leaves a stored language alone`() = runTest {
+        val settings = InMemorySettingsRepository(initialLanguage = AppLanguage.ENGLISH)
+        val locales = InMemoryAppLocaleRepository(settings, systemLanguageTags = "cs-CZ")
 
-        viewModel.resolveInitialLanguage()
+        viewModel(settings, locales).resolveInitialAppLanguage().join()
 
-        Assert.assertEquals(AppLanguage.ENGLISH, locales.language.value)
+        assertEquals(AppLanguage.ENGLISH, settings.language.first())
+    }
+
+    @Test
+    fun `the stored language is applied to the platform`() = runTest {
+        val settings = InMemorySettingsRepository(initialLanguage = AppLanguage.CZECH)
+        val locales = InMemoryAppLocaleRepository(settings)
+
+        viewModel(settings, locales)
+
+        assertEquals(listOf(AppLanguage.CZECH), locales.applied)
+    }
+
+    @Test
+    fun `a language change is applied to the platform`() = runTest {
+        val settings = InMemorySettingsRepository(initialLanguage = AppLanguage.ENGLISH)
+        val locales = InMemoryAppLocaleRepository(settings)
+        viewModel(settings, locales)
+
+        settings.setLanguage(AppLanguage.CZECH)
+
+        assertEquals(listOf(AppLanguage.ENGLISH, AppLanguage.CZECH), locales.applied)
+    }
+
+    // Nothing is in effect yet on a first launch; seeding the choice is what drives the apply.
+    @Test
+    fun `no language is applied until one is stored`() = runTest {
+        val settings = InMemorySettingsRepository()
+        val locales = InMemoryAppLocaleRepository(settings)
+
+        viewModel(settings, locales)
+
+        assertEquals(emptyList<AppLanguage>(), locales.applied)
     }
 }

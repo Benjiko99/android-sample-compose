@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
         // First launch only: adopt the device's language if we ship it. Recreates
         // this Activity once as the pinned locale takes effect, behind the splash screen.
-        viewModel.resolveInitialLanguage()
+        viewModel.resolveInitialAppLanguage()
 
         // Waiting for user preferences to load before showing the app.
         splashScreen.setKeepOnScreenCondition { viewModel.themeMode.value == null }
