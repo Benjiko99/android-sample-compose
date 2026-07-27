@@ -1,10 +1,16 @@
 package uno.lux.sample.app.di
 
+import android.content.Context
+import coil3.ImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.video.VideoFrameDecoder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Cache
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -19,6 +25,9 @@ import uno.lux.sample.post.data.network.PostApi
 import uno.lux.sample.profile.data.network.ProfileApi
 import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.data.network.UserApi
+import java.io.File
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Module
@@ -28,17 +37,48 @@ object NetworkModule {
     const val BASE_URL = "https://mosaic.tree-among-shrubs.com"
     private const val API_URL = "${BASE_URL}/api/"
 
+    const val CONNECT_TIMEOUT_SECONDS = 10L
+    const val READ_TIMEOUT_SECONDS = 30L
+    const val WRITE_TIMEOUT_SECONDS = 30L
+    private const val HTTP_CACHE_BYTES = 10L * 1024 * 1024
+
     @Provides
     @Singleton
     fun provideJson(): Json = Json { ignoreUnknownKeys = true }
 
+    /**
+     * Rails answers conditional requests out of the box (`Rack::ETag` + `Rack::ConditionalGet`),
+     * so a cache turns a re-read of an unchanged feed page into a 304 with no body. Only API JSON
+     * lands here — the image client below strips it, because Coil keeps its own disk cache.
+     */
+    @Provides
+    @Singleton
+    fun provideHttpCache(
+        @ApplicationContext context: Context,
+    ): Cache = Cache(File(context.cacheDir, "http"), HTTP_CACHE_BYTES)
+
+    /*
+     * The timeouts are deliberate, not defaults: connect stays at 10 s, read and write get 30 s
+     * because a Rails page under load can outlive the 10 s default. There is no call timeout on
+     * purpose — a 25 MB video on a slow uplink is a legitimate multi-minute call, and the per-write
+     * timeout still catches a stalled socket.
+     *
+     * There is no retry/backoff interceptor, also on purpose. OkHttp's own connection-level retry
+     * stays on, but `POST /posts` and `POST …/comments` are not idempotent, so a blind re-send can
+     * publish twice. Retry belongs to the user-visible retry paths instead.
+     */
     @Provides
     @Singleton
     fun provideOkHttpClient(
+        cache: Cache,
         @CurrentUserId currentUserId: UserId,
     ): OkHttpClient =
         OkHttpClient
             .Builder()
+            .cache(cache)
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 chain.proceed(
                     chain
@@ -51,6 +91,35 @@ object NetworkModule {
                 if (BuildConfig.DEBUG) {
                     addInterceptor(BodyLoggingInterceptor)
                 }
+            }.build()
+
+    /**
+     * The app client minus its HTTP cache. `newBuilder` keeps the connection pool, dispatcher and
+     * interceptors, so image loads reuse the API client's warm connections; the cache goes because
+     * Coil already keeps a disk cache of its own, and caching every image twice buys nothing.
+     */
+    @Provides
+    @Singleton
+    @ImageHttpClient
+    fun provideImageOkHttpClient(okHttpClient: OkHttpClient): OkHttpClient =
+        okHttpClient.newBuilder().cache(null).build()
+
+    /**
+     * One [ImageLoader] on the app's own HTTP stack. The video-frame decoder is added because a
+     * `content://` video URI has no matching default decoder, and the composer's picked-clip
+     * thumbnail would render empty without it — every other image in the app is a still.
+     */
+    @Provides
+    @Singleton
+    fun provideImageLoader(
+        @ApplicationContext context: Context,
+        @ImageHttpClient imageHttpClient: OkHttpClient,
+    ): ImageLoader =
+        ImageLoader
+            .Builder(context)
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = imageHttpClient))
+                add(VideoFrameDecoder.Factory())
             }.build()
 
     @Provides
@@ -87,6 +156,11 @@ object NetworkModule {
     @Singleton
     fun provideProfileApi(retrofit: Retrofit): ProfileApi = retrofit.create(ProfileApi::class.java)
 }
+
+/** Qualifies the image-loading [OkHttpClient], so it's distinct from the API client. */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ImageHttpClient
 
 /**
  * Full-body request/response logging, except for multipart uploads, which log headers only.

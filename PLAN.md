@@ -43,12 +43,6 @@ the read undoes it.
 videos play over the user's music without pausing it and keep playing out of the speaker when
 headphones are unplugged. For an autoplaying feed this is table stakes.
 
-### Network client defaults
-`OkHttpClient` uses default timeouts with no retry/backoff and no cache. Defensible for a demo, but
-worth a deliberate choice. Coil's `ImageLoader` (`app/MosaicApplication.kt`) also builds its own
-OkHttp client instead of sharing the app's — a shared connection pool and interceptors are one
-`callFactory` line.
-
 ### Backup rules are untouched boilerplate
 `res/xml/backup_rules.xml` still carries the "Sample backup rules file; uncomment and customize"
 scaffold with `allowBackup="true"`. Harmless (only theme and auto-play persist) but it reads as never
