@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -37,6 +38,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -87,6 +90,7 @@ import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -123,6 +127,8 @@ interface ProfileActions {
     )
 
     fun onToggleFollow()
+
+    fun onFailedActionShown()
 
     fun loadMorePosts()
 
@@ -167,10 +173,12 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
 
     ProfileScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
+        failedAction = failedAction,
         onRefresh = viewModel::refresh,
         onRetry = viewModel::retry,
         actions = viewModel,
@@ -189,12 +197,25 @@ fun ProfileScreen(
 internal fun ProfileScreen(
     uiState: ProfileUiState,
     isRefreshing: Boolean,
+    failedAction: FailedAction?,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     actions: ProfileActions,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    // A delete, report or follow whose request failed after the tap left nothing on screen to
+    // fail visibly. Announced once and spent, so a rotation cannot say it twice.
+    val failedActionMessage = failedAction?.asText()
+
+    LaunchedEffect(failedActionMessage) {
+        if (failedActionMessage == null) return@LaunchedEffect
+
+        snackbarHostState.showSnackbar(failedActionMessage)
+        actions.onFailedActionShown()
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -231,6 +252,15 @@ internal fun ProfileScreen(
                 )
             }
         }
+
+        // This screen has no Scaffold to host it in, so the snackbar overlays the Box instead —
+        // above the system bar the edge-to-edge content draws behind.
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding(),
+        )
     }
 }
 
@@ -916,6 +946,7 @@ private fun ProfileScreenPreview() {
         ProfileScreen(
             uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = true),
             isRefreshing = false,
+            failedAction = null,
             onRefresh = {},
             onRetry = {},
             actions = createActionsProxy(),
@@ -930,6 +961,7 @@ private fun ProfileScreenOtherUserPreview() {
         ProfileScreen(
             uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = false),
             isRefreshing = false,
+            failedAction = null,
             onRefresh = {},
             onRetry = {},
             actions = createActionsProxy(),

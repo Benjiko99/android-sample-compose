@@ -33,8 +33,12 @@ internal class FakeUserDataSource(
         )
     }
 
+    /** Thrown by [toggleFollow] instead of answering, so tests can drive the failure path. */
+    var toggleFollowError: Exception? = null
+
     override suspend fun toggleFollow(user: User): User {
         lastFollowToggle = user.id
+        toggleFollowError?.let { throw it }
 
         // Mirror the server: flip the follow state and adjust the follower count to match.
         val nowFollowing = !user.isFollowing

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
@@ -18,6 +19,7 @@ import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.ignoreErrors
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.feed.data.FeedState
@@ -107,6 +109,16 @@ class HomeViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private val _failedAction = MutableStateFlow<FailedAction?>(null)
+
+    /**
+     * The last fire-and-forget action whose request failed, for the screen to announce once and
+     * spend through [onFailedActionShown]. The tap already dismissed whatever UI carried it — a
+     * confirmation dialog, a report sheet — so without this signal the failure would be
+     * indistinguishable from success.
+     */
+    val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
+
     /**
      * Whether the feed may start a video on its own as it scrolls into view. The stored preference
      * arrives asynchronously, so this starts from [DEFAULT_AUTO_PLAY_VIDEOS] rather than a literal of
@@ -162,7 +174,7 @@ class HomeViewModel @Inject constructor(
         postRepository.toggleBookmark(postId)
     }
 
-    override fun onDeletePost(postId: PostId) = launchCatching {
+    override fun onDeletePost(postId: PostId) = launchReporting(FailedAction.DELETE_POST) {
         postRepository.delete(postId)
     }
 
@@ -170,8 +182,27 @@ class HomeViewModel @Inject constructor(
         postId: PostId,
         reason: ReportReason,
         details: String,
-    ) = launchCatching {
+    ) = launchReporting(FailedAction.REPORT_POST) {
         postRepository.report(postId, reason, details)
+    }
+
+    /**
+     * The screen has announced [failedAction] and is done with it — the same spend-once lifetime
+     * [onRefreshErrorShown] gives the refresh error.
+     */
+    override fun onFailedActionShown() {
+        _failedAction.value = null
+    }
+
+    /**
+     * [launchCatching], except a failure also names [action] in [failedAction]. For the mutations
+     * whose UI is gone by the time the answer arrives; the optimistic toggles stay with
+     * [launchCatching], because their revert is visible where the tap happened.
+     */
+    private fun launchReporting(action: FailedAction, block: suspend () -> Unit) {
+        viewModelScope.launch {
+            ignoreErrors(onError = { _failedAction.value = action }, block = block)
+        }
     }
 
     override fun openSettings() = navigator.goToSingleTop(Screen.Settings)

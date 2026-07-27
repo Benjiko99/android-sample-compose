@@ -26,6 +26,7 @@ import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
@@ -142,6 +143,55 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         assertEquals(PostDetailUiState.NotFound, viewModel.uiState.value)
         assertEquals(listOf(Screen.Shell), backStack.screens())
+    }
+
+    // A refused delete must not pop the page: the post is still there, and leaving would make
+    // the failure read as success. The announcement is the only thing the tap produces.
+    @Test
+    fun `a failed delete keeps the page open and names the action for the screen`() = runTest {
+        val dataSource = FakePostDataSource().apply { deleteError = UnknownHostException("offline") }
+        val viewModel = viewModel(
+            posts = listOf(post.copy(authorId = "me")),
+            postDataSource = dataSource,
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onDelete()
+
+        assertTrue(viewModel.uiState.value is PostDetailUiState.Loaded)
+        assertEquals(listOf(Screen.Shell, Screen.PostDetail("p1")), backStack.screens())
+        assertEquals(FailedAction.DELETE_POST, viewModel.failedAction.value)
+    }
+
+    @Test
+    fun `a failed report names the action for the screen`() = runTest {
+        val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
+        val viewModel = viewModel(postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onReport(ReportReason.HARASSMENT, "")
+
+        assertEquals(FailedAction.REPORT_POST, viewModel.failedAction.value)
+    }
+
+    // Announced once and then spent, the same lifetime the feed gives its refresh error: what is
+    // left in the state is what a rotation would replay.
+    @Test
+    fun `onFailedActionShown clears the announcement`() = runTest {
+        val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
+        val viewModel = viewModel(postDataSource = dataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onReport(ReportReason.HARASSMENT, "")
+
+        viewModel.onFailedActionShown()
+
+        assertNull(viewModel.failedAction.value)
     }
 
     // This page can sit *under* the screen that deletes its post — open a post, visit the

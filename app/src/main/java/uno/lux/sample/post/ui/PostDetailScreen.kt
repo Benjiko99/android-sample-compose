@@ -36,6 +36,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -81,6 +83,7 @@ import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -107,10 +110,13 @@ fun PostDetailScreen(
         ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
 
     PostDetailScreen(
         uiState = uiState,
         composerUser = viewModel.composerUser,
+        failedAction = failedAction,
+        onFailedActionShown = viewModel::onFailedActionShown,
         onBack = viewModel::goBack,
         onOpenProfile = viewModel::openProfile,
         onOpenVideo = viewModel::openVideo,
@@ -139,6 +145,8 @@ fun PostDetailScreen(
 internal fun PostDetailScreen(
     uiState: PostDetailUiState,
     composerUser: User,
+    failedAction: FailedAction?,
+    onFailedActionShown: () -> Unit,
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
     onOpenVideo: (Video) -> Unit,
@@ -158,9 +166,21 @@ internal fun PostDetailScreen(
     val loaded = (uiState as? PostDetailUiState.Loaded)
     val listState = rememberLazyListState()
     val elevated = listState.canScrollBackward
+    val snackbarHostState = remember { SnackbarHostState() }
+    // A delete or report whose request failed after its dialog or sheet already closed.
+    // Announced once and spent, so a rotation cannot say it twice.
+    val failedActionMessage = failedAction?.asText()
+
+    LaunchedEffect(failedActionMessage) {
+        if (failedActionMessage == null) return@LaunchedEffect
+
+        snackbarHostState.showSnackbar(failedActionMessage)
+        onFailedActionShown()
+    }
 
     Scaffold(
         modifier = modifier.imePadding(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             val elevationPx = with(LocalDensity.current) { TopBarElevation.toPx() }
             val shadowElevation = remember { Animatable(0f) }
@@ -665,6 +685,8 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
         PostDetailScreen(
             uiState = uiState,
             composerUser = SampleUsers.first(),
+            failedAction = null,
+            onFailedActionShown = {},
             onBack = {},
             onOpenProfile = {},
             onOpenVideo = {},

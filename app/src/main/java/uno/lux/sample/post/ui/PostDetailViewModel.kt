@@ -12,6 +12,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -30,6 +31,7 @@ import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.data.network.toAppError
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
@@ -164,6 +166,16 @@ class PostDetailViewModel @AssistedInject constructor(
     /** The signed-in user, drawn as the composer's avatar. */
     val composerUser: User = currentUser
 
+    private val _failedAction = MutableStateFlow<FailedAction?>(null)
+
+    /**
+     * The last fire-and-forget action whose request failed, for the screen to announce once and
+     * spend through [onFailedActionShown]. The tap already dismissed whatever UI carried it — a
+     * confirmation dialog, a report sheet — so without this signal the failure would be
+     * indistinguishable from success.
+     */
+    val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
+
     private var loadJob: Job? = null
     private var loadMoreJob: Job? = null
 
@@ -279,9 +291,10 @@ class PostDetailViewModel @AssistedInject constructor(
      * follow-up: once the entity is gone the detail view has nothing left to show, and the feed or
      * profile underneath has already dropped the post through the shared entity store.
      */
-    fun onDelete() = launchCatching {
+    fun onDelete() = launchReporting(FailedAction.DELETE_POST) {
         // The store marks the deletion, and [postLoad] reads NotFound from it — the same
-        // path a deletion performed on any other screen takes.
+        // path a deletion performed on any other screen takes. A failed delete throws before
+        // the pop, so the page stays put and announces the failure itself.
         postRepository.delete(postId)
         navigator.goBack()
     }
@@ -290,8 +303,27 @@ class PostDetailViewModel @AssistedInject constructor(
      * Reports the post. Unlike [onDelete] the page stays where it is: a reported post is still
      * a post, and the reporter is still reading it.
      */
-    fun onReport(reason: ReportReason, details: String) = launchCatching {
+    fun onReport(reason: ReportReason, details: String) = launchReporting(FailedAction.REPORT_POST) {
         postRepository.report(postId, reason, details)
+    }
+
+    /**
+     * The screen has announced [failedAction] and is done with it — spent once shown, so a
+     * configuration change cannot announce it again.
+     */
+    fun onFailedActionShown() {
+        _failedAction.value = null
+    }
+
+    /**
+     * [launchCatching], except a failure also names [action] in [failedAction]. For the mutations
+     * whose UI is gone by the time the answer arrives; the optimistic toggles stay with
+     * [launchCatching], because their revert is visible where the tap happened.
+     */
+    private fun launchReporting(action: FailedAction, block: suspend () -> Unit) {
+        viewModelScope.launch {
+            ignoreErrors(onError = { _failedAction.value = action }, block = block)
+        }
     }
 
     /**

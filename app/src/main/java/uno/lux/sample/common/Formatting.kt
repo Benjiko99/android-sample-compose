@@ -6,6 +6,7 @@ import uno.lux.sample.R
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.CompactCount
 import uno.lux.sample.app.util.RelativeTime
+import uno.lux.sample.common.ui.FailedAction
 
 /** Resolves a [RelativeTime] bucket to localized compact text ("now", "5m", …). */
 @Composable
@@ -36,6 +37,18 @@ fun AppError.asText(): String = when (this) {
     AppError.Timeout -> stringResource(R.string.error_timeout)
     is AppError.Http -> serverMessage ?: stringResource(R.string.error_http, code)
     AppError.Unknown -> stringResource(R.string.error_unknown)
+}
+
+/**
+ * Names what a [FailedAction] failed to do, localized. The message states the action rather than
+ * the cause: the cause is already logged, and "couldn't delete the post" is what tells the user
+ * their tap did nothing.
+ */
+@Composable
+fun FailedAction.asText(): String = when (this) {
+    FailedAction.DELETE_POST -> stringResource(R.string.action_failed_delete_post)
+    FailedAction.REPORT_POST -> stringResource(R.string.action_failed_report_post)
+    FailedAction.FOLLOW -> stringResource(R.string.action_failed_follow)
 }
 
 /**

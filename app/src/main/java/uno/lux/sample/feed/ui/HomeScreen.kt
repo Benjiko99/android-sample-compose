@@ -51,6 +51,7 @@ import uno.lux.sample.app.ui.components.MosaicWordmark
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -76,6 +77,8 @@ interface HomeActions {
     fun retry()
 
     fun onRefreshErrorShown()
+
+    fun onFailedActionShown()
 
     fun loadMore()
 
@@ -114,11 +117,13 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val autoPlayVideos by viewModel.autoPlayVideos.collectAsStateWithLifecycle()
+    val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
 
     HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
         autoPlayVideos = autoPlayVideos,
+        failedAction = failedAction,
         actions = viewModel,
         modifier = modifier,
     )
@@ -134,6 +139,7 @@ internal fun HomeScreen(
     uiState: HomeUiState,
     isRefreshing: Boolean,
     autoPlayVideos: Boolean,
+    failedAction: FailedAction?,
     actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
@@ -162,6 +168,17 @@ internal fun HomeScreen(
         // rebuilding this composition should say it twice.
         actions.onRefreshErrorShown()
         if (result == SnackbarResult.ActionPerformed) actions.refresh()
+    }
+
+    // A delete, report or follow whose request failed after its dialog or sheet already closed.
+    // No retry action: the thing to retry is a tap that is one gesture away, not a load.
+    val failedActionMessage = failedAction?.asText()
+
+    LaunchedEffect(failedActionMessage) {
+        if (failedActionMessage == null) return@LaunchedEffect
+
+        snackbarHostState.showSnackbar(failedActionMessage)
+        actions.onFailedActionShown()
     }
 
     Scaffold(
@@ -400,6 +417,7 @@ private fun HomeFeedPreview() {
             uiState = HomeUiState.Feed(feed, endReached = true),
             isRefreshing = false,
             autoPlayVideos = true,
+            failedAction = null,
             actions = createActionsProxy(),
         )
     }
@@ -413,6 +431,7 @@ private fun HomeEmptyPreview() {
             uiState = HomeUiState.Feed(posts = emptyList(), endReached = true),
             isRefreshing = false,
             autoPlayVideos = true,
+            failedAction = null,
             actions = createActionsProxy(),
         )
     }

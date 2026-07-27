@@ -123,11 +123,15 @@ internal class FakePostDataSource : PostDataSource {
         val details: String,
     )
 
+    /** Thrown by [report] instead of recording it, so tests can drive the failure path. */
+    var reportError: Exception? = null
+
     override suspend fun report(
         postId: PostId,
         reason: ReportReason,
         details: String,
     ) {
+        reportError?.let { throw it }
         reports += Report(postId, reason, details)
     }
 }

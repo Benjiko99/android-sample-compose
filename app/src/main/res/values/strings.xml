@@ -17,6 +17,10 @@
     <string name="error_http">Server error (%1$d)</string>
     <string name="error_unknown">Something went wrong</string>
     <string name="error_retry">Retry</string>
+    <!-- Failed fire-and-forget actions -->
+    <string name="action_failed_delete_post">Couldn\'t delete the post</string>
+    <string name="action_failed_report_post">Couldn\'t send the report</string>
+    <string name="action_failed_follow">Couldn\'t follow or unfollow</string>
 
     <!-- Create post -->
     <string name="create_post_title">New post</string>

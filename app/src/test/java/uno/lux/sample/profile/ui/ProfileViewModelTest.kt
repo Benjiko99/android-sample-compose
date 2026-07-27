@@ -14,6 +14,7 @@ import org.junit.Test
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
@@ -31,6 +32,7 @@ import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.ProfileUpdate
 import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.data.domain.UserId
+import java.net.UnknownHostException
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -558,6 +560,61 @@ class ProfileViewModelTest : ViewModelTest() {
         val user = (viewModel.uiState.value as ProfileUiState.Loaded).data.user
         assertTrue(user.isFollowing)
         assertEquals(1, user.followerCount)
+    }
+
+    // The follow button never moves until the server answers, so a refused follow shows nothing
+    // at all where the tap happened — the announcement is the only trace the failure leaves.
+    @Test
+    fun `a failed follow leaves the user untouched and names the action for the screen`() = runTest {
+        val userDataSource = FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)).apply {
+            toggleFollowError = UnknownHostException("offline")
+        }
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1", userDataSource = userDataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onToggleFollow()
+
+        val user = (viewModel.uiState.value as ProfileUiState.Loaded).data.user
+        assertFalse(user.isFollowing)
+        assertEquals(0, user.followerCount)
+        assertEquals(FailedAction.FOLLOW, viewModel.failedAction.value)
+    }
+
+    @Test
+    fun `a failed delete keeps the post and names the action for the screen`() = runTest {
+        val postDataSource = FakePostDataSource().apply {
+            deleteError = UnknownHostException("offline")
+        }
+        val viewModel = viewModel(postDataSource = postDataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        viewModel.onDeletePost("p1")
+
+        val loaded = viewModel.uiState.value as ProfileUiState.Loaded
+        assertEquals(listOf(post), loaded.data.posts)
+        assertEquals(FailedAction.DELETE_POST, viewModel.failedAction.value)
+    }
+
+    // Announced once and then spent, the same lifetime the feed gives its refresh error: what is
+    // left in the state is what a rotation would replay.
+    @Test
+    fun `onFailedActionShown clears the announcement`() = runTest {
+        val userDataSource = FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)).apply {
+            toggleFollowError = UnknownHostException("offline")
+        }
+        val viewModel = viewModel(userId = "u2", currentUserId = "u1", userDataSource = userDataSource)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        viewModel.onToggleFollow()
+
+        viewModel.onFailedActionShown()
+
+        assertNull(viewModel.failedAction.value)
     }
 }
 
