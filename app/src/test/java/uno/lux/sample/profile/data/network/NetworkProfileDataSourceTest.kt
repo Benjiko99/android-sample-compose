@@ -27,6 +27,66 @@ class NetworkProfileDataSourceTest {
         page: CursorPageDto = emptyPage,
     ) = postsResponse(data, users, page)
 
+    // ── The profile's own posts ─────────────────────────────────────────────────
+
+    @Test
+    fun `refresh maps the profile's posts and its stats`() = runTest {
+        val api = FakeProfileApi(
+            profileStats = mapOf("u1" to ProfileStatsDto(postsCount = 2)),
+            userPostsResponse = postsResponse(
+                data = listOf(feedItemDto("p1", "u1"), feedItemDto("p6", "u1")),
+                page = CursorPageDto(nextCursor = "c2", hasMore = true),
+            ),
+        )
+        val result = NetworkProfileDataSource(api).refresh("u1")
+
+        assertEquals(2, result.postsCount)
+        assertEquals(listOf("p1", "p6"), result.page.posts.map { it.id })
+        assertEquals("c2", result.page.cursor)
+        assertTrue(result.page.hasMore)
+    }
+
+    // The Posts tab sideloads its author too, so a profile opened cold — from a deep link or
+    // after process death — has the user it needs to render a row without a second request.
+    @Test
+    fun `refresh maps the sideloaded author to a domain user`() = runTest {
+        val api = FakeProfileApi(
+            userPostsResponse = postsResponse(
+                data = listOf(feedItemDto("p1", "u1")),
+                users = listOf(userDto("u1", "Ada")),
+            ),
+        )
+        val result = NetworkProfileDataSource(api).refresh("u1")
+
+        assertEquals(listOf("Ada"), result.page.users.map { it.nickname })
+    }
+
+    @Test
+    fun `refresh requests the first page, with no cursor`() = runTest {
+        val api = FakeProfileApi()
+
+        NetworkProfileDataSource(api).refresh("u1")
+
+        assertEquals(listOf("u1" to null), api.userPostCalls)
+    }
+
+    @Test
+    fun `loadMorePosts requests the given cursor and maps posts with their author`() = runTest {
+        val api = FakeProfileApi(
+            userPostsResponse = postsResponse(
+                data = listOf(feedItemDto("p6", "u1")),
+                users = listOf(userDto("u1", "Ada")),
+            ),
+        )
+        val result = NetworkProfileDataSource(api).loadMorePosts("u1", cursor = "c2")
+
+        assertEquals(listOf("u1" to "c2"), api.userPostCalls)
+        assertEquals(listOf("p6"), result.posts.map { it.id })
+        assertEquals(listOf("u1"), result.users.map { it.id })
+    }
+
+    // ── Bookmarks (the Saved tab) ───────────────────────────────────────────────
+
     @Test
     fun `bookmarks maps post DTOs to domain posts`() = runTest {
         val api = FakeProfileApi(

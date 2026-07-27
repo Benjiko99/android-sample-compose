@@ -1,7 +1,6 @@
 package uno.lux.sample.profile.data.network
 
 import uno.lux.sample.common.data.network.emptyPage
-import uno.lux.sample.post.data.network.PostFeedItemDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 
 internal val emptyPostsWithAuthors = PostsWithAuthorsResponse(
@@ -12,7 +11,7 @@ internal val emptyPostsWithAuthors = PostsWithAuthorsResponse(
 
 class FakeProfileApi(
     private val profileStats: Map<String, ProfileStatsDto> = emptyMap(),
-    private val userPosts: List<PostFeedItemDto> = emptyList(),
+    private val userPostsResponse: PostsWithAuthorsResponse = emptyPostsWithAuthors,
     private val bookmarksResponse: PostsWithAuthorsResponse = emptyPostsWithAuthors,
     private val likesResponse: PostsWithAuthorsResponse = emptyPostsWithAuthors,
 ) : ProfileApi {
@@ -20,11 +19,17 @@ class FakeProfileApi(
     override suspend fun getProfileStats(id: String): ProfileStatsResponse =
         ProfileStatsResponse(profileStats[id] ?: ProfileStatsDto(postsCount = 0))
 
+    /** The (id, cursor) pairs [getUserPosts] was called with, in call order. */
+    val userPostCalls = mutableListOf<Pair<String, String?>>()
+
     override suspend fun getUserPosts(
         id: String,
         cursor: String?,
         limit: Int,
-    ): UserPostsResponse = UserPostsResponse(data = userPosts, page = emptyPage)
+    ): PostsWithAuthorsResponse {
+        userPostCalls += id to cursor
+        return userPostsResponse
+    }
 
     /** The (id, cursor) pairs [getBookmarks] was called with, in call order. */
     val bookmarkCalls = mutableListOf<Pair<String, String?>>()

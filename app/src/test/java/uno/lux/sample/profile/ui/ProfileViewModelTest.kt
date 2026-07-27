@@ -19,7 +19,7 @@ import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.profile.data.FakeProfileDataSource
-import uno.lux.sample.profile.data.PostsWithAuthorsPage
+import uno.lux.sample.profile.data.PostsPage
 import uno.lux.sample.profile.data.ProfileRefreshData
 import uno.lux.sample.profile.data.ProfileRepository
 import uno.lux.sample.testing.ViewModelTest
@@ -89,6 +89,8 @@ class ProfileViewModelTest : ViewModelTest() {
         currentUserId: UserId = "u1",
         bookmarks: List<Post> = listOf(savedPost),
         likes: List<Post> = listOf(likedPost),
+        /** The authors sideloaded with the profile's own posts — in practice only its own user. */
+        postAuthors: List<User> = listOf(ada),
         userDataSource: UserDataSource = FakeUserDataSource(mapOf("u1" to ada, "u2" to grace)),
         postDataSource: FakePostDataSource = FakePostDataSource(),
     ): ProfileViewModel {
@@ -98,19 +100,18 @@ class ProfileViewModelTest : ViewModelTest() {
             refreshData = mapOf(
                 "u1" to ProfileRefreshData(
                     postsCount = 1,
-                    posts = listOf(post),
-                    postCursor = null, postHasMore = false,
+                    page = PostsPage(listOf(post), postAuthors, null, false),
                 ),
                 "u2" to ProfileRefreshData(
                     postsCount = 0,
-                    posts = emptyList(), postCursor = null, postHasMore = false,
+                    page = PostsPage(emptyList(), emptyList(), null, false),
                 ),
             ),
             bookmarks = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(bookmarks, listOf(grace), null, false)),
+                "u1" to mapOf(null to PostsPage(bookmarks, listOf(grace), null, false)),
             ),
             likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(likes, listOf(grace), null, false)),
+                "u1" to mapOf(null to PostsPage(likes, listOf(grace), null, false)),
             ),
         )
         val profileRepo = ProfileRepository(
@@ -246,11 +247,15 @@ class ProfileViewModelTest : ViewModelTest() {
     // The same three-state distinction the post detail page makes. A profile restored after
     // process death starts with empty stores, so "the store has no such user" says nothing until
     // the fetch has actually run — reading it as NotFound flashes "profile not found" over the
-    // whole of every cold start.
+    // whole of every cold start. Nothing has landed here: the user fetch is held, and the posts
+    // page is made to carry no author so it cannot stand in for it.
     @Test
     fun `uiState is Loading while the cold-start fetch is still in flight`() = runTest {
         val gate = CompletableDeferred<Unit>()
-        val viewModel = viewModel(userDataSource = GatedUserDataSource(gate, ada))
+        val viewModel = viewModel(
+            postAuthors = emptyList(),
+            userDataSource = GatedUserDataSource(gate, ada),
+        )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
         }
@@ -262,6 +267,23 @@ class ProfileViewModelTest : ViewModelTest() {
 
         assertTrue(viewModel.uiState.value is ProfileUiState.Loaded)
     }
+
+    // What the sideload buys: the profile's own posts arrive with their author, so the page
+    // draws off that page alone rather than waiting on GET /users/:id to come back too.
+    @Test
+    fun `the author sideloaded with the posts renders the profile before the user fetch lands`() =
+        runTest {
+            val neverAnswers = CompletableDeferred<Unit>()
+            val viewModel = viewModel(userDataSource = GatedUserDataSource(neverAnswers, ada))
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.uiState.collect {}
+            }
+            advanceUntilIdle()
+
+            val loaded = viewModel.uiState.value as ProfileUiState.Loaded
+            assertEquals(ada, loaded.data.user)
+            assertEquals(listOf("p1"), loaded.data.posts.map { it.id })
+        }
 
     @Test
     fun `uiState is NotFound for an unknown user`() = runTest {

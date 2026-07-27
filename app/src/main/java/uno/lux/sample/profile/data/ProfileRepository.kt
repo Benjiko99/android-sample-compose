@@ -26,12 +26,17 @@ import uno.lux.sample.user.data.domain.UserId
  * [hasMorePosts] signals whether another page exists; [loadMorePosts] appends it into the flows
  * above.
  *
+ * Every page of every list carries its posts' authors, and all three put them into
+ * [UserRepository] the way the feed does. On the Posts tab that is only ever the profile's own
+ * user, and sideloading it is what lets a profile opened cold draw its rows off the posts page
+ * alone, rather than waiting on `GET /users/:id` to come back as well.
+ *
  * [bookmarkIds] and [likeIds] are the same arrangement for the posts a user saved and liked, with
  * two differences: each is loaded on demand ([refreshBookmarks] / [refreshLikes]) rather than by
  * [refresh] — a tab nobody opened costs no request, and the Saved one is private to its owner
  * besides — and each emits `null` until its first load lands, which is how a caller tells an empty
- * tab from an unopened one. Their authors are arbitrary users, so they are ingested into
- * [UserRepository] the way the feed's are.
+ * tab from an unopened one. Their authors are arbitrary users the caller may never have met, which
+ * is what makes the sideload indispensable there rather than merely useful.
  *
  * For the signed-in user those two lists are **derived from the flag, not echoed from the fetch**:
  * a list defined by `isBookmarked`/`isLiked` *is* the set of entities carrying that flag, ordered
@@ -103,12 +108,11 @@ class ProfileRepository(
 
     suspend fun refresh(userId: UserId) {
         val data = dataSource.refresh(userId)
+        val page = ingest(data.page)
 
-        postRepository.ingest(data.posts)
+        _postPage.update { it + (userId to PageState(page.cursor, page.hasMore)) }
 
-        _postPage.update { it + (userId to PageState(data.postCursor, data.postHasMore)) }
-
-        _userPostIds.update { it + (userId to data.posts.map { p -> p.id }) }
+        _userPostIds.update { it + (userId to page.posts.map { p -> p.id }) }
         _profiles.update {
             it + (userId to Profile(userId = userId, postsCount = data.postsCount))
         }
@@ -118,8 +122,7 @@ class ProfileRepository(
         val page = _postPage.value[userId] ?: return
         if (!page.hasMore) return
 
-        val result = dataSource.loadMorePosts(userId, page.cursor)
-        postRepository.ingest(result.posts)
+        val result = ingest(dataSource.loadMorePosts(userId, page.cursor))
 
         _postPage.update { it + (userId to PageState(result.cursor, result.hasMore)) }
         _userPostIds.update { map ->
@@ -144,6 +147,14 @@ class ProfileRepository(
 
     private fun emptyProfile(userId: UserId) = Profile(userId = userId, postsCount = 0)
 
+    /** Puts a page's posts and their authors into the shared stores, and hands the page back. */
+    private fun ingest(page: PostsPage): PostsPage {
+        postRepository.ingest(page.posts)
+        userRepository.ingest(page.users)
+
+        return page
+    }
+
     /**
      * One profile tab's worth of post IDs per user, filled on demand by [fetchPage] and paged
      * with its cursor. [ids] emits `null` until the first [refresh] lands, so a caller can tell
@@ -151,7 +162,7 @@ class ProfileRepository(
      * stores on the way through, which is what lets a like toggled anywhere reach these lists.
      */
     private inner class OnDemandPostIds(
-        private val fetchPage: suspend (UserId, String?) -> PostsWithAuthorsPage,
+        private val fetchPage: suspend (UserId, String?) -> PostsPage,
         private val stillBelongs: (Post) -> Boolean,
     ) {
         private val _state = MutableStateFlow<Map<UserId, TabState>>(emptyMap())
@@ -230,13 +241,6 @@ class ProfileRepository(
                     )
                 )
             }
-        }
-
-        private fun ingest(page: PostsWithAuthorsPage): PostsWithAuthorsPage {
-            postRepository.ingest(page.posts)
-            userRepository.ingest(page.users)
-
-            return page
         }
     }
 }

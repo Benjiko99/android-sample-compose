@@ -12,14 +12,15 @@ import org.junit.Test
 import uno.lux.sample.common.data.network.createApi
 
 /**
- * Pins the **wire format** of the profile's on-demand tabs — `GET /users/:id/bookmarks` and
- * `GET /users/:id/likes`, which share one response shape — by driving the real Retrofit stack
- * over loopback against a body captured verbatim from the Rails backend.
+ * Pins the **wire format** of the profile's three lists — `GET /users/:id/posts`,
+ * `GET /users/:id/bookmarks` and `GET /users/:id/likes`, which share one response shape — by
+ * driving the real Retrofit stack over loopback against a body captured verbatim from the Rails
+ * backend.
  *
  * [NetworkProfileDataSourceTest] fakes [ProfileApi], which proves what the data source does with a
  * response but not that the response parses. The parts client and server have to agree on live
  * here: the request paths, the snake_case `page` keys next to the camelCase item fields, and the
- * `included.users` sideload neither tab can render without.
+ * `included.users` sideload no tab can render without.
  */
 class ProfileApiTabsTest {
 
@@ -130,6 +131,17 @@ class ProfileApiTabsTest {
         val page = dataSource.likes("u1", cursor = null)
 
         assertEquals("/api/users/u1/likes?limit=20", server.takeRequest().path)
+        assertEquals(listOf("p2", "p4"), page.posts.map { it.id })
+        assertEquals(listOf("u2", "u4"), page.users.map { it.id })
+    }
+
+    // The Posts tab reads the same shape, sideload included — that is the whole point of it
+    // answering like the other two. Only its path is its own.
+    @Test
+    fun `paging the profile's own posts uses the posts path and parses the sideload`() = runTest {
+        val page = dataSource.loadMorePosts("u1", cursor = "c2")
+
+        assertEquals("/api/users/u1/posts?cursor=c2&limit=20", server.takeRequest().path)
         assertEquals(listOf("p2", "p4"), page.posts.map { it.id })
         assertEquals(listOf("u2", "u4"), page.users.map { it.id })
     }

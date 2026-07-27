@@ -6,9 +6,9 @@ internal class FakeProfileDataSource(
     private val refreshData: Map<String, ProfileRefreshData> = emptyMap(),
     private val morePosts: Map<String, PostsPage> = emptyMap(),
     /** Keyed by cursor, so a test can drive a multi-page Saved tab; null is the first page. */
-    private val bookmarks: Map<String, Map<String?, PostsWithAuthorsPage>> = emptyMap(),
+    private val bookmarks: Map<String, Map<String?, PostsPage>> = emptyMap(),
     /** The same, for the Likes tab. */
-    private val likes: Map<String, Map<String?, PostsWithAuthorsPage>> = emptyMap(),
+    private val likes: Map<String, Map<String?, PostsPage>> = emptyMap(),
 ) : ProfileDataSource {
 
     /** The (userId, cursor) pairs [bookmarks] was called with, in call order. */
@@ -18,25 +18,22 @@ internal class FakeProfileDataSource(
     val likeCalls = mutableListOf<Pair<String, String?>>()
 
     override suspend fun refresh(userId: UserId) =
-        refreshData[userId] ?: ProfileRefreshData(
-            postsCount = 0,
-            posts = emptyList(), postCursor = null, postHasMore = false,
-        )
+        refreshData[userId] ?: ProfileRefreshData(postsCount = 0, page = emptyPage())
 
     override suspend fun loadMorePosts(userId: UserId, cursor: String?) =
-        morePosts[userId] ?: PostsPage(emptyList(), null, false)
+        morePosts[userId] ?: emptyPage()
 
-    override suspend fun bookmarks(userId: UserId, cursor: String?): PostsWithAuthorsPage {
+    override suspend fun bookmarks(userId: UserId, cursor: String?): PostsPage {
         bookmarkCalls += userId to cursor
 
         return bookmarks[userId]?.get(cursor) ?: emptyPage()
     }
 
-    override suspend fun likes(userId: UserId, cursor: String?): PostsWithAuthorsPage {
+    override suspend fun likes(userId: UserId, cursor: String?): PostsPage {
         likeCalls += userId to cursor
 
         return likes[userId]?.get(cursor) ?: emptyPage()
     }
 
-    private fun emptyPage() = PostsWithAuthorsPage(emptyList(), emptyList(), null, false)
+    private fun emptyPage() = PostsPage(emptyList(), emptyList(), null, false)
 }

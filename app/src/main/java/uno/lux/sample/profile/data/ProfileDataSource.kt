@@ -14,34 +14,27 @@ interface ProfileDataSource {
      * tab is private to its owner and loads only once they open it — a profile view never
      * requests it, and the server refuses it for anyone but the signed-in user.
      */
-    suspend fun bookmarks(userId: UserId, cursor: String?): PostsWithAuthorsPage
+    suspend fun bookmarks(userId: UserId, cursor: String?): PostsPage
 
     /**
      * A page of the posts [userId] liked. Public, unlike [bookmarks] — anyone may read anyone's
      * — but loaded on the same on-demand terms, since it is a request the Posts tab doesn't need.
      */
-    suspend fun likes(userId: UserId, cursor: String?): PostsWithAuthorsPage
+    suspend fun likes(userId: UserId, cursor: String?): PostsPage
 }
 
+/** The profile's counts plus the first [page] of its own posts, which arrive in one refresh. */
 data class ProfileRefreshData(
     val postsCount: Int,
-    val posts: List<Post>,
-    val postCursor: String?,
-    val postHasMore: Boolean,
-)
-
-data class PostsPage(
-    val posts: List<Post>,
-    val cursor: String?,
-    val hasMore: Boolean,
+    val page: PostsPage,
 )
 
 /**
- * A page of posts for the Saved and Likes tabs. Unlike [PostsPage], it carries [users]: a
- * profile's own posts are all by the profile's user, but a saved or liked one is by an arbitrary
- * author the caller may not know yet.
+ * One page of any of the profile's three lists. [users] carries the page's authors: on the Saved
+ * and Likes tabs a post is by an arbitrary author the caller may not know yet, and on the Posts
+ * tab it is the profile's own user — which a page opened cold has no other way to resolve.
  */
-data class PostsWithAuthorsPage(
+data class PostsPage(
     val posts: List<Post>,
     val users: List<User>,
     val cursor: String?,

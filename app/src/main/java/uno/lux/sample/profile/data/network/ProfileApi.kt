@@ -16,7 +16,7 @@ interface ProfileApi {
         @Path("id") id: String,
         @Query("cursor") cursor: String? = null,
         @Query("limit") limit: Int = 20,
-    ): UserPostsResponse
+    ): PostsWithAuthorsResponse
 
     @GET("users/{id}/bookmarks")
     suspend fun getBookmarks(

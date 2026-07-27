@@ -6,9 +6,11 @@ import uno.lux.sample.post.data.network.PostFeedItemDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 
 /**
- * `{ "data": [...], "included": { "users": [...] }, "page": { ... } }` — the profile's saved and
- * liked posts, which share one shape. [included] is not optional the way it is on the feed: these
- * posts are by arbitrary authors, so the server always sends them.
+ * `{ "data": [...], "included": { "users": [...] }, "page": { ... } }` — every one of the
+ * profile's three lists: its own posts, its saved posts and its liked ones. [included] is not
+ * optional the way it is on the feed, so a page renders from the page alone. On the Posts tab
+ * that sideload is only ever the profile's own user; on the other two the authors are arbitrary,
+ * and it is the caller's only way to know them.
  */
 @Serializable
 data class PostsWithAuthorsResponse(

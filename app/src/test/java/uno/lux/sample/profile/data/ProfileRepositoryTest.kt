@@ -33,7 +33,7 @@ class ProfileRepositoryTest {
         posts: List<Post>,
         users: List<User> = emptyList(),
     ) = FakeProfileDataSource(
-        bookmarks = mapOf("u1" to mapOf(null to PostsWithAuthorsPage(posts, users, null, false))),
+        bookmarks = mapOf("u1" to mapOf(null to PostsPage(posts, users, null, false))),
     )
 
     private fun likesDataSource(
@@ -43,7 +43,7 @@ class ProfileRepositoryTest {
         cursor: String? = null,
         hasMore: Boolean = false,
     ) = FakeProfileDataSource(
-        likes = mapOf(userId to mapOf(null to PostsWithAuthorsPage(posts, users, cursor, hasMore))),
+        likes = mapOf(userId to mapOf(null to PostsPage(posts, users, cursor, hasMore))),
     )
 
     private fun userRepo() = UserRepository(FakeUserDataSource())
@@ -79,13 +79,7 @@ class ProfileRepositoryTest {
     @Test
     fun `refresh populates profile with data source result`() = runTest {
         val dataSource = FakeProfileDataSource(
-            refreshData = mapOf(
-                "u1" to ProfileRefreshData(
-                    postsCount = 1,
-                    posts = listOf(adaPost),
-                    postCursor = null, postHasMore = false,
-                ),
-            ),
+            refreshData = mapOf("u1" to refreshData(posts = listOf(adaPost))),
         )
         val repo = repository(dataSource)
 
@@ -121,14 +115,27 @@ class ProfileRepositoryTest {
         assertEquals("p1", postRepo.entities.first()["p1"]?.id)
     }
 
+    // The profile's own posts sideload their author like every other list, so a profile opened
+    // cold has the user it needs to draw a row without a second request having landed.
+    @Test
+    fun `refresh ingests the sideloaded author into the user repository`() = runTest {
+        val ada = User(id = "u1", nickname = "Ada", handle = "@ada")
+        val userRepo = userRepo()
+        val dataSource = FakeProfileDataSource(
+            refreshData = mapOf("u1" to refreshData(posts = listOf(adaPost), users = listOf(ada))),
+        )
+        val repo = repository(dataSource, userRepo = userRepo)
+
+        repo.refresh("u1")
+
+        assertEquals(ada, userRepo.users.first()["u1"])
+    }
+
     @Test
     fun `refresh sets hasMorePosts from data source`() = runTest {
         val dataSource = FakeProfileDataSource(
             refreshData = mapOf(
-                "u1" to ProfileRefreshData(
-                    postsCount = 1,
-                    posts = listOf(adaPost), postCursor = "c2", postHasMore = true,
-                ),
+                "u1" to refreshData(posts = listOf(adaPost), cursor = "c2", hasMore = true),
             ),
         )
         val repo = repository(dataSource)
@@ -143,12 +150,9 @@ class ProfileRepositoryTest {
         val p3 = post("p3", "u1")
         val dataSource = FakeProfileDataSource(
             refreshData = mapOf(
-                "u1" to ProfileRefreshData(
-                    postsCount = 1,
-                    posts = listOf(adaPost), postCursor = "c2", postHasMore = true,
-                ),
+                "u1" to refreshData(posts = listOf(adaPost), cursor = "c2", hasMore = true),
             ),
-            morePosts = mapOf("u1" to PostsPage(listOf(p3), null, false)),
+            morePosts = mapOf("u1" to PostsPage(listOf(p3), emptyList(), null, false)),
         )
         val repo = repository(dataSource)
         repo.refresh("u1")
@@ -156,6 +160,25 @@ class ProfileRepositoryTest {
         repo.loadMorePosts("u1")
 
         assertEquals(listOf("p1", "p3"), repo.postIds("u1").first())
+    }
+
+    @Test
+    fun `loadMorePosts ingests the next page's author`() = runTest {
+        val userRepo = userRepo()
+        val dataSource = FakeProfileDataSource(
+            refreshData = mapOf(
+                "u1" to refreshData(posts = listOf(adaPost), cursor = "c2", hasMore = true),
+            ),
+            morePosts = mapOf(
+                "u1" to PostsPage(listOf(post("p3", "u2")), listOf(grace), null, false),
+            ),
+        )
+        val repo = repository(dataSource, userRepo = userRepo)
+        repo.refresh("u1")
+
+        repo.loadMorePosts("u1")
+
+        assertEquals(grace, userRepo.users.first()["u2"])
     }
 
     // ── Bookmarks (the Saved tab) ───────────────────────────────────────────────
@@ -215,8 +238,8 @@ class ProfileRepositoryTest {
         val dataSource = FakeProfileDataSource(
             bookmarks = mapOf(
                 "u1" to mapOf(
-                    null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), "c2", true),
-                    "c2" to PostsWithAuthorsPage(listOf(p3), emptyList(), null, false),
+                    null to PostsPage(listOf(gracePost), listOf(grace), "c2", true),
+                    "c2" to PostsPage(listOf(p3), emptyList(), null, false),
                 ),
             ),
         )
@@ -320,11 +343,11 @@ class ProfileRepositoryTest {
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
                 "u1" to
-                    mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+                    mapOf(null to PostsPage(listOf(gracePost), emptyList(), null, false)),
             ),
             bookmarks = mapOf(
                 "u1" to
-                    mapOf(null to PostsWithAuthorsPage(listOf(adaPost), emptyList(), null, false)),
+                    mapOf(null to PostsPage(listOf(adaPost), emptyList(), null, false)),
             ),
         )
         val repo = repository(dataSource)
@@ -342,8 +365,8 @@ class ProfileRepositoryTest {
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
                 "u1" to mapOf(
-                    null to PostsWithAuthorsPage(listOf(gracePost), listOf(grace), "c2", true),
-                    "c2" to PostsWithAuthorsPage(listOf(p3), emptyList(), null, false),
+                    null to PostsPage(listOf(gracePost), listOf(grace), "c2", true),
+                    "c2" to PostsPage(listOf(p3), emptyList(), null, false),
                 ),
             ),
         )
@@ -401,7 +424,7 @@ class ProfileRepositoryTest {
         postRepo.ingest(listOf(adaPost))
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
-                "u1" to mapOf(null to PostsWithAuthorsPage(emptyList(), emptyList(), null, false)),
+                "u1" to mapOf(null to PostsPage(emptyList(), emptyList(), null, false)),
             ),
         )
         val repo = repository(dataSource, postRepo)
@@ -425,7 +448,7 @@ class ProfileRepositoryTest {
                 "u1" to
                     mapOf(
                         null to
-                            PostsWithAuthorsPage(listOf(gracePost, newest), emptyList(), null, false),
+                            PostsPage(listOf(gracePost, newest), emptyList(), null, false),
                     ),
             ),
         )
@@ -447,7 +470,7 @@ class ProfileRepositoryTest {
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
                 "u1" to
-                    mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), "c2", true)),
+                    mapOf(null to PostsPage(listOf(gracePost), emptyList(), "c2", true)),
             ),
         )
         val repo = repository(dataSource, postRepo)
@@ -467,7 +490,7 @@ class ProfileRepositoryTest {
         val dataSource = FakeProfileDataSource(
             likes = mapOf(
                 "u2" to
-                    mapOf(null to PostsWithAuthorsPage(listOf(gracePost), emptyList(), null, false)),
+                    mapOf(null to PostsPage(listOf(gracePost), emptyList(), null, false)),
             ),
         )
         val repo = repository(dataSource, postRepo, currentUserId = "u1")
@@ -492,9 +515,14 @@ class ProfileRepositoryTest {
     }
 }
 
-private fun refreshData(posts: List<Post> = emptyList()) = ProfileRefreshData(
+private fun refreshData(
+    posts: List<Post> = emptyList(),
+    users: List<User> = emptyList(),
+    cursor: String? = null,
+    hasMore: Boolean = false,
+) = ProfileRefreshData(
     postsCount = posts.size,
-    posts = posts, postCursor = null, postHasMore = false,
+    page = PostsPage(posts, users, cursor, hasMore),
 )
 
 // These lists come back in (createdAt, id) descending order, so a later page is always older
