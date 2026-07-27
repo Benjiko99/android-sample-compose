@@ -24,6 +24,7 @@ import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.post.ui.ReportSendState
 import uno.lux.sample.settings.data.InMemorySettingsRepository
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.testing.ViewModelTest
@@ -182,19 +183,6 @@ class HomeViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `a failed report names the action for the screen`() = runTest {
-        val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
-        val viewModel = viewModel(postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
-
-        viewModel.onReportPost("p1", ReportReason.VIOLENCE, "")
-
-        assertEquals(FailedAction.REPORT_POST, viewModel.failedAction.value)
-    }
-
-    @Test
     fun `a delete that goes through announces nothing`() = runTest {
         val viewModel = viewModel()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -240,6 +228,30 @@ class HomeViewModelTest : ViewModelTest() {
             dataSource.reports,
         )
         assertEquals(before, (viewModel.uiState.value as HomeUiState.Feed).posts)
+    }
+
+    // The feed's report goes through the same send state the detail page's does, so the card's
+    // dialog can stay up for it — and a failure stays out of the screen's snackbar.
+    @Test
+    fun `a failed report is a state for the card's dialog, not an announcement`() = runTest {
+        val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
+        val viewModel = viewModel(postDataSource = dataSource)
+
+        viewModel.onReportPost("p1", ReportReason.VIOLENCE, "")
+
+        assertEquals(ReportSendState.FAILED, viewModel.reportSend.value)
+        assertNull(viewModel.failedAction.value)
+    }
+
+    @Test
+    fun `a report the server takes reaches SENT, and closing the dialog spends it`() = runTest {
+        val viewModel = viewModel()
+        viewModel.onReportPost("p1", ReportReason.VIOLENCE, "")
+        assertEquals(ReportSendState.SENT, viewModel.reportSend.value)
+
+        viewModel.onReportClosed()
+
+        assertEquals(ReportSendState.IDLE, viewModel.reportSend.value)
     }
 
     @Test

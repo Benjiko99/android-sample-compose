@@ -18,6 +18,7 @@ import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
+import uno.lux.sample.post.ui.ReportSendState
 import uno.lux.sample.profile.data.FakeProfileDataSource
 import uno.lux.sample.profile.data.PostsPage
 import uno.lux.sample.profile.data.ProfileRefreshData
@@ -163,6 +164,30 @@ class ProfileViewModelTest : ViewModelTest() {
             dataSource.reports,
         )
         assertEquals(before, (viewModel.uiState.value as ProfileUiState.Loaded).data.posts)
+        assertEquals(ReportSendState.SENT, viewModel.reportSend.value)
+    }
+
+    // The profile's report is held in the same state the feed's and the detail page's are, so
+    // the card's dialog stays up for it rather than closing on a report that never landed.
+    @Test
+    fun `a failed report is a state for the card's dialog, not an announcement`() = runTest {
+        val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
+        val viewModel = viewModel(postDataSource = dataSource)
+
+        viewModel.onReportPost("p1", ReportReason.MISINFORMATION, "")
+
+        assertEquals(ReportSendState.FAILED, viewModel.reportSend.value)
+        assertNull(viewModel.failedAction.value)
+    }
+
+    @Test
+    fun `onReportClosed drops the outcome the dialog has acted on`() = runTest {
+        val viewModel = viewModel()
+        viewModel.onReportPost("p1", ReportReason.MISINFORMATION, "")
+
+        viewModel.onReportClosed()
+
+        assertEquals(ReportSendState.IDLE, viewModel.reportSend.value)
     }
 
     @Test

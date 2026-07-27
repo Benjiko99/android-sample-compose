@@ -112,11 +112,13 @@ fun PostDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
+    val reportSend by viewModel.reportSend.collectAsStateWithLifecycle()
 
     PostDetailScreen(
         uiState = uiState,
         composerUser = viewModel.composerUser,
         failedAction = failedAction,
+        reportSend = reportSend,
         onFailedActionShown = viewModel::onFailedActionShown,
         onBack = viewModel::goBack,
         onOpenProfile = viewModel::openProfile,
@@ -133,6 +135,7 @@ fun PostDetailScreen(
         onRetry = viewModel::retry,
         onDelete = viewModel::onDelete,
         onReport = viewModel::onReport,
+        onReportClosed = viewModel::onReportClosed,
         modifier = modifier,
     )
 }
@@ -148,6 +151,7 @@ internal fun PostDetailScreen(
     uiState: PostDetailUiState,
     composerUser: User,
     failedAction: FailedAction?,
+    reportSend: ReportSendState,
     onFailedActionShown: () -> Unit,
     onBack: () -> Unit,
     onOpenProfile: (userId: UserId) -> Unit,
@@ -164,13 +168,14 @@ internal fun PostDetailScreen(
     onRetry: () -> Unit,
     onDelete: () -> Unit,
     onReport: (reason: ReportReason, details: String) -> Unit,
+    onReportClosed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loaded = (uiState as? PostDetailUiState.Loaded)
     val listState = rememberLazyListState()
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
-    // A delete or report whose request failed after its dialog or sheet already closed.
+    // A delete or comment whose request failed after its dialog already closed.
     FailedActionEffect(failedAction, snackbarHostState, onFailedActionShown)
 
     Scaffold(
@@ -203,8 +208,10 @@ internal fun PostDetailScreen(
                         PostOverflowMenu(
                             post = loaded.post,
                             author = loaded.author,
+                            reportSend = reportSend,
                             onToggleBookmark = onToggleBookmark,
                             onReport = onReport,
+                            onReportClosed = onReportClosed,
                             onDelete = if (loaded.isOwn) onDelete else null,
                         )
                     }
@@ -714,6 +721,7 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
             uiState = uiState,
             composerUser = SampleUsers.first(),
             failedAction = null,
+            reportSend = ReportSendState.IDLE,
             onFailedActionShown = {},
             onBack = {},
             onOpenProfile = {},
@@ -730,6 +738,7 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
             onRetry = {},
             onDelete = {},
             onReport = { _, _ -> },
+            onReportClosed = {},
         )
     }
 }

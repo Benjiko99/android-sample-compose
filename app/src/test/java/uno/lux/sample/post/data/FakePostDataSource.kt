@@ -84,8 +84,10 @@ internal class FakePostDataSource : PostDataSource {
     var setLikeError: Exception? = null
 
     /**
-     * Runs inside [setLike] and [setBookmark] before either answers, which is the only moment a
-     * test can see the optimistic value the repository wrote before the request went out.
+     * Runs inside [setLike], [setBookmark] and [report] before any of them answers, which is the
+     * only moment a test can see what its caller wrote while the request was out — the optimistic
+     * like the repository applied, or the send state the report dialog is reading. Suspending
+     * here holds the request open for as long as the test needs it.
      */
     var whileInFlight: (suspend () -> Unit)? = null
 
@@ -131,6 +133,7 @@ internal class FakePostDataSource : PostDataSource {
         reason: ReportReason,
         details: String,
     ) {
+        whileInFlight?.invoke()
         reportError?.let { throw it }
         reports += Report(postId, reason, details)
     }

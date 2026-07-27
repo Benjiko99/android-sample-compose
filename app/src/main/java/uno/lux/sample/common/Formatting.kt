@@ -47,7 +47,6 @@ fun AppError.asText(): String = when (this) {
 @Composable
 fun FailedAction.asText(): String = when (this) {
     FailedAction.DELETE_POST -> stringResource(R.string.action_failed_delete_post)
-    FailedAction.REPORT_POST -> stringResource(R.string.action_failed_report_post)
     FailedAction.FOLLOW -> stringResource(R.string.action_failed_follow)
     FailedAction.SEND_COMMENT -> stringResource(R.string.action_failed_send_comment)
 }

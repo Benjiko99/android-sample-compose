@@ -23,6 +23,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,13 +56,18 @@ import uno.lux.sample.user.ui.Avatar
  * [onDelete] is null for a post the signed-in user didn't write, and the sheet then omits the
  * delete row entirely — a nullable action rather than a separate `canDelete` flag, so there is no
  * way for the two to disagree. Deleting is irreversible, so it is confirmed before it fires.
+ *
+ * [reportSend] is the screen's report state, which only the menu with the dialog open reads: the
+ * dialog is modal, so the one report a screen can have in flight is always this one's.
  */
 @Composable
 internal fun PostOverflowMenu(
     post: Post,
     author: User,
+    reportSend: ReportSendState,
     onToggleBookmark: () -> Unit,
     onReport: (reason: ReportReason, details: String) -> Unit,
+    onReportClosed: () -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
@@ -102,16 +108,24 @@ internal fun PostOverflowMenu(
     }
 
     if (showReportDialog) {
+        // The thanks says a server has the report, so it waits until one does. The dialog stays up
+        // for the whole send and closes here, on the answer — a report that failed keeps the
+        // dialog, and says so in it, rather than thanking the user for nothing.
+        LaunchedEffect(reportSend) {
+            if (reportSend != ReportSendState.SENT) return@LaunchedEffect
+
+            context.toast(R.string.report_sent)
+            showReportDialog = false
+            onReportClosed()
+        }
+
         ReportPostDialog(
-            onDismiss = { showReportDialog = false },
-            // The thanks is optimistic: the report goes out fire-and-forget, like a like or a
-            // delete, and there is nothing a reporter could do about a failed one anyway. What
-            // they are being told is that the report was made, not that a server has it.
-            onSubmit = { reason, details ->
-                onReport(reason, details)
-                context.toast(R.string.report_sent)
+            sendState = reportSend,
+            onDismiss = {
                 showReportDialog = false
+                onReportClosed()
             },
+            onSubmit = onReport,
         )
     }
 }

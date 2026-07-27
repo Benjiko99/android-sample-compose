@@ -30,6 +30,9 @@ import uno.lux.sample.common.ui.launchReporting
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.post.ui.ReportSendState
+import uno.lux.sample.post.ui.dropReport
+import uno.lux.sample.post.ui.launchReport
 import uno.lux.sample.profile.data.ProfileRepository
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.UserId
@@ -170,10 +173,16 @@ class ProfileViewModel @AssistedInject constructor(
     /** The last [FailedAction] to fail here, for the screen to announce once and then spend. */
     val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
 
+    private val _reportSend = MutableStateFlow(ReportSendState.IDLE)
+
+    /** How the report dialog's send is going, for the dialog it is still showing under. */
+    val reportSend: StateFlow<ReportSendState> = _reportSend.asStateFlow()
+
     private var loadJob: Job? = null
     private var loadMorePostsJob: Job? = null
     private var bookmarksJob: Job? = null
     private var likesJob: Job? = null
+    private var reportJob: Job? = null
 
     init {
         retry()
@@ -220,9 +229,11 @@ class ProfileViewModel @AssistedInject constructor(
         postId: PostId,
         reason: ReportReason,
         details: String,
-    ) = launchReporting(_failedAction, FailedAction.REPORT_POST) {
+    ) = launchReport(::reportJob, _reportSend) {
         postRepository.report(postId, reason, details)
     }
+
+    override fun onReportClosed() = dropReport(::reportJob, _reportSend)
 
     override fun onToggleFollow() = launchReporting(_failedAction, FailedAction.FOLLOW) {
         userRepository.toggleFollow(userId)

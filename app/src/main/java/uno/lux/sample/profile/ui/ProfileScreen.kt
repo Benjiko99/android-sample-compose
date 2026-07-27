@@ -99,6 +99,7 @@ import uno.lux.sample.common.ui.LoadingMoreFooter
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.post.ui.ReportSendState
 import uno.lux.sample.profile.data.domain.Profile
 import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.data.domain.UserId
@@ -126,6 +127,8 @@ interface ProfileActions {
         reason: ReportReason,
         details: String,
     )
+
+    fun onReportClosed()
 
     fun onToggleFollow()
 
@@ -175,11 +178,13 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
+    val reportSend by viewModel.reportSend.collectAsStateWithLifecycle()
 
     ProfileScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
         failedAction = failedAction,
+        reportSend = reportSend,
         onRefresh = viewModel::refresh,
         onRetry = viewModel::retry,
         actions = viewModel,
@@ -199,6 +204,7 @@ internal fun ProfileScreen(
     uiState: ProfileUiState,
     isRefreshing: Boolean,
     failedAction: FailedAction?,
+    reportSend: ReportSendState,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
     actions: ProfileActions,
@@ -207,8 +213,8 @@ internal fun ProfileScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // A delete, report or follow whose request failed after the tap left nothing on screen to
-    // fail visibly.
+    // A delete or follow whose request failed after the tap left nothing on screen to fail
+    // visibly.
     FailedActionEffect(failedAction, snackbarHostState, actions::onFailedActionShown)
 
     Box(
@@ -241,6 +247,7 @@ internal fun ProfileScreen(
                     data = uiState.data,
                     isCurrentUser = uiState.isCurrentUser,
                     isRefreshing = isRefreshing,
+                    reportSend = reportSend,
                     onRefresh = onRefresh,
                     actions = actions,
                     onBack = onBack,
@@ -276,6 +283,7 @@ private fun ProfileContent(
     data: ProfileScreenData,
     isCurrentUser: Boolean,
     isRefreshing: Boolean,
+    reportSend: ReportSendState,
     onRefresh: () -> Unit,
     actions: ProfileActions,
     onBack: (() -> Unit)?,
@@ -405,12 +413,14 @@ private fun ProfileContent(
                     when (selectedTab) {
                         ProfileTab.POSTS -> postItems(
                             screenData = data,
+                            reportSend = reportSend,
                             actions = actions,
                             isCurrentUser = isCurrentUser,
                         )
 
                         ProfileTab.LIKES -> onDemandTabItems(
                             list = data.likes,
+                            reportSend = reportSend,
                             actions = actions,
                             keyPrefix = "likes",
                             emptyMessageRes = R.string.profile_empty_likes,
@@ -418,6 +428,7 @@ private fun ProfileContent(
 
                         ProfileTab.SAVED -> onDemandTabItems(
                             list = data.bookmarks,
+                            reportSend = reportSend,
                             actions = actions,
                             keyPrefix = "saved",
                             emptyMessageRes = R.string.profile_empty_saved,
@@ -706,6 +717,7 @@ private fun ProfileTabs(
 
 private fun LazyListScope.postItems(
     screenData: ProfileScreenData,
+    reportSend: ReportSendState,
     actions: ProfileActions,
     isCurrentUser: Boolean,
 ) {
@@ -721,6 +733,7 @@ private fun LazyListScope.postItems(
             // Every post here is by the profile's user, so "own post" is simply whose profile
             // this is — no per-post comparison needed.
             data = PostCardData(post, author, isOwn = isCurrentUser),
+            reportSend = reportSend,
             onToggleLike = { actions.onToggleLike(post.id) },
             onToggleBookmark = { actions.onToggleBookmark(post.id) },
             // Already on this author's profile — tapping the header again is a no-op.
@@ -729,6 +742,7 @@ private fun LazyListScope.postItems(
             onOpenAlbum = actions::openAlbum,
             onOpenPost = { actions.openPost(post.id) },
             onReport = { reason, details -> actions.onReportPost(post.id, reason, details) },
+            onReportClosed = actions::onReportClosed,
             onDelete = if (isCurrentUser) ({ actions.onDeletePost(post.id) }) else null,
         )
     }
@@ -763,6 +777,7 @@ private fun OnDemandTabEffects(
  */
 private fun LazyListScope.onDemandTabItems(
     list: ProfilePostList?,
+    reportSend: ReportSendState,
     actions: ProfileActions,
     keyPrefix: String,
     @StringRes emptyMessageRes: Int,
@@ -780,6 +795,7 @@ private fun LazyListScope.onDemandTabItems(
     items(list.posts, key = { "$keyPrefix-${it.post.id}" }) { data ->
         PostCard(
             data = data,
+            reportSend = reportSend,
             onToggleLike = { actions.onToggleLike(data.post.id) },
             onToggleBookmark = { actions.onToggleBookmark(data.post.id) },
             // A saved or liked post can be by anyone, so its header opens that author's
@@ -789,6 +805,7 @@ private fun LazyListScope.onDemandTabItems(
             onOpenAlbum = actions::openAlbum,
             onOpenPost = { actions.openPost(data.post.id) },
             onReport = { reason, details -> actions.onReportPost(data.post.id, reason, details) },
+            onReportClosed = actions::onReportClosed,
             onDelete = if (data.isOwn) ({ actions.onDeletePost(data.post.id) }) else null,
         )
     }
@@ -942,6 +959,7 @@ private fun ProfileScreenPreview() {
             uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = true),
             isRefreshing = false,
             failedAction = null,
+            reportSend = ReportSendState.IDLE,
             onRefresh = {},
             onRetry = {},
             actions = createActionsProxy(),
@@ -957,6 +975,7 @@ private fun ProfileScreenOtherUserPreview() {
             uiState = ProfileUiState.Loaded(sampleProfileData(), isCurrentUser = false),
             isRefreshing = false,
             failedAction = null,
+            reportSend = ReportSendState.IDLE,
             onRefresh = {},
             onRetry = {},
             actions = createActionsProxy(),

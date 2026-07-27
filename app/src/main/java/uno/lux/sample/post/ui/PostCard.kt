@@ -30,6 +30,7 @@ private const val FEED_BODY_MAX_LINES = 5
 @Composable
 internal fun PostCard(
     data: PostCardData,
+    reportSend: ReportSendState,
     onToggleLike: () -> Unit,
     onToggleBookmark: () -> Unit,
     onOpenProfile: () -> Unit,
@@ -37,6 +38,7 @@ internal fun PostCard(
     onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
     onOpenPost: () -> Unit,
     onReport: (reason: ReportReason, details: String) -> Unit,
+    onReportClosed: () -> Unit,
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
 ) {
@@ -57,8 +59,10 @@ internal fun PostCard(
                 PostOverflowMenu(
                     post = post,
                     author = author,
+                    reportSend = reportSend,
                     onToggleBookmark = onToggleBookmark,
                     onReport = onReport,
+                    onReportClosed = onReportClosed,
                     onDelete = onDelete,
                 )
             },
@@ -90,6 +94,7 @@ private fun PostCardPreview() {
     MosaicTheme {
         PostCard(
             data = PostCardData(post, users.getValue(post.authorId)),
+            reportSend = ReportSendState.IDLE,
             onToggleLike = {},
             onToggleBookmark = {},
             onOpenProfile = {},
@@ -97,6 +102,7 @@ private fun PostCardPreview() {
             onOpenAlbum = { _, _ -> },
             onOpenPost = {},
             onReport = { _, _ -> },
+            onReportClosed = {},
         )
     }
 }

@@ -19,7 +19,6 @@
     <string name="error_retry">Retry</string>
     <!-- Failed fire-and-forget actions -->
     <string name="action_failed_delete_post">Couldn\'t delete the post</string>
-    <string name="action_failed_report_post">Couldn\'t send the report</string>
     <string name="action_failed_follow">Couldn\'t follow or unfollow</string>
     <string name="action_failed_send_comment">Couldn\'t send the comment</string>
 
@@ -66,6 +65,7 @@
     <string name="report_send">Send</string>
     <string name="report_cancel">Cancel</string>
     <string name="report_sent">Report was sent, thank you</string>
+    <string name="report_send_failed">Couldn\'t send the report. Try again.</string>
     <string name="post_action_like">Like</string>
     <string name="post_action_unlike">Unlike</string>
     <string name="post_action_comment">Comment</string>

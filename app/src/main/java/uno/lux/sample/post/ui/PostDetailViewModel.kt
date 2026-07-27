@@ -181,8 +181,14 @@ class PostDetailViewModel @AssistedInject constructor(
     /** The last [FailedAction] to fail here, for the screen to announce once and then spend. */
     val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
 
+    private val _reportSend = MutableStateFlow(ReportSendState.IDLE)
+
+    /** How the report dialog's send is going, for the dialog it is still showing under. */
+    val reportSend: StateFlow<ReportSendState> = _reportSend.asStateFlow()
+
     private var loadJob: Job? = null
     private var loadMoreJob: Job? = null
+    private var reportJob: Job? = null
 
     init {
         retry()
@@ -306,11 +312,15 @@ class PostDetailViewModel @AssistedInject constructor(
 
     /**
      * Reports the post. Unlike [onDelete] the page stays where it is: a reported post is still
-     * a post, and the reporter is still reading it.
+     * a post, and the reporter is still reading it — and so is the dialog, which is why the
+     * outcome goes to [reportSend] rather than to a snackbar the dialog would cover.
      */
-    fun onReport(reason: ReportReason, details: String) = launchReporting(_failedAction, FailedAction.REPORT_POST) {
+    fun onReport(reason: ReportReason, details: String) = launchReport(::reportJob, _reportSend) {
         postRepository.report(postId, reason, details)
     }
+
+    /** The report dialog is gone, whether it was cancelled, dismissed, or closed on the thanks. */
+    fun onReportClosed() = dropReport(::reportJob, _reportSend)
 
     /**
      * The screen has announced [failedAction] and is done with it — spent once shown, so a

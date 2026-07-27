@@ -13,17 +13,18 @@ import uno.lux.sample.common.asText
 
 /**
  * A fire-and-forget user action whose request failed after the UI had already moved on — the
- * confirmation dialog closed, the report sheet dismissed, the follow button never moved — so
- * there is nothing left on screen for the failure to show up in. The ViewModel that ran the
- * action names it here for the screen to announce once and then spend.
+ * confirmation dialog closed, the sheet dismissed, the follow button never moved — so there is
+ * nothing left on screen for the failure to show up in. The ViewModel that ran the action names it here for the screen
+ * to announce once and then spend.
  *
- * Optimistic mutations are deliberately absent: a failed like or bookmark reverts the control
- * the user just tapped, and that revert is its own announcement. The rule is whether the failure
+ * Two kinds of mutation are deliberately absent. An optimistic one — a like or a bookmark —
+ * reverts the control the user just tapped, and that revert is its own announcement. A report
+ * keeps its dialog up until the server answers, so the failure is stated in the dialog the user
+ * is still reading; a snackbar would land behind it either way. The rule is whether the failure
  * is visible where the tap happened, not which screen the action belongs to.
  */
 enum class FailedAction {
     DELETE_POST,
-    REPORT_POST,
     FOLLOW,
     SEND_COMMENT,
 }

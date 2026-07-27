@@ -60,6 +60,7 @@ import uno.lux.sample.common.ui.LoadingMoreFooter
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCard
 import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.post.ui.ReportSendState
 import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.video.data.domain.Video
 import uno.lux.sample.video.ui.LocalVideoPlayback
@@ -95,6 +96,8 @@ interface HomeActions {
         details: String,
     )
 
+    fun onReportClosed()
+
     fun openSettings()
 
     fun openProfile(userId: UserId)
@@ -119,12 +122,14 @@ fun HomeScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val autoPlayVideos by viewModel.autoPlayVideos.collectAsStateWithLifecycle()
     val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
+    val reportSend by viewModel.reportSend.collectAsStateWithLifecycle()
 
     HomeScreen(
         uiState = uiState,
         isRefreshing = isRefreshing,
         autoPlayVideos = autoPlayVideos,
         failedAction = failedAction,
+        reportSend = reportSend,
         actions = viewModel,
         modifier = modifier,
     )
@@ -141,6 +146,7 @@ internal fun HomeScreen(
     isRefreshing: Boolean,
     autoPlayVideos: Boolean,
     failedAction: FailedAction?,
+    reportSend: ReportSendState,
     actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
@@ -171,7 +177,7 @@ internal fun HomeScreen(
         if (result == SnackbarResult.ActionPerformed) actions.refresh()
     }
 
-    // A delete or report whose request failed after its dialog or sheet already closed.
+    // A delete whose request failed after its dialog already closed.
     FailedActionEffect(failedAction, snackbarHostState, actions::onFailedActionShown)
 
     Scaffold(
@@ -211,6 +217,7 @@ internal fun HomeScreen(
                             posts = uiState.posts,
                             endReached = uiState.endReached,
                             autoPlayVideos = autoPlayVideos,
+                            reportSend = reportSend,
                             listState = listState,
                             actions = actions,
                         )
@@ -264,6 +271,7 @@ private fun FeedList(
     posts: List<PostCardData>,
     endReached: Boolean,
     autoPlayVideos: Boolean,
+    reportSend: ReportSendState,
     listState: LazyListState,
     actions: HomeActions,
     modifier: Modifier = Modifier,
@@ -300,6 +308,7 @@ private fun FeedList(
         items(posts, key = { it.post.id }) { data ->
             PostCard(
                 data = data,
+                reportSend = reportSend,
                 onToggleLike = { actions.onToggleLike(data.post.id) },
                 onToggleBookmark = { actions.onToggleBookmark(data.post.id) },
                 onOpenProfile = { actions.openProfile(data.author.id) },
@@ -309,6 +318,7 @@ private fun FeedList(
                 onReport = { reason, details ->
                     actions.onReportPost(data.post.id, reason, details)
                 },
+                onReportClosed = actions::onReportClosed,
                 onDelete = if (data.isOwn) ({ actions.onDeletePost(data.post.id) }) else null,
             )
         }
@@ -411,6 +421,7 @@ private fun HomeFeedPreview() {
             isRefreshing = false,
             autoPlayVideos = true,
             failedAction = null,
+            reportSend = ReportSendState.IDLE,
             actions = createActionsProxy(),
         )
     }
@@ -425,6 +436,7 @@ private fun HomeEmptyPreview() {
             isRefreshing = false,
             autoPlayVideos = true,
             failedAction = null,
+            reportSend = ReportSendState.IDLE,
             actions = createActionsProxy(),
         )
     }

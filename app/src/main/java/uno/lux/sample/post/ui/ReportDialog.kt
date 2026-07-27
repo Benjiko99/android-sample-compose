@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -18,6 +19,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -51,10 +53,17 @@ const val REPORT_DETAILS_MAX_LENGTH = 1000
  * field. The chosen reason and trimmed details are handed to [onSubmit]; Send stays disabled
  * until a reason is picked. The transient selection is owned here, so the host deals only with
  * the submit / dismiss outcomes.
+ *
+ * [sendState] is how the report is going, and the dialog outlives the tap on Send because of it:
+ * the host closes this dialog on [ReportSendState.SENT] and not before, so the reasons the user
+ * picked are still there to send again after a [ReportSendState.FAILED]. Only Send is taken away
+ * while a report is on the wire — Cancel keeps working, because a request the network is sitting
+ * on must not be able to trap the user in a dialog.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ReportPostDialog(
+    sendState: ReportSendState,
     onDismiss: () -> Unit,
     onSubmit: (reason: ReportReason, details: String) -> Unit,
     modifier: Modifier = Modifier,
@@ -71,6 +80,7 @@ internal fun ReportPostDialog(
             ReportPostDialogContent(
                 selectedReason = selectedReason,
                 detailsState = detailsState,
+                sendState = sendState,
                 onSelectReason = { selectedReason = it },
                 onDismiss = onDismiss,
                 onSubmit = {
@@ -85,10 +95,13 @@ internal fun ReportPostDialog(
 private fun ReportPostDialogContent(
     selectedReason: ReportReason?,
     detailsState: TextFieldState,
+    sendState: ReportSendState,
     onSelectReason: (ReportReason) -> Unit,
     onDismiss: () -> Unit,
     onSubmit: () -> Unit,
 ) {
+    val isSending = sendState == ReportSendState.SENDING
+
     Column(modifier = Modifier.padding(24.dp)) {
         Text(
             text = stringResource(R.string.report_dialog_title),
@@ -126,17 +139,34 @@ private fun ReportPostDialogContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+        // Outside the scroll area above, so a failure is stated where the user is looking when
+        // Send does nothing — right over the button they tapped.
+        if (sendState == ReportSendState.FAILED) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.report_send_failed),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(Modifier.height(24.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            // The spinner sits beside the buttons rather than inside Send, so a report going out
+            // doesn't resize the button the user is looking at.
+            if (isSending) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(16.dp))
+            }
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.report_cancel))
             }
             TextButton(
                 onClick = onSubmit,
-                enabled = selectedReason != null,
+                enabled = selectedReason != null && !isSending,
             ) {
                 Text(stringResource(R.string.report_send))
             }
@@ -178,11 +208,35 @@ private fun DialogSurface(content: @Composable () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 private fun ReportPostDialogPreview() {
+    ReportPostDialogPreview(selectedReason = null, sendState = ReportSendState.IDLE)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ReportPostDialogSendingPreview() {
+    ReportPostDialogPreview(
+        selectedReason = ReportReason.HARASSMENT,
+        sendState = ReportSendState.SENDING,
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ReportPostDialogFailedPreview() {
+    ReportPostDialogPreview(
+        selectedReason = ReportReason.HARASSMENT,
+        sendState = ReportSendState.FAILED,
+    )
+}
+
+@Composable
+private fun ReportPostDialogPreview(selectedReason: ReportReason?, sendState: ReportSendState) {
     MosaicTheme {
         DialogSurface {
             ReportPostDialogContent(
-                selectedReason = null,
+                selectedReason = selectedReason,
                 detailsState = rememberTextFieldState(),
+                sendState = sendState,
                 onSelectReason = {},
                 onDismiss = {},
                 onSubmit = {},

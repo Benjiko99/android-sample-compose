@@ -53,7 +53,9 @@ The backend is a **Ruby on Rails** app. `NetworkModule` holds the host as `BASE_
 
 **Client limits mirror server validations**: `CreatePostMaxImages`, `CreatePostMaxVideoBytes`, composer field lengths, `REPORT_DETAILS_MAX_LENGTH`, and the `ReportReason` list. Changing one side means changing the other side too.
 
-Reporting a post is fire-and-forget. `POST /api/posts/:id/report` validates the request, then logs and discards it, and answers with 204. There is no moderation queue, and the "thank you" message is optimistic. Because of this, the UI must never let a user type a report the server would refuse.
+Reporting a post goes nowhere. `POST /api/posts/:id/report` validates the request, then logs and discards it, and answers with 204. There is no moderation queue. Because of this, the UI must never let a user type a report the server would refuse — a 422 is the one thing the reporter cannot fix.
+
+**The report dialog waits for that 204 anyway.** It stays up for the whole request with Send disabled, closes on the answer, and only then shows the thanks; a failure is stated in the dialog, which is still on screen with the reason and details the user picked. The states are `ReportSendState` in `post/ui/ReportSend.kt`, and `launchReport` / `dropReport` are the shapes the three reporting ViewModels drive them with. `dropReport` cancels the request as the dialog closes, so an answer nobody is waiting for cannot settle into the *next* dialog. A report is therefore not a `FailedAction`: that enum is for a tap whose UI is gone by the time the server answers, and this one's is not.
 
 The reason's *wire* spelling lives in `post/data/network/ReportPostRequestDto.kt`. This keeps the domain enum free of wire concerns. Blank details are left out of the request body rather than sent as an empty string.
 

@@ -26,6 +26,9 @@ import uno.lux.sample.feed.data.FeedState
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCardData
+import uno.lux.sample.post.ui.ReportSendState
+import uno.lux.sample.post.ui.dropReport
+import uno.lux.sample.post.ui.launchReport
 import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.settings.data.SettingsRepository
 import uno.lux.sample.user.data.UserRepository
@@ -114,6 +117,11 @@ class HomeViewModel @Inject constructor(
     /** The last [FailedAction] to fail here, for the screen to announce once and then spend. */
     val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
 
+    private val _reportSend = MutableStateFlow(ReportSendState.IDLE)
+
+    /** How the report dialog's send is going, for the dialog it is still showing under. */
+    val reportSend: StateFlow<ReportSendState> = _reportSend.asStateFlow()
+
     /**
      * Whether the feed may start a video on its own as it scrolls into view. The stored preference
      * arrives asynchronously, so this starts from [DEFAULT_AUTO_PLAY_VIDEOS] rather than a literal of
@@ -125,6 +133,7 @@ class HomeViewModel @Inject constructor(
 
     private var loadJob: Job? = null
     private var loadMoreJob: Job? = null
+    private var reportJob: Job? = null
 
     init {
         retry()
@@ -177,9 +186,11 @@ class HomeViewModel @Inject constructor(
         postId: PostId,
         reason: ReportReason,
         details: String,
-    ) = launchReporting(_failedAction, FailedAction.REPORT_POST) {
+    ) = launchReport(::reportJob, _reportSend) {
         postRepository.report(postId, reason, details)
     }
+
+    override fun onReportClosed() = dropReport(::reportJob, _reportSend)
 
     /**
      * The screen has announced [failedAction] and is done with it — the same spend-once lifetime
