@@ -3,31 +3,25 @@ package uno.lux.sample.settings.data
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import uno.lux.sample.settings.data.domain.DEFAULT_AUTO_PLAY_VIDEOS
+import uno.lux.sample.settings.data.domain.Settings
 import uno.lux.sample.settings.data.domain.ThemeMode
 
 /**
- * Video auto-play is off until the user turns it on: a feed that starts playing by itself is a
- * choice to opt into, not one to be opted out of, and it spends someone's data before they asked.
- *
- * Every layer that has to name that default — the persisted flow when the key is absent, the
- * in-memory double, and the `StateFlow` each ViewModel starts from before the stored choice
- * arrives — reads it from here, so the default is one edit rather than four literals that have to
- * agree.
- */
-const val DEFAULT_AUTO_PLAY_VIDEOS = false
-
-/**
- * Stores user settings. Exposes [themeMode] and [autoPlayVideos] reactively and updates them on
- * request.
- *
- * [DataStoreSettingsRepository] is the persistent production implementation;
- * [InMemorySettingsRepository] is the in-memory double for tests and previews.
+ * Stores user settings & preferences.
  */
 interface SettingsRepository {
-    val themeMode: Flow<ThemeMode>
 
-    /** Whether the feed starts a video on its own as it scrolls into view. [DEFAULT_AUTO_PLAY_VIDEOS] unless set. */
+    val settings: Flow<Settings>
+
+    val themeMode: Flow<ThemeMode>
+        get() = settings.map { it.themeMode }.distinctUntilChanged()
+
     val autoPlayVideos: Flow<Boolean>
+        get() = settings.map { it.autoPlayVideos }.distinctUntilChanged()
 
     suspend fun setThemeMode(mode: ThemeMode)
 
@@ -39,17 +33,19 @@ class InMemorySettingsRepository(
     initialAutoPlayVideos: Boolean = DEFAULT_AUTO_PLAY_VIDEOS,
 ) : SettingsRepository {
 
-    private val theme = MutableStateFlow(initialThemeMode)
-    override val themeMode: Flow<ThemeMode> = theme.asStateFlow()
-
-    private val autoPlay = MutableStateFlow(initialAutoPlayVideos)
-    override val autoPlayVideos: Flow<Boolean> = autoPlay.asStateFlow()
+    private val _settings = MutableStateFlow(
+        Settings(
+            themeMode = initialThemeMode,
+            autoPlayVideos = initialAutoPlayVideos,
+        ),
+    )
+    override val settings: Flow<Settings> = _settings.asStateFlow()
 
     override suspend fun setThemeMode(mode: ThemeMode) {
-        theme.value = mode
+        _settings.update { it.copy(themeMode = mode) }
     }
 
     override suspend fun setAutoPlayVideos(enabled: Boolean) {
-        autoPlay.value = enabled
+        _settings.update { it.copy(autoPlayVideos = enabled) }
     }
 }

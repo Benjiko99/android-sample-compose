@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -15,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import uno.lux.sample.settings.data.domain.Settings
 import uno.lux.sample.settings.data.domain.ThemeMode
 import java.io.File
 
@@ -83,5 +86,36 @@ class DataStoreSettingsRepositoryTest {
         repository.setAutoPlayVideos(true)
 
         assertEquals(true, repository.autoPlayVideos.first())
+    }
+
+    @Test
+    fun `settings carries both persisted values`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+
+        repository.setThemeMode(ThemeMode.LIGHT)
+        repository.setAutoPlayVideos(true)
+
+        val expected = Settings(themeMode = ThemeMode.LIGHT, autoPlayVideos = true)
+        assertEquals(expected, repository.settings.first())
+    }
+
+    @Test
+    fun `settings defaults every field when nothing is persisted`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+
+        assertEquals(Settings(), repository.settings.first())
+    }
+
+    @Test
+    fun `a narrowed flow ignores a write to another setting`() = runTest {
+        val repository = DataStoreSettingsRepository(dataStore())
+        val seen = mutableListOf<ThemeMode>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.themeMode.toList(seen)
+        }
+
+        repository.setAutoPlayVideos(true)
+
+        assertEquals(listOf(ThemeMode.SYSTEM), seen)
     }
 }

@@ -2,6 +2,7 @@ package uno.lux.sample.settings.ui
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -27,78 +28,85 @@ class SettingsViewModelTest : ViewModelTest() {
         localeRepository: InMemoryAppLocaleRepository = InMemoryAppLocaleRepository(),
     ) = SettingsViewModel(repository, localeRepository, navigator)
 
-    @Test
-    fun `themeMode reflects the repository`() = runTest {
-        val viewModel = viewModel(InMemorySettingsRepository(ThemeMode.DARK))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.themeMode.collect {}
-        }
+    /** Subscribes for the rest of the test, since the state is only assembled while collected. */
+    private fun TestScope.collecting(viewModel: SettingsViewModel) = viewModel.also {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { it.uiState.collect {} }
+    }
 
-        assertEquals(ThemeMode.DARK, viewModel.themeMode.value)
+    private val SettingsViewModel.content: SettingsUiState.Content
+        get() = uiState.value as SettingsUiState.Content
+
+    @Test
+    fun `state is Loading until the stored settings arrive`() {
+        assertEquals(SettingsUiState.Loading, viewModel().uiState.value)
     }
 
     @Test
-    fun `setThemeMode updates the exposed theme`() = runTest {
-        val viewModel = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.themeMode.collect {}
-        }
+    fun `themeMode reflects the repository`() = runTest {
+        val viewModel = collecting(viewModel(InMemorySettingsRepository(ThemeMode.DARK)))
 
-        viewModel.setThemeMode(ThemeMode.LIGHT)
+        assertEquals(ThemeMode.DARK, viewModel.content.themeMode)
+    }
 
-        assertEquals(ThemeMode.LIGHT, viewModel.themeMode.value)
+    @Test
+    fun `SetThemeMode updates the exposed theme`() = runTest {
+        val viewModel = collecting(viewModel())
+
+        viewModel.eventSink(SettingsUiEvent.SetThemeMode(ThemeMode.LIGHT))
+
+        assertEquals(ThemeMode.LIGHT, viewModel.content.themeMode)
     }
 
     @Test
     fun `autoPlayVideos reflects the repository`() = runTest {
-        val viewModel = viewModel(InMemorySettingsRepository(initialAutoPlayVideos = true))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.autoPlayVideos.collect {}
-        }
+        val viewModel = collecting(viewModel(InMemorySettingsRepository(initialAutoPlayVideos = true)))
 
-        assertEquals(true, viewModel.autoPlayVideos.value)
+        assertEquals(true, viewModel.content.autoPlayVideos)
     }
 
-    // Seeded opposite the default, so a ViewModel reading through to the repository instead of
-    // starting from the shared default would fail here rather than agree by coincidence.
+    // Turns on the setting that is off by default, so a dropped event fails rather than agrees.
     @Test
-    fun `autoPlayVideos is off before anything is collected`() {
-        val repository = InMemorySettingsRepository(initialAutoPlayVideos = true)
+    fun `SetAutoPlayVideos updates the exposed preference`() = runTest {
+        val viewModel = collecting(viewModel())
 
-        assertEquals(false, viewModel(repository).autoPlayVideos.value)
-    }
+        viewModel.eventSink(SettingsUiEvent.SetAutoPlayVideos(true))
 
-    @Test
-    fun `setAutoPlayVideos updates the exposed preference`() = runTest {
-        val viewModel = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.autoPlayVideos.collect {}
-        }
-
-        viewModel.setAutoPlayVideos(false)
-
-        assertEquals(false, viewModel.autoPlayVideos.value)
+        assertEquals(true, viewModel.content.autoPlayVideos)
     }
 
     @Test
-    fun `language reflects the repository`() {
-        val viewModel = viewModel(localeRepository = InMemoryAppLocaleRepository(AppLanguage.CZECH))
+    fun `SetThemeMode leaves auto-play alone`() = runTest {
+        val viewModel = collecting(viewModel(InMemorySettingsRepository(initialAutoPlayVideos = true)))
 
-        assertEquals(AppLanguage.CZECH, viewModel.language.value)
+        viewModel.eventSink(SettingsUiEvent.SetThemeMode(ThemeMode.DARK))
+
+        val expected = SettingsUiState.Content(
+            themeMode = ThemeMode.DARK,
+            autoPlayVideos = true,
+            language = AppLanguage.Default,
+        )
+        assertEquals(expected, viewModel.content)
     }
 
     @Test
-    fun `setLanguage updates the exposed language`() {
-        val viewModel = viewModel()
+    fun `language reflects the repository`() = runTest {
+        val viewModel = collecting(viewModel(localeRepository = InMemoryAppLocaleRepository(AppLanguage.CZECH)))
 
-        viewModel.setLanguage(AppLanguage.CZECH)
-
-        assertEquals(AppLanguage.CZECH, viewModel.language.value)
+        assertEquals(AppLanguage.CZECH, viewModel.content.language)
     }
 
     @Test
-    fun `goBack pops the settings page`() {
-        viewModel().goBack()
+    fun `SetLanguage updates the exposed language`() = runTest {
+        val viewModel = collecting(viewModel())
+
+        viewModel.eventSink(SettingsUiEvent.SetLanguage(AppLanguage.CZECH))
+
+        assertEquals(AppLanguage.CZECH, viewModel.content.language)
+    }
+
+    @Test
+    fun `GoBack pops the settings page`() {
+        viewModel().eventSink(SettingsUiEvent.GoBack)
 
         assertEquals(listOf(Screen.Shell), backStack.screens())
     }

@@ -1,11 +1,17 @@
 package uno.lux.sample.settings.data
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import uno.lux.sample.settings.data.domain.Settings
 import uno.lux.sample.settings.data.domain.ThemeMode
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class InMemorySettingsRepositoryTest {
 
     @Test
@@ -27,12 +33,73 @@ class InMemorySettingsRepositoryTest {
         assertEquals(false, InMemorySettingsRepository().autoPlayVideos.first())
     }
 
+    // Sets the value that is *not* the default, so a dropped write fails rather than agrees.
     @Test
     fun `setAutoPlayVideos updates the exposed preference`() = runTest {
         val repository = InMemorySettingsRepository()
 
+        repository.setAutoPlayVideos(true)
+
+        assertEquals(true, repository.autoPlayVideos.first())
+    }
+
+    @Test
+    fun `settings carries both stored values`() = runTest {
+        val repository = InMemorySettingsRepository()
+
+        repository.setThemeMode(ThemeMode.LIGHT)
+        repository.setAutoPlayVideos(true)
+
+        val expected = Settings(themeMode = ThemeMode.LIGHT, autoPlayVideos = true)
+        assertEquals(expected, repository.settings.first())
+    }
+
+    @Test
+    fun `a write leaves the other setting alone`() = runTest {
+        val repository = InMemorySettingsRepository(initialAutoPlayVideos = true)
+
+        repository.setThemeMode(ThemeMode.DARK)
+
+        assertEquals(true, repository.autoPlayVideos.first())
+    }
+
+    @Test
+    fun `a narrowed flow ignores a write to another setting`() = runTest {
+        val repository = InMemorySettingsRepository()
+        val seen = mutableListOf<ThemeMode>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.themeMode.toList(seen)
+        }
+
+        repository.setAutoPlayVideos(true)
         repository.setAutoPlayVideos(false)
 
-        assertEquals(false, repository.autoPlayVideos.first())
+        assertEquals(listOf(ThemeMode.SYSTEM), seen)
+    }
+
+    @Test
+    fun `a narrowed flow emits a write to its own setting`() = runTest {
+        val repository = InMemorySettingsRepository()
+        val seen = mutableListOf<ThemeMode>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.themeMode.toList(seen)
+        }
+
+        repository.setThemeMode(ThemeMode.DARK)
+
+        assertEquals(listOf(ThemeMode.SYSTEM, ThemeMode.DARK), seen)
+    }
+
+    @Test
+    fun `a narrowed flow ignores a write that changes nothing`() = runTest {
+        val repository = InMemorySettingsRepository(ThemeMode.DARK)
+        val seen = mutableListOf<ThemeMode>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.themeMode.toList(seen)
+        }
+
+        repository.setThemeMode(ThemeMode.DARK)
+
+        assertEquals(listOf(ThemeMode.DARK), seen)
     }
 }

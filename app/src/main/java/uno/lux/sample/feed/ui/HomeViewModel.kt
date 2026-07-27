@@ -29,8 +29,8 @@ import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.post.ui.ReportSendState
 import uno.lux.sample.post.ui.dropReport
 import uno.lux.sample.post.ui.launchReport
-import uno.lux.sample.settings.data.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.settings.data.SettingsRepository
+import uno.lux.sample.settings.data.domain.DEFAULT_AUTO_PLAY_VIDEOS
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.video.data.domain.Video
