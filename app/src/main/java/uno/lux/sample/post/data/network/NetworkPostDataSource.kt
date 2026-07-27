@@ -30,8 +30,6 @@ class NetworkPostDataSource(
             .createPost(
                 title = draft.title.asTextPart(),
                 body = draft.body.asTextPart(),
-                // The trailing brackets are what make Rack collect the repeated parts into one
-                // `images` array; a plain "images" name would let each part overwrite the last.
                 images = (media as? NewPostMedia.Images)?.files.orEmpty().map { it.asPart("images[]") },
                 video = (media as? NewPostMedia.Video)?.file?.asPart("video"),
             ).toPostWithUsers()
@@ -58,8 +56,6 @@ class NetworkPostDataSource(
     ) = withContext(Dispatchers.IO) {
         api.reportPost(
             postId = postId,
-            // Blank details are left off the request rather than sent as an empty string:
-            // the field is optional, and "typed nothing" is exactly what absent means.
             report = ReportPostRequestDto(
                 reason = reason.toDto(),
                 details = details.takeIf { it.isNotBlank() },

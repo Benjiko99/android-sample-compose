@@ -36,10 +36,17 @@ the read undoes it.
 videos play over the user's music without pausing it and keep playing out of the speaker when
 headphones are unplugged. For an autoplaying feed this is table stakes.
 
-### Backup rules are untouched boilerplate
-`res/xml/backup_rules.xml` still carries the "Sample backup rules file; uncomment and customize"
-scaffold with `allowBackup="true"`. Harmless (only theme and auto-play persist) but it reads as never
-looked at — configure it meaningfully or disable backup and say why.
+## Low priority
+
+### Rename Data Sources to Interactors?
+They don't just source data, they interact with the backend to make it perform actions.
+Thus, an Interactor might be a better name.
+
+### Better sample data
+Add more posts and comments. At least two pages of posts to test feed.
+
+### In dark mode, when transitioning between screens, it flashes with white
+Are the visuals of the predictive back gesture customizable? Is that what this is?
 
 ## Code quality
 
