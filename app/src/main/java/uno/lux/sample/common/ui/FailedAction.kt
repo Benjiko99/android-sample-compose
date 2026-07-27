@@ -25,6 +25,7 @@ enum class FailedAction {
     DELETE_POST,
     REPORT_POST,
     FOLLOW,
+    SEND_COMMENT,
 }
 
 /**

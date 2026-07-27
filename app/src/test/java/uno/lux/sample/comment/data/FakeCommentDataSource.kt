@@ -54,7 +54,14 @@ internal class FakeCommentDataSource(
         )
     }
 
+    /**
+     * Runs inside [addComment] before it answers — the one moment a test can read the composer
+     * state the ViewModel wrote while the comment is still on the wire.
+     */
+    var whileAdding: (suspend () -> Unit)? = null
+
     override suspend fun addComment(postId: PostId, text: String): Comment {
+        whileAdding?.invoke()
         addError?.let { throw it }
 
         return Comment(

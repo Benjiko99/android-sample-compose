@@ -20,6 +20,7 @@
     <string name="action_failed_delete_post">Příspěvek se nepodařilo smazat</string>
     <string name="action_failed_report_post">Nahlášení se nepodařilo odeslat</string>
     <string name="action_failed_follow">Sledování se nepodařilo změnit</string>
+    <string name="action_failed_send_comment">Komentář se nepodařilo odeslat</string>
 
     <!-- Create post -->
     <string name="create_post_title">Nový příspěvek</string>

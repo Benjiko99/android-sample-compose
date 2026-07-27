@@ -130,6 +130,13 @@ class PostDetailViewModel @AssistedInject constructor(
     private val _thread = MutableStateFlow(CommentThread())
 
     /**
+     * How far the comment in the composer has got. Its own flow rather than a field on
+     * [CommentThread]: a send is about the text the user is still holding, not about the window
+     * of the thread that is loaded, and a reload landing mid-send must not disturb it.
+     */
+    private val _commentSend = MutableStateFlow(CommentSendState.IDLE)
+
+    /**
      * The post and its author, resolved together — one is no use without the other. Both stores
      * emit for changes to any post or user, so this only passes on the ones that move *this*
      * pair; without that, a like anywhere in the feed underneath would rebuild the whole state.
@@ -143,7 +150,8 @@ class PostDetailViewModel @AssistedInject constructor(
         postWithAuthor,
         _thread,
         postLoad,
-    ) { resolved, thread, postLoad ->
+        _commentSend,
+    ) { resolved, thread, postLoad, commentSend ->
         when {
             resolved != null -> PostDetailUiState.Loaded(
                 post = resolved.post,
@@ -154,6 +162,7 @@ class PostDetailViewModel @AssistedInject constructor(
                 commentsEndReached = thread.endReached,
                 isOwn = resolved.post.authorId == currentUser.id,
                 scrollToComment = thread.scrollTo,
+                commentSend = commentSend,
             )
 
             postLoad is PostLoad.Missing -> PostDetailUiState.NotFound
@@ -375,17 +384,38 @@ class PostDetailViewModel @AssistedInject constructor(
      * The comment is also named as the one to scroll to. The thread sits below the whole post, so
      * a reader who commented from the bottom of a long page would otherwise never see what they
      * sent. Only a comment the server took is named, so a failed send moves nothing.
+     *
+     * Not [launchCatching], because nothing about a comment is optimistic: the composer holds the
+     * text until [CommentSendState.SENT] says the server has it, so a failure that logged and
+     * discarded would leave an emptied box and no comment. The state machine is the whole
+     * contract — [CommentSendState.SENDING] disables the composer, so this cannot run twice over,
+     * and a failure returns to [CommentSendState.IDLE] with the text still there to send again.
      */
-    fun addComment(text: String) = launchCatching {
-        val comment = commentRepository.addComment(postId, text)
-        _thread.update {
-            it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
+    fun addComment(text: String) = launchReporting(_failedAction, FailedAction.SEND_COMMENT) {
+        _commentSend.value = CommentSendState.SENDING
+
+        try {
+            val comment = commentRepository.addComment(postId, text)
+            _thread.update {
+                it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
+            }
+            postRepository.commentAdded(postId)
+            _commentSend.value = CommentSendState.SENT
+        } catch (e: Exception) {
+            // Back to idle *before* rethrowing, so the composer is editable again by the time
+            // [launchReporting] announces the failure.
+            _commentSend.value = CommentSendState.IDLE
+            throw e
         }
-        postRepository.commentAdded(postId)
     }
 
     /** Spends the scroll signal [addComment] raised, once the screen has acted on it. */
     fun onScrolledToComment() = _thread.update { it.copy(scrollTo = null) }
+
+    /** The composer has given up the text the server took, so the send is over. */
+    fun onCommentSent() {
+        _commentSend.value = CommentSendState.IDLE
+    }
 
     fun goBack() = navigator.goBack()
 

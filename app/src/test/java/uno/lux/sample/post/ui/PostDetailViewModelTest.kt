@@ -468,6 +468,80 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(listOf(seedComment), state.comments)
     }
 
+    // The composer holds the text until the server has the comment, so SENT is the signal that
+    // says it may finally let go of it.
+    @Test
+    fun `a comment the server takes ends in SENT`() = runTest {
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+
+        assertEquals(
+            CommentSendState.SENT,
+            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
+        )
+    }
+
+    // The field and the send button are disabled off this state. Without it a second tap would
+    // post the comment twice, since nothing else stops one.
+    @Test
+    fun `the composer reads as sending while the comment is on the wire`() = runTest {
+        val answered = CompletableDeferred<Unit>()
+        val source = commentSource().apply { whileAdding = { answered.await() } }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+        advanceUntilIdle()
+
+        assertEquals(
+            CommentSendState.SENDING,
+            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
+        )
+
+        answered.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(
+            CommentSendState.SENT,
+            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
+        )
+    }
+
+    // The whole point of not clearing up front: a refused comment leaves the composer editable,
+    // with what the user typed still in it, and says so.
+    @Test
+    fun `a failed send returns the composer to idle and names the action`() = runTest {
+        val source = commentSource().apply { addError = UnknownHostException("offline") }
+        val vm = viewModel(commentDataSource = source)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.addComment("Hello!")
+
+        assertEquals(
+            CommentSendState.IDLE,
+            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
+        )
+        assertEquals(FailedAction.SEND_COMMENT, vm.failedAction.value)
+    }
+
+    // Spent once the composer has given the text up, so a rotation cannot clear a box the user
+    // has already started refilling.
+    @Test
+    fun `onCommentSent spends the send signal`() = runTest {
+        val vm = viewModel()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.addComment("Hello!")
+
+        vm.onCommentSent()
+
+        assertEquals(
+            CommentSendState.IDLE,
+            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
+        )
+    }
+
     // The thread hangs below the whole post, so a comment sent from a long page lands off screen
     // unless the screen is told to go to it.
     @Test

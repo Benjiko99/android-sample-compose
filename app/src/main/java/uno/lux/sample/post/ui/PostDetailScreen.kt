@@ -126,6 +126,7 @@ fun PostDetailScreen(
         onToggleBookmark = viewModel::onToggleBookmark,
         onToggleCommentLike = viewModel::onToggleCommentLike,
         onAddComment = viewModel::addComment,
+        onCommentSent = viewModel::onCommentSent,
         onScrolledToComment = viewModel::onScrolledToComment,
         onLoadMoreComments = viewModel::loadMoreComments,
         onRetryComments = viewModel::retryComments,
@@ -156,6 +157,7 @@ internal fun PostDetailScreen(
     onToggleBookmark: () -> Unit,
     onToggleCommentLike: (commentId: CommentId) -> Unit,
     onAddComment: (text: String) -> Unit,
+    onCommentSent: () -> Unit,
     onScrolledToComment: () -> Unit,
     onLoadMoreComments: () -> Unit,
     onRetryComments: () -> Unit,
@@ -217,7 +219,9 @@ internal fun PostDetailScreen(
             if (loaded != null) {
                 CommentComposer(
                     user = composerUser,
+                    sendState = loaded.commentSend,
                     onSend = onAddComment,
+                    onSent = onCommentSent,
                 )
             }
         },
@@ -574,22 +578,39 @@ private fun CommentRow(
 
 // ── Sticky comment composer ────────────────────────────────────────────────────
 
+/**
+ * The sticky composer at the bottom of the thread. It owns the text and gives it up only once
+ * [sendState] reaches [CommentSendState.SENT] — a send that failed leaves what the user typed
+ * where it is, ready to send again, rather than clearing the box for a comment that never landed.
+ * While [CommentSendState.SENDING] the field and the button are disabled, so one tap is one
+ * comment.
+ */
 @Composable
 private fun CommentComposer(
     user: User,
+    sendState: CommentSendState,
     onSend: (String) -> Unit,
+    onSent: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val textState = rememberTextFieldState()
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val keyboardController = LocalSoftwareKeyboardController.current
+    val isSending = sendState == CommentSendState.SENDING
     val send = {
         val trimmed = textState.text.toString().trim()
-        if (trimmed.isNotEmpty()) {
-            onSend(trimmed)
-            textState.clearText()
-            keyboardController?.hide()
-        }
+        if (trimmed.isNotEmpty() && !isSending) onSend(trimmed)
+    }
+
+    // The server has the comment, so the text has done its job. Spending the signal here rather
+    // than in the ViewModel is what keeps the two in step: the box empties and the send ends in
+    // the same pass, and a rotation mid-send cannot clear a box that was already refilled.
+    LaunchedEffect(sendState) {
+        if (sendState != CommentSendState.SENT) return@LaunchedEffect
+
+        textState.clearText()
+        keyboardController?.hide()
+        onSent()
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -606,6 +627,7 @@ private fun CommentComposer(
             Avatar(user = user, size = 36.dp)
             OutlinedTextField(
                 state = textState,
+                enabled = !isSending,
                 placeholder = {
                     Text(
                         text = stringResource(R.string.post_detail_comment_hint),
@@ -617,9 +639,12 @@ private fun CommentComposer(
                 shape = RoundedCornerShape(12.dp),
                 lineLimits = TextFieldLineLimits.SingleLine,
                 textStyle = MaterialTheme.typography.bodyMedium,
+                // The disabled container matches the enabled one, so a send in flight dims the
+                // text and the border without the field itself appearing to change shape.
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.background,
                     focusedContainerColor = MaterialTheme.colorScheme.background,
+                    disabledContainerColor = MaterialTheme.colorScheme.background,
                 ),
                 contentPadding = OutlinedTextFieldDefaults.contentPadding(
                     top = 8.dp,
@@ -630,18 +655,28 @@ private fun CommentComposer(
                     .heightIn(min = 42.dp),
             )
             val hasText by remember { derivedStateOf { textState.text.isNotBlank() } }
+            val canSend = hasText && !isSending
             val sendTint by animateColorAsState(
-                targetValue = if (hasText) MaterialTheme.colorScheme.primary else muted,
+                targetValue = if (canSend) MaterialTheme.colorScheme.primary else muted,
                 label = "sendTint",
             )
 
-            IconButton(onClick = send, enabled = hasText) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_send),
-                    contentDescription = stringResource(R.string.post_detail_send_comment),
-                    tint = sendTint,
-                    modifier = Modifier.size(28.dp),
-                )
+            IconButton(onClick = send, enabled = canSend) {
+                // The spinner stands in the button's place, so the disabled field reads as work
+                // in progress rather than as a composer that has stopped responding.
+                if (isSending) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_send),
+                        contentDescription = stringResource(R.string.post_detail_send_comment),
+                        tint = sendTint,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
         }
     }
@@ -688,6 +723,7 @@ private fun PostDetailPreview(uiState: PostDetailUiState) {
             onToggleBookmark = {},
             onToggleCommentLike = {},
             onAddComment = {},
+            onCommentSent = {},
             onScrolledToComment = {},
             onLoadMoreComments = {},
             onRetryComments = {},

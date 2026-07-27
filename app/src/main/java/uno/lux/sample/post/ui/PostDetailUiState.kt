@@ -6,6 +6,21 @@ import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.user.data.domain.User
 
+/**
+ * How far the comment in the composer has got. The composer owns the text itself, so this is
+ * what tells it when to give the text up: [SENT] is reached only once the server has taken the
+ * comment, and a failure returns to [IDLE] with what the user typed still in the box.
+ *
+ * [SENDING] disables the field and the send button, which is what makes the send a single
+ * outcome — without it a second tap would post the comment twice, and clearing the box up front
+ * would throw the text away on a send that never landed.
+ */
+enum class CommentSendState {
+    IDLE,
+    SENDING,
+    SENT,
+}
+
 sealed interface PostDetailUiState {
     data object Loading : PostDetailUiState
 
@@ -28,7 +43,8 @@ sealed interface PostDetailUiState {
      *
      * [scrollToComment] is a comment the screen has yet to bring into view — the one the user just
      * sent. It is spent once acted on, through `onScrolledToComment`, so a configuration change
-     * cannot yank the list back a second time.
+     * cannot yank the list back a second time. [commentSend] is spent the same way, through
+     * `onCommentSent`, once the composer has cleared the text the server took.
      */
     data class Loaded(
         val post: Post,
@@ -39,5 +55,6 @@ sealed interface PostDetailUiState {
         val commentsEndReached: Boolean = true,
         val isOwn: Boolean = false,
         val scrollToComment: CommentId? = null,
+        val commentSend: CommentSendState = CommentSendState.IDLE,
     ) : PostDetailUiState
 }
