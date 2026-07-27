@@ -17,13 +17,13 @@ class PostMappersTest {
     fun `PostMapper carries scalar fields across unchanged`() {
         val createdAt = Instant.parse("2025-06-01T12:00:00Z")
 
-        val post = PostMapper.map(postDto(createdAt = createdAt))
+        val post = PostMapper.map(dto(createdAt = createdAt))
 
         assertEquals("p1", post.id)
         assertEquals(testPostUrl("p1"), post.url)
         assertEquals("u1", post.authorId)
-        assertEquals("Title", post.title)
-        assertEquals("Body", post.body)
+        assertEquals("Title p1", post.title)
+        assertEquals("Body p1", post.body)
         assertEquals(createdAt, post.createdAt)
         assertEquals(6, post.likeCount)
         assertEquals(2, post.commentCount)
@@ -33,11 +33,11 @@ class PostMappersTest {
 
     @Test
     fun `PostMapper maps a nested album via AlbumMapper`() {
-        val dto = postDto(
+        val mapped = dto(
             album = AlbumDto(id = "a1", title = "Trip", itemCount = 9, images = listOf("i1", "i2")),
         )
 
-        val album = PostMapper.map(dto).album!!
+        val album = PostMapper.map(mapped).album!!
 
         assertEquals("a1", album.id)
         assertEquals("Trip", album.title)
@@ -47,11 +47,11 @@ class PostMappersTest {
 
     @Test
     fun `PostMapper maps a nested video via VideoMapper`() {
-        val dto = postDto(
+        val mapped = dto(
             video = VideoDto(id = "v1", title = "Clip", durationSeconds = 42, videoUrl = "http://v"),
         )
 
-        val video = PostMapper.map(dto).video!!
+        val video = PostMapper.map(mapped).video!!
 
         assertEquals("v1", video.id)
         assertEquals(42, video.durationSeconds)
@@ -60,7 +60,7 @@ class PostMappersTest {
 
     @Test
     fun `PostMapper carries a video's resolution and thumbnail across`() {
-        val dto = postDto(
+        val mapped = dto(
             video = VideoDto(
                 id = "v1",
                 title = "Clip",
@@ -74,7 +74,7 @@ class PostMappersTest {
             ),
         )
 
-        val video = PostMapper.map(dto).video!!
+        val video = PostMapper.map(mapped).video!!
 
         assertEquals(1920, video.width)
         assertEquals(1080, video.height)
@@ -89,11 +89,11 @@ class PostMappersTest {
      */
     @Test
     fun `PostMapper leaves a video's resolution and thumbnail null when the server sent none`() {
-        val dto = postDto(
+        val mapped = dto(
             video = VideoDto(id = "v1", title = "Clip", durationSeconds = 0, videoUrl = "http://v"),
         )
 
-        val video = PostMapper.map(dto).video!!
+        val video = PostMapper.map(mapped).video!!
 
         assertNull(video.width)
         assertNull(video.height)
@@ -104,27 +104,28 @@ class PostMappersTest {
 
     @Test
     fun `PostMapper leaves album and video null when absent`() {
-        val post = PostMapper.map(postDto())
+        val post = PostMapper.map(dto())
 
         assertNull(post.album)
         assertNull(post.video)
     }
 
-    private fun postDto(
+    /**
+     * The shared fixture with every scalar set to something distinctive, so a mapping that drops
+     * a field or crosses two of them fails rather than matching a default by luck.
+     */
+    private fun dto(
         createdAt: Instant = Instant.parse("2025-01-01T00:00:00Z"),
         album: AlbumDto? = null,
         video: VideoDto? = null,
-    ) = PostFeedItemDto(
+    ) = postDto(
         id = "p1",
-        url = testPostUrl("p1"),
-        title = "Title",
-        body = "Body",
-        createdAt = createdAt,
         authorId = "u1",
-        likeCount = 6,
-        commentCount = 2,
+        createdAt = createdAt,
         isLiked = true,
         isBookmarked = true,
+        likeCount = 6,
+        commentCount = 2,
         album = album,
         video = video,
     )

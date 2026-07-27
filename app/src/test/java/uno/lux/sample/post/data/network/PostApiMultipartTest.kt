@@ -31,10 +31,10 @@ class PostApiMultipartTest {
     private val createdPostJson =
         """
         {"data":{"id":"p-new","url":"https://mosaic.test/p/p-new","title":"T","body":"B",
-        "createdAt":"2025-01-01T00:00:00.000Z",
-        "author":{"id":"u1","nickname":"Ada","handle":"@countess","followerCount":0,
-                  "followingCount":0,"isFollowing":false},
-        "likeCount":0,"commentCount":0,"isLiked":false,"isBookmarked":false}}
+        "createdAt":"2025-01-01T00:00:00.000Z","authorId":"u1",
+        "likeCount":0,"commentCount":0,"isLiked":false,"isBookmarked":false},
+        "included":{"users":[{"id":"u1","nickname":"Ada","handle":"@countess","followerCount":0,
+                              "followingCount":0,"isFollowing":false}]}}
         """.trimIndent()
 
     @Before

@@ -8,6 +8,7 @@ import uno.lux.sample.common.data.network.LikeStateResponse
 import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.common.data.network.notFoundException
 import uno.lux.sample.testing.testPostUrl
+import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.user.data.network.UserDto
 import uno.lux.sample.user.data.network.stubAuthor
 import java.time.Instant
@@ -15,6 +16,11 @@ import java.time.Instant
 class FakePostApi(
     /** What [getPost] serves; an id that isn't here 404s, the way the real API does. */
     private val postById: Map<String, PostDto> = emptyMap(),
+    /**
+     * The users [getPost] and [createPost] sideload, keyed by ID. A post whose author isn't here
+     * is served with an empty sideload — the payload a server that forgot to send one would give.
+     */
+    private val usersById: Map<String, UserDto> = mapOf(stubAuthor.id to stubAuthor),
     val likeResult: LikeStateDto = LikeStateDto(isLiked = true, likeCount = 1),
     val bookmarkResult: BookmarkStateDto = BookmarkStateDto(isBookmarked = true),
 ) : PostApi {
@@ -30,8 +36,14 @@ class FakePostApi(
         getPostError?.let { throw it }
 
         val dto = postById[postId] ?: throw notFoundException("Post '$postId' was not found")
-        return PostResponse(dto)
+        return dto.asResponse()
     }
+
+    /** Wraps a post the way the server does: the post, plus the one user it names as its author. */
+    private fun PostDto.asResponse() = PostResponse(
+        data = this,
+        included = SideloadedUsers(users = listOfNotNull(usersById[authorId])),
+    )
 
     /** The multipart parts of the most recent [createPost] call, for test assertions. */
     var lastCreatePostParts: CreatePostParts? = null
@@ -79,7 +91,9 @@ class FakePostApi(
             },
         )
 
-        return PostResponse(fullPostDto("p-new").copy(title = titleText, body = bodyText))
+        return postDto("p-new", authorId = stubAuthor.id)
+            .copy(title = titleText, body = bodyText)
+            .asResponse()
     }
 
     // Retrofit hands the fake real RequestBody parts, so the assertions read them back out.
@@ -128,36 +142,15 @@ class FakePostApi(
     }
 }
 
-fun feedItemDto(
+/** The one post projection every endpoint serves — feed page, profile tab and single post alike. */
+fun postDto(
     id: String,
     authorId: String,
+    createdAt: Instant = Instant.parse("2025-01-01T00:00:00.000Z"),
     isLiked: Boolean = false,
     isBookmarked: Boolean = false,
     likeCount: Int = 0,
-    album: AlbumDto? = null,
-    video: VideoDto? = null,
-) = PostFeedItemDto(
-    id = id,
-    url = testPostUrl(id),
-    title = "Title $id",
-    body = "Body $id",
-    createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
-    authorId = authorId,
-    likeCount = likeCount,
-    commentCount = 0,
-    isLiked = isLiked,
-    isBookmarked = isBookmarked,
-    album = album,
-    video = video,
-)
-
-/** The full projection — [feedItemDto]'s counterpart with the author embedded. */
-fun fullPostDto(
-    id: String,
-    author: UserDto = stubAuthor,
-    isLiked: Boolean = false,
-    isBookmarked: Boolean = false,
-    likeCount: Int = 0,
+    commentCount: Int = 0,
     album: AlbumDto? = null,
     video: VideoDto? = null,
 ) = PostDto(
@@ -165,10 +158,10 @@ fun fullPostDto(
     url = testPostUrl(id),
     title = "Title $id",
     body = "Body $id",
-    createdAt = Instant.parse("2025-01-01T00:00:00.000Z"),
-    author = author,
+    createdAt = createdAt,
+    authorId = authorId,
     likeCount = likeCount,
-    commentCount = 0,
+    commentCount = commentCount,
     isLiked = isLiked,
     isBookmarked = isBookmarked,
     album = album,

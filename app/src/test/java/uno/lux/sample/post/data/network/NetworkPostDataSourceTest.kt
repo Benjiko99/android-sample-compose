@@ -14,15 +14,17 @@ import uno.lux.sample.common.data.network.LikeStateDto
 import uno.lux.sample.common.data.network.SetLikeRequestDto
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.NewPostMedia
+import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.data.network.userDto
 import java.net.UnknownHostException
 
 class NetworkPostDataSourceTest {
 
     @Test
-    fun `fetch maps the full projection with its author flattened to an id`() = runTest {
+    fun `fetch maps the post and the author sideloaded beside it`() = runTest {
         val api = FakePostApi(
-            postById = mapOf("p1" to fullPostDto("p1", author = userDto("u7", "Grace"))),
+            postById = mapOf("p1" to postDto("p1", authorId = "u7")),
+            usersById = mapOf("u7" to userDto("u7", "Grace")),
         )
         val dataSource = NetworkPostDataSource(api)
 
@@ -31,7 +33,23 @@ class NetworkPostDataSourceTest {
         assertEquals(listOf("p1"), api.fetchedPostIds)
         assertEquals("p1", fetched.post.id)
         assertEquals("u7", fetched.post.authorId)
-        assertEquals("Grace", fetched.author.nickname)
+        assertEquals(listOf("Grace"), fetched.users.map { it.nickname })
+    }
+
+    // The sideload is carried across verbatim rather than searched for the post's own author, so
+    // a payload that named an author it did not send arrives short a user instead of failing.
+    @Test
+    fun `fetch carries an empty sideload across rather than failing on it`() = runTest {
+        val api = FakePostApi(
+            postById = mapOf("p1" to postDto("p1", authorId = "u7")),
+            usersById = emptyMap(),
+        )
+        val dataSource = NetworkPostDataSource(api)
+
+        val fetched = dataSource.fetch("p1")!!
+
+        assertEquals("p1", fetched.post.id)
+        assertEquals(emptyList<User>(), fetched.users)
     }
 
     // A 404 is the server saying the post is gone. It has to arrive as an answer the caller can
@@ -54,7 +72,7 @@ class NetworkPostDataSourceTest {
     }
 
     @Test
-    fun `create sends the draft and maps the created post with its author flattened to an id`() = runTest {
+    fun `create sends the draft and maps the created post`() = runTest {
         val api = FakePostApi()
         val dataSource = NetworkPostDataSource(api)
 
@@ -119,13 +137,13 @@ class NetworkPostDataSourceTest {
     }
 
     @Test
-    fun `create returns the embedded author as a domain user`() = runTest {
+    fun `create returns the sideloaded author as a domain user`() = runTest {
         val dataSource = NetworkPostDataSource(FakePostApi())
 
         val created = dataSource.create(NewPost(title = "Title", body = "Body"))
 
-        assertEquals("u1", created.author.id)
-        assertEquals("Ada", created.author.nickname)
+        assertEquals(listOf("u1"), created.users.map { it.id })
+        assertEquals(listOf("Ada"), created.users.map { it.nickname })
     }
 
     @Test

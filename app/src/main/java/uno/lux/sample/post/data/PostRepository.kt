@@ -9,7 +9,7 @@ import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
-import uno.lux.sample.post.data.domain.PostWithAuthor
+import uno.lux.sample.post.data.domain.PostWithUsers
 import uno.lux.sample.user.data.UserRepository
 
 /**
@@ -24,7 +24,7 @@ import uno.lux.sample.user.data.UserRepository
  * Ordered, screen-specific lists of post IDs (feed order, per-user order, etc.) live in
  * [uno.lux.sample.feed.data.FeedRepository] or [uno.lux.sample.profile.data.ProfileRepository]; this store owns only the entity data.
  *
- * The two endpoints that answer with a *single* post embed its author, so [load] and [create]
+ * The two endpoints that answer with a *single* post sideload its author, so [load] and [create]
  * seed [userRepository] with it — the same thing [uno.lux.sample.profile.data.ProfileRepository] does for the authors that
  * ride along with a page of saved or liked posts. Sideloaded users belong in the user store
  * wherever they arrive from, rather than each caller remembering to put them there.
@@ -57,7 +57,7 @@ class PostRepository(
      * A screen reached the ordinary way never needs this: it opens from a feed or profile whose
      * fetch already filled the store. It exists for the screen that is the *first* thing to ask
      * for a post — a post detail page restored after process death, whose stores start empty,
-     * which is also why the embedded author is seeded here rather than fetched separately.
+     * which is also why the sideloaded author is seeded here rather than fetched separately.
      */
     suspend fun load(postId: PostId): Post? {
         // The store already knows this one is gone, and must not resurrect it into [entities]
@@ -75,9 +75,9 @@ class PostRepository(
     suspend fun create(draft: NewPost): Post = store(dataSource.create(draft))
 
     /** Puts a single post's two halves where each belongs, and hands back the post. */
-    private fun store(fetched: PostWithAuthor): Post {
+    private fun store(fetched: PostWithUsers): Post {
         _entities.update { it + (fetched.post.id to fetched.post) }
-        userRepository.ingest(listOf(fetched.author))
+        userRepository.ingest(fetched.users)
 
         return fetched.post
     }

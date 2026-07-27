@@ -31,7 +31,7 @@ import uno.lux.sample.post.data.FakePostDataSource
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
-import uno.lux.sample.post.data.domain.PostWithAuthor
+import uno.lux.sample.post.data.domain.PostWithUsers
 import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
@@ -302,7 +302,7 @@ class PostDetailViewModelTest : ViewModelTest() {
     @Test
     fun `a page restored with empty stores fetches the post it was given the id for`() = runTest {
         val dataSource = FakePostDataSource().apply {
-            fetchable["p1"] = PostWithAuthor(post, otherUser)
+            fetchable["p1"] = PostWithUsers(post, listOf(otherUser))
         }
         val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
@@ -362,7 +362,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         advanceUntilIdle()
 
         dataSource.fetchError = null
-        dataSource.fetchable["p1"] = PostWithAuthor(post, otherUser)
+        dataSource.fetchable["p1"] = PostWithUsers(post, listOf(otherUser))
         vm.retry()
         advanceUntilIdle()
 

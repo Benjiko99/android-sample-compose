@@ -7,8 +7,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.common.data.network.CursorPageDto
 import uno.lux.sample.common.data.network.emptyPage
-import uno.lux.sample.post.data.network.PostFeedItemDto
-import uno.lux.sample.post.data.network.feedItemDto
+import uno.lux.sample.post.data.network.PostDto
+import uno.lux.sample.post.data.network.postDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.user.data.network.UserDto
 import uno.lux.sample.user.data.network.userDto
@@ -16,13 +16,13 @@ import uno.lux.sample.user.data.network.userDto
 class NetworkProfileDataSourceTest {
 
     private fun postsResponse(
-        data: List<PostFeedItemDto>,
+        data: List<PostDto>,
         users: List<UserDto> = emptyList(),
         page: CursorPageDto = emptyPage,
     ) = PostsWithAuthorsResponse(data = data, included = SideloadedUsers(users = users), page = page)
 
     private fun bookmarksResponse(
-        data: List<PostFeedItemDto>,
+        data: List<PostDto>,
         users: List<UserDto> = emptyList(),
         page: CursorPageDto = emptyPage,
     ) = postsResponse(data, users, page)
@@ -34,7 +34,7 @@ class NetworkProfileDataSourceTest {
         val api = FakeProfileApi(
             profileStats = mapOf("u1" to ProfileStatsDto(postsCount = 2)),
             userPostsResponse = postsResponse(
-                data = listOf(feedItemDto("p1", "u1"), feedItemDto("p6", "u1")),
+                data = listOf(postDto("p1", "u1"), postDto("p6", "u1")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),
             ),
         )
@@ -52,7 +52,7 @@ class NetworkProfileDataSourceTest {
     fun `refresh maps the sideloaded author to a domain user`() = runTest {
         val api = FakeProfileApi(
             userPostsResponse = postsResponse(
-                data = listOf(feedItemDto("p1", "u1")),
+                data = listOf(postDto("p1", "u1")),
                 users = listOf(userDto("u1", "Ada")),
             ),
         )
@@ -74,7 +74,7 @@ class NetworkProfileDataSourceTest {
     fun `loadMorePosts requests the given cursor and maps posts with their author`() = runTest {
         val api = FakeProfileApi(
             userPostsResponse = postsResponse(
-                data = listOf(feedItemDto("p6", "u1")),
+                data = listOf(postDto("p6", "u1")),
                 users = listOf(userDto("u1", "Ada")),
             ),
         )
@@ -91,7 +91,7 @@ class NetworkProfileDataSourceTest {
     fun `bookmarks maps post DTOs to domain posts`() = runTest {
         val api = FakeProfileApi(
             bookmarksResponse = bookmarksResponse(
-                data = listOf(feedItemDto("p2", "u2"), feedItemDto("p4", "u4")),
+                data = listOf(postDto("p2", "u2"), postDto("p4", "u4")),
             ),
         )
         val result = NetworkProfileDataSource(api).bookmarks("u1", cursor = null)
@@ -105,7 +105,7 @@ class NetworkProfileDataSourceTest {
     fun `bookmarks maps the sideloaded authors to domain users`() = runTest {
         val api = FakeProfileApi(
             bookmarksResponse = bookmarksResponse(
-                data = listOf(feedItemDto("p2", "u2")),
+                data = listOf(postDto("p2", "u2")),
                 users = listOf(userDto("u2", "Grace", isFollowing = true)),
             ),
         )
@@ -130,7 +130,7 @@ class NetworkProfileDataSourceTest {
     fun `bookmarks propagates cursor and hasMore from the page`() = runTest {
         val api = FakeProfileApi(
             bookmarksResponse = bookmarksResponse(
-                data = listOf(feedItemDto("p2", "u2")),
+                data = listOf(postDto("p2", "u2")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),
             ),
         )
@@ -154,7 +154,7 @@ class NetworkProfileDataSourceTest {
     fun `likes maps post DTOs and their sideloaded authors`() = runTest {
         val api = FakeProfileApi(
             likesResponse = postsResponse(
-                data = listOf(feedItemDto("p3", "u3"), feedItemDto("p4", "u4")),
+                data = listOf(postDto("p3", "u3"), postDto("p4", "u4")),
                 users = listOf(userDto("u3", "Alan"), userDto("u4", "Margaret")),
             ),
         )
@@ -180,7 +180,7 @@ class NetworkProfileDataSourceTest {
     fun `likes propagates cursor and hasMore from the page`() = runTest {
         val api = FakeProfileApi(
             likesResponse = postsResponse(
-                data = listOf(feedItemDto("p3", "u3")),
+                data = listOf(postDto("p3", "u3")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),
             ),
         )

@@ -14,7 +14,7 @@ import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
-import uno.lux.sample.post.data.domain.PostWithAuthor
+import uno.lux.sample.post.data.domain.PostWithUsers
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.FakeUserDataSource
 import uno.lux.sample.user.data.UserRepository
@@ -50,9 +50,9 @@ class PostRepositoryTest {
     // load() is what a screen with nothing but a post ID falls back on — a detail page restored
     // after process death, whose stores start empty.
     @Test
-    fun `load stores the fetched post and seeds its embedded author`() = runTest {
+    fun `load stores the fetched post and seeds its sideloaded author`() = runTest {
         val dataSource = FakePostDataSource()
-        dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
+        dataSource.fetchable["unliked"] = PostWithUsers(unliked, listOf(author))
         val repo = repository(dataSource)
 
         assertEquals(unliked, repo.load("unliked"))
@@ -73,7 +73,7 @@ class PostRepositoryTest {
     @Test
     fun `load leaves previously ingested posts in place`() = runTest {
         val dataSource = FakePostDataSource()
-        dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
+        dataSource.fetchable["unliked"] = PostWithUsers(unliked, listOf(author))
         val repo = repository(dataSource)
         repo.ingest(listOf(liked))
 
@@ -83,7 +83,7 @@ class PostRepositoryTest {
     }
 
     @Test
-    fun `create stores the published post and seeds its embedded author`() = runTest {
+    fun `create stores the published post and seeds its sideloaded author`() = runTest {
         val repo = repository()
 
         val created = repo.create(NewPost(title = "Title", body = "Body"))
@@ -352,7 +352,7 @@ class PostRepositoryTest {
     @Test
     fun `load answers a deleted id from the store without a request`() = runTest {
         val dataSource = FakePostDataSource()
-        dataSource.fetchable["unliked"] = PostWithAuthor(unliked, author)
+        dataSource.fetchable["unliked"] = PostWithUsers(unliked, listOf(author))
         val repo = repository(dataSource)
         repo.ingest(listOf(unliked))
         repo.delete("unliked")

@@ -34,8 +34,6 @@ interface PostApi {
         @Path("id") postId: String,
     )
 
-    // PUT, not POST: the request names the state it wants rather than asking for a flip, so
-    // sending it twice lands where sending it once does.
     @PUT("posts/{id}/like")
     suspend fun setLike(
         @Path("id") postId: String,
@@ -48,7 +46,6 @@ interface PostApi {
         @Body body: SetBookmarkRequestDto,
     ): BookmarkStateResponse
 
-    // The server keeps no report, so it answers an empty 204 — hence no response type.
     @POST("posts/{id}/report")
     suspend fun reportPost(
         @Path("id") postId: String,

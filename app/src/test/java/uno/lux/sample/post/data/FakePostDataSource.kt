@@ -5,7 +5,7 @@ import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
-import uno.lux.sample.post.data.domain.PostWithAuthor
+import uno.lux.sample.post.data.domain.PostWithUsers
 import uno.lux.sample.testing.testPostUrl
 import uno.lux.sample.user.data.domain.User
 import java.time.Instant
@@ -16,7 +16,7 @@ internal class FakePostDataSource : PostDataSource {
      * What [fetch] serves, keyed by post ID. An ID that isn't here answers null — the fake's
      * stand-in for the server's 404.
      */
-    val fetchable = mutableMapOf<PostId, PostWithAuthor>()
+    val fetchable = mutableMapOf<PostId, PostWithUsers>()
 
     /** IDs passed to [fetch], in call order, so a test can assert a fetch was (or wasn't) made. */
     val fetchedPostIds = mutableListOf<PostId>()
@@ -24,7 +24,7 @@ internal class FakePostDataSource : PostDataSource {
     /** Thrown by [fetch] instead of returning, so tests can drive the failure path. */
     var fetchError: Exception? = null
 
-    override suspend fun fetch(postId: PostId): PostWithAuthor? {
+    override suspend fun fetch(postId: PostId): PostWithUsers? {
         fetchedPostIds += postId
         fetchError?.let { throw it }
 
@@ -38,11 +38,11 @@ internal class FakePostDataSource : PostDataSource {
     /** Thrown by [create] instead of returning, so tests can drive the failure path. */
     var createError: Exception? = null
 
-    override suspend fun create(draft: NewPost): PostWithAuthor {
+    override suspend fun create(draft: NewPost): PostWithUsers {
         lastDraft = draft
         createError?.let { throw it }
 
-        return PostWithAuthor(
+        return PostWithUsers(
             post = Post(
                 id = "p-new",
                 url = testPostUrl("p-new"),
@@ -53,7 +53,7 @@ internal class FakePostDataSource : PostDataSource {
                 likeCount = 0,
                 commentCount = 0,
             ),
-            author = User(id = "u1", nickname = "Ada", handle = "@u1"),
+            users = listOf(User(id = "u1", nickname = "Ada", handle = "@u1")),
         )
     }
 

@@ -2,29 +2,13 @@ package uno.lux.sample.post.data.network
 
 import kotlinx.serialization.Serializable
 import uno.lux.sample.common.data.network.InstantSerializer
-import uno.lux.sample.user.data.network.UserDto
 import java.time.Instant
 
-@Serializable
-data class PostFeedItemDto(
-    val id: String,
-    val url: String,
-    val title: String,
-    val body: String,
-    @Serializable(with = InstantSerializer::class)
-    val createdAt: Instant,
-    val authorId: String,
-    val likeCount: Int,
-    val commentCount: Int,
-    val isLiked: Boolean,
-    val isBookmarked: Boolean,
-    val album: AlbumDto? = null,
-    val video: VideoDto? = null,
-)
-
 /**
- * The server's full post projection — the same fields as [PostFeedItemDto] but with the author
- * embedded rather than referenced by ID. Returned by `POST /posts`.
+ * The server's one post projection, served by every endpoint that answers with a post. It names
+ * its author by ID rather than embedding the user: the endpoints returning a *single* post
+ * sideload that author under `included` the way a page of posts does, so there is one shape to
+ * read rather than two that differ only in where the author turns up.
  */
 @Serializable
 data class PostDto(
@@ -34,7 +18,7 @@ data class PostDto(
     val body: String,
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
-    val author: UserDto,
+    val authorId: String,
     val likeCount: Int,
     val commentCount: Int,
     val isLiked: Boolean,

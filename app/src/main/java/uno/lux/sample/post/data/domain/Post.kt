@@ -24,10 +24,25 @@ data class Post(
 )
 
 /**
- * A single post together with the [author] the server embedded alongside it — what the full post
- * projection carries, as opposed to the feed's `authorId` reference. Both travel together so a
- * caller can seed the post and user stores in one step, which is what the two endpoints returning
- * this shape are for: publishing a post, and fetching one the app doesn't hold yet.
+ * A single post together with the [users] the server sideloaded beside it — its author, the one
+ * user a caller holding nothing but an `authorId` has no other way to resolve. Both halves travel
+ * together so [uno.lux.sample.post.data.PostRepository] can seed the post and user stores in one
+ * step, which is what the two endpoints answering with a single post are for: publishing one, and
+ * fetching one the app doesn't hold yet.
+ *
+ * Carries the sideload verbatim rather than picking the author out of it, exactly as
+ * [uno.lux.sample.profile.data.PostsPage] does for a page — there is nothing to resolve, and so
+ * no way for the resolution to fail on a payload that named an author it did not send.
+ */
+data class PostWithUsers(
+    val post: Post,
+    val users: List<User>,
+)
+
+/**
+ * A post paired with the author it names, both already resolved out of their stores. Distinct
+ * from [PostWithUsers], which is what *arrives* — this is what a screen draws, and a screen has
+ * nothing to show until it holds the user, not merely a list the user should be somewhere in.
  */
 data class PostWithAuthor(
     val post: Post,

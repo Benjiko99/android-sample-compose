@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import uno.lux.sample.common.data.network.CursorPageDto
 import uno.lux.sample.common.data.network.emptyPage
-import uno.lux.sample.post.data.network.feedItemDto
+import uno.lux.sample.post.data.network.postDto
 import uno.lux.sample.user.data.network.SideloadedUsers
 import uno.lux.sample.user.data.network.userDto
 
@@ -18,7 +18,7 @@ class NetworkFeedDataSourceTest {
     fun `fetch maps post DTOs to domain posts`() = runTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1"), feedItemDto("p2", "u1")),
+                data = listOf(postDto("p1", "u1"), postDto("p2", "u1")),
                 page = emptyPage,
             ),
         )
@@ -31,7 +31,7 @@ class NetworkFeedDataSourceTest {
     fun `fetch maps sideloaded authors to domain users`() = runTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1")),
+                data = listOf(postDto("p1", "u1")),
                 included = SideloadedUsers(users = listOf(userDto("u1", "Ada"), userDto("u2", "Grace"))),
                 page = emptyPage,
             ),
@@ -46,7 +46,7 @@ class NetworkFeedDataSourceTest {
     fun `fetch maps the isFollowing flag on sideloaded authors`() = runTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1")),
+                data = listOf(postDto("p1", "u1")),
                 included = SideloadedUsers(users = listOf(userDto("u1", "Ada", isFollowing = true))),
                 page = emptyPage,
             ),
@@ -60,7 +60,7 @@ class NetworkFeedDataSourceTest {
     fun `fetch returns empty users when sideload is absent`() = runTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1")),
+                data = listOf(postDto("p1", "u1")),
                 included = null,
                 page = emptyPage,
             ),
@@ -74,7 +74,7 @@ class NetworkFeedDataSourceTest {
     fun `fetch propagates cursor and hasMore from the page`() = runTest {
         val api = FakeFeedApi(
             feedResponse = FeedResponse(
-                data = listOf(feedItemDto("p1", "u1")),
+                data = listOf(postDto("p1", "u1")),
                 page = CursorPageDto(nextCursor = "c2", hasMore = true),
             ),
         )

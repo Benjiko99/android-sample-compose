@@ -4,7 +4,7 @@ import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import uno.lux.sample.common.data.network.InstantSerializer
-import uno.lux.sample.post.data.network.PostFeedItemDto
+import uno.lux.sample.post.data.network.PostDto
 import java.time.Instant
 
 class InstantSerializerTest {
@@ -18,7 +18,7 @@ class InstantSerializerTest {
             "commentCount":0,"isLiked":false,"isBookmarked":false}
             """.trimIndent()
 
-        val dto = Json.decodeFromString<PostFeedItemDto>(json)
+        val dto = Json.decodeFromString<PostDto>(json)
 
         assertEquals(Instant.parse("2025-01-01T00:00:00.000Z"), dto.createdAt)
     }

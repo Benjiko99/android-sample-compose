@@ -12,21 +12,21 @@ import uno.lux.sample.post.data.PostDataSource
 import uno.lux.sample.post.data.domain.NewPost
 import uno.lux.sample.post.data.domain.NewPostMedia
 import uno.lux.sample.post.data.domain.PostId
-import uno.lux.sample.post.data.domain.PostWithAuthor
+import uno.lux.sample.post.data.domain.PostWithUsers
+import uno.lux.sample.user.data.network.toDomain
 
 class NetworkPostDataSource(
     private val api: PostApi,
 ) : PostDataSource {
 
-    override suspend fun fetch(postId: PostId): PostWithAuthor? = withContext(Dispatchers.IO) {
-        notFoundAsNull { api.getPost(postId) }
-            ?.let { PostWithAuthorMapper.toPostWithAuthor(it.data) }
+    override suspend fun fetch(postId: PostId): PostWithUsers? = withContext(Dispatchers.IO) {
+        notFoundAsNull { api.getPost(postId) }?.toPostWithUsers()
     }
 
-    override suspend fun create(draft: NewPost): PostWithAuthor = withContext(Dispatchers.IO) {
+    override suspend fun create(draft: NewPost): PostWithUsers = withContext(Dispatchers.IO) {
         val media = draft.media
 
-        val dto = api
+        api
             .createPost(
                 title = draft.title.asTextPart(),
                 body = draft.body.asTextPart(),
@@ -34,9 +34,7 @@ class NetworkPostDataSource(
                 // `images` array; a plain "images" name would let each part overwrite the last.
                 images = (media as? NewPostMedia.Images)?.files.orEmpty().map { it.asPart("images[]") },
                 video = (media as? NewPostMedia.Video)?.file?.asPart("video"),
-            ).data
-
-        PostWithAuthorMapper.toPostWithAuthor(dto)
+            ).toPostWithUsers()
     }
 
     override suspend fun delete(postId: PostId) = withContext(Dispatchers.IO) {
@@ -68,4 +66,9 @@ class NetworkPostDataSource(
             ),
         )
     }
+
+    private fun PostResponse.toPostWithUsers() = PostWithUsers(
+        post = PostMapper.map(data),
+        users = included.users.map { it.toDomain() },
+    )
 }
