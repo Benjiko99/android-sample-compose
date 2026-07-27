@@ -62,9 +62,13 @@ fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () ->
 
 /**
  * Launches [block] in [viewModelScope], logging and discarding any failure ([ignoreErrors] does
- * both). The shape of a fire-and-forget user action with nowhere to report a failure to — a like
- * toggle, a delete — where the alternative is spelling out `launch { ignoreErrors { … } }` at
- * every call site.
+ * both), where the alternative is spelling out `launch { ignoreErrors { … } }` at every call site.
+ *
+ * Only for a mutation whose failure is already visible where the tap happened — an optimistic
+ * like or bookmark, which reverts the control the user just touched. A mutation whose UI is gone
+ * by the time the server answers must name its failure instead, or the tap looks exactly like
+ * success; `common/ui`'s `launchReporting` is that shape.
+ *
  * Returns [Unit] rather than the [Job], as [launchRefresh] and [launchIfIdle] do, so an action
  * declared to return [Unit] can be written as an expression body.
  */

@@ -84,6 +84,7 @@ import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FailedAction
+import uno.lux.sample.common.ui.FailedActionEffect
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -168,15 +169,7 @@ internal fun PostDetailScreen(
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
     // A delete or report whose request failed after its dialog or sheet already closed.
-    // Announced once and spent, so a rotation cannot say it twice.
-    val failedActionMessage = failedAction?.asText()
-
-    LaunchedEffect(failedActionMessage) {
-        if (failedActionMessage == null) return@LaunchedEffect
-
-        snackbarHostState.showSnackbar(failedActionMessage)
-        onFailedActionShown()
-    }
+    FailedActionEffect(failedAction, snackbarHostState, onFailedActionShown)
 
     Scaffold(
         modifier = modifier.imePadding(),

@@ -91,6 +91,7 @@ import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FailedAction
+import uno.lux.sample.common.ui.FailedActionEffect
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -205,16 +206,10 @@ internal fun ProfileScreen(
     onBack: (() -> Unit)? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+
     // A delete, report or follow whose request failed after the tap left nothing on screen to
-    // fail visibly. Announced once and spent, so a rotation cannot say it twice.
-    val failedActionMessage = failedAction?.asText()
-
-    LaunchedEffect(failedActionMessage) {
-        if (failedActionMessage == null) return@LaunchedEffect
-
-        snackbarHostState.showSnackbar(failedActionMessage)
-        actions.onFailedActionShown()
-    }
+    // fail visibly.
+    FailedActionEffect(failedAction, snackbarHostState, actions::onFailedActionShown)
 
     Box(
         modifier = modifier

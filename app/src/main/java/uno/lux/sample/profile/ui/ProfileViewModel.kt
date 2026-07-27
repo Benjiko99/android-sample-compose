@@ -26,6 +26,7 @@ import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.ignoreErrors
+import uno.lux.sample.common.ui.launchReporting
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.ui.PostCardData
@@ -166,12 +167,7 @@ class ProfileViewModel @AssistedInject constructor(
 
     private val _failedAction = MutableStateFlow<FailedAction?>(null)
 
-    /**
-     * The last fire-and-forget action whose request failed, for the screen to announce once and
-     * spend through [onFailedActionShown]. The tap left nothing on screen to fail visibly — the
-     * confirmation dialog closed, the report sheet dismissed, the follow button simply never
-     * moved — so without this signal the failure would be indistinguishable from success.
-     */
+    /** The last [FailedAction] to fail here, for the screen to announce once and then spend. */
     val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
 
     private var loadJob: Job? = null
@@ -216,7 +212,7 @@ class ProfileViewModel @AssistedInject constructor(
         postRepository.toggleBookmark(postId)
     }
 
-    override fun onDeletePost(postId: PostId) = launchReporting(FailedAction.DELETE_POST) {
+    override fun onDeletePost(postId: PostId) = launchReporting(_failedAction, FailedAction.DELETE_POST) {
         postRepository.delete(postId)
     }
 
@@ -224,11 +220,11 @@ class ProfileViewModel @AssistedInject constructor(
         postId: PostId,
         reason: ReportReason,
         details: String,
-    ) = launchReporting(FailedAction.REPORT_POST) {
+    ) = launchReporting(_failedAction, FailedAction.REPORT_POST) {
         postRepository.report(postId, reason, details)
     }
 
-    override fun onToggleFollow() = launchReporting(FailedAction.FOLLOW) {
+    override fun onToggleFollow() = launchReporting(_failedAction, FailedAction.FOLLOW) {
         userRepository.toggleFollow(userId)
     }
 
@@ -238,17 +234,6 @@ class ProfileViewModel @AssistedInject constructor(
      */
     override fun onFailedActionShown() {
         _failedAction.value = null
-    }
-
-    /**
-     * [launchCatching], except a failure also names [action] in [failedAction]. For the mutations
-     * whose UI is gone by the time the answer arrives; the optimistic toggles stay with
-     * [launchCatching], because their revert is visible where the tap happened.
-     */
-    private fun launchReporting(action: FailedAction, block: suspend () -> Unit) {
-        viewModelScope.launch {
-            ignoreErrors(onError = { _failedAction.value = action }, block = block)
-        }
     }
 
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {

@@ -52,6 +52,7 @@ import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FailedAction
+import uno.lux.sample.common.ui.FailedActionEffect
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.common.ui.LoadMoreEffect
@@ -170,16 +171,8 @@ internal fun HomeScreen(
         if (result == SnackbarResult.ActionPerformed) actions.refresh()
     }
 
-    // A delete, report or follow whose request failed after its dialog or sheet already closed.
-    // No retry action: the thing to retry is a tap that is one gesture away, not a load.
-    val failedActionMessage = failedAction?.asText()
-
-    LaunchedEffect(failedActionMessage) {
-        if (failedActionMessage == null) return@LaunchedEffect
-
-        snackbarHostState.showSnackbar(failedActionMessage)
-        actions.onFailedActionShown()
-    }
+    // A delete or report whose request failed after its dialog or sheet already closed.
+    FailedActionEffect(failedAction, snackbarHostState, actions::onFailedActionShown)
 
     Scaffold(
         modifier = modifier,
