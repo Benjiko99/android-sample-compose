@@ -18,6 +18,7 @@ import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
 import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.ui.ignoreErrors
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.feed.data.FeedState
 import uno.lux.sample.post.data.PostRepository

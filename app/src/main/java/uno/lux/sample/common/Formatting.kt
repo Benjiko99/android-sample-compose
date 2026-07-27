@@ -25,15 +25,18 @@ fun CompactCount.asText(): String = when (this) {
     is CompactCount.Millions -> stringResource(R.string.count_millions, text)
 }
 
-/** Maps an [AppError] to its localized user-facing message. */
+/**
+ * Maps an [AppError] to its localized user-facing message. [AppError.Http] shows the server's own
+ * description of what was wrong when one was parsed out of the error body — untranslated, but the
+ * rule that fired beats a generic apology — and names the bare status code otherwise.
+ */
 @Composable
-fun AppError.asText(): String = stringResource(
-    when (this) {
-        AppError.NoConnection -> R.string.error_no_connection
-        AppError.Timeout -> R.string.error_timeout
-        AppError.Unknown -> R.string.error_unknown
-    },
-)
+fun AppError.asText(): String = when (this) {
+    AppError.NoConnection -> stringResource(R.string.error_no_connection)
+    AppError.Timeout -> stringResource(R.string.error_timeout)
+    is AppError.Http -> serverMessage ?: stringResource(R.string.error_http, code)
+    AppError.Unknown -> stringResource(R.string.error_unknown)
+}
 
 /**
  * A media duration as colon-separated digits: 95 -> "1:35", 615 -> "10:15", 3723 -> "1:02:03".

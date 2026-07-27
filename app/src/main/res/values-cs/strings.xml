@@ -13,6 +13,7 @@
     <!-- Error -->
     <string name="error_no_connection">Žádné připojení k internetu</string>
     <string name="error_timeout">Vypršel časový limit připojení</string>
+    <string name="error_http">Chyba serveru (%1$d)</string>
     <string name="error_unknown">Něco se pokazilo</string>
     <string name="error_retry">Zkusit znovu</string>
 

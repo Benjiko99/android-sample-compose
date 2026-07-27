@@ -14,9 +14,9 @@ import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.restoreDraft
 import uno.lux.sample.app.util.saveDraft
-import uno.lux.sample.app.util.toAppError
 import uno.lux.sample.common.data.files.FileLoader
 import uno.lux.sample.common.data.files.VideoMetadataReader
+import uno.lux.sample.common.data.network.toAppError
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.data.domain.NewPostMedia
 import javax.inject.Inject

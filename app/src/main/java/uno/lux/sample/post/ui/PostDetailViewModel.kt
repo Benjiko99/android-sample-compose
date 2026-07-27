@@ -25,11 +25,11 @@ import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.stateInWhileSubscribed
-import uno.lux.sample.app.util.toAppError
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.data.ReportReason
+import uno.lux.sample.common.data.network.toAppError
 import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId

@@ -19,3 +19,8 @@ fun notFoundException(message: String) = HttpException(
             .toResponseBody("application/json".toMediaType()),
     ),
 )
+
+/** The exception Retrofit raises for any non-2xx answer, with [body] as the server's error body. */
+fun httpException(code: Int, body: String) = HttpException(
+    Response.error<Any>(code, body.toResponseBody("application/json".toMediaType())),
+)

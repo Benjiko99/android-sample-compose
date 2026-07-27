@@ -13,6 +13,7 @@ import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.common.data.files.FakeFileLoader
 import uno.lux.sample.common.data.files.FakeVideoMetadataReader
+import uno.lux.sample.common.data.network.httpException
 import uno.lux.sample.feed.data.FakeFeedDataSource
 import uno.lux.sample.feed.data.FeedRepository
 import uno.lux.sample.post.data.FakePostDataSource
@@ -171,6 +172,36 @@ class CreatePostViewModelTest : ViewModelTest() {
         assertEquals(CreatePostError.Failed(AppError.Unknown), state.error)
         assertFalse(state.isPublishing)
         assertEquals(listOf(Screen.Shell, Screen.CreatePost), backStack.screens())
+    }
+
+    /**
+     * The composer mirrors the server's validations, but the day the mirrors drift the server's
+     * structured 422 is what arrives — and its message, not a generic apology, is what must show.
+     */
+    @Test
+    fun `a publish the server refuses surfaces the server's own message`() = runTest {
+        val viewModel = fixture(
+            createError = httpException(
+                422,
+                """
+                {"error":{"code":"VALIDATION_ERROR","message":"Validation failed","details":[
+                  {"path":"title","code":"too_long","message":"Title is too long (maximum is 120 characters)"}
+                ]}}
+                """.trimIndent(),
+            ),
+        ).viewModel
+        viewModel.fillIn(title = "Title", body = "Body")
+
+        viewModel.publish()
+
+        val state = viewModel.uiState.first()
+        assertEquals("Title", state.form.title)
+        assertEquals(
+            CreatePostError.Failed(
+                AppError.Http(code = 422, serverMessage = "Title is too long (maximum is 120 characters)"),
+            ),
+            state.error,
+        )
     }
 
     @Test

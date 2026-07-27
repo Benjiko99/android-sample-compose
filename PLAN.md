@@ -23,13 +23,6 @@ through"; at minimum delete and follow must surface failure.
 
 ## Medium — robustness
 
-### All HTTP failures collapse to `AppError.Unknown`
-`toAppError()` maps three connectivity exceptions and never mentions `HttpException`
-(`app/util/AppError.kt`), so a 422, 403 and 500 all render the same generic message. The composer
-mirrors server validations client-side, but the day those mirrors drift the server's structured 422
-arrives and the user sees "something went wrong". Add an `AppError.Http(code)` case and parse the
-Rails error body for the composer.
-
 ### Uploads buffer entire files in memory
 `FileLoader.read` calls `readBytes()` (`common/data/files/FileLoader.kt`) and `FileUpload.asPart`
 wraps the byte array (`common/data/network/MultipartParts.kt`), so ten photos plus a 25 MB video sit
@@ -67,8 +60,7 @@ looked at — configure it meaningfully or disable backup and say why.
 
 ## Doc accuracy
 
-- **Two KDocs describe things that don't exist.** `app/util/AppError.kt` links
-  `uno.lux.sample.design.format.asText`, a package that is gone; `settings/data/DataStoreSettingsRepository.kt`
+- **A KDoc describes machinery that doesn't exist.** `settings/data/DataStoreSettingsRepository.kt`
   describes "a one-time migration from the legacy SharedPreferences file" that appears nowhere — the
   store is created with no migrations (`app/di/DataModule.kt`). In a codebase whose comments are this
   load-bearing, a comment describing absent machinery is worse than none.
