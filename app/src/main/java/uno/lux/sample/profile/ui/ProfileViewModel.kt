@@ -201,14 +201,10 @@ class ProfileViewModel @AssistedInject constructor(
             coroutineScope {
                 launch { userRepository.refresh(userId) }
                 launch { profileRepository.refresh(userId) }
-                // Only for tabs that have been opened — a profile load must not reach for a
-                // list nobody has asked to see, least of all the private one.
-                if (saved.hasLoaded) {
-                    launch { saved.refresh() }
-                }
-                if (liked.hasLoaded) {
-                    launch { liked.refresh() }
-                }
+                // Each is a no-op for a tab nobody opened: a profile load must not reach for a
+                // list the user has not asked to see, least of all the private one.
+                launch { saved.refreshIfLoaded() }
+                launch { liked.refreshIfLoaded() }
             }
         }
 
@@ -257,12 +253,8 @@ class ProfileViewModel @AssistedInject constructor(
      * The Saved tab became visible. Fetches the list the first time only — later visits are
      * served from the repository, and a pull-to-refresh is what re-fetches it.
      */
-    override fun onSavedTabShown() {
-        if (saved.hasLoaded) return
-
-        launchIfIdle(::bookmarksJob) {
-            ignoreErrors { saved.refresh() }
-        }
+    override fun onSavedTabShown() = launchIfIdle(::bookmarksJob) {
+        ignoreErrors { saved.ensureLoaded() }
     }
 
     override fun loadMoreBookmarks() = launchIfIdle(::bookmarksJob) {
@@ -270,12 +262,8 @@ class ProfileViewModel @AssistedInject constructor(
     }
 
     /** The Likes tab became visible. Loads once, the way [onSavedTabShown] does. */
-    override fun onLikesTabShown() {
-        if (liked.hasLoaded) return
-
-        launchIfIdle(::likesJob) {
-            ignoreErrors { liked.refresh() }
-        }
+    override fun onLikesTabShown() = launchIfIdle(::likesJob) {
+        ignoreErrors { liked.ensureLoaded() }
     }
 
     override fun loadMoreLikes() = launchIfIdle(::likesJob) {

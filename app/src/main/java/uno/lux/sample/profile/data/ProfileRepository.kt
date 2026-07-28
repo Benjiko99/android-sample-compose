@@ -28,10 +28,17 @@ interface PostList {
 
     val hasMore: Flow<Boolean>
 
-    /** Whether this list has ever loaded — the caller's load-once guard. */
-    val hasLoaded: Boolean
+    /**
+     * Loads this list if nothing has yet, and does nothing at all otherwise — a tab reopened
+     * later is served from what is already here rather than fetched again.
+     */
+    suspend fun ensureLoaded()
 
-    suspend fun refresh()
+    /**
+     * Re-fetches this list, but only if it was ever opened: a profile refresh must not reach for
+     * a tab nobody asked to see, least of all the private one.
+     */
+    suspend fun refreshIfLoaded()
 
     suspend fun loadMore()
 }
@@ -54,8 +61,8 @@ interface PostList {
  *
  * [saved] and [liked] are the same arrangement for the posts a user saved and liked, each handed
  * out as a whole [PostList] rather than as a spread of per-tab methods. They differ from the Posts
- * tab in two ways: each is loaded on demand ([PostList.refresh]) rather than by [refresh] — a tab
- * nobody opened costs no request, and the Saved one is private to its owner besides — and each
+ * tab in two ways: each is loaded on demand ([PostList.ensureLoaded]) rather than by [refresh] — a
+ * tab nobody opened costs no request, and the Saved one is private to its owner besides — and each
  * emits `null` until its first load lands. Their authors are arbitrary users the caller may never
  * have met, which is what makes the sideload indispensable there rather than merely useful.
  *
@@ -188,7 +195,13 @@ class ProfileRepository(
 
             override val hasMore: Flow<Boolean> = _state.map { it[userId]?.hasMore ?: false }
 
-            override val hasLoaded: Boolean
+            /**
+             * Whether this tab was ever opened. Private, because the two decisions taken from it
+             * — load once, and re-fetch only what was opened — are this list's own to make; a
+             * caller reading it would be deciding what to ask for from a snapshot that can move
+             * before the request goes out.
+             */
+            private val hasLoaded: Boolean
                 get() = _state.value.containsKey(userId)
 
             /**
@@ -223,7 +236,19 @@ class ProfileRepository(
             private fun echoedIds(): Flow<List<PostId>?> =
                 _state.map { it[userId]?.ids }.distinctUntilChanged()
 
-            override suspend fun refresh() {
+            override suspend fun ensureLoaded() {
+                if (hasLoaded) return
+
+                refresh()
+            }
+
+            override suspend fun refreshIfLoaded() {
+                if (!hasLoaded) return
+
+                refresh()
+            }
+
+            private suspend fun refresh() {
                 val page = ingest(fetchPage(userId, null))
 
                 _state.update {
