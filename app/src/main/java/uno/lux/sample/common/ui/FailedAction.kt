@@ -30,23 +30,24 @@ enum class FailedAction {
 }
 
 /**
- * Launches [block], naming [action] in [sink] if it fails. [launchCatching] with somewhere to
- * report to — for the mutations whose UI is gone by the time the answer arrives, where logging
+ * Launches [block], handing [action] to [onFailed] if it fails. [launchCatching] with somewhere
+ * to report to — for the mutations whose UI is gone by the time the answer arrives, where logging
  * and discarding would leave the tap looking exactly like success.
  *
- * Takes the sink as a parameter the way [uno.lux.sample.app.util.launchRefresh] takes its
- * `refreshing` flag, so the ViewModel keeps owning the state a test asserts against. Not in
- * `app/util` with the other launch shapes because it names [FailedAction], and `app/util`
- * imports nothing of the project's — the same reason [ignoreErrors]'s error-sink overload lives
- * here rather than there.
+ * Takes a setter rather than the [MutableStateFlow] itself, so it says nothing about where the
+ * ViewModel keeps the announcement: a flow of its own, or one field of a larger UI state that is
+ * copied. The ViewModel still owns the state a test asserts against, which is the property
+ * [uno.lux.sample.app.util.launchRefresh] takes its `refreshing` flag for. Not in `app/util`
+ * with the other launch shapes because it names [FailedAction], and `app/util` imports nothing
+ * of the project's — the same reason [ignoreErrors]'s error-sink overload lives here.
  */
 fun ViewModel.launchReporting(
-    sink: MutableStateFlow<FailedAction?>,
     action: FailedAction,
+    onFailed: (FailedAction) -> Unit,
     block: suspend () -> Unit,
 ) {
     viewModelScope.launch {
-        ignoreErrors(onError = { sink.value = action }, block = block)
+        ignoreErrors(onError = { onFailed(action) }, block = block)
     }
 }
 

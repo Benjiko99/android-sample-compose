@@ -9,13 +9,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import uno.lux.sample.app.di.CurrentUser
@@ -25,7 +22,6 @@ import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
-import uno.lux.sample.app.util.stateInWhileSubscribed
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.domain.Comment
 import uno.lux.sample.comment.data.domain.CommentId
@@ -34,33 +30,38 @@ import uno.lux.sample.common.data.network.toAppError
 import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.launchReporting
 import uno.lux.sample.post.data.PostRepository
-import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
-import uno.lux.sample.post.data.domain.PostWithAuthor
+import uno.lux.sample.post.ui.PostDetailUiState.Content
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.User
-import uno.lux.sample.user.data.domain.UserId
-import uno.lux.sample.video.data.domain.Video
 
 /**
- * Holds the state for a single post's detail view. The post itself comes from the shared
- * [PostRepository] entity store so likes toggled here propagate to the feed and profile screens.
- * Comments are owned by this ViewModel: a first page is loaded on creation, [loadMoreComments]
- * appends the rest a window at a time as the reader scrolls, [addComment] and
- * [onToggleCommentLike] update them in place, and the lot is discarded when the ViewModel is
- * cleared. This avoids the cross-post keying and memory-retention problems that a shared comment
- * store would introduce.
+ * Holds the state for a single post's detail view.
+ *
+ * The state is **one value the ViewModel owns and edits**, not a projection assembled from a flow
+ * per moving part. Everything this page discovers for itself — the thread, the send states, the
+ * announcement — is a field of [PostDetailUiState], written through [mutateState]. What comes
+ * from outside enters through exactly one collector, [observeStores], because the post really
+ * does belong to somebody else: [PostRepository] holds it in a store shared with the feed and
+ * every profile, so a like toggled underneath, or a delete performed on another screen, has to
+ * reach this page without it asking. That is the one thing a plain field could not do, and it is
+ * the only reason a subscription remains.
+ *
+ * Comments, by contrast, are this ViewModel's own: a first page is loaded on creation,
+ * [loadMoreComments] appends the rest a window at a time as the reader scrolls, and the lot is
+ * discarded when the ViewModel is cleared. This avoids the cross-post keying and memory-retention
+ * problems a shared comment store would introduce.
  *
  * The entity store normally already holds the post — this page is reached from a feed or profile
  * that fetched it. It does not when the page is restored after **process death**, where the back
- * stack comes back but every in-memory store starts empty, so [load] fetches the post it was
- * given the ID for. That fetch is why an absent post can't simply mean [PostDetailUiState.NotFound]:
- * "not asked yet", "the server says it's gone" and "the request failed" are three different
- * screens, and [PostLoad] is what tells them apart.
+ * stack comes back but every in-memory store starts empty, so [loadPost] fetches the post it was
+ * given the ID for. That fetch is why an absent post can't simply mean [Content.NotFound]: "not
+ * asked yet", "the server says it's gone" and "the request failed" are three different screens,
+ * and [PostFetch] is what tells them apart.
  *
- * Navigation intents (going back, opening the author or a media viewer) are pushes and pops on
- * the injected [Navigator]. [postId] is a runtime argument wired through [Factory] / assisted
- * injection so every opened post gets its own ViewModel, scoped to its back-stack entry.
+ * Intent arrives as one [PostDetailUiEvent] through [onEvent], which the screen reaches through
+ * [PostDetailUiState.eventSink]. [postId] is a runtime argument wired through [Factory] /
+ * assisted injection, so every opened post gets its own ViewModel, scoped to its back-stack entry.
  */
 @HiltViewModel(assistedFactory = PostDetailViewModel.Factory::class)
 class PostDetailViewModel @AssistedInject constructor(
@@ -82,128 +83,171 @@ class PostDetailViewModel @AssistedInject constructor(
      * can't answer — once the post is resolved it is the post that is shown, whatever happened
      * to a request beforehand.
      */
-    private sealed interface PostLoad {
-        data object Pending : PostLoad
+    private sealed interface PostFetch {
+        data object Pending : PostFetch
 
-        data object Missing : PostLoad
+        data object Missing : PostFetch
 
         data class Failed(
             val error: AppError,
-        ) : PostLoad
+        ) : PostFetch
     }
 
-    private val _fetchOutcome = MutableStateFlow<PostLoad>(PostLoad.Pending)
-
-    /** Whether the store has been told this post is gone, narrowed to the one id this page shows. */
-    private val isDeleted: Flow<Boolean> = postRepository.deletedIds
-        .map { postId in it }
-        .distinctUntilChanged()
+    /**
+     * A plain field rather than a flow: nothing observes it, [content] reads it, and every write
+     * goes through [setFetch], which recomputes the state in the same breath. Declared above
+     * [_uiState] because that state's initial value already reads it.
+     */
+    private var fetch: PostFetch = PostFetch.Pending
 
     /**
-     * The fetch outcome, overridden to [PostLoad.Missing] once the store says the post was
-     * deleted — whichever screen deleted it. This page may be sitting under the profile that
-     * removed the post, and without the override the emptied store would read as "not loaded
-     * yet" and leave this page spinning on a fetch nobody is going to make.
+     * Seeded from [content] rather than from [Content.Loading], so a page opened the ordinary way
+     * — from a feed or profile that already fetched the post — is [Content.Loaded] before the
+     * first frame, with no spinner flashed for a post that was never missing.
      */
-    private val postLoad: Flow<PostLoad> =
-        combine(_fetchOutcome, isDeleted) { outcome, deleted ->
-            if (deleted) PostLoad.Missing else outcome
-        }
-
-    /**
-     * The stretch of the thread this page has loaded, together with where the next page starts
-     * and how the last load went. One value rather than a flow per field because they move
-     * together — a page landing sets the comments, the cursor and the end of the thread at once,
-     * and the screen must never see a thread grown past a cursor that has not.
-     */
-    private data class CommentThread(
-        val comments: List<Comment> = emptyList(),
-        val isLoading: Boolean = true,
-        val error: AppError? = null,
-        /** Null both before the first page lands and once the last one has. */
-        val nextCursor: String? = null,
-        val endReached: Boolean = false,
-        /** The comment the screen still owes a scroll to, or null once it has made it. */
-        val scrollTo: CommentId? = null,
+    private val _uiState = MutableStateFlow(
+        PostDetailUiState(
+            content = content(),
+            composerUser = currentUser,
+            eventSink = ::onEvent,
+        ),
     )
 
-    private val _thread = MutableStateFlow(CommentThread())
-
-    /**
-     * How far the comment in the composer has got. Its own flow rather than a field on
-     * [CommentThread]: a send is about the text the user is still holding, not about the window
-     * of the thread that is loaded, and a reload landing mid-send must not disturb it.
-     */
-    private val _commentSend = MutableStateFlow(CommentSendState.IDLE)
-
-    /**
-     * The post and its author, resolved together — one is no use without the other. Both stores
-     * emit for changes to any post or user, so this only passes on the ones that move *this*
-     * pair; without that, a like anywhere in the feed underneath would rebuild the whole state.
-     */
-    private val postWithAuthor: Flow<PostWithAuthor?> =
-        combine(postRepository.entities, userRepository.users) { entities, users ->
-            resolve(entities, users)
-        }.distinctUntilChanged()
-
-    val uiState: StateFlow<PostDetailUiState> = combine(
-        postWithAuthor,
-        _thread,
-        postLoad,
-        _commentSend,
-    ) { resolved, thread, postLoad, commentSend ->
-        when {
-            resolved != null -> PostDetailUiState.Loaded(
-                post = resolved.post,
-                author = resolved.author,
-                comments = thread.comments,
-                commentsError = thread.error,
-                commentsLoading = thread.isLoading,
-                commentsEndReached = thread.endReached,
-                isOwn = resolved.post.authorId == currentUser.id,
-                scrollToComment = thread.scrollTo,
-                commentSend = commentSend,
-            )
-
-            postLoad is PostLoad.Missing -> PostDetailUiState.NotFound
-
-            postLoad is PostLoad.Failed -> PostDetailUiState.Error(postLoad.error)
-
-            else -> PostDetailUiState.Loading
-        }
-    }.stateInWhileSubscribed(viewModelScope, PostDetailUiState.Loading)
-
-    /** The signed-in user, drawn as the composer's avatar. */
-    val composerUser: User = currentUser
-
-    private val _failedAction = MutableStateFlow<FailedAction?>(null)
-
-    /** The last [FailedAction] to fail here, for the screen to announce once and then spend. */
-    val failedAction: StateFlow<FailedAction?> = _failedAction.asStateFlow()
-
-    private val _reportSend = MutableStateFlow(ReportSendState.IDLE)
-
-    /** How the report dialog's send is going, for the dialog it is still showing under. */
-    val reportSend: StateFlow<ReportSendState> = _reportSend.asStateFlow()
+    val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
 
     private var loadJob: Job? = null
     private var loadMoreJob: Job? = null
     private var reportJob: Job? = null
 
     init {
+        observeStores()
         retry()
     }
 
+    // ── Intent ────────────────────────────────────────────────────────────────
+
+    /**
+     * The one way in. Every branch here is a line, because the work each names is written out
+     * below or is a single push on the [Navigator] — the `when` is meant to read as the page's
+     * vocabulary rather than as its implementation.
+     */
+    fun onEvent(event: PostDetailUiEvent) {
+        when (event) {
+            PostDetailUiEvent.GoBack -> navigator.goBack()
+            is PostDetailUiEvent.OpenProfile -> navigator.goTo(Screen.Profile(event.userId))
+            is PostDetailUiEvent.OpenVideo -> navigator.goTo(Screen.FullscreenVideo(event.video))
+            is PostDetailUiEvent.OpenAlbum -> navigator.goTo(
+                Screen.AlbumViewer(event.imageUrls, event.initialIndex),
+            )
+
+            PostDetailUiEvent.ToggleLike -> toggleLike()
+            PostDetailUiEvent.ToggleBookmark -> toggleBookmark()
+            PostDetailUiEvent.Delete -> delete()
+            is PostDetailUiEvent.Report -> report(event.reason, event.details)
+            PostDetailUiEvent.CloseReport -> dropReport(::reportJob, ::setReportSend)
+            PostDetailUiEvent.Retry -> retry()
+
+            is PostDetailUiEvent.AddComment -> addComment(event.text)
+            is PostDetailUiEvent.ToggleCommentLike -> toggleCommentLike(event.commentId)
+            PostDetailUiEvent.LoadMoreComments -> loadMoreComments()
+            PostDetailUiEvent.RetryComments -> retryComments()
+
+            PostDetailUiEvent.FailedActionShown -> mutateState { it.copy(failedAction = null) }
+            PostDetailUiEvent.CommentSent -> setCommentSend(CommentSendState.IDLE)
+            PostDetailUiEvent.ScrolledToComment -> mutateThread { it.copy(scrollTo = null) }
+        }
+    }
+
+    // ── The state ─────────────────────────────────────────────────────────────
+
+    /**
+     * Applies [mutate] to the state atomically. [MutableStateFlow.update] retries its lambda
+     * under contention, so [mutate] must be a pure `copy` and nothing else.
+     *
+     * Every write goes through here and touches only the fields it owns, which is the same
+     * discipline `PostRepository.updateEntity` exists for: reading the state into a local,
+     * suspending, then writing that local back would overwrite whatever landed in between.
+     */
+    private fun mutateState(mutate: (PostDetailUiState) -> PostDetailUiState) =
+        _uiState.update(mutate)
+
+    private fun mutateThread(mutate: (CommentThread) -> CommentThread) = mutateState {
+        it.copy(thread = mutate(it.thread))
+    }
+
+    private fun setCommentSend(state: CommentSendState) = mutateState {
+        it.copy(commentSend = state)
+    }
+
+    private fun setReportSend(state: ReportSendState) = mutateState { it.copy(reportSend = state) }
+
+    private fun setFailedAction(action: FailedAction) = mutateState {
+        it.copy(failedAction = action)
+    }
+
+    // ── The post ──────────────────────────────────────────────────────────────
+
+    /**
+     * The single subscription this page keeps. The stores are the one input it does not own, and
+     * all three move for reasons that have nothing to do with this post, so the collector only
+     * asks [content] to work out what this page shows now. An answer equal to the last one leaves
+     * the state untouched — [MutableStateFlow] conflates by equality — which is the dedup the
+     * old `distinctUntilChanged` chain had to be spelled out for.
+     */
+    private fun observeStores() {
+        viewModelScope.launch {
+            combine(
+                postRepository.entities,
+                userRepository.users,
+                postRepository.deletedIds,
+            ) { _, _, _ -> }.collect { updateContent() }
+        }
+    }
+
+    private fun updateContent() = mutateState { it.copy(content = content()) }
+
+    /**
+     * What the page shows, given the stores and how the cold-start fetch went. Reads the stores
+     * through `.value` rather than from an emission, which can only ever be more current.
+     *
+     * A resolved post outranks everything, deletion included: [PostRepository.delete] drops the
+     * entity as it records the ID, so the two cannot disagree, and were the order reversed a
+     * refresh landing mid-delete would win against the answer.
+     */
+    private fun content(): Content {
+        val post = postRepository.entities.value[postId]
+        val author = post?.let { userRepository.users.value[it.authorId] }
+        if (post != null && author != null) {
+            return Content.Loaded(
+                post = post,
+                author = author,
+                isOwn = post.authorId == currentUser.id,
+            )
+        }
+
+        // Told by the store that the post is gone, whichever screen deleted it. Without this the
+        // emptied store would read as "not loaded yet" and leave the page spinning on a fetch
+        // nobody is going to make.
+        if (postId in postRepository.deletedIds.value) return Content.NotFound
+
+        return when (val fetch = fetch) {
+            PostFetch.Pending -> Content.Loading
+            PostFetch.Missing -> Content.NotFound
+            is PostFetch.Failed -> Content.Error(fetch.error)
+        }
+    }
+
+    private fun setFetch(outcome: PostFetch) {
+        fetch = outcome
+        updateContent()
+    }
+
     /** Reloads everything the page failed to get — the post itself included. */
-    fun retry() = launchIfIdle(::loadJob) {
+    private fun retry() = launchIfIdle(::loadJob) {
         coroutineScope {
             launch { loadPost() }
             launch { loadComments() }
         }
-    }
-
-    fun retryComments() {
-        viewModelScope.launch { loadComments() }
     }
 
     /**
@@ -212,23 +256,50 @@ class PostDetailViewModel @AssistedInject constructor(
      * restored after process death, where this ViewModel is the first thing to ask for the post.
      */
     private suspend fun loadPost() {
-        if (resolve(postRepository.entities.value, userRepository.users.value) != null) return
+        if (_uiState.value.content is Content.Loaded) return
 
-        _fetchOutcome.value = PostLoad.Pending
-        ignoreErrors(
-            onError = { e -> _fetchOutcome.value = PostLoad.Failed(e.toAppError()) },
-        ) {
+        setFetch(PostFetch.Pending)
+        ignoreErrors(onError = { e -> setFetch(PostFetch.Failed(e.toAppError())) }) {
             // A 404 is the server saying the post is gone — an answer, not a failure to retry.
-            if (postRepository.load(postId) == null) _fetchOutcome.value = PostLoad.Missing
+            if (postRepository.load(postId) == null) setFetch(PostFetch.Missing)
         }
     }
 
-    /** This post paired with its author, or null while either store is still missing its half. */
-    private fun resolve(entities: Map<PostId, Post>, users: Map<UserId, User>): PostWithAuthor? {
-        val post = entities[postId] ?: return null
-        val author = users[post.authorId] ?: return null
+    private fun toggleLike() = launchCatching {
+        postRepository.toggleLike(postId)
+    }
 
-        return PostWithAuthor(post, author)
+    private fun toggleBookmark() = launchCatching {
+        postRepository.toggleBookmark(postId)
+    }
+
+    /**
+     * Deletes the post and pops this screen. Backing out is part of the outcome, not the caller's
+     * follow-up: once the entity is gone the detail view has nothing left to show, and the feed or
+     * profile underneath has already dropped the post through the shared entity store.
+     */
+    private fun delete() = launchReporting(FailedAction.DELETE_POST, ::setFailedAction) {
+        // The store marks the deletion, and [content] reads NotFound from it — the same path a
+        // deletion performed on any other screen takes. A failed delete throws before the pop, so
+        // the page stays put and announces the failure itself.
+        postRepository.delete(postId)
+        navigator.goBack()
+    }
+
+    /**
+     * Reports the post. Unlike [delete] the page stays where it is: a reported post is still a
+     * post, and the reporter is still reading it — and so is the dialog, which is why the outcome
+     * goes to [PostDetailUiState.reportSend] rather than to a snackbar the dialog would cover.
+     */
+    private fun report(reason: ReportReason, details: String) =
+        launchReport(::reportJob, ::setReportSend) {
+            postRepository.report(postId, reason, details)
+        }
+
+    // ── The thread ────────────────────────────────────────────────────────────
+
+    private fun retryComments() {
+        viewModelScope.launch { loadComments() }
     }
 
     /**
@@ -237,12 +308,12 @@ class PostDetailViewModel @AssistedInject constructor(
      * cursor may describe a page that has since moved.
      */
     private suspend fun loadComments() {
-        _thread.update { it.copy(isLoading = true, error = null) }
+        mutateThread { it.copy(isLoading = true, error = null) }
 
         try {
-            ignoreErrors(onError = { e -> _thread.update { it.copy(error = e.toAppError()) } }) {
+            ignoreErrors(onError = { e -> mutateThread { it.copy(error = e.toAppError()) } }) {
                 val page = commentRepository.loadComments(postId, cursor = null)
-                _thread.update {
+                mutateThread {
                     it.copy(
                         comments = page.comments,
                         nextCursor = page.nextCursor,
@@ -254,7 +325,7 @@ class PostDetailViewModel @AssistedInject constructor(
                 }
             }
         } finally {
-            _thread.update { it.copy(isLoading = false) }
+            mutateThread { it.copy(isLoading = false) }
         }
     }
 
@@ -267,15 +338,15 @@ class PostDetailViewModel @AssistedInject constructor(
      * need no flag of their own. [loadMoreJob] covers the third case — the screen asking again
      * while a page is still on the wire.
      */
-    fun loadMoreComments() = launchIfIdle(::loadMoreJob) {
-        val cursor = _thread.value.nextCursor ?: return@launchIfIdle
+    private fun loadMoreComments() = launchIfIdle(::loadMoreJob) {
+        val cursor = _uiState.value.thread.nextCursor ?: return@launchIfIdle
 
         ignoreErrors {
             val page = commentRepository.loadComments(postId, cursor)
-            _thread.update { thread ->
+            mutateThread { thread ->
                 // A reload that landed while this page was on the wire started the thread over,
                 // and this window no longer follows what is on screen. Dropping it is the same
-                // move [onToggleCommentLike] makes on an answer a newer tap has passed.
+                // move [toggleCommentLike] makes on an answer a newer tap has passed.
                 if (thread.nextCursor != cursor) {
                     thread
                 } else {
@@ -289,60 +360,20 @@ class PostDetailViewModel @AssistedInject constructor(
         }
     }
 
-    fun onToggleLike() = launchCatching {
-        postRepository.toggleLike(postId)
-    }
-
-    fun onToggleBookmark() = launchCatching {
-        postRepository.toggleBookmark(postId)
-    }
-
-    /**
-     * Deletes the post and pops this screen. Backing out is part of the outcome, not the caller's
-     * follow-up: once the entity is gone the detail view has nothing left to show, and the feed or
-     * profile underneath has already dropped the post through the shared entity store.
-     */
-    fun onDelete() = launchReporting(_failedAction, FailedAction.DELETE_POST) {
-        // The store marks the deletion, and [postLoad] reads NotFound from it — the same
-        // path a deletion performed on any other screen takes. A failed delete throws before
-        // the pop, so the page stays put and announces the failure itself.
-        postRepository.delete(postId)
-        navigator.goBack()
-    }
-
-    /**
-     * Reports the post. Unlike [onDelete] the page stays where it is: a reported post is still
-     * a post, and the reporter is still reading it — and so is the dialog, which is why the
-     * outcome goes to [reportSend] rather than to a snackbar the dialog would cover.
-     */
-    fun onReport(reason: ReportReason, details: String) = launchReport(::reportJob, _reportSend) {
-        postRepository.report(postId, reason, details)
-    }
-
-    /** The report dialog is gone, whether it was cancelled, dismissed, or closed on the thanks. */
-    fun onReportClosed() = dropReport(::reportJob, _reportSend)
-
-    /**
-     * The screen has announced [failedAction] and is done with it — spent once shown, so a
-     * configuration change cannot announce it again.
-     */
-    fun onFailedActionShown() {
-        _failedAction.value = null
-    }
-
     /**
      * Flips the viewer's like on one comment in the thread, moving it *before* the request goes
      * out and reconciling with the server's answer when it lands.
      *
      * The same shape [PostRepository.toggleLike] has, and deliberately not shared with it: a
-     * comment's like lives in the list this ViewModel owns rather than in an entity store, so the
-     * two differ in the one thing — where the item is — that the code is about. What they do
+     * comment's like lives in the thread this ViewModel owns rather than in an entity store, so
+     * the two differ in the one thing — where the item is — that the code is about. What they do
      * share is the reasoning, and [updateComment] is this side's [PostRepository] `updateEntity`:
      * every write re-reads the comment and touches only the like fields, so a reload landing
      * mid-flight is not overwritten by a copy of the comment as it was before the request.
      */
-    fun onToggleCommentLike(commentId: CommentId) = launchCatching {
-        val before = _thread.value.comments.find { it.id == commentId } ?: return@launchCatching
+    private fun toggleCommentLike(commentId: CommentId) = launchCatching {
+        val thread = _uiState.value.thread
+        val before = thread.comments.find { it.id == commentId } ?: return@launchCatching
         val liked = !before.isLiked
         // A later tap has already moved past this request, so its answer is the one to trust.
         val stillOurs = { comment: Comment -> comment.isLiked == liked }
@@ -377,7 +408,7 @@ class PostDetailViewModel @AssistedInject constructor(
         commentId: CommentId,
         stillOurs: (Comment) -> Boolean = { true },
         edit: (Comment) -> Comment,
-    ) = _thread.update { thread ->
+    ) = mutateThread { thread ->
         thread.copy(
             comments = thread.comments.map { comment ->
                 if (comment.id == commentId && stillOurs(comment)) edit(comment) else comment
@@ -401,38 +432,22 @@ class PostDetailViewModel @AssistedInject constructor(
      * contract — [CommentSendState.SENDING] disables the composer, so this cannot run twice over,
      * and a failure returns to [CommentSendState.IDLE] with the text still there to send again.
      */
-    fun addComment(text: String) = launchReporting(_failedAction, FailedAction.SEND_COMMENT) {
-        _commentSend.value = CommentSendState.SENDING
+    private fun addComment(text: String) =
+        launchReporting(FailedAction.SEND_COMMENT, ::setFailedAction) {
+            setCommentSend(CommentSendState.SENDING)
 
-        try {
-            val comment = commentRepository.addComment(postId, text)
-            _thread.update {
-                it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
+            try {
+                val comment = commentRepository.addComment(postId, text)
+                mutateThread {
+                    it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
+                }
+                postRepository.commentAdded(postId)
+                setCommentSend(CommentSendState.SENT)
+            } catch (e: Exception) {
+                // Back to idle *before* rethrowing, so the composer is editable again by the time
+                // [launchReporting] announces the failure.
+                setCommentSend(CommentSendState.IDLE)
+                throw e
             }
-            postRepository.commentAdded(postId)
-            _commentSend.value = CommentSendState.SENT
-        } catch (e: Exception) {
-            // Back to idle *before* rethrowing, so the composer is editable again by the time
-            // [launchReporting] announces the failure.
-            _commentSend.value = CommentSendState.IDLE
-            throw e
         }
-    }
-
-    /** Spends the scroll signal [addComment] raised, once the screen has acted on it. */
-    fun onScrolledToComment() = _thread.update { it.copy(scrollTo = null) }
-
-    /** The composer has given up the text the server took, so the send is over. */
-    fun onCommentSent() {
-        _commentSend.value = CommentSendState.IDLE
-    }
-
-    fun goBack() = navigator.goBack()
-
-    fun openProfile(userId: UserId) = navigator.goTo(Screen.Profile(userId))
-
-    fun openVideo(video: Video) = navigator.goTo(Screen.FullscreenVideo(video))
-
-    fun openAlbum(imageUrls: List<String>, initialIndex: Int) =
-        navigator.goTo(Screen.AlbumViewer(imageUrls, initialIndex))
 }

@@ -178,7 +178,7 @@ class HomeViewModel @Inject constructor(
         postRepository.toggleBookmark(postId)
     }
 
-    override fun onDeletePost(postId: PostId) = launchReporting(_failedAction, FailedAction.DELETE_POST) {
+    override fun onDeletePost(postId: PostId) = launchReporting(FailedAction.DELETE_POST, { _failedAction.value = it }) {
         postRepository.delete(postId)
     }
 
@@ -186,11 +186,11 @@ class HomeViewModel @Inject constructor(
         postId: PostId,
         reason: ReportReason,
         details: String,
-    ) = launchReport(::reportJob, _reportSend) {
+    ) = launchReport(::reportJob, { _reportSend.value = it }) {
         postRepository.report(postId, reason, details)
     }
 
-    override fun onReportClosed() = dropReport(::reportJob, _reportSend)
+    override fun onReportClosed() = dropReport(::reportJob) { _reportSend.value = it }
 
     /**
      * The screen has announced [failedAction] and is done with it — the same spend-once lifetime

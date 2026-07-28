@@ -219,7 +219,7 @@ class ProfileViewModel @AssistedInject constructor(
         postRepository.toggleBookmark(postId)
     }
 
-    override fun onDeletePost(postId: PostId) = launchReporting(_failedAction, FailedAction.DELETE_POST) {
+    override fun onDeletePost(postId: PostId) = launchReporting(FailedAction.DELETE_POST, { _failedAction.value = it }) {
         postRepository.delete(postId)
     }
 
@@ -227,13 +227,13 @@ class ProfileViewModel @AssistedInject constructor(
         postId: PostId,
         reason: ReportReason,
         details: String,
-    ) = launchReport(::reportJob, _reportSend) {
+    ) = launchReport(::reportJob, { _reportSend.value = it }) {
         postRepository.report(postId, reason, details)
     }
 
-    override fun onReportClosed() = dropReport(::reportJob, _reportSend)
+    override fun onReportClosed() = dropReport(::reportJob) { _reportSend.value = it }
 
-    override fun onToggleFollow() = launchReporting(_failedAction, FailedAction.FOLLOW) {
+    override fun onToggleFollow() = launchReporting(FailedAction.FOLLOW, { _failedAction.value = it }) {
         userRepository.toggleFollow(userId)
     }
 

@@ -80,10 +80,7 @@ import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.relativeTime
 import uno.lux.sample.app.util.rememberDebounced
 import uno.lux.sample.comment.data.domain.Comment
-import uno.lux.sample.comment.data.domain.CommentId
 import uno.lux.sample.common.asText
-import uno.lux.sample.common.data.ReportReason
-import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.common.ui.FailedActionEffect
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
@@ -92,14 +89,15 @@ import uno.lux.sample.common.ui.LoadingMoreFooter
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.user.data.domain.User
-import uno.lux.sample.user.data.domain.UserId
 import uno.lux.sample.user.ui.Avatar
 import uno.lux.sample.video.data.domain.Video
 
 /**
- * Stateful entry point: binds the [PostDetailViewModel] (keyed by [postId]) and forwards
- * state + intent to the stateless overload. The ViewModel store is per back-stack entry, so
- * each opened post gets its own instance, created on push and cleared on pop.
+ * Stateful entry point: binds the [PostDetailViewModel] (keyed by [postId]) and hands its state
+ * to the stateless overload. No intent is wired here — the state carries its own
+ * [eventSink][PostDetailUiState.eventSink] — so this binder has nothing to keep in step with the
+ * screen below it. The ViewModel store is per back-stack entry, so each opened post gets its own
+ * instance, created on push and cleared on pop.
  */
 @Composable
 fun PostDetailScreen(
@@ -111,72 +109,35 @@ fun PostDetailScreen(
         ),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val failedAction by viewModel.failedAction.collectAsStateWithLifecycle()
-    val reportSend by viewModel.reportSend.collectAsStateWithLifecycle()
 
-    PostDetailScreen(
-        uiState = uiState,
-        composerUser = viewModel.composerUser,
-        failedAction = failedAction,
-        reportSend = reportSend,
-        onFailedActionShown = viewModel::onFailedActionShown,
-        onBack = viewModel::goBack,
-        onOpenProfile = viewModel::openProfile,
-        onOpenVideo = viewModel::openVideo,
-        onOpenAlbum = viewModel::openAlbum,
-        onToggleLike = viewModel::onToggleLike,
-        onToggleBookmark = viewModel::onToggleBookmark,
-        onToggleCommentLike = viewModel::onToggleCommentLike,
-        onAddComment = viewModel::addComment,
-        onCommentSent = viewModel::onCommentSent,
-        onScrolledToComment = viewModel::onScrolledToComment,
-        onLoadMoreComments = viewModel::loadMoreComments,
-        onRetryComments = viewModel::retryComments,
-        onRetry = viewModel::retry,
-        onDelete = viewModel::onDelete,
-        onReport = viewModel::onReport,
-        onReportClosed = viewModel::onReportClosed,
-        modifier = modifier,
-    )
+    PostDetailScreen(uiState = uiState, modifier = modifier)
 }
 
 /**
  * Stateless post detail screen — full post content (author header, title/body, media, actions)
  * followed by the comment thread, with a sticky comment composer at the bottom. Holding no
  * ViewModel makes it directly previewable and testable.
+ *
+ * Every control on this page reports through the one [PostDetailUiState.eventSink]. The leaf
+ * components below keep their own callbacks and are adapted at the call site, because
+ * [PostOverflowMenu] and [CommentComposer] are shared with the feed card and know nothing of
+ * this screen's vocabulary.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PostDetailScreen(
     uiState: PostDetailUiState,
-    composerUser: User,
-    failedAction: FailedAction?,
-    reportSend: ReportSendState,
-    onFailedActionShown: () -> Unit,
-    onBack: () -> Unit,
-    onOpenProfile: (userId: UserId) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onToggleLike: () -> Unit,
-    onToggleBookmark: () -> Unit,
-    onToggleCommentLike: (commentId: CommentId) -> Unit,
-    onAddComment: (text: String) -> Unit,
-    onCommentSent: () -> Unit,
-    onScrolledToComment: () -> Unit,
-    onLoadMoreComments: () -> Unit,
-    onRetryComments: () -> Unit,
-    onRetry: () -> Unit,
-    onDelete: () -> Unit,
-    onReport: (reason: ReportReason, details: String) -> Unit,
-    onReportClosed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val loaded = (uiState as? PostDetailUiState.Loaded)
+    val eventSink = uiState.eventSink
+    val loaded = uiState.content as? PostDetailUiState.Content.Loaded
     val listState = rememberLazyListState()
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
     // A delete or comment whose request failed after its dialog already closed.
-    FailedActionEffect(failedAction, snackbarHostState, onFailedActionShown)
+    FailedActionEffect(uiState.failedAction, snackbarHostState) {
+        eventSink(PostDetailUiEvent.FailedActionShown)
+    }
 
     Scaffold(
         modifier = modifier.imePadding(),
@@ -199,7 +160,7 @@ internal fun PostDetailScreen(
                 navigationIcon = {
                     AppBarAction(
                         icon = R.drawable.ic_arrow_back,
-                        onClick = onBack,
+                        onClick = { eventSink(PostDetailUiEvent.GoBack) },
                         contentDescription = stringResource(R.string.navigate_back),
                     )
                 },
@@ -208,11 +169,17 @@ internal fun PostDetailScreen(
                         PostOverflowMenu(
                             post = loaded.post,
                             author = loaded.author,
-                            reportSend = reportSend,
-                            onToggleBookmark = onToggleBookmark,
-                            onReport = onReport,
-                            onReportClosed = onReportClosed,
-                            onDelete = if (loaded.isOwn) onDelete else null,
+                            reportSend = uiState.reportSend,
+                            onToggleBookmark = { eventSink(PostDetailUiEvent.ToggleBookmark) },
+                            onReport = { reason, details ->
+                                eventSink(PostDetailUiEvent.Report(reason, details))
+                            },
+                            onReportClosed = { eventSink(PostDetailUiEvent.CloseReport) },
+                            onDelete = if (loaded.isOwn) {
+                                { eventSink(PostDetailUiEvent.Delete) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 },
@@ -225,20 +192,20 @@ internal fun PostDetailScreen(
         bottomBar = {
             if (loaded != null) {
                 CommentComposer(
-                    user = composerUser,
-                    sendState = loaded.commentSend,
-                    onSend = onAddComment,
-                    onSent = onCommentSent,
+                    user = uiState.composerUser,
+                    sendState = uiState.commentSend,
+                    onSend = { text -> eventSink(PostDetailUiEvent.AddComment(text)) },
+                    onSent = { eventSink(PostDetailUiEvent.CommentSent) },
                 )
             }
         },
     ) { contentPadding ->
-        when (uiState) {
-            PostDetailUiState.Loading -> FullScreenProgress(
+        when (val content = uiState.content) {
+            PostDetailUiState.Content.Loading -> FullScreenProgress(
                 modifier = Modifier.padding(contentPadding),
             )
 
-            PostDetailUiState.NotFound -> Box(
+            PostDetailUiState.Content.NotFound -> Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding)
@@ -252,30 +219,19 @@ internal fun PostDetailScreen(
                 )
             }
 
-            is PostDetailUiState.Error -> FullScreenError(
-                message = uiState.error.asText(),
-                onRetry = onRetry,
+            is PostDetailUiState.Content.Error -> FullScreenError(
+                message = content.error.asText(),
+                onRetry = { eventSink(PostDetailUiEvent.Retry) },
                 modifier = Modifier.padding(contentPadding),
             )
 
-            is PostDetailUiState.Loaded -> PostDetailContent(
-                post = uiState.post,
-                author = uiState.author,
-                comments = uiState.comments,
-                commentsError = uiState.commentsError,
-                commentsLoading = uiState.commentsLoading,
-                commentsEndReached = uiState.commentsEndReached,
-                scrollToComment = uiState.scrollToComment,
+            // The thread is passed separately rather than as the whole state, so a report or a
+            // failed delete moving does not recompose the list under the reader.
+            is PostDetailUiState.Content.Loaded -> PostDetailContent(
+                content = content,
+                thread = uiState.thread,
                 listState = listState,
-                onScrolledToComment = onScrolledToComment,
-                onOpenProfile = onOpenProfile,
-                onOpenVideo = onOpenVideo,
-                onOpenAlbum = onOpenAlbum,
-                onToggleLike = onToggleLike,
-                onToggleBookmark = onToggleBookmark,
-                onToggleCommentLike = onToggleCommentLike,
-                onLoadMoreComments = onLoadMoreComments,
-                onRetryComments = onRetryComments,
+                eventSink = eventSink,
                 modifier = Modifier.padding(contentPadding),
             )
         }
@@ -298,26 +254,15 @@ private const val COMMENTS_HEADER_INDEX = 1
 
 @Composable
 private fun PostDetailContent(
-    post: Post,
-    author: User,
-    comments: List<Comment>,
-    commentsError: AppError?,
-    commentsLoading: Boolean,
-    commentsEndReached: Boolean,
-    scrollToComment: CommentId?,
+    content: PostDetailUiState.Content.Loaded,
+    thread: CommentThread,
     listState: LazyListState,
-    onScrolledToComment: () -> Unit,
-    onOpenProfile: (userId: UserId) -> Unit,
-    onOpenVideo: (Video) -> Unit,
-    onOpenAlbum: (List<String>, initialIndex: Int) -> Unit,
-    onToggleLike: () -> Unit,
-    onToggleBookmark: () -> Unit,
-    onToggleCommentLike: (commentId: CommentId) -> Unit,
-    onLoadMoreComments: () -> Unit,
-    onRetryComments: () -> Unit,
+    eventSink: (PostDetailUiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val post = content.post
+    val author = content.author
 
     // The post is one item at the top, so the end of this list is the end of the thread. While the
     // first page is still coming — or failed — the thread counts as ended: there is no cursor to
@@ -325,8 +270,8 @@ private fun PostDetailContent(
     // call that can do nothing.
     LoadMoreEffect(
         listState = listState,
-        endReached = commentsEndReached || commentsLoading || commentsError != null,
-        onLoadMore = onLoadMoreComments,
+        endReached = thread.endReached || thread.isLoading || thread.error != null,
+        onLoadMore = { eventSink(PostDetailUiEvent.LoadMoreComments) },
     )
 
     // Bring the comment the user just sent into view — the row after the header, offset by where
@@ -334,14 +279,14 @@ private fun PostDetailContent(
     // reply lands off screen on anything but a short post. The signal is spent either way: a
     // comment the list no longer shows is one a reload has replaced, and chasing it on a later
     // frame would move the list under a reader who has since scrolled away.
-    LaunchedEffect(scrollToComment) {
-        if (scrollToComment == null) return@LaunchedEffect
+    LaunchedEffect(thread.scrollTo) {
+        val scrollTo = thread.scrollTo ?: return@LaunchedEffect
 
-        val position = comments.indexOfFirst { it.id == scrollToComment }
-        if (position >= 0 && commentsError == null && !commentsLoading) {
+        val position = thread.comments.indexOfFirst { it.id == scrollTo }
+        if (position >= 0 && thread.error == null && !thread.isLoading) {
             listState.animateScrollToItem(COMMENTS_HEADER_INDEX + 1 + position)
         }
-        onScrolledToComment()
+        eventSink(PostDetailUiEvent.ScrolledToComment)
     }
 
     LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
@@ -349,11 +294,13 @@ private fun PostDetailContent(
             DetailPostCard(
                 post = post,
                 author = author,
-                onOpenProfile = { onOpenProfile(author.id) },
-                onOpenVideo = onOpenVideo,
-                onOpenAlbum = onOpenAlbum,
-                onToggleLike = onToggleLike,
-                onToggleBookmark = onToggleBookmark,
+                onOpenProfile = { eventSink(PostDetailUiEvent.OpenProfile(author.id)) },
+                onOpenVideo = { video -> eventSink(PostDetailUiEvent.OpenVideo(video)) },
+                onOpenAlbum = { urls, index ->
+                    eventSink(PostDetailUiEvent.OpenAlbum(urls, index))
+                },
+                onToggleLike = { eventSink(PostDetailUiEvent.ToggleLike) },
+                onToggleBookmark = { eventSink(PostDetailUiEvent.ToggleBookmark) },
                 onScrollToComments = {
                     scope.launch { listState.animateScrollToItem(COMMENTS_HEADER_INDEX) }
                 },
@@ -361,27 +308,31 @@ private fun PostDetailContent(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
-        if (commentsError != null) {
+        if (thread.error != null) {
             item(key = "comments_error") {
                 CommentsError(
-                    error = commentsError,
-                    onRetry = onRetryComments,
+                    error = thread.error,
+                    onRetry = { eventSink(PostDetailUiEvent.RetryComments) },
                 )
             }
-        } else if (commentsLoading) {
+        } else if (thread.isLoading) {
             item(key = "comments_loading") { CommentsLoading() }
         } else {
             // The whole thread's count, not the loaded window's — the list below is a page of it.
             item(key = "comments_header") { CommentsHeader(count = post.commentCount) }
-            if (comments.isNotEmpty()) {
-                items(comments, key = { it.id }) { comment ->
+            if (thread.comments.isNotEmpty()) {
+                items(thread.comments, key = { it.id }) { comment ->
                     CommentRow(
                         comment = comment,
-                        onLike = { onToggleCommentLike(comment.id) },
-                        onOpenProfile = { onOpenProfile(comment.author.id) },
+                        onLike = {
+                            eventSink(PostDetailUiEvent.ToggleCommentLike(comment.id))
+                        },
+                        onOpenProfile = {
+                            eventSink(PostDetailUiEvent.OpenProfile(comment.author.id))
+                        },
                     )
                 }
-                if (!commentsEndReached) {
+                if (!thread.endReached) {
                     item(key = "comments_loading_more") { LoadingMoreFooter() }
                 }
             } else {
@@ -693,10 +644,15 @@ private fun CommentComposer(
 @Composable
 private fun PostDetailLoadedPreview() {
     PostDetailPreview(
-        PostDetailUiState.Loaded(
+        content = PostDetailUiState.Content.Loaded(
             post = SamplePosts.first(),
             author = SampleUsers.first(),
+            isOwn = false,
+        ),
+        thread = CommentThread(
             comments = SampleComments["p1"] ?: emptyList(),
+            isLoading = false,
+            endReached = true,
         ),
     )
 }
@@ -704,41 +660,32 @@ private fun PostDetailLoadedPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailErrorPreview() {
-    PostDetailPreview(PostDetailUiState.Error(AppError.NoConnection))
+    PostDetailPreview(PostDetailUiState.Content.Error(AppError.NoConnection))
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailLoadingPreview() {
-    PostDetailPreview(PostDetailUiState.Loading)
+    PostDetailPreview(PostDetailUiState.Content.Loading)
 }
 
-/** The screen with every callback stubbed, so each preview supplies only the state it shows. */
+/**
+ * The screen with its sink stubbed, so each preview supplies only the state it shows. One `{}`
+ * stands in for what used to be seventeen separate no-op callbacks.
+ */
 @Composable
-private fun PostDetailPreview(uiState: PostDetailUiState) {
+private fun PostDetailPreview(
+    content: PostDetailUiState.Content,
+    thread: CommentThread = CommentThread(),
+) {
     MosaicTheme {
         PostDetailScreen(
-            uiState = uiState,
-            composerUser = SampleUsers.first(),
-            failedAction = null,
-            reportSend = ReportSendState.IDLE,
-            onFailedActionShown = {},
-            onBack = {},
-            onOpenProfile = {},
-            onOpenVideo = {},
-            onOpenAlbum = { _, _ -> },
-            onToggleLike = {},
-            onToggleBookmark = {},
-            onToggleCommentLike = {},
-            onAddComment = {},
-            onCommentSent = {},
-            onScrolledToComment = {},
-            onLoadMoreComments = {},
-            onRetryComments = {},
-            onRetry = {},
-            onDelete = {},
-            onReport = { _, _ -> },
-            onReportClosed = {},
+            uiState = PostDetailUiState(
+                content = content,
+                composerUser = SampleUsers.first(),
+                thread = thread,
+                eventSink = {},
+            ),
         )
     }
 }

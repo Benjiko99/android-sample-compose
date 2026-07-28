@@ -1,10 +1,9 @@
 package uno.lux.sample.settings.ui
 
-import uno.lux.sample.app.framework.UiEvent
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
 
-sealed interface SettingsUiEvent : UiEvent {
+sealed interface SettingsUiEvent {
     data class SetThemeMode(
         val mode: ThemeMode,
     ) : SettingsUiEvent

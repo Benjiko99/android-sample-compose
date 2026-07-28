@@ -32,6 +32,7 @@ import uno.lux.sample.post.data.PostRepository
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
 import uno.lux.sample.post.data.domain.PostWithUsers
+import uno.lux.sample.post.ui.PostDetailUiState.Content
 import uno.lux.sample.testing.ViewModelTest
 import uno.lux.sample.testing.backStackOf
 import uno.lux.sample.testing.screens
@@ -42,6 +43,15 @@ import uno.lux.sample.user.data.domain.User
 import java.net.UnknownHostException
 import java.time.Instant
 
+/**
+ * The ViewModel is driven the way the screen drives it — one [PostDetailUiEvent] at a time
+ * through [PostDetailViewModel.onEvent] — and asserted on the one [PostDetailUiState] it holds.
+ *
+ * There is no `backgroundScope.launch { uiState.collect {} }` here. The state is a value the
+ * ViewModel owns rather than a projection shared while subscribed, so `uiState.value` is the
+ * current screen from the moment the ViewModel exists, and a test that forgot to subscribe can
+ * no longer read a stale `Loading` and pass for the wrong reason.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PostDetailViewModelTest : ViewModelTest() {
 
@@ -114,34 +124,21 @@ class PostDetailViewModelTest : ViewModelTest() {
 
     @Test
     fun `a post by someone else is not marked own`() = runTest {
-        val viewModel = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
-
-        assertFalse((viewModel.uiState.value as PostDetailUiState.Loaded).isOwn)
+        assertFalse(viewModel().loaded.isOwn)
     }
 
     @Test
     fun `a post by the signed-in user is marked own`() = runTest {
-        val viewModel = viewModel(posts = listOf(post.copy(authorId = "me")))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
-
-        assertTrue((viewModel.uiState.value as PostDetailUiState.Loaded).isOwn)
+        assertTrue(viewModel(posts = listOf(post.copy(authorId = "me"))).loaded.isOwn)
     }
 
     @Test
-    fun `onDelete removes the post and pops the detail page`() = runTest {
+    fun `Delete removes the post and pops the detail page`() = runTest {
         val viewModel = viewModel(posts = listOf(post.copy(authorId = "me")))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
 
-        viewModel.onDelete()
+        viewModel.onEvent(PostDetailUiEvent.Delete)
 
-        assertEquals(PostDetailUiState.NotFound, viewModel.uiState.value)
+        assertEquals(Content.NotFound, viewModel.uiState.value.content)
         assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
@@ -154,31 +151,25 @@ class PostDetailViewModelTest : ViewModelTest() {
             posts = listOf(post.copy(authorId = "me")),
             postDataSource = dataSource,
         )
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
 
-        viewModel.onDelete()
+        viewModel.onEvent(PostDetailUiEvent.Delete)
 
-        assertTrue(viewModel.uiState.value is PostDetailUiState.Loaded)
+        assertTrue(viewModel.uiState.value.content is Content.Loaded)
         assertEquals(listOf(Screen.Shell, Screen.PostDetail("p1")), backStack.screens())
-        assertEquals(FailedAction.DELETE_POST, viewModel.failedAction.value)
+        assertEquals(FailedAction.DELETE_POST, viewModel.uiState.value.failedAction)
     }
 
     // Announced once and then spent, the same lifetime the feed gives its refresh error: what is
     // left in the state is what a rotation would replay.
     @Test
-    fun `onFailedActionShown clears the announcement`() = runTest {
+    fun `FailedActionShown clears the announcement`() = runTest {
         val dataSource = FakePostDataSource().apply { deleteError = UnknownHostException("offline") }
         val viewModel = viewModel(postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
-        viewModel.onDelete()
+        viewModel.onEvent(PostDetailUiEvent.Delete)
 
-        viewModel.onFailedActionShown()
+        viewModel.onEvent(PostDetailUiEvent.FailedActionShown)
 
-        assertNull(viewModel.failedAction.value)
+        assertNull(viewModel.uiState.value.failedAction)
     }
 
     // This page can sit *under* the screen that deletes its post — open a post, visit the
@@ -188,12 +179,11 @@ class PostDetailViewModelTest : ViewModelTest() {
     @Test
     fun `a post deleted from another screen reads as gone, not loading`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        assertTrue(vm.uiState.value is PostDetailUiState.Loaded)
+        assertTrue(vm.uiState.value.content is Content.Loaded)
 
         postRepository.delete("p1")
 
-        assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
+        assertEquals(Content.NotFound, vm.uiState.value.content)
     }
 
     // ── report ────────────────────────────────────────────────────────────────
@@ -201,20 +191,17 @@ class PostDetailViewModelTest : ViewModelTest() {
     // A report is about the post, not on it: unlike a deletion it changes nothing the page
     // shows, and leaves the reporter reading what they reported.
     @Test
-    fun `onReport reports the post and keeps the page open`() = runTest {
+    fun `Report reports the post and keeps the page open`() = runTest {
         val dataSource = FakePostDataSource()
         val viewModel = viewModel(postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.uiState.collect {}
-        }
 
-        viewModel.onReport(ReportReason.HARASSMENT, "Second time this week")
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, "Second time this week"))
 
         assertEquals(
             listOf(FakePostDataSource.Report("p1", ReportReason.HARASSMENT, "Second time this week")),
             dataSource.reports,
         )
-        assertTrue(viewModel.uiState.value is PostDetailUiState.Loaded)
+        assertTrue(viewModel.uiState.value.content is Content.Loaded)
         assertEquals(listOf(Screen.Shell, Screen.PostDetail("p1")), backStack.screens())
     }
 
@@ -225,12 +212,12 @@ class PostDetailViewModelTest : ViewModelTest() {
         val dataSource = FakePostDataSource()
         val viewModel = viewModel(postDataSource = dataSource)
         var whileOut: ReportSendState? = null
-        dataSource.whileInFlight = { whileOut = viewModel.reportSend.value }
+        dataSource.whileInFlight = { whileOut = viewModel.uiState.value.reportSend }
 
-        viewModel.onReport(ReportReason.HARASSMENT, "")
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, ""))
 
         assertEquals(ReportSendState.SENDING, whileOut)
-        assertEquals(ReportSendState.SENT, viewModel.reportSend.value)
+        assertEquals(ReportSendState.SENT, viewModel.uiState.value.reportSend)
     }
 
     // A report the server refused has to fail *in* the dialog: the reporter is still reading it,
@@ -240,10 +227,10 @@ class PostDetailViewModelTest : ViewModelTest() {
         val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
         val viewModel = viewModel(postDataSource = dataSource)
 
-        viewModel.onReport(ReportReason.HARASSMENT, "")
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, ""))
 
-        assertEquals(ReportSendState.FAILED, viewModel.reportSend.value)
-        assertNull(viewModel.failedAction.value)
+        assertEquals(ReportSendState.FAILED, viewModel.uiState.value.reportSend)
+        assertNull(viewModel.uiState.value.failedAction)
     }
 
     // What the user picked is still in the dialog after a failure, so Send is one tap away —
@@ -252,12 +239,12 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `a report can be sent again after it failed`() = runTest {
         val dataSource = FakePostDataSource().apply { reportError = UnknownHostException("offline") }
         val viewModel = viewModel(postDataSource = dataSource)
-        viewModel.onReport(ReportReason.HARASSMENT, "")
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, ""))
         dataSource.reportError = null
 
-        viewModel.onReport(ReportReason.HARASSMENT, "")
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, ""))
 
-        assertEquals(ReportSendState.SENT, viewModel.reportSend.value)
+        assertEquals(ReportSendState.SENT, viewModel.uiState.value.reportSend)
         assertEquals(
             listOf(FakePostDataSource.Report("p1", ReportReason.HARASSMENT, "")),
             dataSource.reports,
@@ -265,13 +252,13 @@ class PostDetailViewModelTest : ViewModelTest() {
     }
 
     @Test
-    fun `onReportClosed drops the outcome the dialog has acted on`() = runTest {
+    fun `CloseReport drops the outcome the dialog has acted on`() = runTest {
         val viewModel = viewModel()
-        viewModel.onReport(ReportReason.HARASSMENT, "")
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, ""))
 
-        viewModel.onReportClosed()
+        viewModel.onEvent(PostDetailUiEvent.CloseReport)
 
-        assertEquals(ReportSendState.IDLE, viewModel.reportSend.value)
+        assertEquals(ReportSendState.IDLE, viewModel.uiState.value.reportSend)
     }
 
     // Dismissing mid-send abandons the report along with the dialog. Without the cancellation
@@ -284,57 +271,60 @@ class PostDetailViewModelTest : ViewModelTest() {
         val held = CompletableDeferred<Unit>()
         dataSource.whileInFlight = { held.await() }
 
-        viewModel.onReport(ReportReason.HARASSMENT, "")
-        viewModel.onReportClosed()
+        viewModel.onEvent(PostDetailUiEvent.Report(ReportReason.HARASSMENT, ""))
+        viewModel.onEvent(PostDetailUiEvent.CloseReport)
         held.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(ReportSendState.IDLE, viewModel.reportSend.value)
+        assertEquals(ReportSendState.IDLE, viewModel.uiState.value.reportSend)
         assertEquals(emptyList<FakePostDataSource.Report>(), dataSource.reports)
     }
 
     // ── navigation ────────────────────────────────────────────────────────────
 
     @Test
-    fun `goBack pops the detail page`() {
-        viewModel().goBack()
+    fun `GoBack pops the detail page`() {
+        viewModel().onEvent(PostDetailUiEvent.GoBack)
 
         assertEquals(listOf(Screen.Shell), backStack.screens())
     }
 
     @Test
-    fun `openProfile pushes the author's profile page`() {
-        viewModel().openProfile("u2")
+    fun `OpenProfile pushes the author's profile page`() {
+        viewModel().onEvent(PostDetailUiEvent.OpenProfile("u2"))
 
         assertEquals(Screen.Profile("u2"), backStack.last().screen)
     }
 
     @Test
-    fun `openAlbum pushes the album viewer at the tapped image`() {
+    fun `OpenAlbum pushes the album viewer at the tapped image`() {
         val images = listOf("https://example.test/1.jpg")
 
-        viewModel().openAlbum(images, initialIndex = 0)
+        viewModel().onEvent(PostDetailUiEvent.OpenAlbum(images, initialIndex = 0))
 
         assertEquals(Screen.AlbumViewer(images, initialIndex = 0), backStack.last().screen)
     }
 
     // ── uiState ───────────────────────────────────────────────────────────────
 
+    // The state is seeded from the stores rather than from Loading, so a page opened the ordinary
+    // way is showing its post before the first frame — no spinner for something never missing.
     @Test
-    fun `uiState is Loading until subscribed`() {
-        assertEquals(PostDetailUiState.Loading, viewModel().uiState.value)
+    fun `uiState is Loaded from the first read, with nothing collecting`() {
+        val vm = viewModel()
+
+        assertEquals(post, vm.loaded.post)
+        assertEquals(otherUser, vm.loaded.author)
     }
 
     @Test
-    fun `uiState is Loaded with post and comments once subscribed`() = runTest {
+    fun `uiState carries the post, its author and its comments`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(post, state.post)
-        assertEquals(otherUser, state.author)
-        assertEquals(listOf(seedComment), state.comments)
-        assertFalse(state.commentsLoading)
+        assertEquals(post, vm.loaded.post)
+        assertEquals(otherUser, vm.loaded.author)
+        assertEquals(listOf(seedComment), vm.comments)
+        assertFalse(vm.uiState.value.thread.isLoading)
     }
 
     @Test
@@ -342,17 +332,29 @@ class PostDetailViewModelTest : ViewModelTest() {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val gate = CompletableDeferred<Unit>()
         val vm = viewModel(commentDataSource = GatedCommentDataSource(gate, listOf(seedComment)))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        assertTrue((vm.uiState.value as PostDetailUiState.Loaded).commentsLoading)
+        assertTrue(vm.uiState.value.thread.isLoading)
 
         gate.complete(Unit)
         advanceUntilIdle()
 
-        val loaded = vm.uiState.value as PostDetailUiState.Loaded
-        assertFalse(loaded.commentsLoading)
-        assertEquals(listOf(seedComment), loaded.comments)
+        assertFalse(vm.uiState.value.thread.isLoading)
+        assertEquals(listOf(seedComment), vm.comments)
+    }
+
+    // The post and the thread are fetched in parallel on a cold start, and the thread is a field
+    // *beside* the content rather than inside its Loaded case precisely so the one that lands
+    // first is not thrown away for having nowhere to go. Here the post never arrives at all, and
+    // the comments that did are still held.
+    @Test
+    fun `comments loaded while there is no post are kept`() = runTest {
+        val dataSource = FakePostDataSource().apply { fetchError = UnknownHostException("offline") }
+        val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
+        advanceUntilIdle()
+
+        assertEquals(Content.Error(AppError.NoConnection), vm.uiState.value.content)
+        assertEquals(listOf(seedComment), vm.comments)
     }
 
     // ── cold start (restored after process death) ──────────────────────────────
@@ -367,42 +369,37 @@ class PostDetailViewModelTest : ViewModelTest() {
             fetchable["p1"] = PostWithUsers(post, listOf(otherUser))
         }
         val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(post, state.post)
+        assertEquals(post, vm.loaded.post)
         // The author rides along with the post, so the header resolves without a second request.
-        assertEquals(otherUser, state.author)
+        assertEquals(otherUser, vm.loaded.author)
     }
 
     @Test
     fun `a post the stores already hold is not re-fetched`() = runTest {
         val dataSource = FakePostDataSource()
         val vm = viewModel(postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
         assertEquals(emptyList<PostId>(), dataSource.fetchedPostIds)
-        assertTrue(vm.uiState.value is PostDetailUiState.Loaded)
+        assertTrue(vm.uiState.value.content is Content.Loaded)
     }
 
     @Test
     fun `uiState stays Loading while the fetch is in flight`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val vm = viewModel(posts = emptyList(), users = emptyList())
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        assertEquals(PostDetailUiState.Loading, vm.uiState.value)
+        assertEquals(Content.Loading, vm.uiState.value.content)
     }
 
     @Test
     fun `uiState is NotFound when the server no longer has the post`() = runTest {
         val vm = viewModel(postId = "missing")
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(PostDetailUiState.NotFound, vm.uiState.value)
+        assertEquals(Content.NotFound, vm.uiState.value.content)
     }
 
     // A failed request says nothing about whether the post exists, so it must not read as "gone".
@@ -410,124 +407,115 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `uiState is a retryable Error when the fetch fails`() = runTest {
         val dataSource = FakePostDataSource().apply { fetchError = UnknownHostException("offline") }
         val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(PostDetailUiState.Error(AppError.NoConnection), vm.uiState.value)
+        assertEquals(Content.Error(AppError.NoConnection), vm.uiState.value.content)
     }
 
     @Test
-    fun `retry after a failed fetch loads the post`() = runTest {
+    fun `Retry after a failed fetch loads the post`() = runTest {
         val dataSource = FakePostDataSource().apply { fetchError = UnknownHostException("offline") }
         val vm = viewModel(posts = emptyList(), users = emptyList(), postDataSource = dataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
         dataSource.fetchError = null
         dataSource.fetchable["p1"] = PostWithUsers(post, listOf(otherUser))
-        vm.retry()
+        vm.onEvent(PostDetailUiEvent.Retry)
         advanceUntilIdle()
 
-        assertEquals(post, (vm.uiState.value as PostDetailUiState.Loaded).post)
+        assertEquals(post, vm.loaded.post)
     }
 
     // ── composerUser ──────────────────────────────────────────────────────────
 
     @Test
     fun `composerUser is the current user`() {
-        assertEquals(currentUser, viewModel().composerUser)
+        assertEquals(currentUser, viewModel().uiState.value.composerUser)
     }
 
     // ── like / bookmark ───────────────────────────────────────────────────────
 
     @Test
-    fun `onToggleLike likes the post through the shared entity store`() = runTest {
+    fun `ToggleLike likes the post through the shared entity store`() = runTest {
         // The count in the answer is the server's, so the fake is told what it started from.
         val vm = viewModel(
             postDataSource = FakePostDataSource().apply { likeCounts["p1"] = post.likeCount },
         )
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.onToggleLike()
+        vm.onEvent(PostDetailUiEvent.ToggleLike)
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertTrue(state.post.isLiked)
-        assertEquals(4, state.post.likeCount)
+        assertTrue(vm.loaded.post.isLiked)
+        assertEquals(4, vm.loaded.post.likeCount)
     }
 
     @Test
-    fun `onToggleBookmark bookmarks the post through the shared entity store`() = runTest {
+    fun `ToggleBookmark bookmarks the post through the shared entity store`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.onToggleBookmark()
+        vm.onEvent(PostDetailUiEvent.ToggleBookmark)
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertTrue(state.post.isBookmarked)
+        assertTrue(vm.loaded.post.isBookmarked)
     }
 
     // ── comment interactions ──────────────────────────────────────────────────
 
     @Test
-    fun `addComment prepends a new comment to the thread`() = runTest {
+    fun `AddComment prepends a new comment to the thread`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(2, state.comments.size)
-        val newest = state.comments.first()
-        assertEquals("Hello!", newest.text)
-        assertEquals(currentUser, newest.author)
+        val comments = vm.comments
+        assertEquals(2, comments.size)
+        assertEquals("Hello!", comments.first().text)
+        assertEquals(currentUser, comments.first().author)
     }
 
     // The comment lands in this ViewModel's own list, but the count under the post is a field on
     // the entity — so it has to go through the store, or the header here, the feed card and the
     // profile all keep showing the number the post had before the user commented on it.
     @Test
-    fun `addComment bumps the post's comment count in the shared store`() = runTest {
+    fun `AddComment bumps the post's comment count in the shared store`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        assertEquals(2, (vm.uiState.value as PostDetailUiState.Loaded).post.commentCount)
+        assertEquals(2, vm.loaded.post.commentCount)
         assertEquals(2, postRepository.entities.value["p1"]!!.commentCount)
     }
 
-    // The thread and the count arrive from two different flows into one combine, and the new
-    // comment appearing while the count under the post stays put is what a stale build looks
-    // like. Driven on a real dispatcher rather than an unconfined one, so an emission the combine
-    // dropped would settle wrong instead of being papered over.
+    // The thread is this ViewModel's own and the count arrives from the shared store, and the new
+    // comment appearing while the count under the post stays put is what a stale build looks like.
+    // Driven on a real dispatcher rather than an unconfined one, so an emission that never reached
+    // the state would settle wrong instead of being papered over.
     @Test
     fun `the thread and the count settle together on the same state`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
         advanceUntilIdle()
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals("the thread carries the new comment", 2, state.comments.size)
-        assertEquals("the header and action row count the post", 2, state.post.commentCount)
+        val state = vm.uiState.value
+        assertEquals("the thread carries the new comment", 2, state.thread.comments.size)
+        assertEquals(
+            "the header and action row count the post",
+            2,
+            (state.content as Content.Loaded).post.commentCount,
+        )
     }
 
     // The count follows the comment: a post that never landed must not inflate it.
     @Test
-    fun `a failed addComment leaves the comment count alone`() = runTest {
-        val commentDataSource = FakeCommentDataSource(currentUser, mapOf("p1" to listOf(seedComment)))
-            .apply { addError = UnknownHostException("offline") }
+    fun `a failed AddComment leaves the comment count alone`() = runTest {
+        val commentDataSource = commentSource().apply { addError = UnknownHostException("offline") }
         val vm = viewModel(commentDataSource = commentDataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(1, state.post.commentCount)
-        assertEquals(listOf(seedComment), state.comments)
+        assertEquals(1, vm.loaded.post.commentCount)
+        assertEquals(listOf(seedComment), vm.comments)
     }
 
     // The composer holds the text until the server has the comment, so SENT is the signal that
@@ -535,14 +523,10 @@ class PostDetailViewModelTest : ViewModelTest() {
     @Test
     fun `a comment the server takes ends in SENT`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        assertEquals(
-            CommentSendState.SENT,
-            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
-        )
+        assertEquals(CommentSendState.SENT, vm.uiState.value.commentSend)
     }
 
     // The field and the send button are disabled off this state. Without it a second tap would
@@ -552,23 +536,16 @@ class PostDetailViewModelTest : ViewModelTest() {
         val answered = CompletableDeferred<Unit>()
         val source = commentSource().apply { whileAdding = { answered.await() } }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
         advanceUntilIdle()
 
-        assertEquals(
-            CommentSendState.SENDING,
-            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
-        )
+        assertEquals(CommentSendState.SENDING, vm.uiState.value.commentSend)
 
         answered.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(
-            CommentSendState.SENT,
-            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
-        )
+        assertEquals(CommentSendState.SENT, vm.uiState.value.commentSend)
     }
 
     // The whole point of not clearing up front: a refused comment leaves the composer editable,
@@ -577,104 +554,89 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `a failed send returns the composer to idle and names the action`() = runTest {
         val source = commentSource().apply { addError = UnknownHostException("offline") }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        assertEquals(
-            CommentSendState.IDLE,
-            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
-        )
-        assertEquals(FailedAction.SEND_COMMENT, vm.failedAction.value)
+        assertEquals(CommentSendState.IDLE, vm.uiState.value.commentSend)
+        assertEquals(FailedAction.SEND_COMMENT, vm.uiState.value.failedAction)
     }
 
     // Spent once the composer has given the text up, so a rotation cannot clear a box the user
     // has already started refilling.
     @Test
-    fun `onCommentSent spends the send signal`() = runTest {
+    fun `CommentSent spends the send signal`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        vm.onCommentSent()
+        vm.onEvent(PostDetailUiEvent.CommentSent)
 
-        assertEquals(
-            CommentSendState.IDLE,
-            (vm.uiState.value as PostDetailUiState.Loaded).commentSend,
-        )
+        assertEquals(CommentSendState.IDLE, vm.uiState.value.commentSend)
     }
 
     // The thread hangs below the whole post, so a comment sent from a long page lands off screen
     // unless the screen is told to go to it.
     @Test
-    fun `addComment names the new comment as the one to scroll to`() = runTest {
+    fun `AddComment names the new comment as the one to scroll to`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(state.comments.first().id, state.scrollToComment)
+        val thread = vm.uiState.value.thread
+        assertEquals(thread.comments.first().id, thread.scrollTo)
     }
 
     // Spent once acted on: a configuration change must not yank the list back a second time.
     @Test
-    fun `onScrolledToComment spends the scroll signal`() = runTest {
+    fun `ScrolledToComment spends the scroll signal`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        vm.onScrolledToComment()
+        vm.onEvent(PostDetailUiEvent.ScrolledToComment)
 
-        assertNull((vm.uiState.value as PostDetailUiState.Loaded).scrollToComment)
+        assertNull(vm.uiState.value.thread.scrollTo)
     }
 
     // Nothing was posted, so there is nothing to go to.
     @Test
-    fun `a failed addComment names nothing to scroll to`() = runTest {
+    fun `a failed AddComment names nothing to scroll to`() = runTest {
         val commentDataSource = commentSource().apply { addError = UnknownHostException("offline") }
         val vm = viewModel(commentDataSource = commentDataSource)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        assertNull((vm.uiState.value as PostDetailUiState.Loaded).scrollToComment)
+        assertNull(vm.uiState.value.thread.scrollTo)
     }
 
     // A reload starts the thread over, so a scroll owed into the window it replaced has nothing
     // left to aim at — and the screen would otherwise jump to whatever now sits at that index.
     @Test
-    fun `retrying comments drops a pending scroll`() = runTest {
+    fun `RetryComments drops a pending scroll`() = runTest {
         val vm = viewModel()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        vm.addComment("Hello!")
+        vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        vm.retryComments()
+        vm.onEvent(PostDetailUiEvent.RetryComments)
 
-        assertNull((vm.uiState.value as PostDetailUiState.Loaded).scrollToComment)
+        assertNull(vm.uiState.value.thread.scrollTo)
     }
 
     @Test
-    fun `onToggleCommentLike likes a comment in the thread`() = runTest {
+    fun `ToggleCommentLike likes a comment in the thread`() = runTest {
         // The count in the answer is the server's, so the fake is told what it started from.
         val vm = viewModel(commentDataSource = commentSource().apply { likeCounts["c1"] = 2 })
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.onToggleCommentLike("c1")
+        vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        val liked = state.comments.single()
+        val liked = vm.comments.single()
         assertTrue(liked.isLiked)
         assertEquals(3, liked.likeCount)
     }
 
     @Test
-    fun `onToggleCommentLike asks for the state opposite the comment's own`() = runTest {
+    fun `ToggleCommentLike asks for the state opposite the comment's own`() = runTest {
         val source = commentSource(listOf(seedComment.copy(isLiked = true)))
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.onToggleCommentLike("c1")
+        vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
 
         assertEquals(listOf("c1" to false), source.likeRequests)
     }
@@ -684,19 +646,18 @@ class PostDetailViewModelTest : ViewModelTest() {
     // can be read, and the fake's server is seeded to disagree with the count the thread was
     // loaded with, which is what tells the optimistic value (3) from the confirmed one (11).
     @Test
-    fun `onToggleCommentLike fills the heart before the request answers`() = runTest {
+    fun `ToggleCommentLike fills the heart before the request answers`() = runTest {
         val answered = CompletableDeferred<Unit>()
         val source = commentSource().apply {
             likeCounts["c1"] = 10
             whileInFlight = { answered.await() }
         }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.onToggleCommentLike("c1")
+        vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
         advanceUntilIdle()
 
-        val inFlight = (vm.uiState.value as PostDetailUiState.Loaded).comments.single()
+        val inFlight = vm.comments.single()
         assertTrue(inFlight.isLiked)
         assertEquals(3, inFlight.likeCount)
 
@@ -704,7 +665,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         advanceUntilIdle()
 
         // And once it lands, the server's count replaces the guess.
-        assertEquals(11, (vm.uiState.value as PostDetailUiState.Loaded).comments.single().likeCount)
+        assertEquals(11, vm.comments.single().likeCount)
     }
 
     @Test
@@ -714,11 +675,10 @@ class PostDetailViewModelTest : ViewModelTest() {
             setLikeError = UnknownHostException("offline")
         }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.onToggleCommentLike("c1")
+        vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
 
-        val comment = (vm.uiState.value as PostDetailUiState.Loaded).comments.single()
+        val comment = vm.comments.single()
         assertFalse(comment.isLiked)
         assertEquals(2, comment.likeCount)
     }
@@ -729,15 +689,14 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `a comment like answer leaves the rest of the comment alone`() = runTest {
         val source = commentSource().apply { likeCounts["c1"] = 2 }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         source.whileInFlight = {
             source.comments = mapOf("p1" to listOf(seedComment.copy(text = "Edited", isLiked = true)))
-            vm.retryComments()
+            vm.onEvent(PostDetailUiEvent.RetryComments)
         }
 
-        vm.onToggleCommentLike("c1")
+        vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
 
-        val comment = (vm.uiState.value as PostDetailUiState.Loaded).comments.single()
+        val comment = vm.comments.single()
         assertEquals("Edited", comment.text)
         assertTrue(comment.isLiked)
     }
@@ -748,17 +707,16 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `a comment like answer that a newer tap has moved past is dropped`() = runTest {
         val source = commentSource().apply { likeCounts["c1"] = 2 }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         source.whileInFlight = {
             // Only the first request re-enters; the second must not recurse.
             source.whileInFlight = null
-            vm.onToggleCommentLike("c1")
+            vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
         }
 
-        vm.onToggleCommentLike("c1")
+        vm.onEvent(PostDetailUiEvent.ToggleCommentLike("c1"))
 
         assertEquals(listOf("c1" to true, "c1" to false), source.likeRequests)
-        assertFalse((vm.uiState.value as PostDetailUiState.Loaded).comments.single().isLiked)
+        assertFalse(vm.comments.single().isLiked)
     }
 
     // ── comment pagination ────────────────────────────────────────────────────
@@ -771,25 +729,23 @@ class PostDetailViewModelTest : ViewModelTest() {
         val full = thread(5)
         val source = pagedSource(full, pageSize = 2)
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(full.take(2), state.comments)
-        assertFalse(state.commentsEndReached)
+        val thread = vm.uiState.value.thread
+        assertEquals(full.take(2), thread.comments)
+        assertFalse(thread.endReached)
         assertEquals(listOf("p1" to null), source.loadRequests)
     }
 
     @Test
-    fun `loadMoreComments appends the page after the one loaded last`() = runTest {
+    fun `LoadMoreComments appends the page after the one loaded last`() = runTest {
         val full = thread(5)
         val vm = viewModel(commentDataSource = pagedSource(full, pageSize = 2))
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.loadMoreComments()
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(full.take(4), state.comments)
-        assertFalse(state.commentsEndReached)
+        val thread = vm.uiState.value.thread
+        assertEquals(full.take(4), thread.comments)
+        assertFalse(thread.endReached)
     }
 
     // The end of the thread is the server's to declare, and the screen stops asking on it — the
@@ -799,14 +755,13 @@ class PostDetailViewModelTest : ViewModelTest() {
         val full = thread(4)
         val source = pagedSource(full, pageSize = 2)
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.loadMoreComments()
-        vm.loadMoreComments()
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(full, state.comments)
-        assertTrue(state.commentsEndReached)
+        val thread = vm.uiState.value.thread
+        assertEquals(full, thread.comments)
+        assertTrue(thread.endReached)
         assertEquals(listOf("p1" to null, "p1" to "c2"), source.loadRequests)
     }
 
@@ -814,13 +769,12 @@ class PostDetailViewModelTest : ViewModelTest() {
     // early. There is no cursor to ask with yet, and a request without one would re-fetch the
     // page already coming.
     @Test
-    fun `loadMoreComments waits for the first page to hand back a cursor`() = runTest {
+    fun `LoadMoreComments waits for the first page to hand back a cursor`() = runTest {
         val gate = CompletableDeferred<Unit>()
         val source = pagedSource(thread(5), pageSize = 2).apply { whileLoading = { gate.await() } }
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
-        vm.loadMoreComments()
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
         assertEquals(listOf("p1" to null), source.loadRequests)
 
@@ -833,29 +787,27 @@ class PostDetailViewModelTest : ViewModelTest() {
         val full = thread(5)
         val source = pagedSource(full, pageSize = 2)
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
         source.loadError = UnknownHostException("offline")
-        vm.loadMoreComments()
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(full.take(2), state.comments)
-        assertFalse(state.commentsEndReached)
+        val thread = vm.uiState.value.thread
+        assertEquals(full.take(2), thread.comments)
+        assertFalse(thread.endReached)
     }
 
     // A retry is a fresh thread, not a resumed one: the cursor it was holding describes a window
     // into a thread that may have moved since.
     @Test
-    fun `retryComments starts the thread over from the first page`() = runTest {
+    fun `RetryComments starts the thread over from the first page`() = runTest {
         val full = thread(5)
         val source = pagedSource(full, pageSize = 2)
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        vm.loadMoreComments()
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        vm.retryComments()
+        vm.onEvent(PostDetailUiEvent.RetryComments)
 
-        assertEquals(full.take(2), (vm.uiState.value as PostDetailUiState.Loaded).comments)
+        assertEquals(full.take(2), vm.comments)
         assertEquals(listOf("p1" to null, "p1" to "c2", "p1" to null), source.loadRequests)
     }
 
@@ -867,52 +819,54 @@ class PostDetailViewModelTest : ViewModelTest() {
         val full = thread(5)
         val source = pagedSource(full, pageSize = 2)
         val vm = viewModel(commentDataSource = source)
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         val newest = seedComment.copy(id = "c0", text = "Posted since")
         source.whileLoading = {
             // Only the load-more re-enters; the reload it triggers must not recurse.
             source.whileLoading = null
             source.comments = mapOf("p1" to (listOf(newest) + full))
-            vm.retryComments()
+            vm.onEvent(PostDetailUiEvent.RetryComments)
             // Hands the thread over so the reload finishes here, while this page is still on the
             // wire — which is the whole of what this test is about.
             yield()
         }
 
-        vm.loadMoreComments()
+        vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(listOf(newest, full[0]), state.comments)
+        assertEquals(listOf(newest, full[0]), vm.comments)
     }
 
     @Test
-    fun `state updates emit to subscribers after addComment`() = runTest {
+    fun `state updates emit to subscribers after AddComment`() = runTest {
         val vm = viewModel(comments = emptyMap())
         val collected = mutableListOf<PostDetailUiState>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             vm.uiState.collect { collected.add(it) }
         }
 
-        vm.addComment("First comment")
+        vm.onEvent(PostDetailUiEvent.AddComment("First comment"))
 
-        val last = collected.last() as PostDetailUiState.Loaded
-        assertEquals(1, last.comments.size)
-        assertEquals("First comment", last.comments.first().text)
+        val comments = collected.last().thread.comments
+        assertEquals(1, comments.size)
+        assertEquals("First comment", comments.first().text)
     }
 
     @Test
     fun `comment state is scoped to this post's id`() = runTest {
-        val vm = viewModel(
-            comments = mapOf("p1" to listOf(seedComment)),
-        )
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        val vm = viewModel(comments = mapOf("p1" to listOf(seedComment)))
 
-        vm.addComment("Only for p1")
+        vm.onEvent(PostDetailUiEvent.AddComment("Only for p1"))
 
-        val state = vm.uiState.value as PostDetailUiState.Loaded
-        assertEquals(2, state.comments.size)
+        assertEquals(2, vm.comments.size)
     }
 }
+
+/** The post the page is showing, for the tests whose subject is the post rather than the load. */
+private val PostDetailViewModel.loaded: Content.Loaded
+    get() = uiState.value.content as Content.Loaded
+
+/** The stretch of the thread the page is holding. */
+private val PostDetailViewModel.comments: List<Comment>
+    get() = uiState.value.thread.comments
 
 /** A [CommentDataSource] whose load suspends on [gate], so a test can observe the in-flight state. */
 private class GatedCommentDataSource(

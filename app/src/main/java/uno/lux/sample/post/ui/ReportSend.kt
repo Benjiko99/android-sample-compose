@@ -2,7 +2,6 @@ package uno.lux.sample.post.ui
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
 import uno.lux.sample.app.util.ignoreErrors
 import uno.lux.sample.app.util.launchIfIdle
 import kotlin.reflect.KMutableProperty0
@@ -30,9 +29,12 @@ enum class ReportSendState {
 }
 
 /**
- * Sends the report [block] describes, moving [state] through the send and keeping the [Job] in
- * [jobRef] for [dropReport] to abandon. A screen has one report in flight at a time — the dialog
- * is modal, so there is only ever one report being filled in.
+ * Sends the report [block] describes, moving the dialog through the send with [setState] and
+ * keeping the [Job] in [jobRef] for [dropReport] to abandon. A screen has one report in flight at
+ * a time — the dialog is modal, so there is only ever one report being filled in.
+ *
+ * A setter rather than the state holder itself, so the ViewModel is free to keep the send as one
+ * field of a larger UI state that it copies, rather than as a flow of its own.
  *
  * Not `launchReporting`: the dialog the tap came from is still on screen when the answer arrives,
  * so the failure has somewhere of its own to show and needs no snackbar. [launchIfIdle] is the
@@ -40,26 +42,26 @@ enum class ReportSendState {
  */
 fun ViewModel.launchReport(
     jobRef: KMutableProperty0<Job?>,
-    state: MutableStateFlow<ReportSendState>,
+    setState: (ReportSendState) -> Unit,
     block: suspend () -> Unit,
 ) = launchIfIdle(jobRef) {
-    state.value = ReportSendState.SENDING
+    setState(ReportSendState.SENDING)
 
-    ignoreErrors(onError = { state.value = ReportSendState.FAILED }) {
+    ignoreErrors(onError = { setState(ReportSendState.FAILED) }) {
         block()
-        state.value = ReportSendState.SENT
+        setState(ReportSendState.SENT)
     }
 }
 
 /**
  * Abandons whatever the dialog was showing, because the dialog is gone — cancelled, dismissed, or
  * closed on the thanks. Cancelling matters for the dismissal that lands mid-send: without it the
- * answer to a report nobody is waiting for any more would still write [state], and the *next*
+ * answer to a report nobody is waiting for any more would still reach [setState], and the *next*
  * dialog would open on the outcome of the last one. [ignoreErrors] rethrows cancellation rather
- * than recording it, so the reset below is the only thing left to write [state].
+ * than recording it, so the reset below is the only thing left to call [setState].
  */
-fun dropReport(jobRef: KMutableProperty0<Job?>, state: MutableStateFlow<ReportSendState>) {
+fun dropReport(jobRef: KMutableProperty0<Job?>, setState: (ReportSendState) -> Unit) {
     jobRef.get()?.cancel()
     jobRef.set(null)
-    state.value = ReportSendState.IDLE
+    setState(ReportSendState.IDLE)
 }

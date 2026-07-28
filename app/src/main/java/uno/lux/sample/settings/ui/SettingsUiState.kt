@@ -1,10 +1,9 @@
 package uno.lux.sample.settings.ui
 
-import uno.lux.sample.app.framework.UiState
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
 
-sealed interface SettingsUiState : UiState {
+sealed interface SettingsUiState {
 
     data object Loading : SettingsUiState
 
