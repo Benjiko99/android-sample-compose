@@ -33,6 +33,7 @@ import uno.lux.sample.post.ui.PostCardData
 import uno.lux.sample.post.ui.ReportSendState
 import uno.lux.sample.post.ui.dropReport
 import uno.lux.sample.post.ui.launchReport
+import uno.lux.sample.profile.data.PostList
 import uno.lux.sample.profile.data.ProfileRepository
 import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.UserId
@@ -72,20 +73,21 @@ class ProfileViewModel @AssistedInject constructor(
     /** Whether a load has run at all, which is what makes an absent user mean "no such user". */
     private val _hasLoaded = MutableStateFlow(false)
 
+    /** This profile's two on-demand tabs, bound to [userId] once rather than at every call. */
+    private val saved = profileRepository.saved(userId)
+    private val liked = profileRepository.liked(userId)
+
     /**
      * Resolves one on-demand tab's post IDs into cards, staying null until that tab's first load
      * lands. Each call captures its own cache, which preserves [PostCardData] instances across
      * emissions so Compose strong-skipping can skip the rows that didn't change.
      */
-    private fun cardListFlow(
-        ids: Flow<List<PostId>?>,
-        hasMore: Flow<Boolean>,
-    ): Flow<ProfilePostList?> {
+    private fun cardListFlow(list: PostList): Flow<ProfilePostList?> {
         var cache = emptyMap<PostId, PostCardData>()
 
         return combine(
-            ids,
-            hasMore,
+            list.ids,
+            list.hasMore,
             postRepository.entities,
             userRepository.users,
         ) { postIds, more, entities, users ->
@@ -118,8 +120,8 @@ class ProfileViewModel @AssistedInject constructor(
     )
 
     private val lazyTabs: Flow<LazyTabs> = combine(
-        cardListFlow(profileRepository.bookmarkIds(userId), profileRepository.hasMoreBookmarks(userId)),
-        cardListFlow(profileRepository.likeIds(userId), profileRepository.hasMoreLikes(userId)),
+        cardListFlow(saved),
+        cardListFlow(liked),
     ) { savedPosts, likedPosts -> LazyTabs(savedPosts, likedPosts) }
 
     val uiState: StateFlow<ProfileUiState> = combine(
@@ -201,11 +203,11 @@ class ProfileViewModel @AssistedInject constructor(
                 launch { profileRepository.refresh(userId) }
                 // Only for tabs that have been opened — a profile load must not reach for a
                 // list nobody has asked to see, least of all the private one.
-                if (profileRepository.hasLoadedBookmarks(userId)) {
-                    launch { profileRepository.refreshBookmarks(userId) }
+                if (saved.hasLoaded) {
+                    launch { saved.refresh() }
                 }
-                if (profileRepository.hasLoadedLikes(userId)) {
-                    launch { profileRepository.refreshLikes(userId) }
+                if (liked.hasLoaded) {
+                    launch { liked.refresh() }
                 }
             }
         }
@@ -256,28 +258,28 @@ class ProfileViewModel @AssistedInject constructor(
      * served from the repository, and a pull-to-refresh is what re-fetches it.
      */
     override fun onSavedTabShown() {
-        if (profileRepository.hasLoadedBookmarks(userId)) return
+        if (saved.hasLoaded) return
 
         launchIfIdle(::bookmarksJob) {
-            ignoreErrors { profileRepository.refreshBookmarks(userId) }
+            ignoreErrors { saved.refresh() }
         }
     }
 
     override fun loadMoreBookmarks() = launchIfIdle(::bookmarksJob) {
-        ignoreErrors { profileRepository.loadMoreBookmarks(userId) }
+        ignoreErrors { saved.loadMore() }
     }
 
     /** The Likes tab became visible. Loads once, the way [onSavedTabShown] does. */
     override fun onLikesTabShown() {
-        if (profileRepository.hasLoadedLikes(userId)) return
+        if (liked.hasLoaded) return
 
         launchIfIdle(::likesJob) {
-            ignoreErrors { profileRepository.refreshLikes(userId) }
+            ignoreErrors { liked.refresh() }
         }
     }
 
     override fun loadMoreLikes() = launchIfIdle(::likesJob) {
-        ignoreErrors { profileRepository.loadMoreLikes(userId) }
+        ignoreErrors { liked.loadMore() }
     }
 
     override fun goBack() = navigator.goBack()

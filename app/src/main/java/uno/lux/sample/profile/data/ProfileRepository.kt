@@ -16,6 +16,27 @@ import uno.lux.sample.user.data.UserRepository
 import uno.lux.sample.user.data.domain.UserId
 
 /**
+ * One on-demand profile tab — Saved or Likes — for one user, handed out with that user already
+ * bound. Binding it is the point: the IDs, the paging state and the fetches of a single tab arrive
+ * as one thing, so a caller cannot pair one tab's list with another tab's `hasMore`.
+ *
+ * [ids] emits `null` until the tab's first load lands, which is how a caller tells an empty tab
+ * from an unopened one.
+ */
+interface PostList {
+    val ids: Flow<List<PostId>?>
+
+    val hasMore: Flow<Boolean>
+
+    /** Whether this list has ever loaded — the caller's load-once guard. */
+    val hasLoaded: Boolean
+
+    suspend fun refresh()
+
+    suspend fun loadMore()
+}
+
+/**
  * Source of truth for a user's profile metadata and the ordered IDs of their posts.
  *
  * [profile] streams the counts for a given user. [postIds] streams the ordered list of post IDs
@@ -31,12 +52,12 @@ import uno.lux.sample.user.data.domain.UserId
  * user, and sideloading it is what lets a profile opened cold draw its rows off the posts page
  * alone, rather than waiting on `GET /users/:id` to come back as well.
  *
- * [bookmarkIds] and [likeIds] are the same arrangement for the posts a user saved and liked, with
- * two differences: each is loaded on demand ([refreshBookmarks] / [refreshLikes]) rather than by
- * [refresh] — a tab nobody opened costs no request, and the Saved one is private to its owner
- * besides — and each emits `null` until its first load lands, which is how a caller tells an empty
- * tab from an unopened one. Their authors are arbitrary users the caller may never have met, which
- * is what makes the sideload indispensable there rather than merely useful.
+ * [saved] and [liked] are the same arrangement for the posts a user saved and liked, each handed
+ * out as a whole [PostList] rather than as a spread of per-tab methods. They differ from the Posts
+ * tab in two ways: each is loaded on demand ([PostList.refresh]) rather than by [refresh] — a tab
+ * nobody opened costs no request, and the Saved one is private to its owner besides — and each
+ * emits `null` until its first load lands. Their authors are arbitrary users the caller may never
+ * have met, which is what makes the sideload indispensable there rather than merely useful.
  *
  * For the signed-in user those two lists are **derived from the flag, not echoed from the fetch**:
  * a list defined by `isBookmarked`/`isLiked` *is* the set of entities carrying that flag, ordered
@@ -96,15 +117,11 @@ class ProfileRepository(
     fun hasMorePosts(userId: UserId): Flow<Boolean> =
         _postPage.map { it[userId]?.hasMore ?: false }
 
-    /** The saved post IDs in display order, or `null` before [refreshBookmarks] has run. */
-    fun bookmarkIds(userId: UserId): Flow<List<PostId>?> = savedPosts.ids(userId)
+    /** The posts [userId] saved — private to its owner, and loaded only once its tab is opened. */
+    fun saved(userId: UserId): PostList = savedPosts.forUser(userId)
 
-    fun hasMoreBookmarks(userId: UserId): Flow<Boolean> = savedPosts.hasMore(userId)
-
-    /** The liked post IDs in display order, or `null` before [refreshLikes] has run. */
-    fun likeIds(userId: UserId): Flow<List<PostId>?> = likedPosts.ids(userId)
-
-    fun hasMoreLikes(userId: UserId): Flow<Boolean> = likedPosts.hasMore(userId)
+    /** The posts [userId] liked. Public, but loaded on the same on-demand terms as [saved]. */
+    fun liked(userId: UserId): PostList = likedPosts.forUser(userId)
 
     suspend fun refresh(userId: UserId) {
         val data = dataSource.refresh(userId)
@@ -131,20 +148,6 @@ class ProfileRepository(
         }
     }
 
-    /** Whether [refreshBookmarks] has ever completed for [userId] — the caller's load-once guard. */
-    fun hasLoadedBookmarks(userId: UserId): Boolean = savedPosts.hasLoaded(userId)
-
-    suspend fun refreshBookmarks(userId: UserId) = savedPosts.refresh(userId)
-
-    suspend fun loadMoreBookmarks(userId: UserId) = savedPosts.loadMore(userId)
-
-    /** Whether [refreshLikes] has ever completed for [userId] — the caller's load-once guard. */
-    fun hasLoadedLikes(userId: UserId): Boolean = likedPosts.hasLoaded(userId)
-
-    suspend fun refreshLikes(userId: UserId) = likedPosts.refresh(userId)
-
-    suspend fun loadMoreLikes(userId: UserId) = likedPosts.loadMore(userId)
-
     private fun emptyProfile(userId: UserId) = Profile(userId = userId, postsCount = 0)
 
     /** Puts a page's posts and their authors into the shared stores, and hands the page back. */
@@ -156,10 +159,12 @@ class ProfileRepository(
     }
 
     /**
-     * One profile tab's worth of post IDs per user, filled on demand by [fetchPage] and paged
-     * with its cursor. [ids] emits `null` until the first [refresh] lands, so a caller can tell
-     * an empty tab from an unopened one; the posts and their authors go into the shared entity
-     * stores on the way through, which is what lets a like toggled anywhere reach these lists.
+     * One profile tab's worth of post IDs, per user, filled on demand by [fetchPage] and paged
+     * with its cursor. State for every user this tab has been opened for lives here; [forUser]
+     * narrows it to the one list a caller is asking about.
+     *
+     * The posts and their authors go into the shared entity stores on the way through, which is
+     * what lets a like toggled anywhere reach these lists.
      */
     private inner class OnDemandPostIds(
         private val fetchPage: suspend (UserId, String?) -> PostsPage,
@@ -167,79 +172,89 @@ class ProfileRepository(
     ) {
         private val _state = MutableStateFlow<Map<UserId, TabState>>(emptyMap())
 
-        /**
-         * Which of the two shapes a tab takes is fixed by whose profile it is, so the choice is
-         * made once here rather than on every emission — an echoed list has no reason to watch the
-         * entity store at all.
-         */
-        fun ids(userId: UserId): Flow<List<PostId>?> =
-            if (userId == currentUserId) derivedIds(userId) else echoedIds(userId)
+        fun forUser(userId: UserId): PostList = Tab(userId)
 
-        /**
-         * Your own list is *derived*, not echoed: every post [stillBelongs] accepts, in the
-         * server's own `(createdAt, id)` order. So liking a post anywhere — the Posts tab, the
-         * feed, a post's detail screen — inserts it here in the right place, and unliking removes
-         * it, with no re-fetch and no asymmetry between the two directions.
-         *
-         * The one thing paging costs: a post older than [TabState.oldestLoaded] belongs to a page
-         * the server hasn't sent yet, so it is held back rather than jumped to the end of a partial
-         * list. It arrives in order once that page is paged in. A fully-loaded list has no floor.
-         */
-        private fun derivedIds(userId: UserId): Flow<List<PostId>?> =
-            combine(_state, postRepository.entities) { states, entities ->
-                val state = states[userId] ?: return@combine null
-                val floor = state.oldestLoaded.takeIf { state.hasMore }
+        private inner class Tab(
+            private val userId: UserId,
+        ) : PostList {
 
-                entities.values
-                    .filter(stillBelongs)
-                    .map { it.key }
-                    .filter { floor == null || it >= floor }
-                    .sortedDescending()
-                    .map { it.id }
-            }.distinctUntilChanged()
+            /**
+             * Which of the two shapes this tab takes is fixed by whose profile it is, so the
+             * choice is made once here rather than on every emission — an echoed list has no
+             * reason to watch the entity store at all.
+             */
+            override val ids: Flow<List<PostId>?> =
+                if (userId == currentUserId) derivedIds() else echoedIds()
 
-        /**
-         * Someone else's list can only be echoed. [stillBelongs] reads a viewer-scoped flag, which
-         * on their profile describes *you*, not them — it says nothing about what belongs there.
-         */
-        private fun echoedIds(userId: UserId): Flow<List<PostId>?> =
-            _state.map { it[userId]?.ids }.distinctUntilChanged()
+            override val hasMore: Flow<Boolean> = _state.map { it[userId]?.hasMore ?: false }
 
-        fun hasMore(userId: UserId): Flow<Boolean> = _state.map { it[userId]?.hasMore ?: false }
+            override val hasLoaded: Boolean
+                get() = _state.value.containsKey(userId)
 
-        fun hasLoaded(userId: UserId): Boolean = _state.value.containsKey(userId)
+            /**
+             * Your own list is *derived*, not echoed: every post [stillBelongs] accepts, in the
+             * server's own `(createdAt, id)` order. So liking a post anywhere — the Posts tab, the
+             * feed, a post's detail screen — inserts it here in the right place, and unliking
+             * removes it, with no re-fetch and no asymmetry between the two directions.
+             *
+             * The one thing paging costs: a post older than [TabState.oldestLoaded] belongs to a
+             * page the server hasn't sent yet, so it is held back rather than jumped to the end of
+             * a partial list. It arrives in order once that page is paged in. A fully-loaded list
+             * has no floor.
+             */
+            private fun derivedIds(): Flow<List<PostId>?> =
+                combine(_state, postRepository.entities) { states, entities ->
+                    val state = states[userId] ?: return@combine null
+                    val floor = state.oldestLoaded.takeIf { state.hasMore }
 
-        suspend fun refresh(userId: UserId) {
-            val page = ingest(fetchPage(userId, null))
+                    entities.values
+                        .filter(stillBelongs)
+                        .map { it.key }
+                        .filter { floor == null || it >= floor }
+                        .sortedDescending()
+                        .map { it.id }
+                }.distinctUntilChanged()
 
-            _state.update {
-                it + (
-                    userId to TabState(
-                        ids = page.posts.map { post -> post.id },
-                        cursor = page.cursor,
-                        hasMore = page.hasMore,
-                        oldestLoaded = page.posts.lastOrNull()?.key,
+            /**
+             * Someone else's list can only be echoed. [stillBelongs] reads a viewer-scoped flag,
+             * which on their profile describes *you*, not them — it says nothing about what
+             * belongs there.
+             */
+            private fun echoedIds(): Flow<List<PostId>?> =
+                _state.map { it[userId]?.ids }.distinctUntilChanged()
+
+            override suspend fun refresh() {
+                val page = ingest(fetchPage(userId, null))
+
+                _state.update {
+                    it + (
+                        userId to TabState(
+                            ids = page.posts.map { post -> post.id },
+                            cursor = page.cursor,
+                            hasMore = page.hasMore,
+                            oldestLoaded = page.posts.lastOrNull()?.key,
+                        )
                     )
-                )
+                }
             }
-        }
 
-        suspend fun loadMore(userId: UserId) {
-            val current = _state.value[userId] ?: return
-            if (!current.hasMore) return
+            override suspend fun loadMore() {
+                val current = _state.value[userId] ?: return
+                if (!current.hasMore) return
 
-            val page = ingest(fetchPage(userId, current.cursor))
+                val page = ingest(fetchPage(userId, current.cursor))
 
-            _state.update {
-                it + (
-                    userId to TabState(
-                        ids = current.ids + page.posts.map { post -> post.id },
-                        cursor = page.cursor,
-                        hasMore = page.hasMore,
-                        // An empty page moves the cursor but not the floor.
-                        oldestLoaded = page.posts.lastOrNull()?.key ?: current.oldestLoaded,
+                _state.update {
+                    it + (
+                        userId to TabState(
+                            ids = current.ids + page.posts.map { post -> post.id },
+                            cursor = page.cursor,
+                            hasMore = page.hasMore,
+                            // An empty page moves the cursor but not the floor.
+                            oldestLoaded = page.posts.lastOrNull()?.key ?: current.oldestLoaded,
+                        )
                     )
-                )
+                }
             }
         }
     }
