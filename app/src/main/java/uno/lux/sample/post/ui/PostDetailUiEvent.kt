@@ -11,10 +11,8 @@ import uno.lux.sample.video.data.domain.Video
  * intent, so a page with seventeen of them still takes one parameter.
  *
  * Most of these are things the reader did. The last three are things the *screen* did — it has
- * announced the failure, cleared the composer, made the scroll — and they exist because those
- * signals are state that has to be spent, not events fired into a channel. Sending one back is
- * how the screen says the signal has done its job and may be cleared, so a configuration change
- * cannot replay it.
+ * announced the failure, cleared the composer, made the scroll — and are what spend the signals
+ * [PostDetailUiState] describes.
  */
 sealed interface PostDetailUiEvent {
 

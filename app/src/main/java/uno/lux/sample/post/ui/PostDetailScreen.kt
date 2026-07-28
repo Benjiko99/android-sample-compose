@@ -88,6 +88,7 @@ import uno.lux.sample.common.ui.LoadMoreEffect
 import uno.lux.sample.common.ui.LoadingMoreFooter
 import uno.lux.sample.post.data.domain.Post
 import uno.lux.sample.post.data.domain.PostId
+import uno.lux.sample.post.ui.PostDetailUiState.Content
 import uno.lux.sample.user.data.domain.User
 import uno.lux.sample.user.ui.Avatar
 import uno.lux.sample.video.data.domain.Video
@@ -119,9 +120,9 @@ fun PostDetailScreen(
  * ViewModel makes it directly previewable and testable.
  *
  * Every control on this page reports through the one [PostDetailUiState.eventSink]. The leaf
- * components below keep their own callbacks and are adapted at the call site, because
- * [PostOverflowMenu] and [CommentComposer] are shared with the feed card and know nothing of
- * this screen's vocabulary.
+ * components keep their own callbacks and are adapted at the call site: [PostOverflowMenu] is
+ * shared with the feed card and knows nothing of this screen's vocabulary, and the rest are
+ * ordinary composables that should stay callable from a screen that has no sink at all.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,7 +131,8 @@ internal fun PostDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     val eventSink = uiState.eventSink
-    val loaded = uiState.content as? PostDetailUiState.Content.Loaded
+    val loaded = uiState.content as? Content.Loaded
+    val deletePost: () -> Unit = { eventSink(PostDetailUiEvent.Delete) }
     val listState = rememberLazyListState()
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
@@ -175,11 +177,7 @@ internal fun PostDetailScreen(
                                 eventSink(PostDetailUiEvent.Report(reason, details))
                             },
                             onReportClosed = { eventSink(PostDetailUiEvent.CloseReport) },
-                            onDelete = if (loaded.isOwn) {
-                                { eventSink(PostDetailUiEvent.Delete) }
-                            } else {
-                                null
-                            },
+                            onDelete = deletePost.takeIf { loaded.isOwn },
                         )
                     }
                 },
@@ -201,11 +199,11 @@ internal fun PostDetailScreen(
         },
     ) { contentPadding ->
         when (val content = uiState.content) {
-            PostDetailUiState.Content.Loading -> FullScreenProgress(
+            Content.Loading -> FullScreenProgress(
                 modifier = Modifier.padding(contentPadding),
             )
 
-            PostDetailUiState.Content.NotFound -> Box(
+            Content.NotFound -> Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding)
@@ -219,7 +217,7 @@ internal fun PostDetailScreen(
                 )
             }
 
-            is PostDetailUiState.Content.Error -> FullScreenError(
+            is Content.Error -> FullScreenError(
                 message = content.error.asText(),
                 onRetry = { eventSink(PostDetailUiEvent.Retry) },
                 modifier = Modifier.padding(contentPadding),
@@ -227,7 +225,7 @@ internal fun PostDetailScreen(
 
             // The thread is passed separately rather than as the whole state, so a report or a
             // failed delete moving does not recompose the list under the reader.
-            is PostDetailUiState.Content.Loaded -> PostDetailContent(
+            is Content.Loaded -> PostDetailContent(
                 content = content,
                 thread = uiState.thread,
                 listState = listState,
@@ -254,7 +252,7 @@ private const val COMMENTS_HEADER_INDEX = 1
 
 @Composable
 private fun PostDetailContent(
-    content: PostDetailUiState.Content.Loaded,
+    content: Content.Loaded,
     thread: CommentThread,
     listState: LazyListState,
     eventSink: (PostDetailUiEvent) -> Unit,
@@ -644,7 +642,7 @@ private fun CommentComposer(
 @Composable
 private fun PostDetailLoadedPreview() {
     PostDetailPreview(
-        content = PostDetailUiState.Content.Loaded(
+        content = Content.Loaded(
             post = SamplePosts.first(),
             author = SampleUsers.first(),
             isOwn = false,
@@ -660,13 +658,13 @@ private fun PostDetailLoadedPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailErrorPreview() {
-    PostDetailPreview(PostDetailUiState.Content.Error(AppError.NoConnection))
+    PostDetailPreview(Content.Error(AppError.NoConnection))
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun PostDetailLoadingPreview() {
-    PostDetailPreview(PostDetailUiState.Content.Loading)
+    PostDetailPreview(Content.Loading)
 }
 
 /**

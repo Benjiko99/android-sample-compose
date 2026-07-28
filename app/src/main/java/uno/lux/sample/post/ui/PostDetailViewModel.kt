@@ -101,9 +101,17 @@ class PostDetailViewModel @AssistedInject constructor(
     private var fetch: PostFetch = PostFetch.Pending
 
     /**
-     * Seeded from [content] rather than from [Content.Loading], so a page opened the ordinary way
-     * — from a feed or profile that already fetched the post — is [Content.Loaded] before the
-     * first frame, with no spinner flashed for a post that was never missing.
+     * The page, as one value this ViewModel owns and edits. Seeded from [content] rather than
+     * from [Content.Loading], so a page opened the ordinary way — from a feed or profile that
+     * already fetched the post — is [Content.Loaded] before the first frame, with no spinner
+     * flashed for a post that was never missing.
+     *
+     * Every write goes through [update][kotlinx.coroutines.flow.update] and touches only the
+     * fields it owns, which is the same discipline `PostRepository.updateEntity` exists for:
+     * reading the state into a local, suspending, then writing that local back would overwrite
+     * whatever landed in between. `update` retries its lambda under contention, so what is passed
+     * must be side-effect-free and safe to run more than once — a `copy`, or a `copy` over
+     * something re-read as [updateContent] re-reads [content].
      */
     private val _uiState = MutableStateFlow(
         PostDetailUiState(
@@ -127,9 +135,9 @@ class PostDetailViewModel @AssistedInject constructor(
     // ── Intent ────────────────────────────────────────────────────────────────
 
     /**
-     * The one way in. Every branch here is a line, because the work each names is written out
-     * below or is a single push on the [Navigator] — the `when` is meant to read as the page's
-     * vocabulary rather than as its implementation.
+     * The one way in. Each branch names its work rather than doing it, so the `when` reads as the
+     * page's vocabulary — the exceptions are the three signals the screen spends, which are a
+     * single field write each and would only be obscured by a method to hold them.
      */
     fun onEvent(event: PostDetailUiEvent) {
         when (event) {
@@ -152,7 +160,7 @@ class PostDetailViewModel @AssistedInject constructor(
             PostDetailUiEvent.LoadMoreComments -> loadMoreComments()
             PostDetailUiEvent.RetryComments -> retryComments()
 
-            PostDetailUiEvent.FailedActionShown -> mutateState { it.copy(failedAction = null) }
+            PostDetailUiEvent.FailedActionShown -> _uiState.update { it.copy(failedAction = null) }
             PostDetailUiEvent.CommentSent -> setCommentSend(CommentSendState.IDLE)
             PostDetailUiEvent.ScrolledToComment -> mutateThread { it.copy(scrollTo = null) }
         }
@@ -160,28 +168,22 @@ class PostDetailViewModel @AssistedInject constructor(
 
     // ── The state ─────────────────────────────────────────────────────────────
 
-    /**
-     * Applies [mutate] to the state atomically. [MutableStateFlow.update] retries its lambda
-     * under contention, so [mutate] must be a pure `copy` and nothing else.
-     *
-     * Every write goes through here and touches only the fields it owns, which is the same
-     * discipline `PostRepository.updateEntity` exists for: reading the state into a local,
-     * suspending, then writing that local back would overwrite whatever landed in between.
-     */
-    private fun mutateState(mutate: (PostDetailUiState) -> PostDetailUiState) =
-        _uiState.update(mutate)
-
-    private fun mutateThread(mutate: (CommentThread) -> CommentThread) = mutateState {
+    /** Edits the thread in place, leaving the rest of the page as it was. */
+    private fun mutateThread(mutate: (CommentThread) -> CommentThread) = _uiState.update {
         it.copy(thread = mutate(it.thread))
     }
 
-    private fun setCommentSend(state: CommentSendState) = mutateState {
+    private fun setCommentSend(state: CommentSendState) = _uiState.update {
         it.copy(commentSend = state)
     }
 
-    private fun setReportSend(state: ReportSendState) = mutateState { it.copy(reportSend = state) }
+    /** Passed to [launchReport] and [dropReport] by reference, which is why it is a function. */
+    private fun setReportSend(state: ReportSendState) = _uiState.update {
+        it.copy(reportSend = state)
+    }
 
-    private fun setFailedAction(action: FailedAction) = mutateState {
+    /** Passed to [launchReporting] by reference, which is why it is a function. */
+    private fun setFailedAction(action: FailedAction) = _uiState.update {
         it.copy(failedAction = action)
     }
 
@@ -193,6 +195,12 @@ class PostDetailViewModel @AssistedInject constructor(
      * asks [content] to work out what this page shows now. An answer equal to the last one leaves
      * the state untouched — [MutableStateFlow] conflates by equality — which is the dedup the
      * old `distinctUntilChanged` chain had to be spelled out for.
+     *
+     * It runs for the ViewModel's whole life rather than only while the screen is watching. That
+     * is the price of the state being a value rather than something shared `WhileSubscribed`, and
+     * it is worth paying: two map lookups on an emission this page does not care about, against
+     * [uiState] being current the moment the ViewModel exists — which is what lets a restored page
+     * draw its post without a frame of spinner, and what the tests read directly.
      */
     private fun observeStores() {
         viewModelScope.launch {
@@ -204,7 +212,7 @@ class PostDetailViewModel @AssistedInject constructor(
         }
     }
 
-    private fun updateContent() = mutateState { it.copy(content = content()) }
+    private fun updateContent() = _uiState.update { it.copy(content = content()) }
 
     /**
      * What the page shows, given the stores and how the cold-start fetch went. Reads the stores

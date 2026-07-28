@@ -19,12 +19,9 @@ import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.comment.data.CommentDataSource
-import uno.lux.sample.comment.data.CommentPage
 import uno.lux.sample.comment.data.CommentRepository
 import uno.lux.sample.comment.data.FakeCommentDataSource
 import uno.lux.sample.comment.data.domain.Comment
-import uno.lux.sample.comment.data.domain.CommentId
-import uno.lux.sample.common.data.LikeState
 import uno.lux.sample.common.data.ReportReason
 import uno.lux.sample.common.ui.FailedAction
 import uno.lux.sample.post.data.FakePostDataSource
@@ -331,7 +328,7 @@ class PostDetailViewModelTest : ViewModelTest() {
     fun `comments are marked loading until they resolve`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val gate = CompletableDeferred<Unit>()
-        val vm = viewModel(commentDataSource = GatedCommentDataSource(gate, listOf(seedComment)))
+        val vm = viewModel(commentDataSource = commentSource().apply { whileLoading = { gate.await() } })
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value.thread.isLoading)
@@ -867,24 +864,3 @@ private val PostDetailViewModel.loaded: Content.Loaded
 /** The stretch of the thread the page is holding. */
 private val PostDetailViewModel.comments: List<Comment>
     get() = uiState.value.thread.comments
-
-/** A [CommentDataSource] whose load suspends on [gate], so a test can observe the in-flight state. */
-private class GatedCommentDataSource(
-    private val gate: CompletableDeferred<Unit>,
-    private val result: List<Comment>,
-) : CommentDataSource {
-
-    override suspend fun loadComments(postId: PostId, cursor: String?): CommentPage {
-        gate.await()
-        return CommentPage(comments = result, nextCursor = null, hasMore = false)
-    }
-
-    override suspend fun addComment(postId: PostId, text: String): Comment =
-        throw UnsupportedOperationException()
-
-    override suspend fun setLike(
-        postId: PostId,
-        commentId: CommentId,
-        liked: Boolean,
-    ): LikeState = throw UnsupportedOperationException()
-}
