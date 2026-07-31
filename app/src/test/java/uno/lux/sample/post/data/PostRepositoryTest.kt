@@ -149,7 +149,6 @@ class PostRepositoryTest {
         assertFalse(repo.entities.first()["bookmarked"]!!.isBookmarked)
     }
 
-    // ── optimism ──────────────────────────────────────────────────────────────
     //
     // The heart is the most-tapped control in the app, so it fills on the tap rather than on the
     // round trip. [FakePostDataSource.whileInFlight] runs inside the request, which is the only
@@ -224,7 +223,6 @@ class PostRepositoryTest {
         }
     }
 
-    // ── the write-back window ─────────────────────────────────────────────────
     //
     // A request that answers writes only the fields it owns, onto whatever the entity says by
     // then. Writing back the post as it was read *before* the request was the bug this replaces.

@@ -84,8 +84,6 @@ class DraftRestorationTest {
         return SavedStateHandle.createHandle(saved, null)
     }
 
-    // ── the composer ──────────────────────────────────────────────────────────
-
     private fun composer(handle: SavedStateHandle) = CreatePostViewModel(
         feedRepository = FeedRepository(UnusedFeedDataSource, postRepository(), userRepository()),
         fileLoader = PickingFileLoader,
@@ -167,8 +165,6 @@ class DraftRestorationTest {
         assertTrue(restored.uiState.value.form.isEmpty)
     }
 
-    // ── the profile editor ────────────────────────────────────────────────────
-
     private fun editor(handle: SavedStateHandle): EditProfileViewModel {
         val users = UserRepository(StoredUserDataSource(ada)).apply { ingest(listOf(ada)) }
 
@@ -229,8 +225,6 @@ class DraftRestorationTest {
         assertEquals("Ada Lovelace", restored.form.nickname)
         assertFalse(restored.isDirty)
     }
-
-    // ── doubles ───────────────────────────────────────────────────────────────
 
     private fun postRepository() = PostRepository(UnusedPostDataSource, userRepository())
 

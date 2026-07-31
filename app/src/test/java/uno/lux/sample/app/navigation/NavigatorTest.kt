@@ -135,7 +135,6 @@ class NavigatorTest {
         assertEquals(listOf(Screen.Shell, Screen.Settings), backStack.screens())
     }
 
-    // ── entry identity ────────────────────────────────────────────────────────
     //
     // Every per-entry store Navigation 3 keeps — the ViewModel store, the rememberSaveable
     // holder — is scoped by the entry's id, so these are what decide whether two open copies of

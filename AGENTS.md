@@ -384,6 +384,21 @@ Exception: enum constructor entries. Kotlin does not allow named arguments there
 
 **A file-level overview comment is a block comment, `/* … */`, not a KDoc.** Otherwise ktlint's `no-consecutive-comments` rule fails the build.
 
+**Never divide a file with a banner comment**, for example `// ── Intent ─────────────────`. A rule of box-drawing characters, dashes, or equals signs is not a section header, it is a table of contents nobody updates. It goes stale the moment a declaration moves, it hides the fact that the file has outgrown itself, and it makes every diff that touches the boundary noisier than the change.
+
+```kotlin
+// No
+// ── The thread ────────────────────────────────────────────────────────────
+private fun loadComments() { … }
+
+// Yes
+private fun loadComments() { … }
+```
+
+A file that feels like it needs banners is telling you something. **Split it, or accept it as one long file.** Declaration order and blank lines carry the grouping. Where a group genuinely needs a word of explanation, that word is KDoc on the first declaration, which the IDE shows at every call site; a banner shows nowhere.
+
+This does not ban ordinary comments. `//` on a line that explains *why* is still welcome. The rule is about the decoration.
+
 ## Localization
 
 All user-facing text lives in `res/values/strings.xml` and is read with `stringResource(...)`. **Never hardcode a display string in Kotlin.** Exception: a string with no words at all, for example `"$page / $total"`, is fine as plain interpolation.

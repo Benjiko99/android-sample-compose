@@ -181,8 +181,6 @@ class ProfileRepositoryTest {
         assertEquals(grace, userRepo.users.first()["u2"])
     }
 
-    // ── Bookmarks (the Saved tab) ───────────────────────────────────────────────
-
     @Test
     fun `the Saved tab is null before it is asked for`() = runTest {
         val dataSource = FakeProfileDataSource()
@@ -350,8 +348,6 @@ class ProfileRepositoryTest {
         postRepo.toggleBookmark("p2")
         assertEquals(listOf("p2"), saved.ids.first())
     }
-
-    // ── Likes (the public tab) ──────────────────────────────────────────────────
 
     @Test
     fun `the Likes tab is null before it is asked for`() = runTest {

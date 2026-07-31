@@ -27,8 +27,6 @@ class NetworkProfileDataSourceTest {
         page: CursorPageDto = emptyPage,
     ) = postsResponse(data, users, page)
 
-    // ── The profile's own posts ─────────────────────────────────────────────────
-
     @Test
     fun `refresh maps the profile's posts and its stats`() = runTest {
         val api = FakeProfileApi(
@@ -84,8 +82,6 @@ class NetworkProfileDataSourceTest {
         assertEquals(listOf("p6"), result.posts.map { it.id })
         assertEquals(listOf("u1"), result.users.map { it.id })
     }
-
-    // ── Bookmarks (the Saved tab) ───────────────────────────────────────────────
 
     @Test
     fun `bookmarks maps post DTOs to domain posts`() = runTest {
@@ -147,8 +143,6 @@ class NetworkProfileDataSourceTest {
         assertTrue(result.posts.isEmpty())
         assertNull(result.cursor)
     }
-
-    // ── Likes ───────────────────────────────────────────────────────────────────
 
     @Test
     fun `likes maps post DTOs and their sideloaded authors`() = runTest {

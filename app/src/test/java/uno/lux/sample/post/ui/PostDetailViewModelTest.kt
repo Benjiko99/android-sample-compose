@@ -117,8 +117,6 @@ class PostDetailViewModelTest : ViewModelTest() {
     private fun pagedSource(thread: List<Comment>, pageSize: Int) =
         FakeCommentDataSource(currentUser, mapOf("p1" to thread), pageSize = pageSize)
 
-    // ── delete ────────────────────────────────────────────────────────────────
-
     @Test
     fun `a post by someone else is not marked own`() = runTest {
         assertFalse(viewModel().loaded.isOwn)
@@ -182,8 +180,6 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         assertEquals(Content.NotFound, vm.uiState.value.content)
     }
-
-    // ── report ────────────────────────────────────────────────────────────────
 
     // A report is about the post, not on it: unlike a deletion it changes nothing the page
     // shows, and leaves the reporter reading what they reported.
@@ -277,8 +273,6 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(emptyList<FakePostDataSource.Report>(), dataSource.reports)
     }
 
-    // ── navigation ────────────────────────────────────────────────────────────
-
     @Test
     fun `GoBack pops the detail page`() {
         viewModel().onEvent(PostDetailUiEvent.GoBack)
@@ -301,8 +295,6 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         assertEquals(Screen.AlbumViewer(images, initialIndex = 0), backStack.last().screen)
     }
-
-    // ── uiState ───────────────────────────────────────────────────────────────
 
     // The state is seeded from the stores rather than from Loading, so a page opened the ordinary
     // way is showing its post before the first frame — no spinner for something never missing.
@@ -354,7 +346,6 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(listOf(seedComment), vm.comments)
     }
 
-    // ── cold start (restored after process death) ──────────────────────────────
     //
     // The stores are empty when the app is restarted straight onto this page, so the ViewModel
     // has to fetch the post its back-stack key names. Whether that fetch is still running, came
@@ -423,14 +414,10 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(post, vm.loaded.post)
     }
 
-    // ── composerUser ──────────────────────────────────────────────────────────
-
     @Test
     fun `composerUser is the current user`() {
         assertEquals(currentUser, viewModel().uiState.value.composerUser)
     }
-
-    // ── like / bookmark ───────────────────────────────────────────────────────
 
     @Test
     fun `ToggleLike likes the post through the shared entity store`() = runTest {
@@ -453,8 +440,6 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         assertTrue(vm.loaded.post.isBookmarked)
     }
-
-    // ── comment interactions ──────────────────────────────────────────────────
 
     @Test
     fun `AddComment prepends a new comment to the thread`() = runTest {
@@ -716,7 +701,6 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertFalse(vm.comments.single().isLiked)
     }
 
-    // ── comment pagination ────────────────────────────────────────────────────
     //
     // A thread arrives a window at a time, so opening a post with hundreds of comments costs the
     // same first request as opening one with three.

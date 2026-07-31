@@ -16,8 +16,6 @@ import uno.lux.sample.video.data.domain.Video
  */
 sealed interface PostDetailUiEvent {
 
-    // ── Navigation ────────────────────────────────────────────────────────────
-
     data object GoBack : PostDetailUiEvent
 
     data class OpenProfile(
@@ -32,8 +30,6 @@ sealed interface PostDetailUiEvent {
         val imageUrls: List<String>,
         val initialIndex: Int,
     ) : PostDetailUiEvent
-
-    // ── The post ──────────────────────────────────────────────────────────────
 
     data object ToggleLike : PostDetailUiEvent
 
@@ -51,8 +47,6 @@ sealed interface PostDetailUiEvent {
 
     data object Retry : PostDetailUiEvent
 
-    // ── The thread ────────────────────────────────────────────────────────────
-
     data class AddComment(
         val text: String,
     ) : PostDetailUiEvent
@@ -64,8 +58,6 @@ sealed interface PostDetailUiEvent {
     data object LoadMoreComments : PostDetailUiEvent
 
     data object RetryComments : PostDetailUiEvent
-
-    // ── Signals the screen has spent ──────────────────────────────────────────
 
     data object FailedActionShown : PostDetailUiEvent
 

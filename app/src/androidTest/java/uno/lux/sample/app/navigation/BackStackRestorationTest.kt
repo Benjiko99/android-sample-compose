@@ -165,8 +165,6 @@ class BackStackRestorationTest {
         composeTestRule.onNodeWithTag(COUNTER_TAG).assertTextEquals("2")
     }
 
-    // ── host ──────────────────────────────────────────────────────────────────
-
     private fun startHost(): StateRestorationTester {
         val tester = StateRestorationTester(composeTestRule)
         tester.setContent {

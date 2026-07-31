@@ -248,8 +248,6 @@ private val TopBarElevation = 4.dp
  */
 private const val COMMENTS_HEADER_INDEX = 1
 
-// ── Scrollable content ─────────────────────────────────────────────────────────
-
 @Composable
 private fun PostDetailContent(
     content: Content.Loaded,
@@ -392,8 +390,6 @@ private fun CommentsError(error: AppError, onRetry: () -> Unit) {
     }
 }
 
-// ── Post card inside the detail ────────────────────────────────────────────────
-
 /**
  * The post itself, rendered from the same blocks as the feed's [PostCard] — minus the affordances
  * that only make sense in a list: the body isn't a tap target (this *is* the post), the overflow
@@ -429,8 +425,6 @@ private fun DetailPostCard(
         Spacer(Modifier.height(4.dp))
     }
 }
-
-// ── Comments section ───────────────────────────────────────────────────────────
 
 @Composable
 private fun CommentsHeader(
@@ -531,8 +525,6 @@ private fun CommentRow(
     }
     Spacer(Modifier.height(12.dp))
 }
-
-// ── Sticky comment composer ────────────────────────────────────────────────────
 
 /**
  * The sticky composer at the bottom of the thread. It owns the text and gives it up only once

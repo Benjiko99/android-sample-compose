@@ -350,8 +350,6 @@ class ProfileViewModelTest : ViewModelTest() {
         assertTrue(bookmarked.isBookmarked)
     }
 
-    // ── The Saved tab ───────────────────────────────────────────────────────────
-
     @Test
     fun `bookmarks are absent until the Saved tab is shown`() = runTest {
         val viewModel = viewModel()
@@ -455,8 +453,6 @@ class ProfileViewModelTest : ViewModelTest() {
         assertEquals(2, profileDataSource.bookmarkCalls.size)
     }
 
-    // ── The Likes tab ───────────────────────────────────────────────────────────
-
     @Test
     fun `likes are absent until the Likes tab is shown`() = runTest {
         val viewModel = viewModel()
@@ -538,8 +534,6 @@ class ProfileViewModelTest : ViewModelTest() {
 
         assertEquals(2, profileDataSource.likeCalls.size)
     }
-
-    // ── The on-demand tabs narrow as their defining flag clears ─────────────────
 
     @Test
     fun `un-bookmarking from the Saved tab removes the row`() = runTest {
