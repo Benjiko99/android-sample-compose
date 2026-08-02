@@ -3,7 +3,7 @@ package uno.lux.sample.common.ui
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import uno.lux.sample.app.util.AppError
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.common.data.network.toAppError
 
 /**
@@ -16,7 +16,7 @@ import uno.lux.sample.common.data.network.toAppError
  * the project's.
  */
 suspend fun ignoreErrors(errorSink: MutableStateFlow<AppError?>, block: suspend () -> Unit) =
-    ignoreErrors(
+    catchErrors(
         onError = { e -> errorSink.value = e.toAppError() },
         block = block,
     )

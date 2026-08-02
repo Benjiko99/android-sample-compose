@@ -7,9 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.common.asText
+
+// TODO: Using a global enum for this is terrible architecture. Should probably take any data class as argument instead.
 
 /**
  * A fire-and-forget user action whose request failed after the UI had already moved on — the
@@ -39,7 +41,7 @@ enum class FailedAction {
  * copied. The ViewModel still owns the state a test asserts against, which is the property
  * [uno.lux.sample.app.util.launchRefresh] takes its `refreshing` flag for. Not in `app/util`
  * with the other launch shapes because it names [FailedAction], and `app/util` imports nothing
- * of the project's — the same reason [ignoreErrors]'s error-sink overload lives here.
+ * of the project's — the same reason [catchErrors]'s error-sink overload lives here.
  */
 fun ViewModel.launchReporting(
     action: FailedAction,
@@ -47,7 +49,7 @@ fun ViewModel.launchReporting(
     block: suspend () -> Unit,
 ) {
     viewModelScope.launch {
-        ignoreErrors(onError = { onFailed(action) }, block = block)
+        catchErrors(onError = { onFailed(action) }, block = block)
     }
 }
 

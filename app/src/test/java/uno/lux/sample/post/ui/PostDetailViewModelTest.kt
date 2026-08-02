@@ -313,7 +313,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         assertEquals(post, vm.loaded.post)
         assertEquals(otherUser, vm.loaded.author)
         assertEquals(listOf(seedComment), vm.comments)
-        assertFalse(vm.uiState.value.thread.isLoading)
+        assertFalse(vm.uiState.value.commentThread.isLoading)
     }
 
     @Test
@@ -323,12 +323,12 @@ class PostDetailViewModelTest : ViewModelTest() {
         val vm = viewModel(commentDataSource = commentSource().apply { whileLoading = { gate.await() } })
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.thread.isLoading)
+        assertTrue(vm.uiState.value.commentThread.isLoading)
 
         gate.complete(Unit)
         advanceUntilIdle()
 
-        assertFalse(vm.uiState.value.thread.isLoading)
+        assertFalse(vm.uiState.value.commentThread.isLoading)
         assertEquals(listOf(seedComment), vm.comments)
     }
 
@@ -480,7 +480,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         advanceUntilIdle()
 
         val state = vm.uiState.value
-        assertEquals("the thread carries the new comment", 2, state.thread.comments.size)
+        assertEquals("the thread carries the new comment", 2, state.commentThread.comments.size)
         assertEquals(
             "the header and action row count the post",
             2,
@@ -563,7 +563,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        val thread = vm.uiState.value.thread
+        val thread = vm.uiState.value.commentThread
         assertEquals(thread.comments.first().id, thread.scrollTo)
     }
 
@@ -575,7 +575,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         vm.onEvent(PostDetailUiEvent.ScrolledToComment)
 
-        assertNull(vm.uiState.value.thread.scrollTo)
+        assertNull(vm.uiState.value.commentThread.scrollTo)
     }
 
     // Nothing was posted, so there is nothing to go to.
@@ -586,7 +586,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         vm.onEvent(PostDetailUiEvent.AddComment("Hello!"))
 
-        assertNull(vm.uiState.value.thread.scrollTo)
+        assertNull(vm.uiState.value.commentThread.scrollTo)
     }
 
     // A reload starts the thread over, so a scroll owed into the window it replaced has nothing
@@ -598,7 +598,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         vm.onEvent(PostDetailUiEvent.RetryComments)
 
-        assertNull(vm.uiState.value.thread.scrollTo)
+        assertNull(vm.uiState.value.commentThread.scrollTo)
     }
 
     @Test
@@ -711,7 +711,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         val source = pagedSource(full, pageSize = 2)
         val vm = viewModel(commentDataSource = source)
 
-        val thread = vm.uiState.value.thread
+        val thread = vm.uiState.value.commentThread
         assertEquals(full.take(2), thread.comments)
         assertFalse(thread.endReached)
         assertEquals(listOf("p1" to null), source.loadRequests)
@@ -724,7 +724,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val thread = vm.uiState.value.thread
+        val thread = vm.uiState.value.commentThread
         assertEquals(full.take(4), thread.comments)
         assertFalse(thread.endReached)
     }
@@ -740,7 +740,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         vm.onEvent(PostDetailUiEvent.LoadMoreComments)
         vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val thread = vm.uiState.value.thread
+        val thread = vm.uiState.value.commentThread
         assertEquals(full, thread.comments)
         assertTrue(thread.endReached)
         assertEquals(listOf("p1" to null, "p1" to "c2"), source.loadRequests)
@@ -772,7 +772,7 @@ class PostDetailViewModelTest : ViewModelTest() {
         source.loadError = UnknownHostException("offline")
         vm.onEvent(PostDetailUiEvent.LoadMoreComments)
 
-        val thread = vm.uiState.value.thread
+        val thread = vm.uiState.value.commentThread
         assertEquals(full.take(2), thread.comments)
         assertFalse(thread.endReached)
     }
@@ -826,7 +826,7 @@ class PostDetailViewModelTest : ViewModelTest() {
 
         vm.onEvent(PostDetailUiEvent.AddComment("First comment"))
 
-        val comments = collected.last().thread.comments
+        val comments = collected.last().commentThread.comments
         assertEquals(1, comments.size)
         assertEquals("First comment", comments.first().text)
     }
@@ -847,4 +847,4 @@ private val PostDetailViewModel.loaded: Content.Loaded
 
 /** The stretch of the thread the page is holding. */
 private val PostDetailViewModel.comments: List<Comment>
-    get() = uiState.value.thread.comments
+    get() = uiState.value.commentThread.comments

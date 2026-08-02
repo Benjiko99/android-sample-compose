@@ -61,7 +61,7 @@ fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () ->
 }
 
 /**
- * Launches [block] in [viewModelScope], logging and discarding any failure ([ignoreErrors] does
+ * Launches [block] in [viewModelScope], logging and discarding any failure ([catchErrors] does
  * both), where the alternative is spelling out `launch { ignoreErrors { … } }` at every call site.
  *
  * Only for a mutation whose failure is already visible where the tap happened — an optimistic
@@ -73,7 +73,7 @@ fun ViewModel.launchIfIdle(jobRef: KMutableProperty0<Job?>, block: suspend () ->
  * declared to return [Unit] can be written as an expression body.
  */
 fun ViewModel.launchCatching(block: suspend () -> Unit) {
-    viewModelScope.launch { ignoreErrors(block = block) }
+    viewModelScope.launch { catchErrors(block = block) }
 }
 
 /**
@@ -85,7 +85,7 @@ fun ViewModel.launchCatching(block: suspend () -> Unit) {
  * each caller means the callers with nothing else to do about the error are the ones that go
  * quiet.
  */
-suspend fun ignoreErrors(onError: (Exception) -> Unit = {}, block: suspend () -> Unit) {
+suspend fun catchErrors(onError: (Exception) -> Unit = {}, block: suspend () -> Unit) {
     try {
         block()
     } catch (e: CancellationException) {

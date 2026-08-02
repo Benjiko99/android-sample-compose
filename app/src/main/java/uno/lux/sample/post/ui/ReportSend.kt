@@ -2,7 +2,7 @@ package uno.lux.sample.post.ui
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Job
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.app.util.launchIfIdle
 import kotlin.reflect.KMutableProperty0
 
@@ -47,17 +47,20 @@ fun ViewModel.launchReport(
 ) = launchIfIdle(jobRef) {
     setState(ReportSendState.SENDING)
 
-    ignoreErrors(onError = { setState(ReportSendState.FAILED) }) {
+    catchErrors(onError = { setState(ReportSendState.FAILED) }) {
         block()
         setState(ReportSendState.SENT)
     }
 }
 
+// TODO: Having to do this cleanup sounds like bad architecture, there's global state somewhere, that shouldn't exist.
+// TODO: It shouldn't be in the post's ui package
+
 /**
  * Abandons whatever the dialog was showing, because the dialog is gone — cancelled, dismissed, or
  * closed on the thanks. Cancelling matters for the dismissal that lands mid-send: without it the
  * answer to a report nobody is waiting for any more would still reach [setState], and the *next*
- * dialog would open on the outcome of the last one. [ignoreErrors] rethrows cancellation rather
+ * dialog would open on the outcome of the last one. [catchErrors] rethrows cancellation rather
  * than recording it, so the reset below is the only thing left to call [setState].
  */
 fun dropReport(jobRef: KMutableProperty0<Job?>, setState: (ReportSendState) -> Unit) {

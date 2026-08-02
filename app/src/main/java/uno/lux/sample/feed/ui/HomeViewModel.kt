@@ -12,7 +12,7 @@ import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
@@ -161,7 +161,7 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun loadMore() = launchIfIdle(::loadMoreJob) {
-        ignoreErrors { feedRepository.loadMore() }
+        catchErrors { feedRepository.loadMore() }
     }
 
     private suspend fun load() {

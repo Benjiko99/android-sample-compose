@@ -29,3 +29,7 @@ ktlint_standard_no-empty-first-line-in-class-body = disabled
 
 # Arguments that fit a line stay on it rather than going one-per-line.
 ktlint_standard_argument-list-wrapping = disabled
+
+# A file-level overview may sit directly above a declaration's own KDoc. The rule rejects two
+# adjacent comments of different kinds, which is exactly that shape.
+ktlint_standard_no-consecutive-comments = disabled

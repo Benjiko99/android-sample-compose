@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.restoreDraft
 import uno.lux.sample.app.util.saveDraft
@@ -100,7 +100,7 @@ class CreatePostViewModel @Inject constructor(
      */
     override fun onVideoPicked(uri: String) {
         launchIfIdle(::pickVideoJob) {
-            ignoreErrors(
+            catchErrors(
                 onError = { e ->
                     _uiState.update { it.copy(error = CreatePostError.Failed(e.toAppError())) }
                 },
@@ -109,7 +109,7 @@ class CreatePostViewModel @Inject constructor(
 
                 if (size != null && size > CREATE_POST_MAX_VIDEO_BYTES) {
                     _uiState.update { it.copy(error = CreatePostError.VideoTooLarge) }
-                    return@ignoreErrors
+                    return@catchErrors
                 }
 
                 val duration = videoMetadataReader.durationSeconds(uri)
@@ -144,7 +144,7 @@ class CreatePostViewModel @Inject constructor(
             val form = _uiState.value.form
             _uiState.update { it.copy(isPublishing = true, error = null) }
 
-            ignoreErrors(
+            catchErrors(
                 onError = { e ->
                     _uiState.update {
                         it.copy(isPublishing = false, error = CreatePostError.Failed(e.toAppError()))

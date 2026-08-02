@@ -227,7 +227,7 @@ internal fun PostDetailScreen(
             // failed delete moving does not recompose the list under the reader.
             is Content.Loaded -> PostDetailContent(
                 content = content,
-                thread = uiState.thread,
+                thread = uiState.commentThread,
                 listState = listState,
                 eventSink = eventSink,
                 modifier = Modifier.padding(contentPadding),
@@ -673,7 +673,7 @@ private fun PostDetailPreview(
             uiState = PostDetailUiState(
                 content = content,
                 composerUser = SampleUsers.first(),
-                thread = thread,
+                commentThread = thread,
                 eventSink = {},
             ),
         )

@@ -19,7 +19,7 @@ import uno.lux.sample.app.di.CurrentUser
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.comment.data.CommentRepository
@@ -78,6 +78,8 @@ class PostDetailViewModel @AssistedInject constructor(
         fun create(postId: PostId): PostDetailViewModel
     }
 
+    // TODO: Extract, and generalize?
+
     /**
      * How the fetch for a post the stores don't hold resolved. Only consulted while the stores
      * can't answer — once the post is resolved it is the post that is shown, whatever happened
@@ -93,25 +95,15 @@ class PostDetailViewModel @AssistedInject constructor(
         ) : PostFetch
     }
 
-    /**
-     * A plain field rather than a flow: nothing observes it, [content] reads it, and every write
-     * goes through [setFetch], which recomputes the state in the same breath. Declared above
-     * [_uiState] because that state's initial value already reads it.
-     */
-    private var fetch: PostFetch = PostFetch.Pending
+    private var postFetch: PostFetch = PostFetch.Pending
+
+    // TODO: Wouldn't it be better to initialize as Content.Loading?
 
     /**
      * The page, as one value this ViewModel owns and edits. Seeded from [content] rather than
      * from [Content.Loading], so a page opened the ordinary way — from a feed or profile that
      * already fetched the post — is [Content.Loaded] before the first frame, with no spinner
      * flashed for a post that was never missing.
-     *
-     * Every write goes through [update][kotlinx.coroutines.flow.update] and touches only the
-     * fields it owns, which is the same discipline `PostRepository.updateEntity` exists for:
-     * reading the state into a local, suspending, then writing that local back would overwrite
-     * whatever landed in between. `update` retries its lambda under contention, so what is passed
-     * must be side-effect-free and safe to run more than once — a `copy`, or a `copy` over
-     * something re-read as [updateContent] re-reads [content].
      */
     private val _uiState = MutableStateFlow(
         PostDetailUiState(
@@ -132,76 +124,92 @@ class PostDetailViewModel @AssistedInject constructor(
         retry()
     }
 
-    // ── Intent ────────────────────────────────────────────────────────────────
-
-    /**
-     * The one way in. Each branch names its work rather than doing it, so the `when` reads as the
-     * page's vocabulary — the exceptions are the three signals the screen spends, which are a
-     * single field write each and would only be obscured by a method to hold them.
-     */
     fun onEvent(event: PostDetailUiEvent) {
         when (event) {
-            PostDetailUiEvent.GoBack -> navigator.goBack()
-            is PostDetailUiEvent.OpenProfile -> navigator.goTo(Screen.Profile(event.userId))
-            is PostDetailUiEvent.OpenVideo -> navigator.goTo(Screen.FullscreenVideo(event.video))
-            is PostDetailUiEvent.OpenAlbum -> navigator.goTo(
-                Screen.AlbumViewer(event.imageUrls, event.initialIndex),
-            )
+            PostDetailUiEvent.GoBack -> {
+                navigator.goBack()
+            }
 
-            PostDetailUiEvent.ToggleLike -> toggleLike()
-            PostDetailUiEvent.ToggleBookmark -> toggleBookmark()
-            PostDetailUiEvent.Delete -> delete()
-            is PostDetailUiEvent.Report -> report(event.reason, event.details)
-            PostDetailUiEvent.CloseReport -> dropReport(::reportJob, ::setReportSend)
-            PostDetailUiEvent.Retry -> retry()
+            is PostDetailUiEvent.OpenProfile -> {
+                navigator.goTo(Screen.Profile(event.userId))
+            }
 
-            is PostDetailUiEvent.AddComment -> addComment(event.text)
-            is PostDetailUiEvent.ToggleCommentLike -> toggleCommentLike(event.commentId)
-            PostDetailUiEvent.LoadMoreComments -> loadMoreComments()
-            PostDetailUiEvent.RetryComments -> retryComments()
+            is PostDetailUiEvent.OpenVideo -> {
+                navigator.goTo(Screen.FullscreenVideo(event.video))
+            }
 
-            PostDetailUiEvent.FailedActionShown -> _uiState.update { it.copy(failedAction = null) }
-            PostDetailUiEvent.CommentSent -> setCommentSend(CommentSendState.IDLE)
-            PostDetailUiEvent.ScrolledToComment -> mutateThread { it.copy(scrollTo = null) }
+            is PostDetailUiEvent.OpenAlbum -> {
+                navigator.goTo(
+                    Screen.AlbumViewer(event.imageUrls, event.initialIndex),
+                )
+            }
+
+            PostDetailUiEvent.ToggleLike -> {
+                toggleLike()
+            }
+
+            PostDetailUiEvent.ToggleBookmark -> {
+                toggleBookmark()
+            }
+
+            PostDetailUiEvent.Delete -> {
+                delete()
+            }
+
+            is PostDetailUiEvent.Report -> {
+                report(event.reason, event.details)
+            }
+
+            PostDetailUiEvent.CloseReport -> {
+                dropReport(::reportJob, ::setReportSend)
+            }
+
+            PostDetailUiEvent.Retry -> {
+                retry()
+            }
+
+            is PostDetailUiEvent.AddComment -> {
+                addComment(event.text)
+            }
+
+            is PostDetailUiEvent.ToggleCommentLike -> {
+                toggleCommentLike(event.commentId)
+            }
+
+            PostDetailUiEvent.LoadMoreComments -> {
+                loadMoreComments()
+            }
+
+            PostDetailUiEvent.RetryComments -> {
+                retryComments()
+            }
+
+            PostDetailUiEvent.FailedActionShown -> {
+                _uiState.update { it.copy(failedAction = null) }
+            }
+
+            PostDetailUiEvent.CommentSent -> {
+                setCommentSend(CommentSendState.IDLE)
+            }
+
+            PostDetailUiEvent.ScrolledToComment -> {
+                mutateCommentThread { it.copy(scrollTo = null) }
+            }
         }
-    }
-
-    // ── The state ─────────────────────────────────────────────────────────────
-
-    /** Edits the thread in place, leaving the rest of the page as it was. */
-    private fun mutateThread(mutate: (CommentThread) -> CommentThread) = _uiState.update {
-        it.copy(thread = mutate(it.thread))
     }
 
     private fun setCommentSend(state: CommentSendState) = _uiState.update {
         it.copy(commentSend = state)
     }
 
-    /** Passed to [launchReport] and [dropReport] by reference, which is why it is a function. */
     private fun setReportSend(state: ReportSendState) = _uiState.update {
         it.copy(reportSend = state)
     }
 
-    /** Passed to [launchReporting] by reference, which is why it is a function. */
     private fun setFailedAction(action: FailedAction) = _uiState.update {
         it.copy(failedAction = action)
     }
 
-    // ── The post ──────────────────────────────────────────────────────────────
-
-    /**
-     * The single subscription this page keeps. The stores are the one input it does not own, and
-     * all three move for reasons that have nothing to do with this post, so the collector only
-     * asks [content] to work out what this page shows now. An answer equal to the last one leaves
-     * the state untouched — [MutableStateFlow] conflates by equality — which is the dedup the
-     * old `distinctUntilChanged` chain had to be spelled out for.
-     *
-     * It runs for the ViewModel's whole life rather than only while the screen is watching. That
-     * is the price of the state being a value rather than something shared `WhileSubscribed`, and
-     * it is worth paying: two map lookups on an emission this page does not care about, against
-     * [uiState] being current the moment the ViewModel exists — which is what lets a restored page
-     * draw its post without a frame of spinner, and what the tests read directly.
-     */
     private fun observeStores() {
         viewModelScope.launch {
             combine(
@@ -212,19 +220,16 @@ class PostDetailViewModel @AssistedInject constructor(
         }
     }
 
+    private fun mutateCommentThread(mutate: (CommentThread) -> CommentThread) = _uiState.update {
+        it.copy(commentThread = mutate(it.commentThread))
+    }
+
     private fun updateContent() = _uiState.update { it.copy(content = content()) }
 
-    /**
-     * What the page shows, given the stores and how the cold-start fetch went. Reads the stores
-     * through `.value` rather than from an emission, which can only ever be more current.
-     *
-     * A resolved post outranks everything, deletion included: [PostRepository.delete] drops the
-     * entity as it records the ID, so the two cannot disagree, and were the order reversed a
-     * refresh landing mid-delete would win against the answer.
-     */
     private fun content(): Content {
         val post = postRepository.entities.value[postId]
         val author = post?.let { userRepository.users.value[it.authorId] }
+
         if (post != null && author != null) {
             return Content.Loaded(
                 post = post,
@@ -233,24 +238,25 @@ class PostDetailViewModel @AssistedInject constructor(
             )
         }
 
+        // TODO: Sounds like the wrong pattern. I'd rather expect to get a 404 error from the backend.
+        //  What even would happen if the entity was deleted from the backend? Does this pattern only handle locally deleted posts?
         // Told by the store that the post is gone, whichever screen deleted it. Without this the
         // emptied store would read as "not loaded yet" and leave the page spinning on a fetch
         // nobody is going to make.
         if (postId in postRepository.deletedIds.value) return Content.NotFound
 
-        return when (val fetch = fetch) {
+        return when (val fetch = postFetch) {
             PostFetch.Pending -> Content.Loading
             PostFetch.Missing -> Content.NotFound
             is PostFetch.Failed -> Content.Error(fetch.error)
         }
     }
 
-    private fun setFetch(outcome: PostFetch) {
-        fetch = outcome
+    private fun setPostFetch(outcome: PostFetch) {
+        postFetch = outcome
         updateContent()
     }
 
-    /** Reloads everything the page failed to get — the post itself included. */
     private fun retry() = launchIfIdle(::loadJob) {
         coroutineScope {
             launch { loadPost() }
@@ -266,11 +272,15 @@ class PostDetailViewModel @AssistedInject constructor(
     private suspend fun loadPost() {
         if (_uiState.value.content is Content.Loaded) return
 
-        setFetch(PostFetch.Pending)
-        ignoreErrors(onError = { e -> setFetch(PostFetch.Failed(e.toAppError())) }) {
+        setPostFetch(PostFetch.Pending)
+        catchErrors(onError = { e ->
+            setPostFetch(PostFetch.Failed(e.toAppError()))
+        }, {
+            // TODO: 404 can also mean that it doesn't exist *yet*, not that it was deleted, or perhaps its temporarily hidden from
+            //  the current user by privacy settings. We might thus want to retry.
             // A 404 is the server saying the post is gone — an answer, not a failure to retry.
-            if (postRepository.load(postId) == null) setFetch(PostFetch.Missing)
-        }
+            if (postRepository.load(postId) == null) setPostFetch(PostFetch.Missing)
+        })
     }
 
     private fun toggleLike() = launchCatching {
@@ -304,36 +314,27 @@ class PostDetailViewModel @AssistedInject constructor(
             postRepository.report(postId, reason, details)
         }
 
-    // ── The thread ────────────────────────────────────────────────────────────
-
     private fun retryComments() {
         viewModelScope.launch { loadComments() }
     }
 
-    /**
-     * Loads the thread's first page, replacing whatever was there — a retry after a failure, and
-     * the reload [retry] performs, both start the thread over rather than resuming a window whose
-     * cursor may describe a page that has since moved.
-     */
     private suspend fun loadComments() {
-        mutateThread { it.copy(isLoading = true, error = null) }
+        mutateCommentThread { it.copy(isLoading = true, error = null) }
 
         try {
-            ignoreErrors(onError = { e -> mutateThread { it.copy(error = e.toAppError()) } }) {
+            catchErrors(onError = { e -> mutateCommentThread { it.copy(error = e.toAppError()) } }) {
                 val page = commentRepository.loadComments(postId, cursor = null)
-                mutateThread {
+                mutateCommentThread {
                     it.copy(
                         comments = page.comments,
                         nextCursor = page.nextCursor,
                         endReached = !page.hasMore,
-                        // This page starts the thread over, so a scroll owed to a comment in the
-                        // window it replaces has nothing left to aim at.
                         scrollTo = null,
                     )
                 }
             }
         } finally {
-            mutateThread { it.copy(isLoading = false) }
+            mutateCommentThread { it.copy(isLoading = false) }
         }
     }
 
@@ -347,11 +348,11 @@ class PostDetailViewModel @AssistedInject constructor(
      * while a page is still on the wire.
      */
     private fun loadMoreComments() = launchIfIdle(::loadMoreJob) {
-        val cursor = _uiState.value.thread.nextCursor ?: return@launchIfIdle
+        val cursor = _uiState.value.commentThread.nextCursor ?: return@launchIfIdle
 
-        ignoreErrors {
+        catchErrors {
             val page = commentRepository.loadComments(postId, cursor)
-            mutateThread { thread ->
+            mutateCommentThread { thread ->
                 // A reload that landed while this page was on the wire started the thread over,
                 // and this window no longer follows what is on screen. Dropping it is the same
                 // move [toggleCommentLike] makes on an answer a newer tap has passed.
@@ -371,16 +372,9 @@ class PostDetailViewModel @AssistedInject constructor(
     /**
      * Flips the viewer's like on one comment in the thread, moving it *before* the request goes
      * out and reconciling with the server's answer when it lands.
-     *
-     * The same shape [PostRepository.toggleLike] has, and deliberately not shared with it: a
-     * comment's like lives in the thread this ViewModel owns rather than in an entity store, so
-     * the two differ in the one thing — where the item is — that the code is about. What they do
-     * share is the reasoning, and [updateComment] is this side's [PostRepository] `updateEntity`:
-     * every write re-reads the comment and touches only the like fields, so a reload landing
-     * mid-flight is not overwritten by a copy of the comment as it was before the request.
      */
     private fun toggleCommentLike(commentId: CommentId) = launchCatching {
-        val thread = _uiState.value.thread
+        val thread = _uiState.value.commentThread
         val before = thread.comments.find { it.id == commentId } ?: return@launchCatching
         val liked = !before.isLiked
         // A later tap has already moved past this request, so its answer is the one to trust.
@@ -408,54 +402,35 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * Applies [edit] to [commentId] where it sits in the thread, if it is still there and
-     * [stillOurs] accepts what it currently says. A comment the reload replaced, or one a newer
+     * Applies [mutate] to [commentId] where it sits in the thread, if it is still there and
+     * [predicate] accepts what it currently says. A comment the reload replaced, or one a newer
      * tap has moved past, is left alone.
      */
     private fun updateComment(
         commentId: CommentId,
-        stillOurs: (Comment) -> Boolean = { true },
-        edit: (Comment) -> Comment,
-    ) = mutateThread { thread ->
+        predicate: (Comment) -> Boolean = { true },
+        mutate: (Comment) -> Comment,
+    ) = mutateCommentThread { thread ->
         thread.copy(
             comments = thread.comments.map { comment ->
-                if (comment.id == commentId && stillOurs(comment)) edit(comment) else comment
+                if (comment.id == commentId && predicate(comment)) mutate(comment) else comment
             },
         )
     }
 
-    /**
-     * Posts a comment, prepending it to the thread this page owns and telling the entity store the
-     * post gained one. The two halves land in different places on purpose: the comment is this
-     * ViewModel's, but the count under the post belongs to the shared entity, so it is what the
-     * feed card and the profile behind this page redraw from.
-     *
-     * The comment is also named as the one to scroll to. The thread sits below the whole post, so
-     * a reader who commented from the bottom of a long page would otherwise never see what they
-     * sent. Only a comment the server took is named, so a failed send moves nothing.
-     *
-     * Not [launchCatching], because nothing about a comment is optimistic: the composer holds the
-     * text until [CommentSendState.SENT] says the server has it, so a failure that logged and
-     * discarded would leave an emptied box and no comment. The state machine is the whole
-     * contract — [CommentSendState.SENDING] disables the composer, so this cannot run twice over,
-     * and a failure returns to [CommentSendState.IDLE] with the text still there to send again.
-     */
-    private fun addComment(text: String) =
-        launchReporting(FailedAction.SEND_COMMENT, ::setFailedAction) {
-            setCommentSend(CommentSendState.SENDING)
+    private fun addComment(text: String) = launchReporting(FailedAction.SEND_COMMENT, ::setFailedAction) {
+        setCommentSend(CommentSendState.SENDING)
 
-            try {
-                val comment = commentRepository.addComment(postId, text)
-                mutateThread {
-                    it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
-                }
-                postRepository.commentAdded(postId)
-                setCommentSend(CommentSendState.SENT)
-            } catch (e: Exception) {
-                // Back to idle *before* rethrowing, so the composer is editable again by the time
-                // [launchReporting] announces the failure.
-                setCommentSend(CommentSendState.IDLE)
-                throw e
+        try {
+            val comment = commentRepository.addComment(postId, text)
+            mutateCommentThread {
+                it.copy(comments = listOf(comment) + it.comments, scrollTo = comment.id)
             }
+            postRepository.commentAdded(postId)
+            setCommentSend(CommentSendState.SENT)
+        } catch (e: Exception) {
+            setCommentSend(CommentSendState.IDLE)
+            throw e
         }
+    }
 }

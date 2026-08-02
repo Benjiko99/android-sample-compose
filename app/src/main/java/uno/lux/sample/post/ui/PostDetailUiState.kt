@@ -72,7 +72,7 @@ data class PostDetailUiState(
     val content: Content,
     /** The signed-in user, drawn as the composer's avatar. */
     val composerUser: User,
-    val thread: CommentThread = CommentThread(),
+    val commentThread: CommentThread = CommentThread(),
     val commentSend: CommentSendState = CommentSendState.IDLE,
     val reportSend: ReportSendState = ReportSendState.IDLE,
     val failedAction: FailedAction? = null,
@@ -87,7 +87,7 @@ data class PostDetailUiState(
 
         /**
          * The post could not be fetched. Distinct from [NotFound]: nothing is known about the post
-         * yet, so the screen offers a retry rather than telling the user it is gone.
+         * yet, so the screen offers a  retry rather than telling the user it is gone.
          */
         data class Error(
             val error: AppError,

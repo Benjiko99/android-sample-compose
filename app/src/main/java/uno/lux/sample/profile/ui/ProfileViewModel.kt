@@ -18,7 +18,7 @@ import uno.lux.sample.app.di.CurrentUserId
 import uno.lux.sample.app.navigation.Navigator
 import uno.lux.sample.app.navigation.Screen
 import uno.lux.sample.app.util.AppError
-import uno.lux.sample.app.util.ignoreErrors
+import uno.lux.sample.app.util.catchErrors
 import uno.lux.sample.app.util.launchCatching
 import uno.lux.sample.app.util.launchIfIdle
 import uno.lux.sample.app.util.launchRefresh
@@ -256,7 +256,7 @@ class ProfileViewModel @AssistedInject constructor(
     }
 
     override fun loadMorePosts() = launchIfIdle(::loadMorePostsJob) {
-        ignoreErrors { profileRepository.loadMorePosts(userId) }
+        catchErrors { profileRepository.loadMorePosts(userId) }
     }
 
     /**
@@ -264,20 +264,20 @@ class ProfileViewModel @AssistedInject constructor(
      * served from the repository, and a pull-to-refresh is what re-fetches it.
      */
     override fun onSavedTabShown() = launchIfIdle(::bookmarksJob) {
-        ignoreErrors { saved.ensureLoaded() }
+        catchErrors { saved.ensureLoaded() }
     }
 
     override fun loadMoreBookmarks() = launchIfIdle(::bookmarksJob) {
-        ignoreErrors { saved.loadMore() }
+        catchErrors { saved.loadMore() }
     }
 
     /** The Likes tab became visible. Loads once, the way [onSavedTabShown] does. */
     override fun onLikesTabShown() = launchIfIdle(::likesJob) {
-        ignoreErrors { liked.ensureLoaded() }
+        catchErrors { liked.ensureLoaded() }
     }
 
     override fun loadMoreLikes() = launchIfIdle(::likesJob) {
-        ignoreErrors { liked.loadMore() }
+        catchErrors { liked.loadMore() }
     }
 
     override fun goBack() = navigator.goBack()
