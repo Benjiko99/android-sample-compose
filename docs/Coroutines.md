@@ -1,6 +1,4 @@
-# Coroutines — what to know for an interview
-
-Ordered roughly by how likely it is to come up. Every code example is from this repo.
+# Coroutines
 
 ## 1. The one-sentence answer
 
@@ -27,7 +25,7 @@ Two consequences worth stating out loud in an interview:
 
 Every coroutine has a parent. A parent cannot complete until its children complete; cancelling a parent cancels every child; a failing child (by default) cancels its parent and its siblings. There are no orphans and nothing leaks.
 
-This is why `GlobalScope` is effectively banned — it has no parent, so nothing can cancel it and nobody waits for it. This repo uses it zero times.
+This is why `GlobalScope` is effectively banned — it has no parent, so nothing can cancel it and nobody waits for it.
 
 `coroutineScope { }` is the building block: it suspends until all children finish, and it re-throws the first failure. `ProfileViewModel.load` uses it to fan out four requests and wait for the lot:
 
@@ -49,6 +47,21 @@ private suspend fun load() {
 ```
 
 `_hasLoaded` is set on the line after the block — and that line cannot run until all four requests are done. Structured concurrency is what makes that sequencing free.
+
+### What order do those four run in?
+
+Start order is **source order**. Completion order is **whatever the network decides**.
+
+`launch` returns a `Job` immediately and never blocks, so all four lines execute in microseconds and the block reaches its closing brace almost at once — then suspends *there*, waiting for its children. What "start" means depends on the dispatcher, and the two cases behave differently:
+
+- **`Dispatchers.Main.immediate`, already on the main thread.** This is the case here: `viewModelScope` supplies that dispatcher and `coroutineScope` inherits it. No dispatch is needed, so each `launch` runs its body **inline, up to that body's first suspension point**, before the next line runs. Note that `refreshIfLoaded` returns early for a tab nobody has opened — so children three and four can finish before the first request has even been sent.
+- **A dispatching dispatcher (`Default`, `IO`, `StandardTestDispatcher`).** All four are queued and none of the bodies run yet. They start as threads pick them up, in no guaranteed order, genuinely in parallel.
+
+Both give the same observable outcome. The difference is worth knowing because the first case is why a `launch` in a ViewModel sometimes appears to run synchronously.
+
+**Concurrent is not parallel.** On `Main.immediate` all four coroutines live on one thread and interleave at suspension points, so only one is ever running. The requests are still in flight simultaneously, because Retrofit hands each to OkHttp's pool and suspends the coroutine — the main thread is free throughout. Concurrency is about structure (several things in progress), parallelism is about execution (several things running at once). This code is concurrent on a single thread, and the parallelism happens elsewhere.
+
+**Nothing is returned.** All four are `suspend fun … : Unit`; each writes into its own store, and the ViewModel `combine`s those stores, so the screen updates as each result lands rather than waiting for the slowest. That is precisely why these are `launch` and not `async` — see section 6.
 
 **`coroutineScope` vs `supervisorScope`**: in `coroutineScope`, one child's failure cancels its siblings. In `supervisorScope`, children fail independently. Pick `coroutineScope` when the results are one unit of work (the four refreshes above — a half-loaded profile is not worth showing) and `supervisorScope` when they are independent.
 
