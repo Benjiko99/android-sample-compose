@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -48,6 +49,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import uno.lux.sample.R
+import uno.lux.sample.app.theme.MosaicAccentBrush
 import uno.lux.sample.app.theme.MosaicTheme
 
 /** What the button is doing right now — both the label and the fill are read off it. */
@@ -133,8 +135,20 @@ fun HoldToConfirmButton(
     val colors = ButtonDefaults.buttonColors()
     val shape = ButtonDefaults.shape
     val active = enabled && !isBusy
-    val containerColor = if (active) colors.containerColor else colors.disabledContainerColor
-    val contentColor = if (active) colors.contentColor else colors.disabledContentColor
+    val accent = MaterialTheme.colorScheme.primary
+
+    // A live button carries the brand gradient; an inert one keeps the same hue, dimmed to a
+    // wash, so waiting for the form to fill reads as *not yet* rather than as a different control.
+    val container = if (active) {
+        MosaicAccentBrush
+    } else {
+        SolidColor(accent.copy(alpha = DISABLED_CONTAINER_ALPHA))
+    }
+    val contentColor = if (active) {
+        colors.contentColor
+    } else {
+        accent.copy(alpha = DISABLED_LABEL_ALPHA)
+    }
 
     val state = remember(holdMillis, hintMillis) { HoldToConfirmState(holdMillis, hintMillis) }
     val progress = remember { Animatable(0f) }
@@ -178,7 +192,7 @@ fun HoldToConfirmButton(
                 this.shape = shape
                 clip = true
             }.defaultMinSize(minWidth = ButtonDefaults.MinWidth, minHeight = MinHeight)
-            .background(containerColor)
+            .background(container)
             .drawBehind {
                 val fraction = progress.value
                 if (fraction <= 0f) return@drawBehind
@@ -269,6 +283,12 @@ private const val PRESS_RESPONSE_MILLIS = 120
 /** How long the label and the nudge take to trade places. */
 private const val LABEL_SWAP_MILLIS = 180
 
+/** The inert fill: the accent dimmed to a wash, so the button keeps the brand while it waits. */
+private const val DISABLED_CONTAINER_ALPHA = 0.12f
+
+/** The inert label, dimmed enough to read as unavailable without dissolving into its own fill. */
+private const val DISABLED_LABEL_ALPHA = 0.55f
+
 /** Alphas over the container, so the sweep tracks the theme instead of pinning its own colour. */
 private const val FILL_ALPHA = 0.24f
 private const val LEADING_EDGE_ALPHA = 0.85f
@@ -294,6 +314,22 @@ private fun HoldToConfirmButtonPreview() {
         HoldToConfirmButton(
             text = "Publish",
             onConfirm = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        )
+    }
+}
+
+/** The inert state, which is where the button spends a composer's whole first minute. */
+@Preview(name = "Disabled", showBackground = true)
+@Composable
+private fun HoldToConfirmButtonDisabledPreview() {
+    MosaicTheme {
+        HoldToConfirmButton(
+            text = "Publish",
+            onConfirm = {},
+            enabled = false,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),

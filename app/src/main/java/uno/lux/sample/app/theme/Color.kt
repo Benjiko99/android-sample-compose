@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 
 // Brand — shared across themes
 val MosaicAccent = Color(0xFF3F5BD8) // indigo
+val MosaicAccentDeep = Color(0xFF7A45D6) // violet — the far end of the brand gradient
 val MosaicLike = Color(0xFFEF4D6B) // coral like-state
 val MosaicOnAccent = Color(0xFFFFFFFF)
 
@@ -15,7 +16,7 @@ val MosaicLightNavBarScrim = Color(0xE6FFFFFF)
 val MosaicDarkNavBarScrim = Color(0x801B1B1B)
 
 // Light
-val MosaicLightBg = Color(0xFFEEF0F4)
+val MosaicLightBg = Color(0xFFF3F1EC) // warm paper, so white cards read as lifted off it
 val MosaicLightSurface = Color(0xFFFFFFFF)
 val MosaicLightBorder = Color(0xFFECEDF1)
 val MosaicLightBorderStrong = Color(0xFFD2D5DD)

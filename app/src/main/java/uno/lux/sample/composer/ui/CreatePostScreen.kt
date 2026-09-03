@@ -7,11 +7,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -32,8 +32,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -42,7 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -54,7 +56,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
+import uno.lux.sample.app.theme.MosaicElevations
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.theme.rememberAccentWash
 import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.ui.components.HoldToConfirmButton
 import uno.lux.sample.app.util.createActionsProxy
@@ -178,18 +182,25 @@ internal fun CreatePostScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        // The page colour and its wash are painted here rather than handed to the container,
+        // because they have to span the window: put on the form they would stop at the content
+        // padding and leave the inset strips showing through. The container is then transparent,
+        // since a Scaffold paints its own over anything the modifier drew.
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.background)
+            .background(rememberAccentWash()),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        // The page colour belongs to the container, which spans the window — a background on the
-        // form would stop at the content padding and leave the inset strips showing through.
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.Transparent,
         // Includes the IME, so the keyboard arrives as content padding — consumed below, unlike
         // an `imePadding()` that would re-apply the navigation bar inset already spent there.
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.create_post_title)) },
-                modifier = Modifier.shadow(4.dp),
+                // Transparent, and unshadowed with it: the form is inset below the bar and never
+                // scrolls under it, so the bar has no edge to cast one over — and an opaque bar
+                // would cover the very top of the wash, which is the strongest part of it.
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 navigationIcon = {
                     AppBarAction(
                         icon = R.drawable.ic_arrow_back,
@@ -229,38 +240,63 @@ private fun CreatePostForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        OutlinedTextField(
-            value = form.title,
-            onValueChange = actions::onTitleChange,
-            label = { Text(stringResource(R.string.create_post_title_label)) },
-            singleLine = true,
-            enabled = !isPublishing,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            supportingText = { Text("${form.title.length} / $CREATE_POST_TITLE_MAX_LENGTH") },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        FormCard {
+            OutlinedTextField(
+                value = form.title,
+                onValueChange = actions::onTitleChange,
+                label = { Text(stringResource(R.string.create_post_title_label)) },
+                singleLine = true,
+                enabled = !isPublishing,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                supportingText = { Text("${form.title.length} / $CREATE_POST_TITLE_MAX_LENGTH") },
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-        OutlinedTextField(
-            value = form.body,
-            onValueChange = actions::onBodyChange,
-            label = { Text(stringResource(R.string.create_post_body_label)) },
-            minLines = 8,
-            enabled = !isPublishing,
-            modifier = Modifier.fillMaxWidth(),
-        )
+            OutlinedTextField(
+                value = form.body,
+                onValueChange = actions::onBodyChange,
+                label = { Text(stringResource(R.string.create_post_body_label)) },
+                minLines = 8,
+                enabled = !isPublishing,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
-        PostMediaPicker(
-            media = form.media,
-            enabled = !isPublishing,
-            actions = actions,
-            onPickImages = onPickImages,
-            onPickVideo = onPickVideo,
-        )
+        FormCard {
+            PostMediaPicker(
+                media = form.media,
+                enabled = !isPublishing,
+                actions = actions,
+                onPickImages = onPickImages,
+                onPickVideo = onPickVideo,
+            )
+        }
 
         PublishButton(
             isPublishing = isPublishing,
             enabled = form.canPublish,
             onPublish = actions::publish,
+        )
+    }
+}
+
+/**
+ * One group of the form, lifted onto a card so the page tint behind reads as ground rather than
+ * as an unfinished screen. What you write and what you attach are the only structure the composer
+ * has, so the two cards carry it — no heading has to say it.
+ */
+@Composable
+private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
+        shadowElevation = MosaicElevations.Card,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = content,
         )
     }
 }
@@ -435,7 +471,11 @@ private fun PickedMediaThumbnail(
     }
 }
 
-/** A dashed-outline tile that opens a picker — one per media kind still on offer. */
+/**
+ * A tile that opens a picker — one per media kind still on offer. It wears the soft accent rather
+ * than an outline, because on a page whose every other control is a field, these two are the only
+ * invitations, and a grey box on a white card does not read as one.
+ */
 @Composable
 private fun MediaTile(
     @DrawableRes iconRes: Int,
@@ -444,7 +484,7 @@ private fun MediaTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = MaterialTheme.colorScheme.primary
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -452,11 +492,8 @@ private fun MediaTile(
         modifier = modifier
             .size(ThumbnailSize)
             .clip(MaterialTheme.shapes.medium)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = MaterialTheme.shapes.medium,
-            ).debouncedClickable(enabled = enabled, onClick = onClick),
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .debouncedClickable(enabled = enabled, onClick = onClick),
     ) {
         Icon(
             painter = painterResource(iconRes),
@@ -508,6 +545,20 @@ private fun CreatePostScreenPreview() {
                     body = "Finally got the carry mechanism to behave.",
                 ),
             ),
+            actions = createActionsProxy(),
+            onPickImages = {},
+            onPickVideo = {},
+        )
+    }
+}
+
+/** The page as it opens: nothing typed, both media tiles on offer, publishing not yet possible. */
+@Preview(name = "Empty form", showBackground = true)
+@Composable
+private fun CreatePostScreenEmptyPreview() {
+    MosaicTheme {
+        CreatePostScreen(
+            uiState = CreatePostUiState(),
             actions = createActionsProxy(),
             onPickImages = {},
             onPickVideo = {},
