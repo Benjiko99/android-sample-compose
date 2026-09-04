@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +32,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -56,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
-import uno.lux.sample.app.theme.MosaicElevations
 import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.theme.rememberAccentWash
 import uno.lux.sample.app.ui.components.AppBarAction
@@ -65,6 +63,7 @@ import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.common.formatVideoDuration
 import uno.lux.sample.common.ui.DiscardChangesDialog
+import uno.lux.sample.common.ui.FormCard
 import uno.lux.sample.common.ui.MediaBadge
 import uno.lux.sample.common.ui.MediaRemoveButton
 
@@ -272,31 +271,12 @@ private fun CreatePostForm(
             )
         }
 
+        Spacer(Modifier.weight(1f))
+
         PublishButton(
             isPublishing = isPublishing,
             enabled = form.canPublish,
             onPublish = actions::publish,
-        )
-    }
-}
-
-/**
- * One group of the form, lifted onto a card so the page tint behind reads as ground rather than
- * as an unfinished screen. What you write and what you attach are the only structure the composer
- * has, so the two cards carry it — no heading has to say it.
- */
-@Composable
-private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = MaterialTheme.shapes.large,
-        shadowElevation = MosaicElevations.Card,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content,
         )
     }
 }

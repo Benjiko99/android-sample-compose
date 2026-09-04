@@ -36,7 +36,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -46,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -57,10 +57,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.theme.accentBarColors
+import uno.lux.sample.app.theme.rememberAccentWash
 import uno.lux.sample.app.ui.components.AppBarAction
+import uno.lux.sample.app.util.LightStatusBarIcons
 import uno.lux.sample.app.util.createActionsProxy
 import uno.lux.sample.common.asText
 import uno.lux.sample.common.ui.DiscardChangesDialog
+import uno.lux.sample.common.ui.FormCard
 import uno.lux.sample.common.ui.FullScreenError
 import uno.lux.sample.common.ui.FullScreenProgress
 import uno.lux.sample.user.data.domain.UserId
@@ -155,19 +159,25 @@ internal fun EditProfileScreen(
         if (saveErrorMessage != null) snackbarHostState.showSnackbar(saveErrorMessage)
     }
 
+    LightStatusBarIcons()
+
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        // Painted here rather than handed to the container, so both span the window — see
+        // CreatePostScreen. The wash starts at the very top, under the accent bar, so what shows
+        // below the bar is the bar's own colour carrying on into the page rather than a band
+        // starting on its own; the container is transparent to let it through.
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .background(rememberAccentWash()),
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        // The page colour belongs to the container, which spans the window — see CreatePostScreen.
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.profile_edit)) },
                 modifier = Modifier.shadow(4.dp),
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                colors = accentBarColors(),
                 navigationIcon = {
                     AppBarAction(
                         icon = R.drawable.ic_arrow_back,
@@ -230,7 +240,10 @@ private fun SaveAction(
         )
     } else {
         TextButton(onClick = onSave, enabled = enabled) {
-            Text(stringResource(R.string.edit_profile_save))
+            Text(
+                stringResource(R.string.edit_profile_save),
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
         }
     }
 }
@@ -246,9 +259,12 @@ private fun EditProfileContent(
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // The avatar stays off the cards on purpose: it is the one thing on the page that is a
+        // picture of the user rather than a field about them, and it reads that way floating on
+        // the wash instead of boxed in with the text.
         item(key = "avatar") {
             AvatarPicker(
                 userId = form.userId,
@@ -258,54 +274,54 @@ private fun EditProfileContent(
             )
         }
 
-        item(key = "nickname") {
-            OutlinedTextField(
-                value = form.nickname,
-                onValueChange = actions::onNicknameChange,
-                label = { Text(stringResource(R.string.edit_profile_name_label)) },
-                singleLine = true,
-                enabled = !isSaving,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        item(key = "identity") {
+            FormCard {
+                OutlinedTextField(
+                    value = form.nickname,
+                    onValueChange = actions::onNicknameChange,
+                    label = { Text(stringResource(R.string.edit_profile_name_label)) },
+                    singleLine = true,
+                    enabled = !isSaving,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-        item(key = "age") {
-            OutlinedTextField(
-                value = form.age,
-                onValueChange = actions::onAgeChange,
-                label = { Text(stringResource(R.string.edit_profile_age_label)) },
-                singleLine = true,
-                enabled = !isSaving,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Next,
-                ),
-                isError = !form.isAgeValid,
-                supportingText = {
-                    if (!form.isAgeValid) Text(stringResource(R.string.edit_profile_age_error))
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+                OutlinedTextField(
+                    value = form.age,
+                    onValueChange = actions::onAgeChange,
+                    label = { Text(stringResource(R.string.edit_profile_age_label)) },
+                    singleLine = true,
+                    enabled = !isSaving,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next,
+                    ),
+                    isError = !form.isAgeValid,
+                    supportingText = {
+                        if (!form.isAgeValid) Text(stringResource(R.string.edit_profile_age_error))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-        item(key = "gender") {
-            GenderSelector(
-                selected = form.gender,
-                onSelected = actions::onGenderChange,
-                enabled = !isSaving,
-            )
+                GenderSelector(
+                    selected = form.gender,
+                    onSelected = actions::onGenderChange,
+                    enabled = !isSaving,
+                )
+            }
         }
 
         item(key = "bio") {
-            OutlinedTextField(
-                value = form.bio,
-                onValueChange = actions::onBioChange,
-                label = { Text(stringResource(R.string.edit_profile_bio_label)) },
-                minLines = 4,
-                enabled = !isSaving,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            FormCard {
+                OutlinedTextField(
+                    value = form.bio,
+                    onValueChange = actions::onBioChange,
+                    label = { Text(stringResource(R.string.edit_profile_bio_label)) },
+                    minLines = 4,
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

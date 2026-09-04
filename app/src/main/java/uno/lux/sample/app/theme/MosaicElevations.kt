@@ -10,5 +10,5 @@ object MosaicElevations {
     val ScrolledBar = 4.dp
 
     /** Lift under a grouped block of controls, enough to part it from the page tint behind. */
-    val Card = 1.dp
+    val Card = 0.dp
 }

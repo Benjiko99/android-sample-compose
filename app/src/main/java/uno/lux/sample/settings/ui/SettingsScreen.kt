@@ -20,7 +20,6 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,7 +35,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import uno.lux.sample.R
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.theme.accentBarColors
 import uno.lux.sample.app.ui.components.AppBarAction
+import uno.lux.sample.app.util.LightStatusBarIcons
 import uno.lux.sample.settings.data.domain.AppLanguage
 import uno.lux.sample.settings.data.domain.ThemeMode
 
@@ -62,15 +63,15 @@ internal fun SettingsScreen(
     state: SettingsUiState,
     modifier: Modifier = Modifier,
 ) {
+    LightStatusBarIcons()
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_settings)) },
                 modifier = Modifier.shadow(4.dp),
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                colors = accentBarColors(),
                 navigationIcon = {
                     AppBarAction(
                         icon = R.drawable.ic_arrow_back,
