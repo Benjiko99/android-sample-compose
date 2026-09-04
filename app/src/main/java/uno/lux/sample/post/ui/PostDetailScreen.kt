@@ -76,6 +76,7 @@ import uno.lux.sample.app.theme.MosaicTheme
 import uno.lux.sample.app.theme.accentBarColors
 import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.util.AppError
+import uno.lux.sample.app.util.LightStatusBarIcons
 import uno.lux.sample.app.util.debouncedClickable
 import uno.lux.sample.app.util.relativeTime
 import uno.lux.sample.app.util.rememberDebounced
@@ -136,6 +137,10 @@ internal fun PostDetailScreen(
     val listState = rememberLazyListState()
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // The bar behind the status bar is accent-filled in both themes, so the icons over it are too.
+    LightStatusBarIcons()
+
     // A delete or comment whose request failed after its dialog already closed.
     FailedActionEffect(uiState.failedAction, snackbarHostState) {
         eventSink(PostDetailUiEvent.FailedActionShown)

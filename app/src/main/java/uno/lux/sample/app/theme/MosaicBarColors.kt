@@ -13,6 +13,10 @@ import androidx.compose.runtime.Composable
  * and *three separate* content slots, and a slot left at its default is invisible until the day a
  * bar happens to use it — an accent bar that never set `actionIconContentColor` reads perfectly
  * well right up to the moment it grows its first action, and then draws it in `onSurface` dark.
+ *
+ * A bar wearing this reaches up behind the status bar, so the screen also owes it
+ * `LightStatusBarIcons()`: the Activity picks the icon appearance from the resolved theme,
+ * which is the wrong answer over indigo in light mode.
  */
 @Composable
 fun accentBarColors(): TopAppBarColors = TopAppBarDefaults.topAppBarColors(
