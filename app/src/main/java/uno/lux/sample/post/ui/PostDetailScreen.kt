@@ -40,7 +40,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -74,6 +73,7 @@ import uno.lux.sample.app.fixtures.SamplePosts
 import uno.lux.sample.app.fixtures.SampleUsers
 import uno.lux.sample.app.theme.LocalMosaicColors
 import uno.lux.sample.app.theme.MosaicTheme
+import uno.lux.sample.app.theme.accentBarColors
 import uno.lux.sample.app.ui.components.AppBarAction
 import uno.lux.sample.app.util.AppError
 import uno.lux.sample.app.util.debouncedClickable
@@ -181,9 +181,7 @@ internal fun PostDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                colors = accentBarColors(),
                 modifier = Modifier.graphicsLayer { this.shadowElevation = shadowElevation.value },
             )
         },
