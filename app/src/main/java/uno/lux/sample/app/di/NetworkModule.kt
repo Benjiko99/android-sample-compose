@@ -34,8 +34,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    const val BASE_URL = "https://mosaic.tree-among-shrubs.com"
-    private const val API_URL = "${BASE_URL}/api/"
+    /**
+     * The server this build talks to, chosen by the `server` product flavor in
+     * `app/build.gradle.kts`: the deployed host, or the Rails app on the dev machine.
+     */
+    val BASE_URL: String = BuildConfig.BASE_URL
+    private val API_URL = "${BASE_URL}/api/"
 
     const val CONNECT_TIMEOUT_SECONDS = 10L
     const val READ_TIMEOUT_SECONDS = 30L

@@ -38,10 +38,10 @@ jobs:
         run: ./gradlew ktlintCheck
 
       - name: Android Lint
-        run: ./gradlew lintDebug
+        run: ./gradlew lintRemoteDebug
 
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+        run: ./gradlew testRemoteDebugUnitTest
 
       - name: Upload reports
         if: ${{ !cancelled() }}
@@ -49,7 +49,7 @@ jobs:
         with:
           name: reports
           path: |
-            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-remoteDebug.html
             app/build/reports/tests/
             app/build/reports/ktlint/
           if-no-files-found: ignore

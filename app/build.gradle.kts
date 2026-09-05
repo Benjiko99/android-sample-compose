@@ -8,6 +8,26 @@ plugins {
     alias(libs.plugins.ktlint)
 }
 
+/**
+ * A dev-machine setting, read from an environment variable first, then a Gradle property
+ * (`~/.gradle/gradle.properties` or `-P`), then a default. Both sources are lazy providers, so
+ * reading one here stays compatible with the configuration cache.
+ */
+fun devSetting(
+    environmentVariable: String,
+    gradleProperty: String,
+    default: String,
+): String =
+    providers
+        .environmentVariable(environmentVariable)
+        .orElse(providers.gradleProperty(gradleProperty))
+        .getOrElse(default)
+
+// Where the `local` flavor looks for the Rails server. The default is the emulator's alias for the
+// host machine; a physical device on the same network needs the host machine's LAN address instead.
+val localServerHost = devSetting("MOSAIC_LOCAL_HOST", "mosaic.localHost", "10.0.2.2")
+val localServerPort = devSetting("MOSAIC_LOCAL_PORT", "mosaic.localPort", "3000")
+
 android {
     namespace = "uno.lux.sample"
     compileSdk {
@@ -22,6 +42,26 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    /*
+     * Which server a build talks to is the `server` dimension, not a setting in the app's UI. Both
+     * flavors keep the one `applicationId`, so switching is the Build Variants dropdown — or a
+     * `Remote`/`Local` task name — and never a reinstall under a different package.
+     */
+    flavorDimensions += "server"
+
+    productFlavors {
+        create("remote") {
+            dimension = "server"
+            isDefault = true
+            buildConfigField("String", "BASE_URL", "\"https://mosaic.tree-among-shrubs.com\"")
+        }
+
+        create("local") {
+            dimension = "server"
+            buildConfigField("String", "BASE_URL", "\"http://$localServerHost:$localServerPort\"")
+        }
     }
 
     buildTypes {

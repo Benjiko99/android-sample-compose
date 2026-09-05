@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        The dev server speaks plain HTTP, and its address is a build-time setting — 10.0.2.2 for the
+        emulator, the dev machine's LAN address for a physical device — so the exemption cannot name
+        a domain. It rides on the `local` flavor instead, which is what keeps cleartext blocked in
+        every `remote` build, release included.
+    -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

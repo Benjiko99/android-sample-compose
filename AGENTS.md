@@ -24,16 +24,18 @@ Fakes are hand-written. Each fake lives beside the thing it stands in for, for e
 
 The shell is Windows PowerShell. Invoke the wrapper as `.\gradlew.bat`.
 
-- Unit tests: `.\gradlew.bat testDebugUnitTest`. For one class, add `--tests "uno.lux.sample.post.data.PostRepositoryTest"`. Add `.<method>` to run one test.
-- Lint: `.\gradlew.bat lintDebug`. The report is at `app/build/reports/lint-results-debug.html`. For formatting, use `.\gradlew.bat ktlintCheck`.
-- Build or install: `.\gradlew.bat assembleDebug` or `.\gradlew.bat installDebug`.
-- Instrumented tests (need a device): `.\gradlew.bat connectedDebugAndroidTest`. For one class, add `-Pandroid.testInstrumentationRunnerArguments.class=…`.
+**Every variant task name carries a `server` flavor** (see *Which server a build talks to*). `remote` is the default flavor, and the one every command below names.
 
-**CI** (`.github/workflows/ci.yml`) runs `ktlintCheck`, `lintDebug`, and `testDebugUnitTest` on every push to main and every pull request. It uploads the reports as artifacts. These three JVM-only checks are the checks that gate a change.
+- Unit tests: `.\gradlew.bat testRemoteDebugUnitTest`. For one class, add `--tests "uno.lux.sample.post.data.PostRepositoryTest"`. Add `.<method>` to run one test.
+- Lint: `.\gradlew.bat lintRemoteDebug`. The report is at `app/build/reports/lint-results-remoteDebug.html`. For formatting, use `.\gradlew.bat ktlintCheck`.
+- Build or install: `.\gradlew.bat assembleRemoteDebug` or `.\gradlew.bat installRemoteDebug`.
+- Instrumented tests (need a device): `.\gradlew.bat connectedRemoteDebugAndroidTest`. For one class, add `-Pandroid.testInstrumentationRunnerArguments.class=…`.
+
+**CI** (`.github/workflows/ci.yml`) runs `ktlintCheck`, `lintRemoteDebug`, and `testRemoteDebugUnitTest` on every push to main and every pull request. It uploads the reports as artifacts. These three JVM-only checks are the checks that gate a change.
 
 **There is no emulator job.** No automatic process runs the instrumented suite. A change to process-death or back-stack behavior needs the user to run it.
 
-**Do not touch a real device or emulator unless the user asks.** This rule covers `connectedDebugAndroidTest`, `installDebug`, `adb`, and driving the app by hand.
+**Do not touch a real device or emulator unless the user asks.** This rule covers `connectedRemoteDebugAndroidTest`, `installRemoteDebug`, `adb`, and driving the app by hand.
 
 Run the three JVM-only checks instead. State plainly which parts of a change they cover and which parts need a device. Write the instrumented test when the behavior needs one. Leave running it to the user.
 
@@ -48,6 +50,26 @@ Run the three JVM-only checks instead. State plainly which parts of a change the
 ## Backend
 
 The backend is a **Ruby on Rails** app. `NetworkModule` holds the host as `BASE_URL` and builds `API_URL` from it.
+
+### Which server a build talks to
+
+`BASE_URL` is a `buildConfigField`, set by the **`server` flavor dimension** in `app/build.gradle.kts`. There is no in-app switch, and both flavors keep the one `applicationId`, so swapping servers is the Build Variants dropdown — or a `Remote`/`Local` task name — and never a reinstall under a different package.
+
+- **`remote`** (`isDefault`) — the deployed host, `https://mosaic.tree-among-shrubs.com`.
+- **`local`** — `http://10.0.2.2:3000`, the emulator's alias for the host machine.
+
+A **physical device** cannot resolve `10.0.2.2`, so it needs the dev machine's LAN address. Two settings override the host and port, each read from an environment variable first, then a Gradle property (`~/.gradle/gradle.properties`, or `-P` on the command line):
+
+| Setting | Environment variable | Gradle property | Default |
+| --- | --- | --- | --- |
+| Host | `MOSAIC_LOCAL_HOST` | `mosaic.localHost` | `10.0.2.2` |
+| Port | `MOSAIC_LOCAL_PORT` | `mosaic.localPort` | `3000` |
+
+Both are read through `providers`, so they stay compatible with the configuration cache.
+
+**Cleartext HTTP is scoped to the `local` flavor**, through `app/src/local/`'s manifest and network security config. The address is a build-time setting, so the exemption cannot name a domain — which is why it is a `base-config` on a flavor that only ever points at a dev machine. Every `remote` build, release included, keeps cleartext blocked.
+
+Rails must listen on all interfaces for either case to work: `bin/rails server -b 0.0.0.0`. Running it under WSL also needs the port reachable from Windows — mirrored networking (`networkingMode=mirrored` in `.wslconfig`) is the version that needs no port proxy.
 
 **There is no sign-in.** The app seeds the signed-in user from `app/fixtures/SampleData.kt` and sends it as an `X-User-Id` header. The server uses this header to scope viewer state (`isLiked`, `isBookmarked`) and to enforce ownership. Deleting someone else's post and reading someone else's bookmarks both return a 403 from the server, not only from the client.
 
