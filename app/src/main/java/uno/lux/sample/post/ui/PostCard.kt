@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -48,7 +50,11 @@ internal fun PostCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface),
+            .padding(4.dp)
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(16.dp),
+            ),
     ) {
         PostAuthorHeader(
             post = post,
@@ -85,7 +91,7 @@ internal fun PostCard(
     }
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
 private fun PostCardPreview() {
     val users = SampleUsers.associateBy { it.id }
@@ -103,6 +109,7 @@ private fun PostCardPreview() {
             onOpenPost = {},
             onReport = { _, _ -> },
             onReportClosed = {},
+            modifier = Modifier.background(MaterialTheme.colorScheme.background),
         )
     }
 }
