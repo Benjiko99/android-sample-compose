@@ -1,6 +1,5 @@
 package uno.lux.sample.video.ui
 
-import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,10 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.PlayerView
 import uno.lux.sample.app.util.ImmersiveSystemBars
 import uno.lux.sample.app.util.findActivity
 import uno.lux.sample.common.ui.OverlayBackButton
@@ -46,7 +42,6 @@ fun FullscreenVideoScreen(
  * runs in [exitFullscreen] when the page is really popped. The system bars hide for an immersive
  * stage and are restored on the way out. Holding no ViewModel makes it directly previewable.
  */
-@OptIn(UnstableApi::class)
 @Composable
 internal fun FullscreenVideoScreen(
     url: String,
@@ -76,21 +71,12 @@ internal fun FullscreenVideoScreen(
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    setShowNextButton(false)
-                    setShowPreviousButton(false)
-                    contentDescription = title
-                    // The control already reads as "exit full screen"; tapping it pops the page.
-                    setFullscreenButtonState(true)
-                    setFullscreenButtonClickListener { onBack() }
-                }
-            },
-            update = { view -> view.player = playback?.player },
-            onRelease = { view -> view.player = null },
+        VideoSurface(
+            player = playback?.player,
+            title = title,
+            // The control already reads as "exit full screen"; tapping it pops the page.
+            isFullscreen = true,
+            onFullscreenClick = onBack,
             modifier = Modifier.fillMaxSize(),
         )
 

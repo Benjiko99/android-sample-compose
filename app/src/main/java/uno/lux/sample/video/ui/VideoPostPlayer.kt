@@ -1,6 +1,5 @@
 package uno.lux.sample.video.ui
 
-import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -22,9 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import uno.lux.sample.R
@@ -42,7 +38,6 @@ import uno.lux.sample.video.data.domain.Video
  * stream to [onOpenFullscreen] without losing position. When the local is null (previews), only
  * the thumbnail renders.
  */
-@OptIn(UnstableApi::class)
 @Composable
 internal fun VideoPostPlayer(
     video: Video,
@@ -63,30 +58,17 @@ internal fun VideoPostPlayer(
     ) {
         // `isActive` already establishes playback != null, so it smart-casts inside this branch.
         if (isActive) {
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-                        setBackgroundColor(android.graphics.Color.BLACK)
-                        setShowNextButton(false)
-                        setShowPreviousButton(false)
-                        setShowRewindButton(false)
-                        setShowFastForwardButton(false)
-                        contentDescription = video.title
-                        setFullscreenButtonClickListener {
-                            // Detach inline first so only the full-screen surface owns the player.
-                            playback.enterFullscreen()
-                            onOpenFullscreen(video)
-                        }
-                    }
+            VideoSurface(
+                // While full screen owns the surface this one detaches, but nothing is released —
+                // the controller keeps the instance alive across the transition.
+                player = if (playback.isFullscreen) null else playback.player,
+                title = video.title,
+                isFullscreen = false,
+                onFullscreenClick = {
+                    // Detach inline first so only the full-screen surface owns the player.
+                    playback.enterFullscreen()
+                    onOpenFullscreen(video)
                 },
-                // While full screen owns the surface the inline view detaches (player = null) but
-                // never releases — the controller keeps the instance alive across the transition.
-                update = { view ->
-                    view.player =
-                        if (playback.isFullscreen) null else playback.player
-                },
-                onRelease = { view -> view.player = null },
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
