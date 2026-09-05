@@ -303,7 +303,6 @@ private fun PostDetailContent(
                     scope.launch { listState.animateScrollToItem(COMMENTS_HEADER_INDEX) }
                 },
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
 
         if (thread.error != null) {
@@ -413,7 +412,11 @@ private fun DetailPostCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface),
+            .padding(4.dp)
+            .background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(16.dp),
+            ),
     ) {
         PostAuthorHeader(post = post, author = author, onOpenProfile = onOpenProfile)
         PostBody(title = post.title, body = post.body)

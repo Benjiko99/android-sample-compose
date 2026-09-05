@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The pill behind PlayerView's error message. Only shown once an ErrorMessageProvider is set,
+     which nothing does yet; it is here so the copied exo_player_view.xml needs nothing private
+     from media3. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/player_scrim_strong" />
+    <corners android:radius="16dp" />
+
+</shape>
