@@ -81,7 +81,6 @@ internal fun PostOverflowMenu(
         Icon(
             painter = painterResource(R.drawable.ic_more_vert),
             contentDescription = stringResource(R.string.post_more_options),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(22.dp),
         )
     }
