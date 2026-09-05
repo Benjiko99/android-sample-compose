@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The controller's backdrop. PlayerControlView lays this out over the whole surface and fades
+     its alpha as the controls show and hide, so it darkens the bottom (where the seek bar and
+     times sit) while leaving the middle of the frame nearly clear. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <gradient
+        android:angle="90"
+        android:centerColor="@color/player_scrim_mid"
+        android:endColor="@color/player_scrim_soft"
+        android:startColor="@color/player_scrim_strong"
+        android:type="linear" />
+
+</shape>

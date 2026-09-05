@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+
+    <!--
+      res/layout/exo_player_control_view.xml replaces the layout of the same name in
+      androidx.media3:media3-ui, so the only thing that inflates it is PlayerControlView, inside
+      the library. UnusedResources reads app sources only, so it sees neither the layout nor the
+      colours, drawables and strings the layout is the sole user of. Every name below exists for
+      that one file; nothing else may claim the player_ prefix.
+    -->
+    <issue id="UnusedResources">
+        <ignore regexp="R\.layout\.exo_player_control_view|R\.(color|drawable|string)\.player_" />
+    </issue>
+
+</lint>

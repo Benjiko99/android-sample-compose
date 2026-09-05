@@ -154,4 +154,16 @@
     <string name="discard_confirmation_message">You have unsaved changes. Are you sure you want to discard them?</string>
     <string name="discard_confirmation_confirm">Discard</string>
     <string name="discard_confirmation_dismiss">Keep editing</string>
+
+    <!-- Video player controls (exo_player_control_view.xml). media3 has strings of its own for
+         these, but they are private to the library, so we keep our own. It overwrites the play
+         and full-screen descriptions as the state changes; ours are what a screen reader gets
+         before the first update. -->
+    <string name="player_rewind">Rewind</string>
+    <string name="player_fast_forward">Fast forward</string>
+    <string name="player_fullscreen">Full screen</string>
+    <!-- Placeholder shown until the player reports a position; a symbol in every locale, and a
+         resource only because an XML layout cannot interpolate. -->
+    <string name="player_time_placeholder" translatable="false">0:00</string>
+    <string name="player_time_separator" translatable="false">·</string>
 </resources>

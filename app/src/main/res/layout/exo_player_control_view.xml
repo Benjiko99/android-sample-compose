@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mosaic's player controls. This file replaces androidx.media3's layout of the same name: our
+     copy wins at resource-merge time, so every PlayerView in the app draws these controls and no
+     Kotlin changes.
+
+     PlayerControlView inflates this into itself (a FrameLayout), finds each control by @id and
+     null-checks every one, so a layout is free to keep only the controls it wants. The library
+     still owns what happens inside a control: it swaps the play/pause glyph and its content
+     description, sets the seek glyphs, fills in the times, and hides exo_fullscreen until a
+     fullscreen listener is set. Ours is the frame around them - the scrim, the sizes, the
+     placement and the brand colour on the seek bar.
+
+     PlayerControlViewLayoutManager falls back to exo_minimal_controls on a surface too short for
+     the full set, which is why the sizes below stay compact: a 16:9 card in the feed has to clear
+     the centre controls plus twice the bottom bar to keep the full layout.
+
+     app:tint works here because MainActivity is an AppCompatActivity, so every ImageButton is
+     inflated as an AppCompatImageButton. The library sets android:src itself, which is why the
+     tint - not a drawable - is what carries the colour. -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:override="true">
+
+    <!-- 0dp so this never influences a wrap_content parent; the library lays it out full-bleed
+         after measuring. See https://github.com/google/ExoPlayer/issues/8726. -->
+    <View
+        android:id="@id/exo_controls_background"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/player_scrim" />
+
+    <LinearLayout
+        android:id="@id/exo_center_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:layoutDirection="ltr"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@id/exo_rew"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="20dp"
+            android:background="@drawable/player_button_ghost"
+            android:contentDescription="@string/player_rewind"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            app:tint="@color/player_control_dim" />
+
+        <ImageButton
+            android:id="@id/exo_play_pause"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/player_button_backdrop"
+            android:contentDescription="@string/video_play"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            app:tint="@color/player_control" />
+
+        <ImageButton
+            android:id="@id/exo_ffwd"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="20dp"
+            android:background="@drawable/player_button_ghost"
+            android:contentDescription="@string/player_fast_forward"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            app:tint="@color/player_control_dim" />
+
+    </LinearLayout>
+
+    <!-- The bottom margin is re-applied by the library from exo_styled_progress_margin_bottom
+         (52dp, and 0 in minimal mode); it is stated here so the layout reads true, not to take
+         effect. Keeping it equal to the bottom bar height is what seats the bar on top of the
+         times. -->
+    <androidx.media3.ui.DefaultTimeBar
+        android:id="@id/exo_progress"
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="52dp"
+        app:bar_gravity="center"
+        app:bar_height="3dp"
+        app:buffered_color="@color/player_track_buffered"
+        app:played_color="@color/player_accent"
+        app:scrubber_color="@color/player_accent"
+        app:scrubber_dragged_size="16dp"
+        app:scrubber_enabled_size="12dp"
+        app:touch_target_height="28dp"
+        app:unplayed_color="@color/player_track_unplayed" />
+
+    <FrameLayout
+        android:id="@id/exo_bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_gravity="bottom"
+        android:layoutDirection="ltr">
+
+        <LinearLayout
+            android:id="@id/exo_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:importantForAccessibility="noHideDescendants"
+            android:layoutDirection="ltr"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <TextView
+                android:id="@id/exo_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/manrope"
+                android:letterSpacing="0.01"
+                android:text="@string/player_time_placeholder"
+                android:textColor="@color/player_control"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/manrope"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:text="@string/player_time_separator"
+                android:textColor="@color/player_control_dim"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@id/exo_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/manrope"
+                android:letterSpacing="0.01"
+                android:text="@string/player_time_placeholder"
+                android:textColor="@color/player_control_dim"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@id/exo_basic_controls"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="8dp"
+            android:layoutDirection="ltr">
+
+            <ImageButton
+                android:id="@id/exo_fullscreen"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/player_button_ghost"
+                android:contentDescription="@string/player_fullscreen"
+                android:padding="9dp"
+                android:scaleType="fitCenter"
+                app:tint="@color/player_control" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- What is left on a surface too short for the bar and the times. -->
+    <LinearLayout
+        android:id="@id/exo_minimal_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:gravity="center_vertical"
+        android:layoutDirection="ltr"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@id/exo_minimal_fullscreen"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/player_button_ghost"
+            android:contentDescription="@string/player_fullscreen"
+            android:padding="9dp"
+            android:scaleType="fitCenter"
+            app:tint="@color/player_control" />
+
+    </LinearLayout>
+
+</merge>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The XML half of the Mosaic palette. Compose reads app/theme/Color.kt; these exist only for
+     the resources the platform inflates for us, which today is the media3 player controller.
+     Keep player_accent in step with MosaicAccent. -->
+<resources>
+
+    <color name="player_accent">#FF3F5BD8</color>
+    <color name="player_scrim_strong">#D9000000</color>
+    <color name="player_scrim_mid">#59000000</color>
+    <color name="player_scrim_soft">#1F000000</color>
+
+    <!-- Controls sit on video, never on a themed surface, so they are light in both themes. -->
+    <color name="player_control">#FFFFFFFF</color>
+    <color name="player_control_dim">#B3FFFFFF</color>
+    <color name="player_control_backdrop">#52000000</color>
+    <color name="player_control_ripple">#40FFFFFF</color>
+    <color name="player_track_buffered">#59FFFFFF</color>
+    <color name="player_track_unplayed">#33FFFFFF</color>
+
+</resources>

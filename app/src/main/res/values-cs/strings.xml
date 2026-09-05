@@ -155,4 +155,9 @@
     <string name="discard_confirmation_message">Máte neuložené změny. Opravdu je chcete zahodit?</string>
     <string name="discard_confirmation_confirm">Zahodit</string>
     <string name="discard_confirmation_dismiss">Pokračovat v úpravách</string>
+
+    <!-- Video player controls -->
+    <string name="player_rewind">Přetočit zpět</string>
+    <string name="player_fast_forward">Přetočit vpřed</string>
+    <string name="player_fullscreen">Celá obrazovka</string>
 </resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A circular ripple with no fill, for the secondary controls that read against the scrim. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/player_control_ripple">
+
+    <item android:id="@android:id/mask">
+        <shape android:shape="oval">
+            <solid android:color="@color/player_control" />
+        </shape>
+    </item>
+
+</ripple>
