@@ -220,7 +220,7 @@ internal fun ProfileScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(MaterialTheme.colorScheme.background),
     ) {
         when (uiState) {
             ProfileUiState.Loading -> {
@@ -467,7 +467,11 @@ private fun ProfileHeader(
     onOpenAvatar: (avatarUrl: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
         // Cover + overlapping avatar + actions, in a box tall enough to contain the hanging
         // avatar so nothing below paints over it (the avatar is the last child, so it wins
         // the cover's z-order cleanly).
