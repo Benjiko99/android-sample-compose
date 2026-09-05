@@ -370,7 +370,7 @@ class PostDetailViewModel @AssistedInject constructor(
     }
 
     /**
-     * Flips the viewer's like on one comment in the thread, moving it *before* the request goes
+     * Optimistically flips the like on a comment in the thread, moving it *before* the request goes
      * out and reconciling with the server's answer when it lands.
      */
     private fun toggleCommentLike(commentId: CommentId) = launchCatching {

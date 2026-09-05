@@ -138,7 +138,6 @@ internal fun PostDetailScreen(
     val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // The bar behind the status bar is accent-filled in both themes, so the icons over it are too.
     LightStatusBarIcons()
 
     // A delete or comment whose request failed after its dialog already closed.
