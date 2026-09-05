@@ -154,7 +154,6 @@ internal fun HomeScreen(
     // The bar is pinned; its shadow fades in whenever the list content is scrolled and clears at
     // the very top. canScrollBackward is already a coalesced boolean snapshot — it only changes
     // when crossing the top — so reading it directly needs no derivedStateOf wrapper.
-    val elevated = listState.canScrollBackward
     val snackbarHostState = remember { SnackbarHostState() }
     // A refresh that failed over a feed already on screen — announced without taking the posts
     // away. The duration is stated because Material's default is Indefinite whenever an action
@@ -185,7 +184,7 @@ internal fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             FeedTopBar(
-                elevated = elevated,
+                elevated = true,
                 onOpenSettings = actions::openSettings,
             )
         },
