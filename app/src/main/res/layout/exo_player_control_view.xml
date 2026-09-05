@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Mosaic's player controls. This file replaces androidx.media3's layout of the same name: our
+<?xml version="1.0" encoding="utf-8"?><!-- Mosaic's player controls. This file replaces androidx.media3's layout of the same name: our
      copy wins at resource-merge time, so every PlayerView in the app draws these controls and no
      Kotlin changes.
 
@@ -16,7 +15,8 @@
 
      app:tint works here because MainActivity is an AppCompatActivity, so every ImageButton is
      inflated as an AppCompatImageButton. The library sets android:src itself, which is why the
-     tint - not a drawable - is what carries the colour. -->
+     tint - not a drawable - is what carries the colour. The full-screen buttons are the one
+     exception, and declare a src of their own; see player_fullscreen_enter.xml for why. -->
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -35,6 +35,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
         android:gravity="center"
         android:layoutDirection="ltr"
         android:orientation="horizontal">
@@ -161,6 +162,7 @@
                 android:contentDescription="@string/player_fullscreen"
                 android:padding="9dp"
                 android:scaleType="fitCenter"
+                android:src="@drawable/player_fullscreen_enter"
                 app:tint="@color/player_control" />
 
         </LinearLayout>
@@ -187,6 +189,7 @@
             android:contentDescription="@string/player_fullscreen"
             android:padding="9dp"
             android:scaleType="fitCenter"
+            android:src="@drawable/player_fullscreen_enter"
             app:tint="@color/player_control" />
 
     </LinearLayout>
