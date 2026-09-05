@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The buffering spinner. ProgressBar has no attribute for stroke width, so the only way to set one
+  is to supply the indeterminate drawable: on a ring shape, android:thickness is that control.
+
+  innerRadius + thickness must add up to half the ProgressBar's size (72dp / 2 = 36dp in
+  exo_player_view.xml). Resize the spinner and both numbers here have to move with it.
+
+  android:useLevel="false" is load-bearing - the ring draws nothing without it - and the fade
+  comes from the sweep gradient, which is why the ProgressBar carries no indeterminateTint: a tint
+  is applied SRC_IN over the whole drawable and would flatten the gradient into a solid disc.
+
+  ProgressBar drives the rotation by setting this drawable's level.
+-->
+<rotate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromDegrees="0"
+    android:pivotX="50%"
+    android:pivotY="50%"
+    android:toDegrees="1080">
+
+    <shape
+        android:innerRadius="31dp"
+        android:shape="ring"
+        android:thickness="5dp"
+        android:useLevel="false">
+
+        <gradient
+            android:endColor="@color/player_control"
+            android:startColor="@color/player_spinner_tail"
+            android:type="sweep" />
+
+    </shape>
+
+</rotate>
